@@ -1,0 +1,49 @@
+export type RiskLevel = 'safe' | 'caution' | 'danger' | 'no_signal';
+export type Verdict = 'safe' | 'caution' | 'danger';
+export type Category = 'cosmetic' | 'food' | 'medication';
+export type Trimester = 1 | 2 | 3;
+
+export interface IngredientData {
+  id: string;
+  name: string;
+  name_inci: string;
+  synonyms: string[];
+  category: Category;
+  risk_level_t1: RiskLevel;
+  risk_level_t2: RiskLevel;
+  risk_level_t3: RiskLevel;
+  risk_level_breastfeeding: RiskLevel;
+  description_fr: string;
+  source: string;
+  source_url: string | null;
+}
+
+export interface ProductData {
+  name: string;
+  brand: string;
+  imageUrl: string | null;
+  ingredientsRaw: string;
+  ingredientsList: string[];
+}
+
+export interface MatchResult {
+  ingredientName: string;
+  matched: boolean;
+  ingredient?: IngredientData;
+  riskLevel: RiskLevel;
+}
+
+export interface VerdictResult {
+  verdict: Verdict;
+  flaggedIngredients: MatchResult[];
+  noSignalCount: number;
+  safeCount: number;
+}
+
+export interface ScanCache {
+  barcode: string;
+  product: ProductData;
+  matches: MatchResult[];
+  verdict: VerdictResult;
+  cachedAt: number;
+}

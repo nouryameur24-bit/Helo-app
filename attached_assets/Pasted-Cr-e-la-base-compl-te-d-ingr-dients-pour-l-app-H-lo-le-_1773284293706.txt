@@ -1,0 +1,27 @@
+Crée la base complète d'ingrédients pour l'app Hēlo — le cœur de la valeur de l'app.
+
+Crée supabase/seed-ingredients.sql avec INSERT pour 50 ingrédients répartis en 3 catégories.
+
+COSMÉTIQUES (20 ingrédients) :
+DANGER (10) : Rétinol/Trétinoïne (INCI: Retinol, Retinal, Tretinoin — tératogène, source FDA/ANSM), Isotrétinoïne (tératogène majeur), Hydroquinone (absorption systémique), Formaldéhyde + libérateurs (DMDM Hydantoin, Quaternium-15, Imidazolidinyl Urea — cancérigène), Phtalates (DEP, DBP — perturbateurs endocriniens), Mercure/Thimérosal (neurotoxique), Plomb/Lead Acetate (neurotoxique), Toluène (neurotoxique, vernis), Camphre >11% (toxique), Acide salicylique >2% (risque haute dose)
+
+PRÉCAUTION (10) : Acide salicylique <2%/BHA, Acide glycolique/AHA, Peroxyde de benzoyle, Huiles essentielles (globalement), Parabènes (Methylparaben, Propylparaben, Butylparaben), Filtres UV chimiques (Oxybenzone, Octinoxate, Homosalate), Triclosan, Aluminium (Aluminum Chlorohydrate), Ammoniaque (colorations), PPD (p-Phenylenediamine)
+
+ALIMENTATION (18 ingrédients) :
+DANGER (10) : Alcool (aucune dose sûre, source OMS), Fromages au lait cru (listeria, source ANSES), Viande crue/peu cuite (toxoplasmose, source CRAT), Charcuterie crue (toxoplasmose+listeria), Poissons à mercure élevé (espadon/requin/marlin/thon rouge), Foie/pâté de foie (vitamine A excès), Lait cru non pasteurisé (listeria), Coquillages crus (bactérien), Tartare/Carpaccio, Sushi poisson cru
+
+PRÉCAUTION (8) : Caféine (max 200mg/jour, source OMS), Thon en conserve (mercure modéré, 1-2x/semaine), Saumon fumé (listeria si non pasteurisé), Œufs crus/mal cuits (salmonellose), Germes/pousses crues, Réglisse en quantité (glycyrrhizine), Édulcorants artificiels (saccharine, cyclamate), Soja en excès (phytoestrogènes)
+
+MÉDICAMENTS (12 ingrédients) :
+DANGER (6) : Ibuprofène/Advil/Nurofen (AINS, T1/T2=danger T3=danger critique, source CRAT), Aspirine haute dose >100mg (hémorragique, T3=danger), Misoprostol (contre-indiqué formel), Méthotrexate (tératogène majeur), Kétoprofène/Kétum (AINS), Diclofénac/Voltarène (AINS, T3=danger)
+
+PRÉCAUTION (6) : Aspirine faible dose <100mg (parfois prescrite pré-éclampsie), Diphenhydramine (données limitées), Pseudoéphédrine (vasoconstricteur), Bismuth subsalicylate/Pepto-Bismol, Millepertuis (interactions), Mélatonine (données insuffisantes)
+
+POUR CHAQUE INGRÉDIENT inclure :
+- name, name_inci, synonyms (text[]), category
+- risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding (PEUVENT DIFFÉRER entre trimestres !)
+- description_fr : 2-3 phrases vulgarisées, RASSURANTES, expliquant POURQUOI c'est signalé. JAMAIS alarmiste. Toujours finir par "Consultez votre professionnel de santé pour un avis personnalisé."
+- source : ANSM, OMS, HAS, CRAT, ANSES, FDA
+- source_url quand disponible
+
+Crée aussi supabase/seed-products.sql avec 20 produits courants français : Nivea Crème Soft, Mustela Gel Lavant, Bioderma Sensibio H2O, Garnier Micellair, Mixa Crème Visage, Nuxe Huile Prodigieuse, La Roche-Posay Effaclar, Klorane Shampooing, Dove Gel Douche, L'Oréal Elseve Shampooing, plus 10 produits alimentaires courants (Président Camembert, Fleury Michon Jambon, etc.) avec leurs ingrédients mappés.

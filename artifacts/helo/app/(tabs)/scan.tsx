@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Animated, {
   interpolateColor,
+  SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -128,7 +129,7 @@ function CornerBracket({
 function FlashingViewfinder({
   flashColor,
 }: {
-  flashColor: Animated.SharedValue<number>;
+  flashColor: SharedValue<number>;
 }) {
   const pulseOpacity = useSharedValue(0.5);
 

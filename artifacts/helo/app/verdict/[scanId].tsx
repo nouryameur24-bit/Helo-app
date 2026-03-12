@@ -637,8 +637,18 @@ export default function VerdictScreen() {
           {verdict.verdict !== 'safe' ? (
             <>
               <View style={styles.bottomBtn}>
-                <Button variant="primary" fullWidth onPress={() => {}}>
-                  Voir les alternatives
+                <Button variant="primary" fullWidth onPress={() => {
+                  router.push({
+                    pathname: '/alternatives',
+                    params: {
+                      barcode,
+                      category: 'cosmetic',
+                      productName: product.name,
+                      productBrand: product.brand ?? '',
+                    },
+                  });
+                }}>
+                  Voir les alternatives →
                 </Button>
               </View>
               <View style={styles.bottomBtn}>

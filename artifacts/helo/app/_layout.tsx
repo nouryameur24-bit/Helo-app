@@ -29,6 +29,13 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="methodology" options={{ headerShown: false }} />
         <Stack.Screen name="legal" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="alternatives"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+          }}
+        />
       </Stack>
       <DisclaimerModal />
     </>

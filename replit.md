@@ -26,6 +26,7 @@ A luxury pregnancy product scanner app ("Yuka for pregnancy"). Design: Luxe & Se
 - **Disclaimers**: `constants/disclaimers.ts` — Medical disclaimer constants (re-exported via `constants/legalTexts.ts`)
 - **UI components**: `components/ui/` — Button, Card, Badge, ThemedText, SafeAreaContainer, Divider, IconButton
 - **Legal components**: `components/DisclaimerModal.tsx` (first-launch bottom-sheet), `components/ScanDisclaimerBanner.tsx` (collapsible scan banner)
+- **Alternatives system**: `lib/alternatives.ts` — getAlternatives, getAlternativesByBarcode, submitAlternativeSuggestion; `app/alternatives.tsx` — modal carousel of safe alternatives with empty-state suggestion form
 - **Screens**: Home, Scan, History, Profile tabs
 - **Legal pages**: `app/methodology.tsx`, `app/legal/terms.tsx` (CGU), `app/legal/privacy.tsx` (GDPR privacy policy)
 

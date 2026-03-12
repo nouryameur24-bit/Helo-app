@@ -5,10 +5,11 @@ import {
   PlusJakartaSans_700Bold,
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -23,6 +24,7 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
     </Stack>
   );
 }
@@ -34,11 +36,28 @@ export default function RootLayout() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
+  const redirected = useRef(false);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
+    if (!fontsLoaded && !fontError) return;
+    if (redirected.current) return;
+
+    const run = async () => {
+      try {
+        const completed = await AsyncStorage.getItem("onboarding_completed");
+        if (!completed) {
+          redirected.current = true;
+          router.replace("/onboarding");
+        }
+      } catch {
+        redirected.current = true;
+        router.replace("/onboarding");
+      } finally {
+        SplashScreen.hideAsync();
+      }
+    };
+
+    run();
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;

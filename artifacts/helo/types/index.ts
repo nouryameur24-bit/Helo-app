@@ -19,11 +19,16 @@ export interface IngredientData {
 }
 
 export interface ProductData {
+  barcode?: string;
   name: string;
-  brand: string;
-  imageUrl: string | null;
-  ingredientsRaw: string;
+  brand?: string;
+  imageUrl?: string | null;
+  ingredientsRaw?: string;
   ingredientsList: string[];
+  categories?: string[];
+  nutriscore?: string | null;
+  ecoscore?: string | null;
+  source?: string;
 }
 
 export interface MatchResult {
@@ -46,4 +51,12 @@ export interface ScanCache {
   matches: MatchResult[];
   verdict: VerdictResult;
   cachedAt: number;
+}
+
+export interface OcrScanResult {
+  product: ProductData;
+  matches: MatchResult[];
+  verdict: VerdictResult;
+  isOCR: true;
+  savedAt: number;
 }

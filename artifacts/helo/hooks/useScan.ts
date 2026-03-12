@@ -29,6 +29,7 @@ interface ScanState {
 interface UseScanReturn extends ScanState {
   scanBarcode: (barcode: string, trimester?: Trimester) => Promise<void>;
   clearResult: () => void;
+  setDirectResult: (product: ProductData, matches: MatchResult[], verdict: VerdictResult) => void;
 }
 
 async function readCache(barcode: string): Promise<ScanCache | null> {
@@ -132,5 +133,19 @@ export function useScan(): UseScanReturn {
     });
   }, []);
 
-  return { ...state, scanBarcode, clearResult };
+  const setDirectResult = useCallback(
+    (product: ProductData, matches: MatchResult[], verdict: VerdictResult) => {
+      setState({
+        loading: false,
+        product,
+        matches,
+        verdict,
+        error: null,
+        fromCache: false,
+      });
+    },
+    [],
+  );
+
+  return { ...state, scanBarcode, clearResult, setDirectResult };
 }

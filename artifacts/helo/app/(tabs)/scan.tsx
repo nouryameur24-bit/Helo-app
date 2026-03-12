@@ -29,10 +29,16 @@ import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 
 const { width: W, height: H } = Dimensions.get('window');
 
-// Viewfinder dimensions
-const VF_SIZE = Math.min(W * 0.68, 280);
-const VF_X = (W - VF_SIZE) / 2;
-const VF_Y = H * 0.28;
+// ─── Viewfinder dimensions ────────────────────────────────────────────────────
+// Barcode mode: square-ish
+const VF_BARCODE_W = Math.min(W * 0.68, 280);
+const VF_BARCODE_H = VF_BARCODE_W;
+const VF_BARCODE_Y = H * 0.28;
+
+// Ingredients mode: wider 3:2 rectangle
+const VF_OCR_W = Math.min(W * 0.85, 340);
+const VF_OCR_H = Math.round(VF_OCR_W * (2 / 3));
+const VF_OCR_Y = H * 0.24;
 
 const CORNER_SIZE = 22;
 const CORNER_THICKNESS = 3;
@@ -44,17 +50,14 @@ const BARCODE_TYPES = [
 
 type ScanMode = 'barcode' | 'ingredients' | 'menu';
 
-// ─── Permission screen ───────────────────────────────────────────────────────
+// ─── Permission screen ────────────────────────────────────────────────────────
 function PermissionScreen({ onRequest }: { onRequest: () => void }) {
   const insets = useSafeAreaInsets();
   return (
     <View
       style={[
         styles.permissionRoot,
-        {
-          paddingTop: insets.top + Spacing.xxxl,
-          paddingBottom: insets.bottom + Spacing.xxxl,
-        },
+        { paddingTop: insets.top + Spacing.xxxl, paddingBottom: insets.bottom + Spacing.xxxl },
       ]}
     >
       <View style={styles.permissionIcon}>
@@ -73,17 +76,10 @@ function PermissionScreen({ onRequest }: { onRequest: () => void }) {
   );
 }
 
-// ─── L-shaped corner bracket ─────────────────────────────────────────────────
-function CornerBracket({
-  position,
-  color,
-}: {
-  position: 'tl' | 'tr' | 'bl' | 'br';
-  color: string;
-}) {
+// ─── L-shaped corner bracket ──────────────────────────────────────────────────
+function CornerBracket({ position, color }: { position: 'tl' | 'tr' | 'bl' | 'br'; color: string }) {
   const isTop = position === 'tl' || position === 'tr';
   const isLeft = position === 'tl' || position === 'bl';
-
   return (
     <View
       pointerEvents="none"
@@ -97,7 +93,6 @@ function CornerBracket({
         right: !isLeft ? 0 : undefined,
       }}
     >
-      {/* Horizontal arm */}
       <View
         style={{
           position: 'absolute',
@@ -109,7 +104,6 @@ function CornerBracket({
           left: 0,
         }}
       />
-      {/* Vertical arm */}
       <View
         style={{
           position: 'absolute',
@@ -125,20 +119,12 @@ function CornerBracket({
   );
 }
 
-// ─── Animated viewfinder (pulsing border + flashing corners) ─────────────────
-function FlashingViewfinder({
-  flashColor,
-}: {
-  flashColor: SharedValue<number>;
-}) {
+// ─── Animated viewfinder ──────────────────────────────────────────────────────
+function FlashingViewfinder({ flashColor }: { flashColor: SharedValue<number> }) {
   const pulseOpacity = useSharedValue(0.5);
-
   React.useEffect(() => {
     pulseOpacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1000 }),
-        withTiming(0.5, { duration: 1000 }),
-      ),
+      withSequence(withTiming(1, { duration: 1000 }), withTiming(0.5, { duration: 1000 })),
       -1,
       false,
     );
@@ -146,38 +132,21 @@ function FlashingViewfinder({
 
   const borderStyle = useAnimatedStyle(() => ({
     opacity: pulseOpacity.value,
-    borderColor: interpolateColor(
-      flashColor.value,
-      [0, 1],
-      [Colors.accent, Colors.safe],
-    ),
+    borderColor: interpolateColor(flashColor.value, [0, 1], [Colors.accent, Colors.safe]),
   }));
-
-  // Crossfade between accent corners and safe corners
-  const accentCornersStyle = useAnimatedStyle(() => ({
-    opacity: 1 - flashColor.value,
-  }));
-  const safeCornersStyle = useAnimatedStyle(() => ({
-    opacity: flashColor.value,
-  }));
+  const accentStyle = useAnimatedStyle(() => ({ opacity: 1 - flashColor.value }));
+  const safeStyle = useAnimatedStyle(() => ({ opacity: flashColor.value }));
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {/* Pulsing border */}
-      <Animated.View
-        style={[StyleSheet.absoluteFill, styles.viewfinderBorder, borderStyle]}
-      />
-
-      {/* Accent (golden) corners */}
-      <Animated.View style={[StyleSheet.absoluteFill, accentCornersStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.viewfinderBorder, borderStyle]} />
+      <Animated.View style={[StyleSheet.absoluteFill, accentStyle]}>
         <CornerBracket position="tl" color={Colors.accent} />
         <CornerBracket position="tr" color={Colors.accent} />
         <CornerBracket position="bl" color={Colors.accent} />
         <CornerBracket position="br" color={Colors.accent} />
       </Animated.View>
-
-      {/* Safe (green) corners — fade in on scan */}
-      <Animated.View style={[StyleSheet.absoluteFill, safeCornersStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, safeStyle]}>
         <CornerBracket position="tl" color={Colors.safe} />
         <CornerBracket position="tr" color={Colors.safe} />
         <CornerBracket position="bl" color={Colors.safe} />
@@ -187,82 +156,67 @@ function FlashingViewfinder({
   );
 }
 
-// ─── Semi-transparent overlay (4 strips create the "cutout") ─────────────────
+// ─── Overlay (4 strips) ───────────────────────────────────────────────────────
 const OVERLAY_COLOR = 'rgba(45, 41, 38, 0.62)';
 
-function ScanOverlay() {
+function ScanOverlay({ vfX, vfY, vfW, vfH }: { vfX: number; vfY: number; vfW: number; vfH: number }) {
   return (
     <>
-      <View
-        pointerEvents="none"
-        style={[styles.strip, { top: 0, left: 0, right: 0, height: VF_Y }]}
-      >
+      <View pointerEvents="none" style={[styles.strip, { top: 0, left: 0, right: 0, height: vfY }]}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
       </View>
-      <View
-        pointerEvents="none"
-        style={[styles.strip, { top: VF_Y + VF_SIZE, left: 0, right: 0, bottom: 0 }]}
-      >
+      <View pointerEvents="none" style={[styles.strip, { top: vfY + vfH, left: 0, right: 0, bottom: 0 }]}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
       </View>
-      <View
-        pointerEvents="none"
-        style={[styles.strip, { top: VF_Y, left: 0, width: VF_X, height: VF_SIZE }]}
-      >
+      <View pointerEvents="none" style={[styles.strip, { top: vfY, left: 0, width: vfX, height: vfH }]}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
       </View>
-      <View
-        pointerEvents="none"
-        style={[styles.strip, { top: VF_Y, left: VF_X + VF_SIZE, right: 0, height: VF_SIZE }]}
-      >
+      <View pointerEvents="none" style={[styles.strip, { top: vfY, left: vfX + vfW, right: 0, height: vfH }]}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
       </View>
     </>
   );
 }
 
-// ─── Mode chip ───────────────────────────────────────────────────────────────
-function ModeChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
+// ─── Mode chip ────────────────────────────────────────────────────────────────
+function ModeChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
       style={[styles.modeChip, active ? styles.modeChipActive : styles.modeChipInactive]}
     >
-      <Text
-        style={[
-          styles.modeChipText,
-          { color: active ? '#fff' : Colors.textPrimary },
-        ]}
-      >
+      <Text style={[styles.modeChipText, { color: active ? '#fff' : Colors.textPrimary }]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 }
 
-// ─── Web placeholder ─────────────────────────────────────────────────────────
+// ─── Shutter button (OCR mode) ────────────────────────────────────────────────
+function ShutterButton({ onPress }: { onPress: () => void }) {
+  const scale = useSharedValue(1);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const handlePress = () => {
+    scale.value = withSequence(withTiming(0.9, { duration: 80 }), withTiming(1, { duration: 120 }));
+    onPress();
+  };
+  return (
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+      <Animated.View style={[styles.shutter, style]}>
+        <View style={styles.shutterInner}>
+          <Feather name="camera" size={26} color="#fff" />
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Web placeholder ──────────────────────────────────────────────────────────
 function WebPlaceholder() {
   const insets = useSafeAreaInsets();
   return (
-    <View
-      style={[
-        styles.permissionRoot,
-        {
-          paddingTop: insets.top + 67,
-          paddingBottom: insets.bottom + 34,
-          backgroundColor: Colors.background,
-        },
-      ]}
-    >
+    <View style={[styles.permissionRoot, { paddingTop: insets.top + 67, paddingBottom: insets.bottom + 34, backgroundColor: Colors.background }]}>
       <View style={styles.permissionIcon}>
         <Feather name="camera" size={40} color={Colors.accent} />
       </View>
@@ -277,22 +231,31 @@ function WebPlaceholder() {
   );
 }
 
-// ─── Main screen ─────────────────────────────────────────────────────────────
+// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>('barcode');
   const [isActive, setIsActive] = useState(false);
+  const [takingPhoto, setTakingPhoto] = useState(false);
 
   const lastBarcode = useRef<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cameraRef = useRef<CameraView>(null);
   const flashColor = useSharedValue(0);
+  const flashOverlay = useSharedValue(0); // for shutter white flash
   const insets = useSafeAreaInsets();
 
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const bottomInset = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  // Only keep camera active while tab is focused
+  // Computed viewfinder geometry based on mode
+  const isOCRMode = scanMode === 'ingredients';
+  const vfW = isOCRMode ? VF_OCR_W : VF_BARCODE_W;
+  const vfH = isOCRMode ? VF_OCR_H : VF_BARCODE_H;
+  const vfY = isOCRMode ? VF_OCR_Y : VF_BARCODE_Y;
+  const vfX = (W - vfW) / 2;
+
   useFocusEffect(
     useCallback(() => {
       setIsActive(true);
@@ -306,40 +269,54 @@ export default function ScanScreen() {
 
   const handleBarcodeScanned = useCallback(
     ({ data }: { data: string }) => {
-      if (!data || data === lastBarcode.current) return;
-
-      // Anti-spam: block same barcode for DEBOUNCE_MS
+      if (!data || data === lastBarcode.current || scanMode !== 'barcode') return;
       lastBarcode.current = data;
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
-      debounceTimer.current = setTimeout(() => {
-        lastBarcode.current = null;
-      }, DEBOUNCE_MS);
+      debounceTimer.current = setTimeout(() => { lastBarcode.current = null; }, DEBOUNCE_MS);
 
-      // Haptic feedback
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-      // Flash corners green (0 → 1 → hold 150ms → 0)
       flashColor.value = withSequence(
         withTiming(1, { duration: 150 }),
         withTiming(1, { duration: 150 }),
         withTiming(0, { duration: 300 }),
       );
-
-      // Navigate after flash completes
       setTimeout(() => {
         router.push(`/verdict/${encodeURIComponent(data)}`);
       }, 350);
     },
-    [flashColor],
+    [flashColor, scanMode],
   );
+
+  const handleShutter = useCallback(async () => {
+    if (takingPhoto || !cameraRef.current) return;
+    setTakingPhoto(true);
+
+    // Haptic + white flash
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    flashOverlay.value = withSequence(
+      withTiming(0.5, { duration: 60 }),
+      withTiming(0, { duration: 250 }),
+    );
+
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.8 });
+      if (photo?.uri) {
+        router.push(`/ocr-review?imageUri=${encodeURIComponent(photo.uri)}&base64=${encodeURIComponent(photo.base64 ?? '')}`);
+      }
+    } catch {
+      // silent — user can retry
+    } finally {
+      setTakingPhoto(false);
+    }
+  }, [takingPhoto, flashOverlay]);
+
+  const flashOverlayStyle = useAnimatedStyle(() => ({
+    opacity: flashOverlay.value,
+  }));
 
   // ── Platform: web ──
   if (Platform.OS === 'web') return <WebPlaceholder />;
-
-  // ── No permission object yet (loading) ──
   if (!permission) return <View style={[styles.root, { backgroundColor: Colors.background }]} />;
-
-  // ── Permission denied ──
   if (!permission.granted) return <PermissionScreen onRequest={requestPermission} />;
 
   return (
@@ -349,6 +326,7 @@ export default function ScanScreen() {
       {/* Camera feed */}
       {isActive && (
         <CameraView
+          ref={cameraRef}
           style={StyleSheet.absoluteFill}
           facing="back"
           enableTorch={torchOn}
@@ -357,15 +335,18 @@ export default function ScanScreen() {
         />
       )}
 
-      {/* Dark cutout overlay */}
-      <ScanOverlay />
+      {/* White flash overlay for shutter */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, styles.flashOverlay, flashOverlayStyle]}
+        pointerEvents="none"
+      />
 
-      {/* Animated viewfinder (positioned over the clear zone) */}
+      {/* Dark cutout overlay */}
+      <ScanOverlay vfX={vfX} vfY={vfY} vfW={vfW} vfH={vfH} />
+
+      {/* Animated viewfinder */}
       <View
-        style={[
-          styles.viewfinderContainer,
-          { top: VF_Y, left: VF_X, width: VF_SIZE, height: VF_SIZE },
-        ]}
+        style={[styles.viewfinderContainer, { top: vfY, left: vfX, width: vfW, height: vfH }]}
         pointerEvents="none"
       >
         <FlashingViewfinder flashColor={flashColor} />
@@ -379,90 +360,54 @@ export default function ScanScreen() {
           backgroundColor={torchOn ? Colors.accent : 'rgba(255,255,255,0.18)'}
           size={40}
         >
-          <Feather
-            name={torchOn ? 'zap' : 'zap-off'}
-            size={18}
-            color="#fff"
-          />
+          <Feather name={torchOn ? 'zap' : 'zap-off'} size={18} color="#fff" />
         </IconButton>
       </View>
 
       {/* ── Hint pill under viewfinder ── */}
-      <View
-        style={[
-          styles.hintWrapper,
-          { top: VF_Y + VF_SIZE + Spacing.xl },
-        ]}
-        pointerEvents="none"
-      >
+      <View style={[styles.hintWrapper, { top: vfY + vfH + Spacing.xl }]} pointerEvents="none">
         <View style={styles.hintPill}>
           <Text style={styles.hintText}>
-            Placez le code-barres dans le cadre
+            {isOCRMode
+              ? 'Photographiez la liste d\'ingrédients'
+              : 'Placez le code-barres dans le cadre'}
           </Text>
         </View>
       </View>
 
+      {/* ── OCR shutter button ── */}
+      {isOCRMode && (
+        <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
+          <ShutterButton onPress={handleShutter} />
+        </View>
+      )}
+
       {/* ── Bottom mode chips ── */}
       <View style={[styles.bottomBar, { paddingBottom: bottomInset + Spacing.lg }]}>
         <View style={styles.chipsRow}>
-          <ModeChip
-            label="Code-barres"
-            active={scanMode === 'barcode'}
-            onPress={() => setScanMode('barcode')}
-          />
-          <ModeChip
-            label="Ingrédients"
-            active={scanMode === 'ingredients'}
-            onPress={() => setScanMode('ingredients')}
-          />
-          <ModeChip
-            label="Menu"
-            active={scanMode === 'menu'}
-            onPress={() => setScanMode('menu')}
-          />
+          <ModeChip label="Code-barres" active={scanMode === 'barcode'} onPress={() => setScanMode('barcode')} />
+          <ModeChip label="Ingrédients" active={scanMode === 'ingredients'} onPress={() => setScanMode('ingredients')} />
+          <ModeChip label="Menu" active={scanMode === 'menu'} onPress={() => setScanMode('menu')} />
         </View>
-        {scanMode !== 'barcode' && (
-          <Text style={styles.comingSoon}>
-            {scanMode === 'ingredients'
-              ? 'Bientôt disponible — Analyse photo des ingrédients'
-              : 'Bientôt disponible — Mode restaurant'}
-          </Text>
+        {scanMode === 'menu' && (
+          <Text style={styles.comingSoon}>Bientôt disponible — Mode restaurant</Text>
         )}
       </View>
     </View>
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  // Overlay cutout strips
-  strip: {
-    position: 'absolute',
-  },
-  // Viewfinder box (absolute, placed over the clear zone)
-  viewfinderContainer: {
-    position: 'absolute',
-  },
-  viewfinderBorder: {
-    borderWidth: 1.5,
-    borderRadius: Radius.sm,
-  },
-  // Top bar
+  root: { flex: 1, backgroundColor: '#000' },
+  strip: { position: 'absolute' },
+  viewfinderContainer: { position: 'absolute' },
+  viewfinderBorder: { borderWidth: 1.5, borderRadius: Radius.sm },
+  flashOverlay: { backgroundColor: '#fff', zIndex: 20 },
   topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.md,
-    zIndex: 10,
+    position: 'absolute', top: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl, paddingBottom: Spacing.md, zIndex: 10,
   },
   topTitle: {
     fontFamily: 'PlusJakartaSans_600SemiBold',
@@ -470,56 +415,46 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     color: '#fff',
   },
-  // Hint
-  hintWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 10,
-  },
+  hintWrapper: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 10 },
   hintPill: {
     backgroundColor: 'rgba(0,0,0,0.42)',
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     borderRadius: Radius.full,
   },
-  hintText: {
-    fontFamily: 'PlusJakartaSans_400Regular',
-    fontSize: Typography.bodySmall.fontSize,
-    color: '#fff',
-  },
-  // Bottom chips
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingTop: Spacing.lg,
-    zIndex: 10,
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    alignItems: 'center',
-  },
-  modeChip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.full,
-  },
-  modeChipActive: {
+  hintText: { fontFamily: 'PlusJakartaSans_400Regular', fontSize: Typography.bodySmall.fontSize, color: '#fff' },
+  shutterWrapper: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 10 },
+  shutter: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.accentDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  modeChipInactive: {
-    backgroundColor: 'rgba(255,255,255,0.82)',
+  shutterInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modeChipText: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
-    fontSize: Typography.bodySmall.fontSize,
+  bottomBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    alignItems: 'center', gap: Spacing.sm, paddingTop: Spacing.lg, zIndex: 10,
   },
+  chipsRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+  modeChip: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full },
+  modeChipActive: { backgroundColor: Colors.accent },
+  modeChipInactive: { backgroundColor: 'rgba(255,255,255,0.82)' },
+  modeChipText: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: Typography.bodySmall.fontSize },
   comingSoon: {
     fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: Typography.bodySmall.fontSize,
@@ -527,34 +462,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: Spacing.xl,
   },
-  // Permission / web screens
   permissionRoot: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xl,
-    paddingHorizontal: Spacing.xxl,
+    flex: 1, backgroundColor: Colors.background,
+    alignItems: 'center', justifyContent: 'center',
+    gap: Spacing.xl, paddingHorizontal: Spacing.xxl,
   },
   permissionIcon: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 88, height: 88, borderRadius: 44,
     backgroundColor: Colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   permissionTitle: {
     fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: Typography.headlineLarge.fontSize,
-    color: Colors.textPrimary,
-    textAlign: 'center',
+    color: Colors.textPrimary, textAlign: 'center',
   },
   permissionBody: {
     fontFamily: 'PlusJakartaSans_400Regular',
     fontSize: Typography.bodyMedium.fontSize,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
+    color: Colors.textSecondary, textAlign: 'center', lineHeight: 24,
   },
 });

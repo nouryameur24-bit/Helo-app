@@ -379,12 +379,13 @@ export default function VerdictScreen() {
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();
-  const { loading, product, matches, verdict, error, scanBarcode } = useScan();
+  const { loading, product, matches, verdict, error, scanBarcode, setDirectResult } = useScan();
 
   const [labelVisible, setLabelVisible] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [trimester, setTrimester] = useState(2);
+  const [isOCRMode, setIsOCRMode] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load trimester from profile
@@ -398,7 +399,22 @@ export default function VerdictScreen() {
   }, []);
 
   useEffect(() => {
-    if (barcode) scanBarcode(barcode, trimester as 1 | 2 | 3);
+    if (!barcode) return;
+
+    // OCR mode: load pre-computed result from AsyncStorage
+    if (barcode.startsWith('ocr_')) {
+      setIsOCRMode(true);
+      const id = barcode.slice(4); // strip 'ocr_'
+      AsyncStorage.getItem(`@helo_ocr_${id}`).then((raw) => {
+        if (raw) {
+          const data = JSON.parse(raw);
+          setDirectResult(data.product, data.matches, data.verdict);
+        }
+      }).catch(() => {});
+      return;
+    }
+
+    scanBarcode(barcode, trimester as 1 | 2 | 3);
   }, [barcode, trimester]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Haptic when verdict arrives
@@ -553,7 +569,11 @@ export default function VerdictScreen() {
           </View>
 
           <View style={styles.trimesterBadgeRow}>
-            <Badge variant="accent">Évalué pour votre {trimesterLabel(trimester)}</Badge>
+            {isOCRMode ? (
+              <Badge variant="accent">Analysé par lecture d'ingrédients</Badge>
+            ) : (
+              <Badge variant="accent">Évalué pour votre {trimesterLabel(trimester)}</Badge>
+            )}
           </View>
         </LinearGradient>
 

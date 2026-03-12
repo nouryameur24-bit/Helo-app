@@ -1,0 +1,33 @@
+Ajoute le mode scan OCR à l'app Hēlo pour analyser les listes d'ingrédients cosmétiques sans code-barres.
+
+Utilise expo-camera pour la capture photo + une solution OCR (Google Cloud Vision API via fetch, ou expo-ml-kit si disponible). Si OCR cloud, utiliser la variable d'env EXPO_PUBLIC_GOOGLE_VISION_KEY.
+
+QUAND L'UTILISATRICE SÉLECTIONNE "Ingrédients" dans les chips de l'écran scan :
+
+1. Le viewfinder change : rectangle plus large (ratio 3:2), texte sous le viewfinder devient "Photographiez la liste d'ingrédients"
+2. Un bouton circulaire doré apparaît centré en bas (60px, fond accent, icône caméra blanche) — c'est le shutter
+3. Au tap : prise de photo + animation flash doux (overlay blanc 0.3s opacity 0→0.5→0) + haptic Light
+
+ÉCRAN REVIEW (app/ocr-review.tsx) :
+- Image capturée en haut (height 250, resizeMode contain, zoomable avec PinchGestureHandler si possible, sinon fixe)
+- Sous l'image : "Texte détecté" labelLarge
+- TextInput multiline scrollable avec le texte OCR extrait (fond surfaceElevated, radius md, padding 16, border borderLight, min height 120)
+- L'utilisatrice peut corriger le texte manuellement
+- Input "Nom du produit" (text, placeholder "Ex: Crème hydratante Nivea")
+- Input "Marque" (text, optionnel)
+- Picker catégorie : "Cosmétique" / "Soin corps" / "Cheveux" / "Maquillage" / "Autre"
+- Bouton "Analyser" primary pleine largeur
+
+AU TAP ANALYSER :
+- Le texte est parsé par parseINCI → matchIngredients → getVerdict
+- Navigation vers l'écran verdict avec un badge spécial "Analysé par lecture d'ingrédients" (fond accentLight, texte accent)
+- Le produit est sauvegardé dans Supabase products avec source='community', verified=false
+
+lib/ocr.ts :
+- processOCRImage(imageUri: string): Promise<string> — envoie l'image à Google Vision API (ou ML Kit), retourne le texte brut
+- cleanOCRText(rawText: string): string — nettoie retours à la ligne, corrige erreurs OCR courantes INCI (ex: "AOUA"→"AQUA", "0"→"O")
+- parseINCI(cleanedText: string): string[] — parse le format INCI (virgules, parenthèses) en tableau
+
+GESTION ERREURS :
+- Rien détecté : Card avec icône warning ambre + "Nous n'avons pas pu lire le texte. Essayez avec plus de lumière ou un angle différent." + bouton "Réessayer"
+- < 3 ingrédients : warning "Seuls X ingrédients détectés. Vous pouvez corriger le texte ci-dessus."

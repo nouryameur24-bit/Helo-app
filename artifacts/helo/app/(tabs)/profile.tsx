@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
   Platform,
@@ -49,6 +50,7 @@ function SettingRow({ icon, title, subtitle, onPress, danger }: SettingRowProps)
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
 
@@ -120,9 +122,11 @@ export default function ProfileScreen() {
           <Card padding={0} style={styles.settingGroup}>
             <SettingRow icon="bell" title="Notifications" />
             <Divider />
-            <SettingRow icon="shield" title="Confidentialité" />
+            <SettingRow icon="file-text" title="Mentions légales" onPress={() => router.push('/legal/terms')} />
             <Divider />
-            <SettingRow icon="info" title="Méthodologie" subtitle="Sources & données" />
+            <SettingRow icon="shield" title="Politique de confidentialité" onPress={() => router.push('/legal/privacy')} />
+            <Divider />
+            <SettingRow icon="info" title="Notre méthodologie" subtitle="Sources & données" onPress={() => router.push('/methodology')} />
             <Divider />
             <SettingRow icon="help-circle" title="Aide & support" />
           </Card>

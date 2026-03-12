@@ -23,9 +23,11 @@ A luxury pregnancy product scanner app ("Yuka for pregnancy"). Design: Luxe & Se
 
 - **Stack**: Expo SDK 54, Expo Router (file-based), TypeScript, React Native Reanimated, Plus Jakarta Sans
 - **Design system**: `constants/theme.ts` — Colors, Typography, Spacing, Radius, Shadows
-- **Disclaimers**: `constants/disclaimers.ts` — Medical disclaimer constants
+- **Disclaimers**: `constants/disclaimers.ts` — Medical disclaimer constants (re-exported via `constants/legalTexts.ts`)
 - **UI components**: `components/ui/` — Button, Card, Badge, ThemedText, SafeAreaContainer, Divider, IconButton
+- **Legal components**: `components/DisclaimerModal.tsx` (first-launch bottom-sheet), `components/ScanDisclaimerBanner.tsx` (collapsible scan banner)
 - **Screens**: Home, Scan, History, Profile tabs
+- **Legal pages**: `app/methodology.tsx`, `app/legal/terms.tsx` (CGU), `app/legal/privacy.tsx` (GDPR privacy policy)
 
 ## Structure
 

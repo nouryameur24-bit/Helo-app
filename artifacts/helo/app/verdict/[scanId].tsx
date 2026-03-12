@@ -5,6 +5,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
+import { ScanDisclaimerBanner } from '@/components/ScanDisclaimerBanner';
 import { Button } from '@/components/ui/Button';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
@@ -141,6 +142,10 @@ export default function VerdictScreen() {
             <Button variant="primary" fullWidth onPress={() => router.back()}>
               Scanner un autre produit
             </Button>
+          </View>
+
+          <View style={{ width: '100%', marginTop: Spacing.lg }}>
+            <ScanDisclaimerBanner />
           </View>
         </Animated.View>
       )}

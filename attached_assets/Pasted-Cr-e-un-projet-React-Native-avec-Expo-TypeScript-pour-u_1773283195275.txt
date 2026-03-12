@@ -1,0 +1,53 @@
+Crée un projet React Native avec Expo (TypeScript) pour une app mobile appelée "Hēlo" — un scanner de produits pour femmes enceintes, style "Yuka de la grossesse". Le design est Luxe & Serene : tons nude, crème, touches dorées, inspiré des marques skincare haut de gamme. Élégant, apaisant, jamais infantilisant.
+
+SETUP :
+- Expo SDK latest avec TypeScript strict
+- expo-router pour la navigation file-based
+- Structure : app/ (routes), components/ui/ (design system), constants/ (tokens), hooks/, lib/, types/, assets/
+- Dépendances : react-native-reanimated, expo-haptics, expo-linear-gradient, @expo-google-fonts/plus-jakarta-sans
+
+DESIGN SYSTEM — Crée constants/theme.ts :
+
+COULEURS :
+background: '#FFFAF5' (crème chaud), backgroundSecondary: '#FFF5EE', surface: '#FFFFFF', surfaceElevated: '#FFFCF9'
+textPrimary: '#2D2926' (brun profond), textSecondary: '#8C7E75' (taupe), textTertiary: '#B8ADA6'
+accent: '#C9A96E' (or doux — couleur signature), accentLight: '#E8D5B0', accentDark: '#A88B4A'
+safe: '#7CB69F' (vert sauge), safeLight: '#E8F5EE', safeBg: '#F2FAF5'
+caution: '#D4A853' (ambre doré), cautionLight: '#FFF3D6', cautionBg: '#FFFBF0'
+danger: '#C27B7B' (rouge rosé), dangerLight: '#FCEAEA', dangerBg: '#FFF5F5'
+border: '#EDE7E1', borderLight: '#F5F0EB'
+shadow: 'rgba(45, 41, 38, 0.06)', overlay: 'rgba(45, 41, 38, 0.4)'
+
+TYPOGRAPHIE (Plus Jakarta Sans) :
+displayLarge: 34px/700/-0.5, displayMedium: 28px/700/-0.3, headlineLarge: 24px/600/-0.2, headlineMedium: 20px/600, bodyLarge: 17px/400/lh26, bodyMedium: 15px/400/lh22, bodySmall: 13px/400/lh18, labelLarge: 15px/600/ls0.3, labelSmall: 11px/600/ls0.5/uppercase
+
+SPACING: 4,8,12,16,20,24,32,40,48,64
+RADIUS: sm:8, md:12, lg:16, xl:24, full:9999
+SHADOWS: soft(opacity0.04/radius8), medium(0.08/16), elevated(0.12/24)
+
+COMPOSANTS UI dans components/ui/ :
+
+1. Button.tsx — 3 variantes :
+   - primary: fond accent doré, texte blanc, radius xl, padding 16x48. Animation Reanimated scale 0.97 au press. Haptic feedback Light.
+   - secondary: fond transparent, border 1.5px accent, texte accent
+   - ghost: texte textSecondary
+   Props: variant, onPress, disabled, loading, fullWidth, children
+
+2. Card.tsx — fond surface, radius lg, shadow soft, padding 20. Variante "elevated" avec shadow medium.
+
+3. Badge.tsx — badge coloré (safe/caution/danger/accent). Radius full, padding 4x12.
+
+4. Text.tsx — wrapper typo avec prop "variant" (displayLarge, bodyMedium, etc.) + prop "color".
+
+5. SafeAreaContainer.tsx — safe areas + background color.
+
+6. Divider.tsx — 1px couleur border.
+
+7. IconButton.tsx — bouton circulaire icône, fond surfaceElevated, shadow soft.
+
+Crée aussi constants/disclaimers.ts avec :
+GENERAL_DISCLAIMER: "Hēlo est un outil d'information et ne constitue en aucun cas un avis médical. Les informations fournies sont basées sur des données scientifiques publiquement disponibles et ne remplacent pas la consultation d'un professionnel de santé. Consultez systématiquement votre médecin, sage-femme ou pharmacien avant de modifier vos habitudes de consommation pendant la grossesse."
+SCAN_DISCLAIMER: "Cette évaluation est fournie à titre informatif uniquement. Elle est basée sur l'analyse des ingrédients déclarés et les données scientifiques disponibles à ce jour. Elle ne constitue pas un diagnostic médical ni une recommandation de santé."
+METHODOLOGY_DISCLAIMER: "Notre évaluation repose sur le croisement des ingrédients identifiés avec une base de données compilée à partir de sources médicales reconnues (OMS, ANSM, HAS, littérature scientifique peer-reviewed). Les niveaux de signalement reflètent l'état actuel des connaissances et peuvent évoluer."
+
+Crée l'écran d'accueil app/index.tsx avec "Hēlo" centré en displayLarge couleur accent sur fond background. Vérifie que tout compile.

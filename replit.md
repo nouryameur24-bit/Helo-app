@@ -16,6 +16,17 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Artifacts
+
+### `artifacts/helo` — Hēlo Mobile App (Expo)
+A luxury pregnancy product scanner app ("Yuka for pregnancy"). Design: Luxe & Serene with warm nude/cream/gold tones.
+
+- **Stack**: Expo SDK 54, Expo Router (file-based), TypeScript, React Native Reanimated, Plus Jakarta Sans
+- **Design system**: `constants/theme.ts` — Colors, Typography, Spacing, Radius, Shadows
+- **Disclaimers**: `constants/disclaimers.ts` — Medical disclaimer constants
+- **UI components**: `components/ui/` — Button, Card, Badge, ThemedText, SafeAreaContainer, Divider, IconButton
+- **Screens**: Home, Scan, History, Profile tabs
+
 ## Structure
 
 ```text

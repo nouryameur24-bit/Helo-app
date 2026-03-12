@@ -1,0 +1,1375 @@
+# HĒLO — PLAN DE BUILD COMPLET
+## Optimisé pour Replit Agent 4
+## 26 Prompts Copy-Paste • Prêts à l'emploi
+
+---
+
+# COMMENT UTILISER CE DOCUMENT
+
+1. Ouvre Replit, crée un nouveau projet
+2. Copie-colle le Prompt 1 dans l'Agent
+3. Attends qu'il finisse, vérifie que ça marche
+4. Passe au prompt suivant
+
+AVEC AGENT 4 — GROUPES PARALLÈLES :
+Tu peux lancer plusieurs prompts en même temps dans des threads séparés.
+Les groupes parallèles sont indiqués par ⚡ PARALLEL GROUP.
+
+ORDRE D'EXÉCUTION :
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SEMAINE 1 :
+  → Prompt 1 (seul, en premier)
+  → ⚡ Prompt 2 + Prompt 3 (en parallèle)
+  → ⚡ Prompt 4 + Prompt 5 (en parallèle)
+  → ⚡ Prompt 6 + Prompt 8 (en parallèle)
+  → Prompt 7 (après 6)
+SEMAINE 2 :
+  → ⚡ Prompt 9 + Prompt 10 + Prompt 11 (en parallèle)
+  → ⚡ Prompt 12 + Prompt 13 (en parallèle)
+  → ⚡ Prompt 14 + Prompt 15 + Prompt 16 (en parallèle)
+SEMAINE 3 :
+  → ⚡ Prompt 17 + Prompt 18 + Prompt 19 (en parallèle)
+  → ⚡ Prompt 20 + Prompt 21 (en parallèle)
+  → ⚡ Prompt 22 + Prompt 23 (en parallèle)
+  → Prompt 26 (Mode Restaurant)
+SEMAINE 4 :
+  → Prompt 24 (Polish global)
+  → Prompt 25 (App Store)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+IMPORTANT AVANT DE COMMENCER :
+- Crée un compte Supabase (gratuit) sur supabase.com
+- Note ton SUPABASE_URL et SUPABASE_ANON_KEY
+- Crée un compte Apple Developer ($99/an) si pas déjà fait
+- Installe Expo Go sur ton téléphone pour tester
+
+---
+---
+---
+
+# PROMPT 1 — Design System & Setup
+# ⏱ Lancer en premier, seul
+
+```
+Crée un projet React Native avec Expo (TypeScript) pour une app mobile appelée "Hēlo" — un scanner de produits pour femmes enceintes, style "Yuka de la grossesse". Le design est Luxe & Serene : tons nude, crème, touches dorées, inspiré des marques skincare haut de gamme. Élégant, apaisant, jamais infantilisant.
+
+SETUP :
+- Expo SDK latest avec TypeScript strict
+- expo-router pour la navigation file-based
+- Structure : app/ (routes), components/ui/ (design system), constants/ (tokens), hooks/, lib/, types/, assets/
+- Dépendances : react-native-reanimated, expo-haptics, expo-linear-gradient, @expo-google-fonts/plus-jakarta-sans
+
+DESIGN SYSTEM — Crée constants/theme.ts :
+
+COULEURS :
+background: '#FFFAF5' (crème chaud), backgroundSecondary: '#FFF5EE', surface: '#FFFFFF', surfaceElevated: '#FFFCF9'
+textPrimary: '#2D2926' (brun profond), textSecondary: '#8C7E75' (taupe), textTertiary: '#B8ADA6'
+accent: '#C9A96E' (or doux — couleur signature), accentLight: '#E8D5B0', accentDark: '#A88B4A'
+safe: '#7CB69F' (vert sauge), safeLight: '#E8F5EE', safeBg: '#F2FAF5'
+caution: '#D4A853' (ambre doré), cautionLight: '#FFF3D6', cautionBg: '#FFFBF0'
+danger: '#C27B7B' (rouge rosé), dangerLight: '#FCEAEA', dangerBg: '#FFF5F5'
+border: '#EDE7E1', borderLight: '#F5F0EB'
+shadow: 'rgba(45, 41, 38, 0.06)', overlay: 'rgba(45, 41, 38, 0.4)'
+
+TYPOGRAPHIE (Plus Jakarta Sans) :
+displayLarge: 34px/700/-0.5, displayMedium: 28px/700/-0.3, headlineLarge: 24px/600/-0.2, headlineMedium: 20px/600, bodyLarge: 17px/400/lh26, bodyMedium: 15px/400/lh22, bodySmall: 13px/400/lh18, labelLarge: 15px/600/ls0.3, labelSmall: 11px/600/ls0.5/uppercase
+
+SPACING: 4,8,12,16,20,24,32,40,48,64
+RADIUS: sm:8, md:12, lg:16, xl:24, full:9999
+SHADOWS: soft(opacity0.04/radius8), medium(0.08/16), elevated(0.12/24)
+
+COMPOSANTS UI dans components/ui/ :
+
+1. Button.tsx — 3 variantes :
+   - primary: fond accent doré, texte blanc, radius xl, padding 16x48. Animation Reanimated scale 0.97 au press. Haptic feedback Light.
+   - secondary: fond transparent, border 1.5px accent, texte accent
+   - ghost: texte textSecondary
+   Props: variant, onPress, disabled, loading, fullWidth, children
+
+2. Card.tsx — fond surface, radius lg, shadow soft, padding 20. Variante "elevated" avec shadow medium.
+
+3. Badge.tsx — badge coloré (safe/caution/danger/accent). Radius full, padding 4x12.
+
+4. Text.tsx — wrapper typo avec prop "variant" (displayLarge, bodyMedium, etc.) + prop "color".
+
+5. SafeAreaContainer.tsx — safe areas + background color.
+
+6. Divider.tsx — 1px couleur border.
+
+7. IconButton.tsx — bouton circulaire icône, fond surfaceElevated, shadow soft.
+
+Crée aussi constants/disclaimers.ts avec :
+GENERAL_DISCLAIMER: "Hēlo est un outil d'information et ne constitue en aucun cas un avis médical. Les informations fournies sont basées sur des données scientifiques publiquement disponibles et ne remplacent pas la consultation d'un professionnel de santé. Consultez systématiquement votre médecin, sage-femme ou pharmacien avant de modifier vos habitudes de consommation pendant la grossesse."
+SCAN_DISCLAIMER: "Cette évaluation est fournie à titre informatif uniquement. Elle est basée sur l'analyse des ingrédients déclarés et les données scientifiques disponibles à ce jour. Elle ne constitue pas un diagnostic médical ni une recommandation de santé."
+METHODOLOGY_DISCLAIMER: "Notre évaluation repose sur le croisement des ingrédients identifiés avec une base de données compilée à partir de sources médicales reconnues (OMS, ANSM, HAS, littérature scientifique peer-reviewed). Les niveaux de signalement reflètent l'état actuel des connaissances et peuvent évoluer."
+
+Crée l'écran d'accueil app/index.tsx avec "Hēlo" centré en displayLarge couleur accent sur fond background. Vérifie que tout compile.
+```
+
+---
+
+# PROMPT 2 — Onboarding
+# ⚡ PARALLEL GROUP A (avec Prompt 3)
+
+```
+Ajoute un flow d'onboarding à l'app Hēlo. 4 écrans swipeable + écran profil.
+
+ÉCRANS ONBOARDING (FlatList horizontal pagingEnabled) :
+
+Écran 1 — "Scannez en toute sérénité"
+Illustration SVG minimaliste (téléphone avec aura dorée). Sous-titre : "Cosmétiques, alimentation, médicaments — vérifiez instantanément ce qui est adapté à votre grossesse."
+
+Écran 2 — "Adapté à votre trimestre"
+Illustration SVG (3 cercles T1/T2/T3). Sous-titre : "Les recommandations évoluent avec vous. Hēlo ajuste automatiquement chaque évaluation."
+
+Écran 3 — "Votre Glow Score"
+Illustration SVG (score circulaire doré). Sous-titre : "Découvrez votre score global de sérénité et partagez-le avec vos proches."
+
+Écran 4 — "Ensemble, c'est mieux"
+Illustration SVG (silhouettes connectées). Sous-titre : "Rejoignez des milliers de futures mamans qui font les meilleurs choix pour leur bébé."
+
+CHAQUE ÉCRAN : titre en headlineLarge, sous-titre en bodyLarge textSecondary, animation Reanimated fadeIn + translateY 20→0 en 300ms easing cubic out.
+NAVIGATION : dots (accent actif, borderLight inactif), bouton "Suivant" primary → "Commencer" au dernier, "Passer" ghost en haut droite.
+
+ÉCRAN PROFIL (app/onboarding/profile.tsx) :
+- Titre "Parlons de vous" headlineLarge
+- Input "Prénom" (border accent au focus, radius md, padding 16)
+- DatePicker "Date prévue d'accouchement"
+- Calcul auto du trimestre → Badge
+- 3 chips multi-select : "Cosmétiques & soins", "Alimentation", "Médicaments" (fond accentLight + texte accent quand sélectionné)
+- Bouton "Créer mon profil" primary pleine largeur
+- GENERAL_DISCLAIMER en bodySmall textTertiary sous le bouton
+- Persister onboarding_completed dans AsyncStorage
+
+Illustrations SVG : style editorial minimaliste en tons accent/accentLight/border. PAS de clipart/cartoon. Utilise tous les composants UI du design system.
+```
+
+---
+
+# PROMPT 3 — Supabase Backend
+# ⚡ PARALLEL GROUP A (avec Prompt 2)
+
+```
+Configure Supabase comme backend pour l'app Hēlo. Installe @supabase/supabase-js.
+
+Crée lib/supabase.ts : client Supabase avec variables d'env EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY, persistence AsyncStorage.
+
+Crée le schema SQL complet (supabase/schema.sql) :
+
+TABLE profiles :
+id (uuid PK FK auth.users), first_name (text), due_date (date), current_trimester (int 1-3), concerns (text[] ex: ['cosmetics','food','medication']), is_premium (boolean default false), partner_code (text unique 6 chars auto), linked_partner_id (uuid nullable FK profiles), disclaimer_accepted (boolean default false), created_at (timestamptz), updated_at (timestamptz)
+
+TABLE ingredients :
+id (uuid PK), name (text unique), name_inci (text nullable), synonyms (text[]), category (text: 'cosmetic'/'food'/'medication'), risk_level_t1 (text: 'safe'/'caution'/'danger'), risk_level_t2 (text), risk_level_t3 (text), risk_level_breastfeeding (text), description_fr (text), source (text), source_url (text nullable), created_at (timestamptz)
+
+TABLE products :
+id (uuid PK), barcode (text unique nullable), name (text), brand (text nullable), category (text), image_url (text nullable), ingredients_raw (text), ingredient_ids (uuid[]), source (text: 'openfoodfacts'/'community'/'manual'), verified (boolean default false), created_at (timestamptz)
+
+TABLE scans :
+id (uuid PK), user_id (uuid FK profiles), product_id (uuid FK products), trimester_at_scan (int), verdict (text: 'safe'/'caution'/'danger'), flagged_ingredients (jsonb), in_shelf (boolean default false), shelf_category (text nullable: 'bathroom'/'kitchen'/'pharmacy'), scanned_at (timestamptz default now())
+
+TABLE community_submissions :
+id (uuid PK), submitted_by (uuid FK profiles), barcode (text nullable), product_name (text), ingredients_photo_url (text nullable), ingredients_text (text nullable), status (text: 'pending'/'approved'/'rejected' default 'pending'), created_at (timestamptz)
+
+Row Level Security :
+- profiles: users read/update their own
+- scans: users read/insert their own
+- ingredients: all authenticated can read
+- products: all authenticated can read
+- community_submissions: insert own, read all where status='approved'
+
+Crée lib/auth.ts : signUp(email, password, firstName, dueDate, concerns), signIn(email, password), signOut(), getCurrentUser(), updateProfile(updates)
+
+Crée hooks/useAuth.ts : expose user, profile, loading, signUp, signIn, signOut
+
+Mets les variables dans .env avec des placeholders.
+```
+
+---
+
+# PROMPT 4 — Base de Données Ingrédients
+# ⚡ PARALLEL GROUP B (avec Prompt 5)
+
+```
+Crée la base complète d'ingrédients pour l'app Hēlo — le cœur de la valeur de l'app.
+
+Crée supabase/seed-ingredients.sql avec INSERT pour 50 ingrédients répartis en 3 catégories.
+
+COSMÉTIQUES (20 ingrédients) :
+DANGER (10) : Rétinol/Trétinoïne (INCI: Retinol, Retinal, Tretinoin — tératogène, source FDA/ANSM), Isotrétinoïne (tératogène majeur), Hydroquinone (absorption systémique), Formaldéhyde + libérateurs (DMDM Hydantoin, Quaternium-15, Imidazolidinyl Urea — cancérigène), Phtalates (DEP, DBP — perturbateurs endocriniens), Mercure/Thimérosal (neurotoxique), Plomb/Lead Acetate (neurotoxique), Toluène (neurotoxique, vernis), Camphre >11% (toxique), Acide salicylique >2% (risque haute dose)
+
+PRÉCAUTION (10) : Acide salicylique <2%/BHA, Acide glycolique/AHA, Peroxyde de benzoyle, Huiles essentielles (globalement), Parabènes (Methylparaben, Propylparaben, Butylparaben), Filtres UV chimiques (Oxybenzone, Octinoxate, Homosalate), Triclosan, Aluminium (Aluminum Chlorohydrate), Ammoniaque (colorations), PPD (p-Phenylenediamine)
+
+ALIMENTATION (18 ingrédients) :
+DANGER (10) : Alcool (aucune dose sûre, source OMS), Fromages au lait cru (listeria, source ANSES), Viande crue/peu cuite (toxoplasmose, source CRAT), Charcuterie crue (toxoplasmose+listeria), Poissons à mercure élevé (espadon/requin/marlin/thon rouge), Foie/pâté de foie (vitamine A excès), Lait cru non pasteurisé (listeria), Coquillages crus (bactérien), Tartare/Carpaccio, Sushi poisson cru
+
+PRÉCAUTION (8) : Caféine (max 200mg/jour, source OMS), Thon en conserve (mercure modéré, 1-2x/semaine), Saumon fumé (listeria si non pasteurisé), Œufs crus/mal cuits (salmonellose), Germes/pousses crues, Réglisse en quantité (glycyrrhizine), Édulcorants artificiels (saccharine, cyclamate), Soja en excès (phytoestrogènes)
+
+MÉDICAMENTS (12 ingrédients) :
+DANGER (6) : Ibuprofène/Advil/Nurofen (AINS, T1/T2=danger T3=danger critique, source CRAT), Aspirine haute dose >100mg (hémorragique, T3=danger), Misoprostol (contre-indiqué formel), Méthotrexate (tératogène majeur), Kétoprofène/Kétum (AINS), Diclofénac/Voltarène (AINS, T3=danger)
+
+PRÉCAUTION (6) : Aspirine faible dose <100mg (parfois prescrite pré-éclampsie), Diphenhydramine (données limitées), Pseudoéphédrine (vasoconstricteur), Bismuth subsalicylate/Pepto-Bismol, Millepertuis (interactions), Mélatonine (données insuffisantes)
+
+POUR CHAQUE INGRÉDIENT inclure :
+- name, name_inci, synonyms (text[]), category
+- risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding (PEUVENT DIFFÉRER entre trimestres !)
+- description_fr : 2-3 phrases vulgarisées, RASSURANTES, expliquant POURQUOI c'est signalé. JAMAIS alarmiste. Toujours finir par "Consultez votre professionnel de santé pour un avis personnalisé."
+- source : ANSM, OMS, HAS, CRAT, ANSES, FDA
+- source_url quand disponible
+
+Crée aussi supabase/seed-products.sql avec 20 produits courants français : Nivea Crème Soft, Mustela Gel Lavant, Bioderma Sensibio H2O, Garnier Micellair, Mixa Crème Visage, Nuxe Huile Prodigieuse, La Roche-Posay Effaclar, Klorane Shampooing, Dove Gel Douche, L'Oréal Elseve Shampooing, plus 10 produits alimentaires courants (Président Camembert, Fleury Michon Jambon, etc.) avec leurs ingrédients mappés.
+```
+
+---
+
+# PROMPT 5 — Open Food Facts
+# ⚡ PARALLEL GROUP B (avec Prompt 4)
+
+```
+Intègre l'API Open Food Facts dans l'app Hēlo pour rechercher les produits alimentaires par code-barres.
+
+Crée lib/openfoodfacts.ts :
+
+1. fetchProductByBarcode(barcode: string): Promise<ProductData | null>
+   - GET https://world.openfoodfacts.org/api/v2/product/{barcode}.json
+   - Extraire : product_name, brands, image_url, ingredients_text_fr (ou ingredients_text)
+   - Gestion d'erreurs : 404 (produit non trouvé), timeout 10s, erreur réseau
+   - Type retour : { name, brand, imageUrl, ingredientsRaw, ingredientsList }
+
+2. parseIngredients(ingredientsText: string): string[]
+   - Parser le format OFF : virgules, parenthèses (sous-ingrédients), pourcentages
+   - Normaliser : lowercase, trim, supprimer pourcentages, supprimer sous-éléments entre parenthèses
+   - Retourner tableau propre
+
+3. matchIngredients(ingredientsList: string[], trimester: number): Promise<MatchResult[]>
+   - Pour chaque ingrédient, chercher dans Supabase "ingredients" par name ILIKE ou ANY(synonyms) ILIKE
+   - Retourner : { ingredientName, matched: boolean, ingredient?: IngredientData, riskLevel?: string }
+   - Non matchés : riskLevel = 'no_signal' (PAS "unknown" — formulation neutre)
+
+4. getVerdict(matches: MatchResult[]): VerdictResult
+   - Si au moins un 'danger' → verdict 'danger'
+   - Si au moins un 'caution' sans danger → verdict 'caution'
+   - Sinon → verdict 'safe'
+   - Retourner : { verdict, flaggedIngredients (danger+caution), noSignalCount }
+
+Crée hooks/useScan.ts :
+- State : loading, product, verdict, error
+- scanBarcode(barcode: string) : orchestre fetch OFF → parse → match → verdict
+- Cache AsyncStorage par barcode (si déjà scanné, retourner en cache)
+
+Crée un écran test temporaire app/test-scan.tsx avec un input pour taper un code-barres et voir le résultat. Utilise Card, Badge, Text du design system.
+```
+
+---
+
+# PROMPT 6 — Scanner Camera
+# ⚡ PARALLEL GROUP C (avec Prompt 8)
+
+```
+Crée l'écran principal de scan caméra de l'app Hēlo.
+
+Installe expo-camera (CameraView avec barcode scanning intégré).
+
+ÉCRAN app/(tabs)/scan.tsx :
+
+LAYOUT :
+- Caméra plein écran en arrière-plan
+- Overlay semi-transparent (couleur overlay du thème) avec découpe rectangulaire au centre (viewfinder)
+- Le viewfinder a un border animé doré (accent) qui pulse doucement (opacité 0.5→1→0.5, boucle 2s, Reanimated withRepeat + withTiming)
+- 4 coins du viewfinder : angles dorés plus épais (L-shapes, 3px, 20px de long) style cadre photo premium
+
+ÉLÉMENTS UI :
+- Haut : StatusBar light + titre "Scanner" labelLarge blanc + bouton flash toggle (IconButton blanc)
+- Sous le viewfinder : "Placez le code-barres dans le cadre" bodySmall blanc, fond noir 40% opacity, radius full, padding 8x16
+- Bas de l'écran : 3 chips de mode en row :
+  * "Code-barres" (actif par défaut, fond accent, texte blanc)
+  * "Ingrédients" (pour OCR, prompt 9, fond surface 80%, texte textPrimary)
+  * "Menu" (pour mode restaurant, prompt 26, fond surface 80%, texte textPrimary)
+
+COMPORTEMENT :
+- Détection auto : EAN-13, EAN-8, UPC-A, UPC-E, Code128
+- Quand code-barres détecté :
+  1. Haptic ImpactFeedbackStyle.Medium
+  2. Les 4 coins dorés flash en safe (#7CB69F) pendant 0.3s
+  3. Navigation vers l'écran verdict avec le barcode en param
+  4. Anti-spam : ignorer le même code pendant 3 secondes (useRef + setTimeout)
+- Scanner actif seulement quand écran focused (useIsFocused de @react-navigation/native)
+- Permission caméra : si pas accordée, afficher un écran élégant (icône caméra dorée, "Hēlo a besoin d'accéder à votre caméra pour scanner vos produits", bouton "Autoriser" primary qui déclenche requestCameraPermissionsAsync)
+
+TAB BAR : cet écran est l'onglet central de la tab bar (les autres tabs seront Accueil et Profil). L'onglet scan doit ouvrir DIRECTEMENT sur la caméra, zéro écran intermédiaire.
+
+Toutes animations = Reanimated (useSharedValue, useAnimatedStyle, withRepeat, withTiming).
+```
+
+---
+
+# PROMPT 7 — Verdict Screen
+# ⏱ Après Prompt 6
+
+```
+Crée l'écran de verdict post-scan de l'app Hēlo — l'écran le plus important de l'app. Il doit être MAGNIFIQUE et émotionnellement satisfaisant.
+
+ÉCRAN app/verdict/[scanId].tsx (reçoit le barcode en param) :
+
+AU MONTAGE : appeler useScan.scanBarcode(barcode) pour obtenir le produit et le verdict.
+
+PENDANT LE CHARGEMENT : écran avec fond background, animation d'un cercle doré qui pulse au centre, texte "Analyse en cours..." bodyMedium textSecondary.
+
+ANIMATION D'ENTRÉE DU RÉSULTAT (séquence 1.5s avec Reanimated) :
+Phase 1 (0-0.5s) : Un cercle vide apparaît au centre (strokeWidth 8, rayon 60).
+Phase 2 (0.5-1.2s) : Le cercle se remplit progressivement avec la couleur du verdict (safe=#7CB69F / caution=#D4A853 / danger=#C27B7B). Le stroke se dessine en arc de 0° à 360° (animated SVG circle strokeDashoffset). Le score numérique apparaît au centre en displayLarge avec fade in.
+Phase 3 (1.2-1.5s) : Le texte verdict apparaît sous le cercle : "Compatible" (safe) / "Précaution" (caution) / "À éviter" (danger) avec fade + translateY.
+Haptic : safe=NotificationFeedbackType.Success, caution=Warning, danger=Error
+
+LAYOUT APRÈS ANIMATION (ScrollView) :
+
+SECTION HERO (haut) :
+- Fond : LinearGradient du verdictBg (safeBg/cautionBg/dangerBg) → background
+- Cercle de score centré
+- Image du produit si disponible (40x40, radius md, à gauche du nom)
+- Nom du produit headlineMedium
+- Marque bodyMedium textSecondary
+- Badge "Évalué pour votre Xème trimestre" (Badge component, couleur accent)
+
+SECTION INGRÉDIENTS :
+- Titre "Ingrédients analysés" headlineMedium, marginTop 24
+- Liste de cartes, chacune (Card component) :
+  * Row : dot coloré (8px, borderRadius full, couleur du risque) + nom en bodyLarge + Badge risque à droite
+  * Sous le nom : description en bodySmall textSecondary, 2 lignes max
+  * Au tap : expand avec description complète + source + source_url
+  * Les ingrédients sont triés : danger → caution → safe → no_signal
+- Section séparée pour les no_signal : "Aucun signalement connu" en textTertiary, liste simple des noms
+
+SECTION DISCLAIMER :
+- Divider marginVertical 16
+- SCAN_DISCLAIMER en bodySmall textTertiary
+- Lien "Notre méthodologie →" qui navigue vers app/methodology.tsx
+
+BOTTOM BAR (position absolute, bas, fond surface, shadow medium, padding 16, borderRadius top xl) :
+- Si verdict caution ou danger :
+  * Bouton "Voir les alternatives" primary
+  * Bouton "Ajouter au placard" secondary
+- Si verdict safe :
+  * Bouton "Ajouter au placard" primary pleine largeur
+- Row d'icônes : partager (IconButton) + scanner un autre (IconButton)
+
+AJOUTER AU PLACARD :
+- Au tap, ouvrir un bottom sheet avec 3 choix : "Salle de bain" / "Cuisine" / "Pharmacie" (3 boutons avec icônes)
+- Au choix : sauvegarder le scan dans Supabase avec in_shelf=true et shelf_category
+- Animation : checkmark doré qui scale de 0 à 1 avec spring + haptic Success
+- Toast "Ajouté à votre placard ✓" en haut
+
+Le scroll doit être fluide. Toutes animations Reanimated.
+```
+
+---
+
+# PROMPT 8 — Disclaimers System
+# ⚡ PARALLEL GROUP C (avec Prompt 6)
+
+```
+Crée le système complet de disclaimers juridiques de l'app Hēlo. CRITIQUE pour une app grossesse.
+
+1. MODAL PREMIER LANCEMENT (components/DisclaimerModal.tsx) :
+- S'affiche au premier lancement après l'onboarding (vérifie AsyncStorage "disclaimer_accepted")
+- Bottom sheet style : fond surface, borderRadius top xl, padding 24
+- Icône bouclier dorée (SVG simple) centrée en haut
+- "Avant de commencer" headlineLarge
+- GENERAL_DISCLAIMER en bodyMedium, textPrimary
+- 4 points résumés avec petites icônes dorées à gauche :
+  • "Hēlo est un outil d'information"
+  • "Nos évaluations ne remplacent pas un avis médical"
+  • "Consultez toujours votre professionnel de santé"
+  • "Données issues de sources médicales reconnues"
+- Checkbox custom (carré arrondi, accent quand coché) + texte "J'ai lu et compris ces informations"
+- Bouton "J'ai compris, commencer" primary pleine largeur (DISABLED tant que checkbox pas coché, opacité 0.5)
+- Au tap : persister dans AsyncStorage + mettre à jour profil Supabase disclaimer_accepted=true
+
+2. BANNER DISCLAIMER SCAN (components/ScanDisclaimerBanner.tsx) :
+- Composant réutilisable à placer en bas de chaque verdict
+- État collapsed : icône info (petit cercle, textTertiary) + "Évaluation à titre informatif" bodySmall textTertiary
+- Au tap : expand avec SCAN_DISCLAIMER complet + lien "Notre méthodologie"
+- Animation expand/collapse avec Reanimated (height animée)
+
+3. PAGE MÉTHODOLOGIE (app/methodology.tsx) :
+ScrollView avec sections :
+- "Comment fonctionne Hēlo" : explication scan → identification ingrédients → croisement base → verdict
+- "Nos sources" : liste avec liens — ANSM (ansm.sante.fr), OMS, HAS (has-sante.fr), CRAT (lecrat.fr), ANSES (anses.fr), FDA
+- "Nos niveaux d'évaluation" :
+  • Compatible (vert) : "Aucun ingrédient signalé comme préoccupant pour votre trimestre"
+  • Précaution (ambre) : "Un ou plusieurs ingrédients méritent attention. Consultez votre professionnel de santé"
+  • À éviter (rouge rosé) : "Un ou plusieurs ingrédients sont déconseillés pendant la grossesse selon les données disponibles"
+- "Adaptation par trimestre" : les risques varient, l'app recalcule
+- "Ce que Hēlo ne fait pas" : ne pose pas de diagnostic, ne prescrit pas, ne remplace pas un médecin
+- "Mise à jour" : veille scientifique continue
+- Footer : METHODOLOGY_DISCLAIMER
+
+4. CGU (app/legal/terms.tsx) : page scrollable texte juridique — outil d'information (pas dispositif médical), limitation responsabilité, PI, RGPD, conditions premium, rétractation. Français clair.
+
+5. PRIVACY (app/legal/privacy.tsx) : conforme RGPD — données collectées (email, prénom, DPA, scans), finalité, durée conservation (3 ans après dernier accès), droits (accès, rectification, suppression, portabilité), pas de vente données, hébergement Supabase (serveurs UE).
+
+Tous les textes : français clair, ton rassurant et transparent. Utiliser les composants UI du design system.
+```
+
+---
+
+# PROMPT 9 — OCR Scan
+# ⚡ PARALLEL GROUP D (avec Prompt 10 + 11)
+
+```
+Ajoute le mode scan OCR à l'app Hēlo pour analyser les listes d'ingrédients cosmétiques sans code-barres.
+
+Utilise expo-camera pour la capture photo + une solution OCR (Google Cloud Vision API via fetch, ou expo-ml-kit si disponible). Si OCR cloud, utiliser la variable d'env EXPO_PUBLIC_GOOGLE_VISION_KEY.
+
+QUAND L'UTILISATRICE SÉLECTIONNE "Ingrédients" dans les chips de l'écran scan :
+
+1. Le viewfinder change : rectangle plus large (ratio 3:2), texte sous le viewfinder devient "Photographiez la liste d'ingrédients"
+2. Un bouton circulaire doré apparaît centré en bas (60px, fond accent, icône caméra blanche) — c'est le shutter
+3. Au tap : prise de photo + animation flash doux (overlay blanc 0.3s opacity 0→0.5→0) + haptic Light
+
+ÉCRAN REVIEW (app/ocr-review.tsx) :
+- Image capturée en haut (height 250, resizeMode contain, zoomable avec PinchGestureHandler si possible, sinon fixe)
+- Sous l'image : "Texte détecté" labelLarge
+- TextInput multiline scrollable avec le texte OCR extrait (fond surfaceElevated, radius md, padding 16, border borderLight, min height 120)
+- L'utilisatrice peut corriger le texte manuellement
+- Input "Nom du produit" (text, placeholder "Ex: Crème hydratante Nivea")
+- Input "Marque" (text, optionnel)
+- Picker catégorie : "Cosmétique" / "Soin corps" / "Cheveux" / "Maquillage" / "Autre"
+- Bouton "Analyser" primary pleine largeur
+
+AU TAP ANALYSER :
+- Le texte est parsé par parseINCI → matchIngredients → getVerdict
+- Navigation vers l'écran verdict avec un badge spécial "Analysé par lecture d'ingrédients" (fond accentLight, texte accent)
+- Le produit est sauvegardé dans Supabase products avec source='community', verified=false
+
+lib/ocr.ts :
+- processOCRImage(imageUri: string): Promise<string> — envoie l'image à Google Vision API (ou ML Kit), retourne le texte brut
+- cleanOCRText(rawText: string): string — nettoie retours à la ligne, corrige erreurs OCR courantes INCI (ex: "AOUA"→"AQUA", "0"→"O")
+- parseINCI(cleanedText: string): string[] — parse le format INCI (virgules, parenthèses) en tableau
+
+GESTION ERREURS :
+- Rien détecté : Card avec icône warning ambre + "Nous n'avons pas pu lire le texte. Essayez avec plus de lumière ou un angle différent." + bouton "Réessayer"
+- < 3 ingrédients : warning "Seuls X ingrédients détectés. Vous pouvez corriger le texte ci-dessus."
+```
+
+---
+
+# PROMPT 10 — The Swap (Alternatives)
+# ⚡ PARALLEL GROUP D (avec Prompt 9 + 11)
+
+```
+Crée le système d'alternatives "The Swap" dans l'app Hēlo — quand un produit est caution/danger, proposer des alternatives safe.
+
+AJOUTER AU SCHEMA SUPABASE (ou créer via l'interface Supabase) :
+TABLE product_alternatives : id (uuid PK), source_product_id (uuid FK products), alternative_product_id (uuid FK products), category (text), price_range (text: 'budget'/'mid'/'premium'), popularity_count (int default 0), created_at (timestamptz)
+
+ÉCRAN ALTERNATIVES (app/alternatives.tsx, reçoit productId + category en params, affiché comme modal) :
+
+HEADER :
+- "Alternatives compatibles" headlineLarge
+- "Vérifiées pour votre Xème trimestre" bodyMedium textSecondary
+- Card du produit original en petit : image + nom + badge caution/danger avec une barre oblique (style "barré")
+
+SI DES ALTERNATIVES EXISTENT :
+ScrollView horizontal (pagingEnabled, snapToInterval) de cartes :
+Chaque carte (width screenWidth - 64, marginHorizontal 8) :
+- Card elevated, radius xl, padding 0 (image full width en haut)
+- Image produit (height 200, radius top xl, fond surfaceElevated si pas d'image)
+- Padding 20 pour le contenu :
+  * Nom en headlineMedium
+  * Marque en bodyMedium textSecondary
+  * Badge "Compatible ✓" safe
+  * Badge prix : "€" (budget) / "€€" (mid) / "€€€" (premium) en bodySmall
+  * "Choisi par X mamans" bodySmall textSecondary avec icône cœur accent
+  * Divider
+  * Bouton "Voir le détail" ghost → navigue vers verdict de ce produit
+  * Bouton "Ajouter à ma liste" secondary
+
+DOTS : indicateur de position (nombre de cartes)
+
+SI AUCUNE ALTERNATIVE :
+- Illustration SVG (loupe dorée)
+- "Nous recherchons des alternatives pour ce type de produit." bodyMedium textSecondary
+- "En attendant, consultez votre pharmacien pour des conseils personnalisés." bodySmall textTertiary
+- Bouton "Suggérer une alternative" ghost → ouvre un simple formulaire (nom produit + marque + catégorie → insert community_submissions)
+
+lib/alternatives.ts : getAlternatives(productId, category, trimester) — query Supabase product_alternatives JOIN products WHERE verdict=safe pour le trimestre, ORDER BY popularity_count DESC, LIMIT 5.
+```
+
+---
+
+# PROMPT 11 — My Safe Shelf
+# ⚡ PARALLEL GROUP D (avec Prompt 9 + 10)
+
+```
+Crée l'écran "Mon Placard" de l'app Hēlo — la bibliothèque personnelle de produits scannés.
+
+ÉCRAN app/(tabs)/shelf.tsx :
+
+HEADER :
+- "Mon Placard" displayMedium
+- Row sous le titre : "X produits" bodyMedium textSecondary + "·" + "Y% compatibles" bodyMedium safe
+- IconButton filtre en haut à droite
+
+FILTRES (bottom sheet modal au tap filtre) :
+- "Filtrer" headlineMedium
+- Section "Verdict" : 4 chips (Tous / Compatibles / Précaution / À éviter), multi-select, style : fond accentLight + texte accent quand sélectionné
+- Section "Catégorie" : 3 chips (Salle de bain / Cuisine / Pharmacie)
+- Section "Trier par" : 2 options (Plus récents / Plus anciens)
+- Bouton "Appliquer" primary + "Réinitialiser" ghost
+
+GRILLE (FlatList numColumns={2}, gap 12, padding horizontal 16) :
+Chaque carte produit (Card component) :
+- Image (ratio 1:1, radius lg en haut, fond surfaceElevated + icône catégorie centrée si pas d'image)
+- Padding 12 :
+  * Nom bodyMedium, numberOfLines 2
+  * Marque bodySmall textSecondary
+- Footer row : Badge verdict (petit, bas gauche) + icône catégorie (bas droite, 16px, textTertiary)
+- Si le verdict a changé au changement de trimestre : point doré (8px, position absolute top right 8, fond accent, radius full)
+- Tap → navigation vers verdict screen
+- Long press → ActionSheet : "Supprimer du placard" / "Changer de catégorie" / "Annuler"
+
+ÉTAT VIDE (quand 0 produits) :
+- Centré verticalement
+- Illustration SVG (placard ouvert avec étoiles dorées)
+- "Votre placard est vide" headlineMedium, marginTop 24
+- "Scannez votre premier produit pour construire votre placard safe" bodyMedium textSecondary, textAlign center, marginTop 8
+- Bouton "Scanner un produit" primary, marginTop 24 → navigue vers tab scan
+
+TAB "MA LISTE" (SegmentedControl ou toggle en haut : "Mon placard" | "Ma liste") :
+- La liste contient les produits marqués "à acheter" (alternatives choisies dans The Swap)
+- Même layout en liste (pas grille) avec checkbox à gauche
+- Checkbox cochée = opacity 0.5 + strikethrough sur le nom
+- Swipe left → bouton "Retirer" rouge rosé
+
+Query Supabase : scans WHERE user_id = current AND in_shelf = true, JOIN products. Skeleton loading (shimmer doré) pendant le chargement.
+```
+
+---
+
+# PROMPT 12 — Glow Score
+# ⚡ PARALLEL GROUP E (avec Prompt 13)
+
+```
+Crée le Glow Score de l'app Hēlo — score personnel 0-100 basé sur les produits du placard.
+
+lib/glowscore.ts :
+calculateGlowScore(shelfProducts: ScanWithVerdict[]): number
+- Formule : (count_safe × 100 + count_caution × 40 + count_danger × 0) / total_products
+- Bonus : +5 si 0 produits danger dans le placard
+- Clamp entre 0 et 100, arrondi à l'entier
+- Si 0 produits → retourner 0
+
+getGlowLabel(score: number): { label: string, color: string }
+- > 80 : "Excellent", color safe
+- 60-80 : "Bon", color accent
+- 40-60 : "À améliorer", color caution
+- < 40 : "Attention", color danger
+
+COMPOSANT GlowScoreCircle (components/GlowScoreCircle.tsx) :
+Props : score (number), size ('large' | 'small'), animated (boolean)
+
+Version large (size=200) :
+- SVG circle : strokeWidth 10, rayon 80
+- Background circle : stroke borderLight
+- Score circle : stroke = couleur selon score (safe/accent/caution/danger), rotation -90deg pour commencer en haut
+- Si animated=true : le stroke se dessine de 0 au score en 1.5s avec Reanimated (useSharedValue pour le strokeDashoffset, withTiming easing cubicOut)
+- Score numérique au centre : displayLarge, couleur selon score
+- Label sous le score : labelSmall, couleur selon score
+
+Version small (size=60) :
+- Même logique mais strokeWidth 4, rayon 24
+- Score au centre : headlineMedium
+- Pas de label
+
+SECTION GLOW SCORE dans app/(tabs)/home.tsx (ou écran dédié) :
+- GlowScoreCircle large, animated, centré
+- "Votre Glow Score" headlineLarge sous le cercle
+- Card "Composition" : bar chart horizontal simple (3 barres : safe/caution/danger avec largeur proportionnelle, radius full, height 8, couleurs du thème)
+- Card "Améliorez votre score" (si produits caution/danger) : "X produit(s) dans votre placard méritent attention" bodyMedium + bouton "Voir les alternatives" secondary
+- Bouton "Partager mon score" ghost avec icône partage
+
+WIDGET MINI (components/GlowScoreMini.tsx) :
+- Row : GlowScoreCircle small + Column (texte "Glow Score" labelSmall + score + tendance ↑↓)
+- Pour le home screen
+```
+
+---
+
+# PROMPT 13 — Trimester Switch
+# ⚡ PARALLEL GROUP E (avec Prompt 12)
+
+```
+Crée le système Trimester Switch de l'app Hēlo — l'app évolue avec la grossesse.
+
+lib/trimester.ts :
+calculateTrimester(dueDate: Date): { trimester: 1|2|3, weekOfPregnancy: number, daysUntilDue: number }
+- Début grossesse = dueDate - 280 jours (40 semaines)
+- Semaine actuelle = différence en jours entre aujourd'hui et début / 7
+- T1 = semaines 1-13, T2 = 14-26, T3 = 27-40
+- Si > 40 semaines, rester T3
+
+getTrimesterPalette(trimester: 1|2|3): { accentOverride?: string, backgroundSecondaryOverride?: string }
+- T1 "Éclosion" : accentOverride '#8BB5A2' (vert doux), backgroundSecondary '#F0F7F4' (vert très pâle)
+- T2 "Épanouissement" : pas d'override (palette par défaut = pêche/doré)
+- T3 "Cocon" : accentOverride '#B8A0C4' (lavande doux), backgroundSecondary '#F5F0F8' (lavande pâle)
+- Le changement est SUBTIL — seulement l'accent et le backgroundSecondary changent
+
+hooks/useTrimester.ts :
+- Lit le profil Supabase (due_date)
+- Calcule trimester, weekOfPregnancy, daysUntilDue
+- Expose trimesterPalette
+- Vérifie à chaque ouverture si le trimestre a changé vs current_trimester en DB
+- Si changé → flag showTrimesterTransition = true + mettre à jour current_trimester en DB
+
+ÉCRAN DE TRANSITION (components/TrimesterTransition.tsx) :
+- Modal fullscreen, fond background, centré
+- Le chiffre du trimestre (ex: "2") en displayLarge taille 80, couleur accent, avec animation scale 0→1 + slight rotation (spring)
+- "Bienvenue dans votre" bodyLarge textSecondary au-dessus
+- "trimestre" bodyLarge textSecondary en dessous
+- Sous le chiffre (fade in delayed 0.5s) : "Nous avons mis à jour vos évaluations" bodyMedium
+- Si des produits du placard ont changé : "X produit(s) ont un nouveau statut" bodyMedium accent, tap → placard filtré "statut changé"
+- Bouton "Découvrir" primary → ferme la modal
+- Confettis : 10-15 petits cercles dorés (accent, accentLight) qui tombent du haut avec Reanimated (positions random, durée 2s, gravity effect avec translateY)
+
+RECALCUL au changement de trimestre :
+- Query tous les scans in_shelf=true
+- Pour chaque, recalculer le verdict avec le nouveau trimestre
+- Si le verdict change : update scan + ajouter un flag "status_changed" dans le jsonb
+- Notification push locale : "Nouveau trimestre ! X produit(s) ont changé de statut"
+```
+
+---
+
+# PROMPT 14 — Weekly Brief
+# ⚡ PARALLEL GROUP F (avec Prompt 15 + 16)
+
+```
+Crée le Weekly Brief de l'app Hēlo — newsletter in-app hebdomadaire.
+
+ÉCRAN app/weekly-brief.tsx :
+
+FORMAT STORIES : ScrollView horizontal pagingEnabled, snapToInterval screenWidth.
+
+SLIDE 1 — "Votre semaine" :
+- Fond LinearGradient (accentLight → background)
+- "Semaine X" displayLarge accent (X = weekOfPregnancy)
+- "de votre grossesse" bodyLarge textSecondary
+- GlowScoreMini centré
+- Tendance : "↑ +3 points" bodyMedium safe OU "↓ -2 points" bodyMedium danger OU "= Stable" bodyMedium textSecondary
+
+SLIDE 2 — "Conseil de la semaine" :
+- Fond LinearGradient (safeBg → background)
+- Icône ampoule dorée
+- Titre du conseil headlineMedium (ex: "La vitamine B9 est votre alliée")
+- Texte du conseil bodyMedium (3-4 lignes)
+- Source en labelSmall textTertiary
+- Les conseils sont hardcodés par trimestre (créer un fichier constants/weeklyTips.ts avec 40 tips, un par semaine)
+
+SLIDE 3 — "Produit découverte" :
+- Fond background
+- Image produit (120x120 radius lg centré)
+- Nom headlineMedium + marque bodyMedium textSecondary
+- Badge "Compatible ✓" safe
+- "Adopté par X mamans Hēlo" bodySmall textSecondary
+- Bouton "Ajouter à ma liste" secondary
+
+SLIDE 4 — "Alertes" :
+- Si produits caution/danger dans le placard :
+  * "X produit(s) méritent attention" headlineMedium
+  * Mini-cartes des produits concernés (image + nom + badge)
+  * Bouton "Voir les alternatives" secondary pour chacun
+- Si tout est safe :
+  * Illustration SVG (checkmark doré dans un cercle)
+  * "Tout est au vert !" headlineLarge safe
+  * "Votre placard est exemplaire" bodyMedium textSecondary
+
+SLIDE 5 — "Partager" :
+- GlowScoreCircle large centré
+- "Partagez votre Glow Score" headlineMedium
+- Bouton "Partager en story" primary
+- Bouton "Partager avec mon partenaire" secondary
+
+NAVIGATION :
+- Progress bar en haut : 5 segments (height 3, radius full), le segment actif est accent, les autres borderLight
+- Swipe natif entre slides
+
+Le Weekly Brief est déclenché par un badge "Nouveau" sur le home quand il est disponible (chaque lundi). Stocker "last_brief_read" dans AsyncStorage.
+```
+
+---
+
+# PROMPT 15 — Partner Mode
+# ⚡ PARALLEL GROUP F (avec Prompt 14 + 16)
+
+```
+Crée le Partner Mode de l'app Hēlo — le partenaire peut scanner pour elle.
+
+LIAISON :
+- Chaque profil a un partner_code unique (6 chars alphanumériques, généré à la création dans Supabase)
+- La maman va dans Profil > "Mode Partenaire" > voit son code + bouton "Partager le code"
+- Partage via Share API natif (texte : "Rejoins-moi sur Hēlo ! Mon code partenaire : XXXXXX. Télécharge l'app : [lien]")
+
+ONBOARDING PARTENAIRE (app/onboarding/partner.tsx) :
+- Lors de l'inscription, choix : "Je suis enceinte" ou "J'accompagne une future maman"
+- Si partenaire : écran avec input du code 6 chars (style code PIN, 6 cases individuelles, auto-focus next)
+- Validation : query Supabase profiles WHERE partner_code = input
+- Si trouvé : linked_partner_id mis à jour des deux côtés + écran "Vous accompagnez [prénom] !" avec badge trimestre
+- Si pas trouvé : message "Code non reconnu. Vérifiez auprès de votre partenaire."
+
+INTERFACE PARTENAIRE :
+- Même app mais le header de l'écran scan affiche "Scanner pour [prénom]" en bodyMedium accent
+- Les verdicts utilisent le trimestre de la MAMAN (pas du partenaire — query le profil lié)
+- Le Glow Score affiché est celui de la maman (lecture seule)
+- Le placard est partagé : les deux voient les mêmes produits
+- Le partenaire peut ajouter des produits au placard
+
+LISTE DE COURSES PARTAGÉE :
+- Quand le partenaire ajoute un produit → il apparaît instantanément chez la maman (Supabase Realtime subscription sur scans WHERE user_id = partner OR user_id = self)
+- Notification locale chez la maman : "[Prénom] a ajouté [Produit] à votre placard"
+
+PARAMÈTRES PARTENAIRE (dans profil) :
+- "Mode Partenaire" section
+- Pour la maman : voir son code, le régénérer, déconnecter le partenaire
+- Pour le partenaire : voir le nom de la maman liée, se déconnecter
+- Déconnexion : mettre linked_partner_id à null des deux côtés + confirmation dialog
+```
+
+---
+
+# PROMPT 16 — Push Notifications
+# ⚡ PARALLEL GROUP F (avec Prompt 14 + 15)
+
+```
+Crée le système de push notifications de l'app Hēlo. Installe expo-notifications.
+
+lib/notifications.ts :
+
+1. requestPermissions(): Promise<boolean> — demande permission avec écran custom avant le popup système ("Hēlo aimerait vous envoyer des rappels utiles pour votre grossesse" + boutons "Autoriser" / "Plus tard")
+
+2. scheduleWeeklyBrief(): void — notification locale chaque lundi 9h : titre "Votre brief est prêt ✨", body "Semaine X — Découvrez votre Glow Score", data { screen: 'weekly-brief' }
+
+3. scheduleTrimesterReminder(dueDate: Date): void — calculer les dates de transition T1→T2 et T2→T3, programmer : titre "Nouveau trimestre !", body "Bienvenue dans votre Xème trimestre. Vos évaluations ont été mises à jour."
+
+4. sendLocalNotification(title, body, data): void — wrapper pour Notifications.scheduleNotificationAsync
+
+5. cancelAllNotifications(): void
+
+hooks/useNotifications.ts :
+- Demande les permissions au premier lancement (après le disclaimer)
+- Configure le listener pour les notifications reçues (Notifications.addNotificationResponseReceivedListener)
+- Deep link : quand data.screen existe, naviguer vers cet écran avec expo-router
+
+PARAMÈTRES (dans le profil, section "Notifications") :
+- Toggle "Brief hebdomadaire" (défaut: on)
+- Toggle "Changement de trimestre" (défaut: on)
+- Toggle "Rappels de scan" (défaut: on)
+- Toggle "Activité partenaire" (défaut: on)
+- Texte "Maximum 3 notifications par semaine" bodySmall textTertiary
+
+RAPPEL D'INACTIVITÉ : si aucun scan depuis 7 jours (vérifier au lancement de l'app via AsyncStorage "last_scan_date"), programmer une notification 24h plus tard : "On ne vous oublie pas 💛", "Avez-vous vérifié vos derniers achats ?"
+```
+
+---
+
+# PROMPT 17 — Scan Party
+# ⚡ PARALLEL GROUP G (avec Prompt 18 + 19)
+
+```
+Crée le Scan Party Mode de l'app Hēlo — mode enregistrement TikTok intégré.
+
+ACCÈS : bouton "Scan Party" sur le home screen (Card avec icône caméra vidéo + "Scan Party" + "Scannez, on filme tout" bodySmall) OU dans le menu profil.
+
+ÉCRAN app/scan-party.tsx :
+
+PHASE 1 — CONFIGURATION :
+- "Scan Party" displayMedium accent
+- "Scannez vos produits, on filme tout" bodyMedium textSecondary
+- Choix du thème (4 chips) : "Ma salle de bain 🧴" / "Mon frigo 🧀" / "Mon maquillage 💄" / "Libre ✨"
+- Compteur "0 produits" bodySmall textTertiary
+- Bouton "Commencer" primary (gros, 64 height, pulsant : scale 1.0↔1.03 en boucle 1.5s)
+
+PHASE 2 — SCAN EN COURS :
+- Caméra plein écran
+- Overlay branded : "SCAN PARTY" labelSmall accent, top left + logo Hēlo mini top right
+- Compteur en haut : "3/10 produits" headlineMedium blanc
+- À CHAQUE SCAN DÉTECTÉ :
+  * Haptic Medium
+  * Le verdict s'affiche EN GROS au centre de l'écran :
+    - "COMPATIBLE ✓" en vert (safe), font displayLarge, animation scale 0→1.2→1.0 (spring)
+    - "PRÉCAUTION ⚠" en ambre (caution)
+    - "À ÉVITER ✕" en rouge rosé (danger)
+  * Nom du produit en bodyLarge blanc sous le verdict
+  * L'overlay reste 2 secondes puis fade out
+  * Son : petit "ding" satisfaisant (optionnel, expo-av)
+  * Le compteur s'incrémente
+  * Le résultat est stocké dans un state local (array de { productName, verdict })
+- Bouton "Terminer" ghost blanc en bas (visible quand ≥ 3 produits)
+
+PHASE 3 — RÉSUMÉ (app/scan-party-results.tsx) :
+- "Résultat" displayMedium
+- Score : "X/Y compatibles" displayLarge (X en safe, Y total)
+- Barre visuelle : 3 sections (vert/ambre/rouge) proportionnelles, height 12, radius full
+- Liste des produits scannés : chaque en row avec dot coloré + nom + badge verdict
+- Boutons : "Sauvegarder dans mon placard" primary (ajoute tous au placard) + "Créer le visuel" secondary
+
+CRÉER LE VISUEL (au lieu d'une vidéo — plus simple et tout aussi efficace) :
+- Générer une image 1080x1920 (format story) avec react-native-view-shot :
+  * Fond : gradient background → backgroundSecondary
+  * Header : "SCAN PARTY 🔍" labelLarge accent + logo Hēlo
+  * Thème choisi : "Ma salle de bain" bodyMedium
+  * Score : "X/Y compatibles" displayLarge
+  * Barre visuelle
+  * Liste des 5-10 premiers produits avec verdicts
+  * Footer : "Scannez vos produits avec Hēlo" + watermark
+- Boutons : "Partager" (Share API) / "Sauvegarder" (MediaLibrary)
+
+PREMIUM : Scan Party limité à 1x gratuit, ensuite paywall.
+```
+
+---
+
+# PROMPT 18 — Share Cards
+# ⚡ PARALLEL GROUP G (avec Prompt 17 + 19)
+
+```
+Crée le système de Share Cards de l'app Hēlo — templates de partage social.
+
+Installe react-native-view-shot et expo-sharing.
+
+3 COMPOSANTS SHARE CARDS (dans components/share/) :
+
+1. VerdictShareCard.tsx :
+Props : productName, brand, verdict, score, trimester
+- ViewShot ref, width 1080 height 1920 (scale down pour l'écran, capturer en full res)
+- Fond LinearGradient (verdictBg → background)
+- Logo Hēlo en haut (texte "Hēlo" labelLarge accent, centré)
+- marginTop 200
+- Cercle verdict (version statique du GlowScoreCircle, taille 160)
+- Nom du produit headlineLarge textPrimary, textAlign center, marginTop 24
+- Marque bodyMedium textSecondary
+- Badge verdict large : "Compatible ✓" / "Précaution ⚠" / "À éviter ✕"
+- "Évalué pour le Xème trimestre" bodySmall textTertiary
+- Footer (bas) : "Scannez vos produits avec Hēlo" bodySmall accent + petit QR ou lien
+
+2. GlowScoreShareCard.tsx :
+Props : score, weekOfPregnancy, shelfCount
+- Fond LinearGradient (accentLight → background)
+- Logo Hēlo en haut
+- GlowScoreCircle statique (taille 200) centré
+- "Mon Glow Score" headlineLarge
+- "Semaine X de grossesse" bodyMedium textSecondary
+- "X produits vérifiés" bodySmall textTertiary
+- Footer branded
+
+3. ShelfShareCard.tsx :
+Props : products (max 9), glowScore, totalCount, safePercentage
+- Fond background
+- Logo Hēlo en haut
+- "Mon Placard Hēlo" headlineLarge
+- Grille 3x3 d'images produits miniatures (radius md, 100x100)
+- "X produits · Y% compatibles" bodyMedium
+- GlowScoreMini en bas
+- Footer branded
+
+lib/share.ts :
+- captureShareCard(viewShotRef): Promise<string> — capture en image URI
+- shareImage(uri: string): Promise<void> — ouvre le share sheet natif via expo-sharing
+- shareToInstagramStory(uri: string): void — deep link Instagram Stories si installé
+
+INTÉGRATION : ajouter le bouton "Partager" sur le verdict screen et le Glow Score qui ouvre un bottom sheet avec preview de la card + boutons "Partager" / "Sauvegarder l'image".
+```
+
+---
+
+# PROMPT 19 — Community Verdicts
+# ⚡ PARALLEL GROUP G (avec Prompt 17 + 18)
+
+```
+Crée le système Community Verdicts de l'app Hēlo — enrichissement de la base par les utilisatrices.
+
+TRIGGER : quand un scan code-barres retourne "produit non trouvé" dans Open Food Facts ET pas dans notre base.
+
+ÉCRAN "Produit non trouvé" (app/submit-product.tsx) :
+- Illustration SVG (loupe dorée avec point d'interrogation)
+- "Ce produit n'est pas encore dans notre base" headlineMedium
+- "Aidez-nous à l'ajouter !" bodyMedium textSecondary
+- Formulaire :
+  * Photo du produit (expo-image-picker, preview 120x120 radius lg)
+  * Photo de la liste d'ingrédients (optionnel, même format)
+  * Input "Nom du produit" (required)
+  * Input "Marque" (optionnel)
+  * Picker catégorie : Cosmétique / Alimentaire / Médicament
+  * Code-barres (pré-rempli si scanné, read-only, fond surfaceElevated)
+- Bouton "Soumettre" primary
+- Upload photos vers Supabase Storage (bucket 'submissions')
+- Insert dans community_submissions avec status='pending', URLs des photos
+- Animation confirmation : le formulaire se remplace par :
+  * Checkmark doré animé (scale 0→1 spring) + confettis légers
+  * "Merci !" headlineLarge
+  * "Notre équipe vérifiera ce produit sous 48h" bodyMedium textSecondary
+  * Bouton "Scanner un autre" primary
+
+FEED COMMUNAUTÉ (app/community.tsx, accessible depuis le profil ou le home) :
+- "Derniers ajouts" headlineLarge
+- FlatList des derniers produits avec status='approved', ORDER BY created_at DESC, LIMIT 20
+- Chaque card : image + nom + marque + badge "Vérifié par l'équipe Hēlo" (fond accentLight, texte accent, icône shield)
+- Au tap : verdict complet du produit
+
+STATS CONTRIBUTION (dans le profil) :
+- "X produits soumis" avec icône contribution
+- Si > 5 soumissions : badge "Contributrice" accent à côté du prénom dans le profil
+```
+
+---
+
+# PROMPT 20 — Search & Browse
+# ⚡ PARALLEL GROUP H (avec Prompt 21)
+
+```
+Crée le système de recherche et navigation de l'app Hēlo.
+
+L'écran de recherche est le 3ème mode du scanner ("Recherche" chip) OU un onglet séparé accessible depuis le home.
+
+ÉCRAN app/search.tsx :
+
+SEARCH BAR (sticky top) :
+- Input avec icône loupe à gauche, radius xl, fond surfaceElevated, padding 12 16
+- Placeholder "Rechercher un produit, une marque..."
+- Border accent au focus
+- Bouton X à droite quand texte présent (clear)
+- Recherche debounce 300ms
+- Query Supabase : products WHERE name ILIKE '%query%' OR brand ILIKE '%query%', LIMIT 20
+
+RÉSULTATS (FlatList) :
+- Chaque résultat : Card horizontal (Row) :
+  * Image 50x50 radius md à gauche
+  * Column : nom bodyMedium + marque bodySmall textSecondary
+  * Badge verdict à droite (si produit déjà scanné par l'utilisatrice)
+  * Si dans le placard : petit icône placard accent
+- Au tap : verdict complet
+
+QUAND PAS DE RECHERCHE — BROWSE :
+Section "Catégories" (grille 2 colonnes) :
+Cards catégorie (fond surfaceElevated, radius lg, padding 16, shadow soft) :
+- 🧴 Soins visage
+- 🧼 Soins corps
+- 💇 Cheveux
+- 💄 Maquillage
+- 🧀 Fromages
+- 🥩 Viandes & Charcuteries
+- 🐟 Poissons
+- 🥗 Plats préparés
+- 💊 Médicaments courants
+- 🌿 Compléments
+Chaque card : emoji + nom bodyMedium + "X produits" bodySmall textSecondary
+Au tap : liste produits de cette catégorie triés par popularité (nombre de scans)
+
+Section "Top produits safe" (ScrollView horizontal) :
+- Cards produits safe les plus scannés
+- Image + nom + marque + badge safe + "Scanné X fois" bodySmall
+
+PREMIUM : La recherche par nom est premium (comme Yuka). En free : browse catégories + tops only. Quand un utilisateur free tape dans la search bar → après 3 caractères, afficher un overlay blur + "Recherche disponible avec Hēlo Premium" + bouton upgrade.
+```
+
+---
+
+# PROMPT 21 — User Profile
+# ⚡ PARALLEL GROUP H (avec Prompt 20)
+
+```
+Crée l'écran profil utilisateur complet de l'app Hēlo.
+
+ÉCRAN app/(tabs)/profile.tsx :
+
+HEADER :
+- Avatar circulaire (80px) : initiale du prénom en displayMedium blanc sur fond accent. Au centre en haut.
+- Prénom headlineLarge, marginTop 12
+- "Semaine X · Trimestre Y" bodyMedium textSecondary
+- Badge trimestre (Badge component)
+- Barre de progression grossesse : View height 4, radius full, fond borderLight, progress = (40 - weeksRemaining) / 40, couleur accent. Width 200, centré.
+
+GLOW SCORE :
+- GlowScoreMini centré sous la barre de progression
+- Tap → navigue vers l'écran Glow Score détaillé
+
+STATS (row de 4 colonnes, fond surfaceElevated, radius lg, padding 16, marginTop 24) :
+- "X" headlineMedium + "scans" labelSmall textSecondary
+- "X" headlineMedium + "produits" labelSmall textSecondary
+- "X%" headlineMedium safe + "safe" labelSmall textSecondary
+- "X" headlineMedium + "soumis" labelSmall textSecondary
+
+MENU (FlatList de cards, marginTop 24) :
+Chaque item = Pressable row : icône accent (24px) à gauche + texte bodyLarge + chevron "›" textTertiary à droite. Divider entre chaque.
+
+Items :
+1. 👤 "Mon profil" → écran édition (prénom, DPA, concerns)
+2. 👥 "Mode Partenaire" → voir code / connecter / déconnecter
+3. 🔔 "Notifications" → toggles
+4. ⭐ "Hēlo Premium" → paywall OU statut premium
+5. 📋 "Notre méthodologie" → app/methodology.tsx
+6. 📄 "Conditions d'utilisation" → app/legal/terms.tsx
+7. 🔒 "Politique de confidentialité" → app/legal/privacy.tsx
+8. 📤 "Exporter mes données" → génère JSON de tous les scans + profil, partage via Share API
+9. 🗑️ "Supprimer mon compte" → Alert double confirmation → delete auth user + profile + scans
+10. ✉️ "Contacter l'équipe" → Linking.openURL('mailto:contact@heloapp.com')
+
+Footer :
+- "Version 1.0.0" bodySmall textTertiary centré
+- Bouton "Se déconnecter" ghost, danger color, centré, marginTop 24
+```
+
+---
+
+# PROMPT 22 — Paywall & Premium
+# ⚡ PARALLEL GROUP I (avec Prompt 23)
+
+```
+Crée le système de monétisation premium de l'app Hēlo. Installe react-native-purchases (RevenueCat).
+
+FEATURES FREE vs PREMIUM :
+FREE : 5 scans/jour, verdicts basiques (verdict + ingrédients flagged mais PAS les descriptions détaillées), placard 20 produits max, pas de recherche par nom, 1 Scan Party, pas d'offline, pas d'alternatives détaillées
+PREMIUM : tout illimité + descriptions détaillées + sources + alternatives + recherche + Scan Party illimité + offline + badge profil
+
+COMPTEUR SCANS (lib/scanLimit.ts) :
+- Stocker daily_scans_count et daily_scans_date dans AsyncStorage
+- Si date != aujourd'hui → reset à 0
+- Incrémenter à chaque scan
+- Si >= 5 et pas premium → trigger paywall
+
+ÉCRAN PAYWALL (app/paywall.tsx) :
+- Fond LinearGradient (accentLight → background)
+- "Passez à Hēlo Premium" displayMedium textPrimary, textAlign center
+- "Pour vous et votre bébé" bodyLarge textSecondary
+- Illustration : cercle doré avec icône couronne/étoile
+
+COMPARAISON (2 colonnes) :
+Card fond surface, radius lg :
+Colonne "Gratuit" : items avec icône X (textTertiary) pour les features verrouillées
+Colonne "Premium" (fond surfaceElevated, border accent) : items avec icône ✓ (safe) pour toutes les features
+
+3 CARDS PLANS (row, le central plus grand) :
+1. Mensuel : "4,99€/mois" bodyLarge — pas de badge
+2. Annuel : "29,99€/an" bodyLarge → "2,49€/mois" bodySmall safe — Badge "Populaire" accent (pré-sélectionné, border accent, shadow medium)
+3. Lifetime : "59,99€" bodyLarge → "Pour toutes vos grossesses" bodySmall — Badge "Meilleure offre"
+
+Card sélectionnée : border accent 2px + shadow medium. Les autres : border borderLight 1px.
+
+ESSAI : "7 jours d'essai gratuit" bodyMedium safe sous le plan annuel
+"Aucun prélèvement pendant 7 jours. Annulez à tout moment." bodySmall textTertiary
+
+BOUTON : "Commencer mon essai gratuit" primary, pleine largeur, height 56
+Sous le bouton : "Conditions d'abonnement" ghost + "Restaurer mes achats" ghost
+
+TRIGGERS PAYWALL :
+- Au 6ème scan gratuit du jour
+- Au tap sur recherche (free)
+- Au tap sur Scan Party (après le 1er gratuit)
+- Au tap sur "Voir détails" d'un ingrédient (free = description tronquée)
+- Au 21ème produit ajouté au placard
+- Depuis profil > "Hēlo Premium"
+- JAMAIS en plein scan. TOUJOURS après le verdict, jamais avant.
+- Animation : slide up smooth depuis le bas
+
+lib/purchases.ts :
+- initPurchases() : configure RevenueCat avec REVENUECAT_API_KEY
+- getOfferings() : récupérer les plans
+- purchase(packageId) : acheter
+- restorePurchases()
+- checkPremium() : boolean
+
+hooks/usePremium.ts : isPremium, loading, offerings
+```
+
+---
+
+# PROMPT 23 — Offline Mode
+# ⚡ PARALLEL GROUP I (avec Prompt 22)
+
+```
+Crée le mode offline de l'app Hēlo (feature premium).
+
+lib/offline.ts :
+
+1. downloadIngredientsDB(): Promise<void>
+   - Fetch toute la table ingredients de Supabase
+   - Stocker dans AsyncStorage key "ingredients_db" (JSON stringifié)
+   - Stocker "ingredients_db_version" (timestamp)
+   - Taille estimée : ~200 ingrédients × ~1KB = ~200KB
+
+2. getLocalIngredients(): Ingredient[]
+   - Lire depuis AsyncStorage, parser JSON
+
+3. matchIngredientsLocal(ingredientsList: string[], trimester: number): MatchResult[]
+   - Même logique que matchIngredients mais sur la base locale
+   - Recherche par name.toLowerCase().includes() ou synonyms check
+
+4. cacheProduct(barcode: string, product: Product, verdict: VerdictResult): void
+   - Stocker dans AsyncStorage key "product_cache_{barcode}"
+   - Max 500 produits (LRU : supprimer le plus ancien si > 500)
+
+5. getCachedProduct(barcode: string): CachedScan | null
+
+6. syncOfflineScans(): Promise<void>
+   - Lire AsyncStorage "offline_scans" (array de scans faits hors ligne)
+   - Pour chaque : insert dans Supabase scans
+   - Vider le buffer local
+
+7. checkAndSyncDB(): Promise<void>
+   - Comparer ingredients_db_version locale avec la dernière en DB
+   - Si plus récent : re-télécharger
+
+hooks/useOffline.ts :
+- isOffline : NetInfo.useNetInfo().isConnected === false
+- lastSync : date du dernier sync
+- syncNow() : force sync
+
+COMPORTEMENT EN MODE OFFLINE :
+- Au scan : d'abord vérifier le cache local → si trouvé, afficher. Si pas trouvé → matchIngredientsLocal sur la base locale (fonctionne pour OCR surtout)
+- Pour les code-barres non cachés : "Produit non trouvé hors ligne. Connectez-vous pour un résultat complet." + Card avec icône nuage barré
+- Indicateur offline : petit badge "Hors ligne" (icône nuage barré 12px + texte labelSmall textTertiary) en haut de l'écran scan, position absolute
+
+AU RETOUR CONNEXION :
+- syncOfflineScans() automatiquement
+- checkAndSyncDB()
+- Toast "Synchronisé ✓" (fond safe, texte blanc, radius full, fade in/out 2s)
+
+INITIAL DOWNLOAD : à la première ouverture après inscription, télécharger la base en arrière-plan. Progress indicator si > 2s.
+
+PREMIUM GATE : si pas premium et offline → "Mode hors-ligne disponible avec Hēlo Premium" + bouton upgrade. Le scan ne fonctionne pas.
+```
+
+---
+
+# PROMPT 24 — Performance & Polish
+# ⏱ Après tous les autres
+
+```
+Passe d'optimisation et polish globale de l'app Hēlo. Vérifier et corriger les points suivants :
+
+ANIMATIONS :
+- Vérifier que TOUTES les animations utilisent react-native-reanimated (useSharedValue, useAnimatedStyle, withTiming, withSpring, withRepeat)
+- Remplacer tout usage de Animated de React Native par Reanimated
+- Ajouter entering={FadeInUp} exiting={FadeOutDown} sur les items de FlatList qui changent (placard, recherche)
+- Transitions entre écrans : s'assurer que expo-router utilise des transitions smooth (pas de flash blanc)
+
+PERFORMANCE :
+- Remplacer Image par expo-image partout (meilleur cache, placeholder blur)
+- FlatList : ajouter getItemLayout, keyExtractor, maxToRenderPerBatch=10, windowSize=5
+- Composants de liste : wrapper avec React.memo
+- Calculs lourds (Glow Score, matching ingrédients) : useMemo
+
+SKELETON LOADING :
+Créer components/Skeleton.tsx :
+- View animée avec shimmer (LinearGradient animé de borderLight → accentLight → borderLight, loop 1.5s)
+- Props : width, height, radius
+- L'utiliser sur : verdict loading, placard loading, recherche loading, profil loading, weekly brief loading
+
+SPLASH SCREEN :
+- expo-splash-screen : garder le splash jusqu'à ce que les fonts soient chargées + auth vérifiée
+- Image splash : fond #FFFAF5 + "Hēlo" centré en accent doré
+- Durée max visible : 2s
+
+MICRO-INTERACTIONS (vérifier partout) :
+- Button primary : scale 0.97 au press (Reanimated useAnimatedStyle + onPressIn/Out)
+- Cards : translateY -1 au press
+- Checkbox/toggle : spring animation
+- Badge verdict : scale 1.0→1.08→1.0 à l'apparition (spring)
+
+HAPTIC (vérifier présence) :
+- Scan détecté : ImpactFeedbackStyle.Medium
+- Verdict : NotificationFeedbackType (Success/Warning/Error)
+- Ajout placard : NotificationFeedbackType.Success
+- Button primary : ImpactFeedbackStyle.Light
+- Toggle : ImpactFeedbackStyle.Light
+
+ERROR STATES :
+Créer components/ErrorState.tsx :
+- Props : message, onRetry
+- Illustration SVG (nuage triste doré)
+- Message bodyMedium textSecondary
+- Bouton "Réessayer" secondary
+- L'utiliser sur TOUS les écrans qui font des appels réseau
+
+VÉRIFICATIONS FINALES :
+- Tester sur petit écran (iPhone SE) et grand (iPhone 15 Pro Max) — les layouts doivent s'adapter
+- Pas de dark mode (Luxe & Serene = light only)
+- Pas de texte tronqué involontairement
+- Scroll smooth partout (pas de nested ScrollView issues)
+- StatusBar : barStyle dark-content partout (texte sombre sur fond clair)
+```
+
+---
+
+# PROMPT 25 — App Store Preparation
+# ⏱ Dernier avant soumission
+
+```
+Prépare l'app Hēlo pour la soumission App Store et Google Play.
+
+ICÔNE APP :
+- Créer un composant SVG dans assets/ : fond LinearGradient (#FFFAF5 → #FFF5EE), au centre un "H" stylisé en #C9A96E (accent doré) avec un demi-cercle/arc au-dessus (évoquant protection/halo). Style minimaliste.
+- Exporter en PNG 1024x1024 pour iOS et 512x512 pour Android
+
+SPLASH SCREEN :
+- Fond #FFFAF5
+- "Hēlo" centré, font Plus Jakarta Sans Bold, couleur #C9A96E
+- Configurer dans app.json splash
+
+app.json / app.config.js :
+{
+  name: "Hēlo",
+  slug: "helo-app",
+  version: "1.0.0",
+  orientation: "portrait",
+  icon: "./assets/icon.png",
+  splash: { image: "./assets/splash.png", resizeMode: "contain", backgroundColor: "#FFFAF5" },
+  ios: {
+    bundleIdentifier: "com.heloapp.app",
+    supportsTablet: true,
+    infoPlist: {
+      NSCameraUsageDescription: "Hēlo utilise la caméra pour scanner les codes-barres et listes d'ingrédients de vos produits.",
+      NSPhotoLibraryUsageDescription: "Hēlo a besoin d'accéder à vos photos pour partager vos résultats."
+    }
+  },
+  android: {
+    package: "com.heloapp.app",
+    adaptiveIcon: { foregroundImage: "./assets/adaptive-icon.png", backgroundColor: "#FFFAF5" },
+    permissions: ["CAMERA"]
+  },
+  plugins: ["expo-camera", "expo-haptics", "expo-notifications", "expo-image-picker"]
+}
+
+DESCRIPTION APP STORE (FR) :
+Titre : Hēlo — Scanner Grossesse Safe
+Sous-titre : Cosmétiques · Alimentation · Médicaments
+
+Description :
+"Hēlo vérifie instantanément si vos produits du quotidien sont adaptés à votre grossesse.
+
+Scannez le code-barres de vos cosmétiques, aliments et médicaments. Hēlo analyse les ingrédients et vous donne un verdict clair — adapté à votre trimestre.
+
+→ Scan instantané par code-barres ou photo d'ingrédients
+→ Adapté à votre trimestre de grossesse
+→ Mon Placard : tous vos produits vérifiés
+→ Glow Score : votre score de sérénité
+→ Mode Restaurant : photographiez le menu, on analyse
+→ Alternatives safe suggérées
+→ Mode Partenaire : votre conjoint scanne pour vous
+
+Sources médicales : OMS, ANSM, HAS, CRAT.
+Hēlo est un outil d'information et ne remplace pas l'avis de votre professionnel de santé.
+
+Hēlo Premium : scans illimités, mode hors-ligne, alternatives détaillées, Scan Party."
+
+Mots-clés : grossesse, enceinte, scanner, produits, safe, cosmétiques, alimentation, bébé, trimestre, ingrédients, Yuka
+
+Catégorie : Santé & Forme / Langues : Français, English / Âge : 4+
+
+Configurer eas.json pour le build EAS (profils preview + production).
+```
+
+---
+
+# PROMPT 26 — Mode Restaurant 🔥
+# ⏱ Le Game Changer
+
+```
+Crée le Mode Restaurant de l'app Hēlo — LA feature que personne d'autre n'a.
+
+USE CASE : tu es au restaurant enceinte, pas de code-barres, juste un menu. Tu veux savoir quoi commander.
+
+ACCÈS : 3ème chip "Menu" dans l'écran scan. Au tap, l'écran scan switch vers le mode restaurant.
+
+MODE RESTAURANT DANS L'ÉCRAN SCAN :
+- Le viewfinder s'élargit (presque plein écran, ratio 3:2)
+- Texte guide : "Photographiez le menu ou la carte"
+- Bouton shutter circulaire doré (même que OCR)
+- Compteur de pages : "1 page" — bouton "+" pour ajouter des pages (max 5)
+- Bouton "Analyser le menu" primary (apparaît quand ≥ 1 photo)
+
+TRAITEMENT (app/restaurant-results.tsx) :
+- Écran loading : "Nous analysons votre menu..." headlineMedium + animation (icônes de plats SVG qui défilent avec checkmarks/croix)
+- OCR sur chaque image → texte brut
+- Extraction des plats (lib/restaurant.ts)
+
+lib/restaurant.ts :
+
+analyzeMenu(imageUris: string[]): Promise<MenuAnalysis>
+1. Pour chaque image : processOCRImage → texte brut
+2. extractDishes(menuText): string[] — identifier les noms de plats (heuristique : lignes avec prix probable, ou lignes courtes entre des lignes vides, sections Entrées/Plats/Desserts/Boissons)
+3. Pour chaque plat : analyzeDish(dishName)
+
+analyzeDish(dishName: string): DishVerdict
+Mapping mots-clés :
+
+DANGER :
+"tartare", "carpaccio", "cru", "crue", "raw", "sashimi", "sushi", "ceviche", "gravlax" → "Contient potentiellement du poisson ou de la viande crue — risque de toxoplasmose ou parasites"
+"foie gras", "pâté", "terrine de foie", "mousse de foie" → "Produit à base de foie — excès potentiel de vitamine A"
+"steak tartare" → "Viande crue — risque de toxoplasmose"
+"huîtres", "coquillages" (sans "cuites"/"gratinées") → "Coquillages potentiellement crus — risque bactérien"
+
+CAUTION :
+"tiramisu", "mousse au chocolat", "mousse", "sabayon", "zabaglione" → "Peut contenir des œufs crus ou peu cuits"
+"mayonnaise" (sans "industrielle") → "La mayonnaise maison peut contenir des œufs crus"
+"saumon fumé", "truite fumée" → "Poisson fumé — risque de listeria si non recuit"
+"fromage", "brie", "camembert", "roquefort", "chèvre", "morbier", "reblochon", "mont d'or" → "Vérifiez si au lait cru — risque de listeria"
+"thon" → "Consommation modérée recommandée (mercure)"
+"café", "espresso", "cappuccino", "latte" → "Caféine — pensez à votre consommation journalière (max 200mg)"
+
+SAFE MODIFIERS (réduisent le risque si présents dans le même plat) :
+"bien cuit", "cuit", "grillé", "rôti", "braisé", "vapeur", "bouilli", "gratinée", "au four" → safe indicator
+"pasteurisé" → safe indicator pour fromages
+
+Logique : si un DANGER keyword est trouvé ET un SAFE MODIFIER aussi → downgrade vers CAUTION au lieu de DANGER. Ex: "huîtres gratinées" → caution au lieu de danger.
+
+ÉCRAN RÉSULTATS :
+
+HEADER :
+- "Analyse du menu" headlineLarge
+- "X plats analysés · Y compatibles · Z à vérifier" bodyMedium textSecondary
+
+LISTE DES PLATS (FlatList, regroupés par section si détectée) :
+SectionHeader : "Entrées" / "Plats" / "Desserts" / "Boissons" en labelLarge textSecondary
+
+Chaque plat = Card :
+- Row : nom du plat bodyLarge + Badge verdict à droite (safe/caution/danger)
+- Si caution/danger : description courte du risque en bodySmall textSecondary (1 ligne)
+- Expandable au tap : description complète + conseil spécifique
+
+SECTION "COMMANDER SEREINEMENT" (en bas, Card fond safeBg, radius lg) :
+- "Vous pouvez commander :" headlineMedium safe
+- Liste des plats safe (bullets simples)
+
+SECTION "QUESTIONS POUR LE SERVEUR" (si plats caution) :
+- "Demandez des précisions :" headlineMedium caution
+- Pour chaque plat caution, une phrase pré-rédigée :
+  * Fromage : "Pourriez-vous me confirmer si le [fromage] est au lait pasteurisé ?"
+  * Œufs : "Le [plat] contient-il des œufs crus ou peu cuits ?"
+  * Cuisson : "Serait-il possible d'avoir le [plat] bien cuit ?"
+- Bouton "Copier" à côté de chaque phrase (Clipboard.setStringAsync)
+
+DISCLAIMER RESTAURANT :
+"Cette analyse est basée sur les noms des plats détectés. La composition réelle peut varier. N'hésitez pas à interroger votre serveur."
+
+ACTIONS :
+- "Partager l'analyse" → Share Card spéciale restaurant (image 1080x1920 avec liste plats + verdicts + logo)
+- "Scanner un autre menu" → retour scan
+
+PREMIUM : 1 analyse gratuite pour découvrir, ensuite premium.
+```
+
+---
+---
+---
+
+# RÉCAP FINAL
+
+26 prompts. Copy-paste ready.
+Design Luxe & Serene partout.
+Disclaimers béton sur chaque écran.
+Mode Restaurant = aucun concurrent.
+TikTok en parallèle dès le jour 1.
+
+Le premier prompt prend 15 minutes.
+Ouvre Replit. Colle. Go. 🥚✨

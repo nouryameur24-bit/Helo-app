@@ -21,6 +21,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "barcode.viewfinder", selected: "barcode.viewfinder" }} />
         <Label>Scanner</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="shelf">
+        <Icon sf={{ default: "archivebox", selected: "archivebox.fill" }} />
+        <Label>Placard</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="history">
         <Icon sf={{ default: "clock", selected: "clock.fill" }} />
         <Label>Historique</Label>
@@ -90,6 +94,18 @@ function ClassicTabLayout() {
               <SymbolView name="barcode.viewfinder" tintColor={color} size={24} />
             ) : (
               <Feather name="camera" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="shelf"
+        options={{
+          title: "Placard",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="archivebox" tintColor={color} size={24} />
+            ) : (
+              <Feather name="archive" size={22} color={color} />
             ),
         }}
       />

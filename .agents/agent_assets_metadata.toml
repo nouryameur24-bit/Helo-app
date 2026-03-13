@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "q0JjGmCwnubla7h_0HcBG"
+uri = "file://artifacts/helo/helo-code.tar.gz"
+type = "unspecified"
+title = "helo-code.tar.gz — Code source complet Hēlo"

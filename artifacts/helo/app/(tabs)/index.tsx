@@ -6,6 +6,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -23,7 +24,11 @@ import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
+import { GlowScoreCircle } from '@/components/GlowScoreCircle';
+import { GlowScoreMini } from '@/components/GlowScoreMini';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { calculateGlowScore, getGlowLabel } from '@/lib/glowscore';
+import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -55,6 +60,15 @@ const RECENT_SCANS = [
     date: '12 mars',
     ingredients: 15,
   },
+];
+
+const MOCK_SHELF: ShelfProduct[] = [
+  { id: '1', name: 'Crème hydratante Nuxe', brand: 'NUXE', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
+  { id: '2', name: 'Shampooing doux', brand: 'KLORANE', verdict: 'caution', verdictLabel: 'Vigilance', category: 'salle-de-bain', verdictChanged: true },
+  { id: '3', name: 'Gel douche aloe vera', brand: 'GARNIER', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
+  { id: '4', name: 'Sérum vitamine C', brand: 'VICHY', verdict: 'safe', verdictLabel: 'Sûr', category: 'pharmacie', verdictChanged: false },
+  { id: '5', name: 'Fond de teint Bourjois', brand: 'BOURJOIS', verdict: 'danger', verdictLabel: 'Déconseillé', category: 'salle-de-bain', verdictChanged: true },
+  { id: '6', name: 'Huile de coco bio', brand: 'NATURALIA', verdict: 'safe', verdictLabel: 'Sûr', category: 'cuisine', verdictChanged: false },
 ];
 
 const statusColors = {
@@ -90,10 +104,47 @@ function ScanCard({ item, index }: { item: typeof RECENT_SCANS[0]; index: number
   );
 }
 
+function CompositionBar({ count, total, color, label }: {
+  count: number;
+  total: number;
+  color: string;
+  label: string;
+}) {
+  const pct = total > 0 ? count / total : 0;
+  return (
+    <View style={styles.barRow}>
+      <ThemedText variant="bodySmall" color="textSecondary" style={styles.barLabel}>
+        {label}
+      </ThemedText>
+      <View style={styles.barTrack}>
+        <View
+          style={[
+            styles.barFill,
+            { width: `${pct * 100}%`, backgroundColor: color },
+          ]}
+        />
+      </View>
+      <ThemedText variant="bodySmall" color="textTertiary" style={styles.barCount}>
+        {count}
+      </ThemedText>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
+
+  const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(MOCK_SHELF);
+  const glowLabel = getGlowLabel(score);
+  const hasRisk = countDanger > 0 || countCaution > 0;
+
+  const handleShare = () => {
+    Share.share({
+      message: `Mon Glow Score Hēlo est de ${score}/100 — ${glowLabel.label} ! Analysez vos produits pendant la grossesse avec Hēlo.`,
+    });
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
@@ -166,8 +217,74 @@ export default function HomeScreen() {
           </Card>
         </Animated.View>
 
-        {/* Recent scans */}
+        {/* ── GLOW SCORE ── */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
+          <View style={styles.sectionHeader}>
+            <ThemedText variant="headlineMedium" color="textPrimary">Votre Glow Score</ThemedText>
+          </View>
+
+          {/* Main circle */}
+          <Card padding={Spacing.xxl} style={styles.glowCard}>
+            <View style={styles.glowCircleRow}>
+              <GlowScoreCircle score={score} size="large" animated />
+            </View>
+            <ThemedText
+              variant="bodyMedium"
+              color="textSecondary"
+              style={styles.glowSubtitle}
+            >
+              Basé sur {total} produit{total > 1 ? 's' : ''} de votre placard
+            </ThemedText>
+
+            <Divider style={{ marginVertical: Spacing.xl }} />
+
+            {/* Composition bars */}
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginBottom: Spacing.md }}>
+              Composition
+            </ThemedText>
+            <View style={styles.barsContainer}>
+              <CompositionBar count={countSafe} total={total} color={Colors.safe} label="Sûrs" />
+              <CompositionBar count={countCaution} total={total} color={Colors.caution} label="Vigilance" />
+              <CompositionBar count={countDanger} total={total} color={Colors.danger} label="À risque" />
+            </View>
+
+            {/* Améliorer card */}
+            {hasRisk && (
+              <Pressable
+                onPress={() => router.push('/(tabs)/shelf')}
+                style={({ pressed }) => [
+                  styles.improveCard,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <View style={styles.improveCardLeft}>
+                  <View style={styles.improveIcon}>
+                    <Feather name="arrow-up-circle" size={20} color={Colors.accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText variant="labelLarge" color="textPrimary">
+                      Améliorez votre score
+                    </ThemedText>
+                    <ThemedText variant="bodySmall" color="textSecondary">
+                      {countDanger + countCaution} produit{countDanger + countCaution > 1 ? 's' : ''} à risque · voir les alternatives
+                    </ThemedText>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+              </Pressable>
+            )}
+
+            {/* Share button */}
+            <View style={styles.shareRow}>
+              <Button variant="ghost" onPress={handleShare}>
+                Partager mon score
+              </Button>
+            </View>
+          </Card>
+        </Animated.View>
+
+        {/* Recent scans */}
+        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <View style={styles.sectionHeader}>
             <ThemedText variant="headlineMedium" color="textPrimary">Récents</ThemedText>
             <Pressable>
@@ -183,7 +300,7 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* Disclaimer */}
-        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
           <Card style={styles.disclaimerCard} padding={Spacing.lg}>
             <View style={styles.disclaimerHeader}>
               <Feather name="info" size={14} color={Colors.textTertiary} />
@@ -282,6 +399,70 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.md,
+  },
+  glowCard: {
+    alignItems: 'stretch',
+  },
+  glowCircleRow: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  glowSubtitle: {
+    textAlign: 'center',
+    marginTop: Spacing.md,
+  },
+  barsContainer: {
+    gap: Spacing.md,
+  },
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  barLabel: {
+    width: 64,
+  },
+  barTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: Colors.borderLight,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: 8,
+    borderRadius: Radius.full,
+  },
+  barCount: {
+    width: 20,
+    textAlign: 'right',
+  },
+  improveCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    marginTop: Spacing.xl,
+  },
+  improveCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  improveIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareRow: {
+    alignItems: 'center',
+    marginTop: Spacing.lg,
   },
   scanList: {
     gap: Spacing.sm,

@@ -2,6 +2,36 @@ export type RiskLevel = 'safe' | 'caution' | 'danger' | 'no_signal';
 export type Verdict = 'safe' | 'caution' | 'danger';
 export type Category = 'cosmetic' | 'food' | 'medication';
 export type Trimester = 1 | 2 | 3;
+export type UserRole = 'pregnant' | 'partner';
+
+export interface UserProfile {
+  userId: string;
+  firstName: string;
+  dueDate: string | null;
+  trimester: number | null;
+  partnerCode: string | null;
+  categories: string[];
+  createdAt: string;
+}
+
+export interface PartnerLink {
+  id: string;
+  pregnantUserId: string;
+  partnerUserId: string;
+  linkedAt: string;
+}
+
+export interface ProfileState {
+  userId: string;
+  role: UserRole;
+  firstName: string;
+  trimester: number | null;
+  dueDate: string | null;
+  partnerCode: string | null;
+  linkedUserId: string | null;
+  linkedFirstName: string | null;
+  isLoading: boolean;
+}
 
 export interface IngredientData {
   id: string;

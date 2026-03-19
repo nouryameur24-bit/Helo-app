@@ -24,6 +24,8 @@ import { Divider } from "@/components/ui/Divider";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { GENERAL_DISCLAIMER } from "@/constants/disclaimers";
 import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
+import { getOrCreateUserId } from "@/hooks/useProfile";
+import { upsertProfile, generatePartnerCode } from "@/lib/partnerUtils";
 
 type Category = "cosmetics" | "food" | "meds";
 
@@ -116,17 +118,29 @@ export default function ProfileSetupScreen() {
     if (!isValid) return;
     setLoading(true);
     try {
+      const partnerCode = generatePartnerCode();
       const profile = {
         firstName: firstName.trim(),
         dueDate: parsedDate!.toISOString(),
         trimester: trimesterInfo?.trimester ?? null,
         categories: Array.from(selectedCategories),
         createdAt: new Date().toISOString(),
+        partnerCode,
       };
       await AsyncStorage.multiSet([
         ["onboarding_completed", "true"],
         ["user_profile", JSON.stringify(profile)],
       ]);
+
+      const userId = await getOrCreateUserId();
+      await upsertProfile({
+        userId,
+        firstName: firstName.trim(),
+        dueDate: parsedDate!.toISOString().split("T")[0],
+        trimester: trimesterInfo?.trimester ?? null,
+        partnerCode,
+      });
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
     } catch {

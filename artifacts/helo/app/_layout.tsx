@@ -19,7 +19,7 @@ import { TrimesterTransition } from "@/components/TrimesterTransition";
 import { Colors } from "@/constants/theme";
 import { useNotificationTapRouting } from "@/hooks/useNotifications";
 import { useTrimester } from "@/hooks/useTrimester";
-import { initAndroidNotificationChannels } from "@/lib/notifications";
+import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -87,6 +87,11 @@ export default function RootLayout() {
         if (!completed) {
           redirected.current = true;
           router.replace("/onboarding");
+        } else {
+          const userId = await AsyncStorage.getItem("@helo_user_id");
+          if (userId) {
+            registerPushToken(userId).catch(() => {});
+          }
         }
       } catch {
         redirected.current = true;

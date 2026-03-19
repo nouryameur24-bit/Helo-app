@@ -75,3 +75,52 @@ CREATE TABLE IF NOT EXISTS shopping_list (
 );
 
 CREATE INDEX IF NOT EXISTS idx_shopping_list_user_id ON shopping_list(user_id);
+
+-- ============================================================
+-- PROFILES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id        TEXT PRIMARY KEY,
+  first_name     TEXT NOT NULL DEFAULT '',
+  due_date       DATE,
+  trimester      INT CHECK (trimester IN (1, 2, 3)),
+  partner_code   CHAR(6) UNIQUE,
+  push_token     TEXT,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_partner_code ON profiles(partner_code);
+
+-- ============================================================
+-- PARTNER LINKS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS partner_links (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  pregnant_user_id  TEXT NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+  partner_user_id   TEXT NOT NULL,
+  linked_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(pregnant_user_id),
+  UNIQUE(partner_user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_partner_links_pregnant ON partner_links(pregnant_user_id);
+CREATE INDEX IF NOT EXISTS idx_partner_links_partner  ON partner_links(partner_user_id);
+
+-- Enable Realtime on scan_history and profiles for shelf sync and partner notifications
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'scan_history'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE scan_history;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'profiles'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE profiles;
+  END IF;
+END $$;

@@ -12,7 +12,9 @@ export default function OnboardingLayout() {
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="role" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="partner-code" />
     </Stack>
   );
 }

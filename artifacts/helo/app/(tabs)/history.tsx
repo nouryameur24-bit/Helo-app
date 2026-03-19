@@ -1,4 +1,5 @@
-import React from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -13,6 +14,8 @@ import { Feather } from '@expo/vector-icons';
 import { Badge } from '@/components/ui/Badge';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { useProfile } from '@/hooks/useProfile';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 type ScanStatus = 'safe' | 'caution' | 'danger';
 
@@ -23,6 +26,7 @@ interface ScanItem {
   status: ScanStatus;
   statusLabel: string;
   time: string;
+  date?: string;
   ingredientCount: number;
 }
 
@@ -81,15 +85,129 @@ function ScanRow({ item }: { item: ScanItem }) {
   );
 }
 
+function groupByDate(items: ScanItem[]): { title: string; data: ScanItem[] }[] {
+  const groups: Record<string, ScanItem[]> = {};
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  for (const item of items) {
+    const d = item.date ? new Date(item.date) : null;
+    let label = item.time;
+    if (d) {
+      d.setHours(0, 0, 0, 0);
+      if (d.getTime() === today.getTime()) label = "Aujourd'hui";
+      else if (d.getTime() === yesterday.getTime()) label = 'Hier';
+      else label = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    }
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(item);
+  }
+  return Object.entries(groups).map(([title, data]) => ({ title, data }));
+}
+
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
 
+  const { role, userId, linkedUserId, linkedFirstName } = useProfile();
+  const isPartner = role === 'partner';
+  const historyUserId = isPartner && linkedUserId ? linkedUserId : userId;
+
+  const [sections, setSections] = useState(HISTORY_DATA);
+  const [totalCount, setTotalCount] = useState(
+    HISTORY_DATA.reduce((acc, s) => acc + s.data.length, 0)
+  );
+
+  const loadHistory = useCallback(async () => {
+    if (!historyUserId) return;
+
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('scan_history')
+          .select('id, verdict_at_shelf_add, scanned_at, products(name, brand)')
+          .eq('user_id', historyUserId)
+          .order('scanned_at', { ascending: false })
+          .limit(100);
+
+        if (!error && data && data.length > 0) {
+          type HistRow = {
+            id: string;
+            verdict_at_shelf_add: string | null;
+            scanned_at: string;
+            products: { name: string | null; brand: string | null } | { name: string | null; brand: string | null }[] | null;
+          };
+          const items: ScanItem[] = (data as unknown as HistRow[]).map((row) => {
+            const prod = Array.isArray(row.products) ? row.products[0] : row.products;
+            return {
+              id: String(row.id),
+              name: prod?.name ?? 'Produit',
+              brand: prod?.brand ?? '',
+              status: (row.verdict_at_shelf_add ?? 'safe') as ScanStatus,
+              statusLabel:
+                row.verdict_at_shelf_add === 'danger'
+                  ? 'Déconseillé'
+                  : row.verdict_at_shelf_add === 'caution'
+                  ? 'Vigilance'
+                  : 'Sûr',
+              time: new Date(row.scanned_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+              date: row.scanned_at,
+              ingredientCount: 0,
+            };
+          });
+          setSections(groupByDate(items));
+          setTotalCount(items.length);
+          return;
+        }
+      } catch {
+      }
+    }
+
+    try {
+      const raw = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
+      const all = JSON.parse(raw) as Array<{
+        barcode?: string;
+        productName?: string;
+        brand?: string;
+        verdict?: string;
+        savedAt?: number;
+        userId?: string;
+      }>;
+      const filtered = all.filter((i) => !i.userId || i.userId === historyUserId);
+      const items: ScanItem[] = filtered.map((i, idx) => ({
+        id: i.barcode ?? String(idx),
+        name: i.productName ?? 'Produit',
+        brand: i.brand ?? '',
+        status: (i.verdict ?? 'safe') as ScanStatus,
+        statusLabel:
+          i.verdict === 'danger' ? 'Déconseillé' : i.verdict === 'caution' ? 'Vigilance' : 'Sûr',
+        time: i.savedAt
+          ? new Date(i.savedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          : '',
+        date: i.savedAt ? new Date(i.savedAt).toISOString() : '',
+        ingredientCount: 0,
+      }));
+      setSections(groupByDate(items));
+      setTotalCount(items.length);
+    } catch {
+    }
+  }, [historyUserId]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  const headerTitle = isPartner
+    ? `Historique de ${linkedFirstName ?? 'votre proche'}`
+    : 'Historique';
+
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
       <SectionList
-        sections={HISTORY_DATA}
+        sections={sections}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
           paddingTop: topPadding + Spacing.lg,
@@ -101,9 +219,9 @@ export default function HistoryScreen() {
         contentInsetAdjustmentBehavior="automatic"
         ListHeaderComponent={
           <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.listHeader}>
-            <ThemedText variant="headlineLarge" color="textPrimary">Historique</ThemedText>
+            <ThemedText variant="headlineLarge" color="textPrimary">{headerTitle}</ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: 4 }}>
-              {HISTORY_DATA.reduce((acc, s) => acc + s.data.length, 0)} produits scannés
+              {totalCount} produit{totalCount !== 1 ? 's' : ''} scann{totalCount !== 1 ? 'és' : 'é'}
             </ThemedText>
           </Animated.View>
         }

@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
 export const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
 
 export type NotificationType =
@@ -49,11 +51,11 @@ export const NOTIFICATION_LABELS: Record<NotificationType, { title: string; desc
   },
   partner_activity: {
     title: 'Activité du partenaire',
-    description: 'Mises à jour lorsque votre partenaire utilise l\'application.',
+    description: "Mises à jour lorsque votre partenaire utilise l'application.",
   },
   inactivity_reminder: {
     title: 'Rappel de scan',
-    description: 'Un rappel doux si vous n\'avez pas scanné de produit récemment.',
+    description: "Un rappel doux si vous n'avez pas scanné de produit récemment.",
   },
   community_approved: {
     title: 'Communauté',
@@ -102,8 +104,7 @@ const QUIET_HOUR_END = 8;
 
 function applyQuietHours(date: Date): Date {
   const h = date.getHours();
-  const inQuiet =
-    h >= QUIET_HOUR_START || h < QUIET_HOUR_END;
+  const inQuiet = h >= QUIET_HOUR_START || h < QUIET_HOUR_END;
   if (!inQuiet) return date;
 
   const next = new Date(date);
@@ -252,9 +253,100 @@ export async function cancelAllNotifications(): Promise<void> {
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
+    shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
   }),
 });
+
+// ─── Partner Mode: push token registration ────────────────────────────────────
+
+export async function registerPushToken(userId: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') return;
+
+    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const pushToken = tokenData.data;
+
+    if (isSupabaseConfigured && pushToken) {
+      await supabase
+        .from('profiles')
+        .upsert(
+          { user_id: userId, push_token: pushToken, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' },
+        );
+    }
+  } catch (err) {
+    console.warn('[notifications] registerPushToken error:', err);
+  }
+}
+
+// ─── Partner Mode: cross-device shelf notification ────────────────────────────
+
+async function sendExpoPushNotification(
+  expoPushToken: string,
+  title: string,
+  body: string,
+): Promise<void> {
+  const message = {
+    to: expoPushToken,
+    sound: 'default',
+    title,
+    body,
+    data: { source: 'helo-partner' },
+  };
+
+  await fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Accept-encoding': 'gzip, deflate',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(message),
+  });
+}
+
+export async function sendShelfAddNotification(params: {
+  firstName: string;
+  productName: string;
+  recipientUserId: string;
+}): Promise<void> {
+  const title = 'Placard mis à jour';
+  const body = `${params.firstName} a ajouté "${params.productName}" à votre placard`;
+
+  try {
+    if (isSupabaseConfigured) {
+      const { data: recipientProfile } = await supabase
+        .from('profiles')
+        .select('push_token')
+        .eq('user_id', params.recipientUserId)
+        .maybeSingle();
+
+      const pushToken = recipientProfile?.push_token;
+      if (pushToken && typeof pushToken === 'string' && pushToken.startsWith('ExponentPushToken')) {
+        await sendExpoPushNotification(pushToken, title, body);
+        return;
+      }
+    }
+
+    if (Platform.OS !== 'web') {
+      await scheduleNotification({
+        type: 'partner_activity',
+        title,
+        body,
+      });
+    }
+  } catch (err) {
+    console.warn('[notifications] sendShelfAddNotification error:', err);
+  }
+}

@@ -119,14 +119,14 @@ export default function OnboardingScreen() {
 
   const handleNext = () => {
     if (isLast) {
-      router.replace("/onboarding/profile");
+      router.replace("/onboarding/role");
     } else {
       flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
     }
   };
 
   const handleSkip = () => {
-    router.replace("/onboarding/profile");
+    router.replace("/onboarding/role");
   };
 
   return (

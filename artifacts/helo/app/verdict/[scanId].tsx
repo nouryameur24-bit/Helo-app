@@ -38,7 +38,10 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { SCAN_DISCLAIMER } from '@/constants/disclaimers';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { useProfile } from '@/hooks/useProfile';
 import { useScan } from '@/hooks/useScan';
+import { sendShelfAddNotification } from '@/lib/notifications';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { MatchResult, RiskLevel, VerdictResult } from '@/types';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -301,9 +304,9 @@ function Toast({ visible, message }: { visible: boolean; message: string }) {
 
 // ─── Shelf bottom sheet ───────────────────────────────────────────────────────
 const SHELF_OPTIONS = [
-  { key: 'bathroom', label: 'Salle de bain', icon: 'droplet' as const },
-  { key: 'kitchen',  label: 'Cuisine',       icon: 'coffee'  as const },
-  { key: 'pharmacy', label: 'Pharmacie',     icon: 'plus-circle' as const },
+  { key: 'salle-de-bain', label: 'Salle de bain', icon: 'droplet' as const },
+  { key: 'cuisine',       label: 'Cuisine',       icon: 'coffee'  as const },
+  { key: 'pharmacie',     label: 'Pharmacie',     icon: 'plus-circle' as const },
 ] as const;
 
 function ShelfBottomSheet({
@@ -381,6 +384,12 @@ export default function VerdictScreen() {
   const insets = useSafeAreaInsets();
   const { loading, product, matches, verdict, error, scanBarcode, setDirectResult } = useScan();
 
+  const { role, userId, trimester: profileTrimester, linkedUserId, firstName } = useProfile();
+  const isPartner = role === 'partner';
+  const effectiveUserId = isPartner && linkedUserId ? linkedUserId : userId;
+  const senderFirstName = firstName || 'Votre partenaire';
+  const recipientUserId = linkedUserId ?? null;
+
   const [labelVisible, setLabelVisible] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
@@ -388,15 +397,19 @@ export default function VerdictScreen() {
   const [isOCRMode, setIsOCRMode] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load trimester from profile
+  // Load trimester: use mother's trimester for partner, else local profile
   useEffect(() => {
-    AsyncStorage.getItem('user_profile').then((raw) => {
-      if (raw) {
-        const p = JSON.parse(raw);
-        if (p.trimester) setTrimester(p.trimester);
-      }
-    }).catch(() => {});
-  }, []);
+    if (profileTrimester !== null && profileTrimester !== undefined) {
+      setTrimester(profileTrimester);
+    } else {
+      AsyncStorage.getItem('user_profile').then((raw) => {
+        if (raw) {
+          const p = JSON.parse(raw);
+          if (p.trimester) setTrimester(p.trimester);
+        }
+      }).catch(() => {});
+    }
+  }, [profileTrimester]);
 
   useEffect(() => {
     if (!barcode) return;
@@ -431,25 +444,60 @@ export default function VerdictScreen() {
 
   const handleShelfSelect = useCallback(async (category: string) => {
     setSheetVisible(false);
-    // Save to AsyncStorage (Supabase sync coming later)
+
+    const shelfUserId = effectiveUserId;
+    const productName = product?.name ?? 'Produit';
+
     try {
       const existing = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
       const shelf = JSON.parse(existing);
       shelf.push({
         barcode,
-        productName: product?.name,
+        productName,
         brand: product?.brand,
         category,
         verdict: verdict?.verdict,
         savedAt: Date.now(),
+        userId: shelfUserId,
       });
       await AsyncStorage.setItem('@helo_shelf', JSON.stringify(shelf));
     } catch {}
-    // Show toast
+
+    if (isSupabaseConfigured && shelfUserId) {
+      try {
+        const { data: productRow } = await supabase
+          .from('products')
+          .select('id')
+          .eq('barcode', barcode)
+          .maybeSingle();
+
+        const productId = productRow?.id ?? null;
+
+        await supabase.from('scan_history').insert({
+          user_id: shelfUserId,
+          product_id: productId,
+          trimester,
+          in_shelf: true,
+          shelf_category: category,
+          verdict_at_shelf_add: verdict?.verdict ?? null,
+        });
+
+        if (recipientUserId) {
+          await sendShelfAddNotification({
+            firstName: senderFirstName,
+            productName,
+            recipientUserId,
+          });
+        }
+      } catch (err) {
+        console.warn('[verdict] shelf Supabase insert error:', err);
+      }
+    }
+
     setToastVisible(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
-  }, [barcode, product, verdict]);
+  }, [barcode, product, verdict, effectiveUserId, trimester, recipientUserId, senderFirstName]);
 
   const handleShare = useCallback(async () => {
     if (!product || !verdict) return;

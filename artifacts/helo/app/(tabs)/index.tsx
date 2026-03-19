@@ -30,6 +30,8 @@ import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme'
 import { calculateGlowScore, getGlowLabel } from '@/lib/glowscore';
 import { useTrimester } from '@/hooks/useTrimester';
 import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
+import { useProfile } from '@/hooks/useProfile';
+import { useShelfData } from '@/hooks/useShelfData';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -138,9 +140,18 @@ export default function HomeScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
 
+  const { role, userId, linkedUserId, firstName, linkedFirstName } = useProfile();
+  const isPartner = role === 'partner';
+  const shelfUserId = isPartner && linkedUserId ? linkedUserId : userId;
+  const displayName = isPartner ? (linkedFirstName ?? 'Votre proche') : (firstName || 'Hēlo');
+
   const { weekOfPregnancy } = useTrimester();
   const { isNew } = useWeeklyBrief(weekOfPregnancy);
-  const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(MOCK_SHELF);
+
+  const { shelf: realShelf } = useShelfData(shelfUserId || undefined);
+  const activeShelf = realShelf.length > 0 ? realShelf : MOCK_SHELF;
+
+  const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
   const glowLabel = getGlowLabel(score);
   const hasRisk = countDanger > 0 || countCaution > 0;
 
@@ -164,8 +175,10 @@ export default function HomeScreen() {
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
           <View>
-            <ThemedText variant="bodySmall" color="textTertiary">Bonjour</ThemedText>
-            <ThemedText variant="headlineLarge" color="textPrimary">Hēlo</ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary">
+              {isPartner ? `Placard de` : 'Bonjour'}
+            </ThemedText>
+            <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
           </View>
           <IconButton size={44}>
             <Feather name="bell" size={20} color={Colors.textSecondary} />
@@ -221,7 +234,8 @@ export default function HomeScreen() {
           </Card>
         </Animated.View>
 
-        {/* ── WEEKLY BRIEF ── */}
+        {/* ── WEEKLY BRIEF (pregnant only) ── */}
+        {!isPartner && (
         <Animated.View entering={FadeInDown.delay(220).duration(500)}>
           <Pressable
             onPress={() => router.push('/weekly-brief')}
@@ -255,6 +269,7 @@ export default function HomeScreen() {
             <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
           </Pressable>
         </Animated.View>
+        )}
 
         {/* ── GLOW SCORE ── */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
@@ -287,8 +302,8 @@ export default function HomeScreen() {
               <CompositionBar count={countDanger} total={total} color={Colors.danger} label="À risque" />
             </View>
 
-            {/* Améliorer card */}
-            {hasRisk && (
+            {/* Améliorer card (pregnant only) */}
+            {!isPartner && hasRisk && (
               <Pressable
                 onPress={() => router.push('/(tabs)/shelf')}
                 style={({ pressed }) => [
@@ -313,12 +328,14 @@ export default function HomeScreen() {
               </Pressable>
             )}
 
-            {/* Share button */}
-            <View style={styles.shareRow}>
-              <Button variant="ghost" onPress={handleShare}>
-                Partager mon score
-              </Button>
-            </View>
+            {/* Share button (pregnant only) */}
+            {!isPartner && (
+              <View style={styles.shareRow}>
+                <Button variant="ghost" onPress={handleShare}>
+                  Partager mon score
+                </Button>
+              </View>
+            )}
           </Card>
         </Animated.View>
 

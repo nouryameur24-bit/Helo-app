@@ -11,6 +11,26 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
+import { useProfile } from '@/hooks/useProfile';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import type { ShelfCategory } from '@/components/shelf/ShelfCard';
+import type { VerdictFilter } from '@/components/shelf/FilterSheet';
+
+type ShelfHistoryVerdict = 'safe' | 'caution' | 'danger' | 'unknown';
+
+type ShelfHistoryProduct = {
+  id: string;
+  name: string | null;
+  brand: string | null;
+};
+
+type ShelfHistoryRow = {
+  id: string;
+  trimester: number | null;
+  verdict_at_shelf_add: ShelfHistoryVerdict | null;
+  shelf_category: ShelfCategory | null;
+  products: ShelfHistoryProduct | ShelfHistoryProduct[] | null;
+};
 
 interface MonPlacardViewProps {
   highlightBarcode?: string;
@@ -26,6 +46,9 @@ const MOCK_PRODUCTS: ShelfProduct[] = [
 ];
 
 export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
+  const { role, linkedUserId, linkedFirstName } = useProfile();
+  const isPartner = role === 'partner' && !!linkedUserId;
+
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<ShelfProduct[]>([]);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
@@ -33,12 +56,78 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   const flatListRef = useRef<FlatList<ShelfProduct>>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setProducts(MOCK_PRODUCTS);
+    if (isPartner && isSupabaseConfigured && linkedUserId) {
+      loadMotherShelf(linkedUserId);
+      const channel = supabase
+        .channel(`shelf:${linkedUserId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'scan_history',
+            filter: `user_id=eq.${linkedUserId}`,
+          },
+          () => {
+            loadMotherShelf(linkedUserId);
+          },
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } else {
+      const timer = setTimeout(() => {
+        setProducts(MOCK_PRODUCTS);
+        setIsLoading(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isPartner, linkedUserId]);
+
+  const loadMotherShelf = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('scan_history')
+        .select(`
+          id,
+          trimester,
+          verdict_at_shelf_add,
+          shelf_category,
+          products (
+            id,
+            name,
+            brand
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('in_shelf', true)
+        .order('scanned_at', { ascending: false });
+
+      if (error) throw error;
+
+      const shelfProducts: ShelfProduct[] = ((data ?? []) as unknown as ShelfHistoryRow[])
+        .map((row) => {
+          const prod = Array.isArray(row.products) ? row.products[0] : row.products;
+          return {
+            id: row.id,
+            name: prod?.name ?? 'Produit',
+            brand: prod?.brand ?? '',
+            verdict: row.verdict_at_shelf_add ?? 'unknown',
+            verdictLabel: verdictLabel(row.verdict_at_shelf_add),
+            category: row.shelf_category ?? undefined,
+            verdictChanged: false,
+          };
+        });
+
+      setProducts(shelfProducts);
+    } catch (err) {
+      console.warn('[MonPlacardView] loadMotherShelf error:', err);
+    } finally {
       setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  };
 
   useEffect(() => {
     if (!highlightBarcode || isLoading || products.length === 0) return;
@@ -53,19 +142,16 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
 
   const filteredProducts = React.useMemo(() => {
     let result = products;
-
     if (!filters.verdicts.includes('tous')) {
-      result = result.filter((p) => filters.verdicts.includes(p.verdict as any));
+      result = result.filter((p) => filters.verdicts.includes(p.verdict as VerdictFilter));
     }
     if (filters.categories.length > 0) {
       result = result.filter((p) => p.category && filters.categories.includes(p.category));
     }
-
     result = [...result].sort((a, b) => {
       if (filters.sort === 'oldest') return a.id.localeCompare(b.id);
       return b.id.localeCompare(a.id);
     });
-
     return result;
   }, [products, filters]);
 
@@ -77,11 +163,14 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   }, []);
 
   const handleRemove = useCallback((product: ShelfProduct) => {
+    if (isPartner) return;
     setProducts((prev) => prev.filter((p) => p.id !== product.id));
-  }, []);
+  }, [isPartner]);
 
   const handleChangeCategory = useCallback((_product: ShelfProduct) => {
   }, []);
+
+  const noopRemove = useCallback((_product: ShelfProduct) => {}, []);
 
   const renderItem = useCallback(({ item }: { item: ShelfProduct }) => {
     const isHighlighted = !!highlightBarcode && item.id === highlightBarcode;
@@ -93,12 +182,13 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
         <ShelfCard
           product={item}
           onPress={handlePress}
-          onRemove={handleRemove}
+          onRemove={isPartner ? noopRemove : handleRemove}
           onChangeCategory={handleChangeCategory}
         />
       </View>
     );
-  }, [handlePress, handleRemove, handleChangeCategory, highlightBarcode]);
+  }, [handlePress, handleRemove, handleChangeCategory, highlightBarcode, isPartner, noopRemove]);
+
 
   const renderShimmer = useCallback(({ item }: { item: number }) => (
     <View style={styles.cardWrapper}>
@@ -127,10 +217,12 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
       <View style={styles.emptyRoot}>
         <IllustrationShelf size={180} />
         <ThemedText variant="headlineLarge" color="textPrimary" style={styles.emptyTitle}>
-          Votre placard est vide
+          {isPartner ? `Le placard de ${linkedFirstName ?? 'votre proche'} est vide` : 'Votre placard est vide'}
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
-          Scannez vos produits et ajoutez-les à votre placard pour les retrouver ici.
+          {isPartner
+            ? 'Scannez des produits pour votre proche et ajoutez-les à son placard.'
+            : 'Scannez vos produits et ajoutez-les à votre placard pour les retrouver ici.'}
         </ThemedText>
         <Button variant="primary" onPress={() => router.push('/(tabs)/scan')}>
           Scanner un produit
@@ -156,10 +248,18 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.header}>
+            {isPartner && (
+              <View style={styles.partnerLabel}>
+                <Feather name="heart" size={14} color={Colors.accent} />
+                <ThemedText variant="labelSmall" color="accent">
+                  Placard de {linkedFirstName ?? 'votre proche'}
+                </ThemedText>
+              </View>
+            )}
             <View style={styles.headerTop}>
               <View style={{ flex: 1 }}>
                 <ThemedText variant="displayMedium" color="textPrimary">
-                  Mon Placard
+                  {isPartner ? `Placard de ${linkedFirstName ?? 'votre proche'}` : 'Mon Placard'}
                 </ThemedText>
                 <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: 4 }}>
                   {products.length} produits · {compatiblePercent}% compatibles
@@ -183,12 +283,32 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   );
 }
 
+function verdictLabel(verdict: string | null): string {
+  switch (verdict) {
+    case 'safe': return 'Sûr';
+    case 'caution': return 'Vigilance';
+    case 'danger': return 'Déconseillé';
+    default: return 'Inconnu';
+  }
+}
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
   header: {
     marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  partnerLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.accentLight,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
   headerTop: {
     flexDirection: 'row',

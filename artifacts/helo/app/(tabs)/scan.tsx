@@ -26,16 +26,14 @@ import { Feather } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+import { useProfile } from '@/hooks/useProfile';
 
 const { width: W, height: H } = Dimensions.get('window');
 
-// ─── Viewfinder dimensions ────────────────────────────────────────────────────
-// Barcode mode: square-ish
 const VF_BARCODE_W = Math.min(W * 0.68, 280);
 const VF_BARCODE_H = VF_BARCODE_W;
 const VF_BARCODE_Y = H * 0.28;
 
-// Ingredients mode: wider 3:2 rectangle
 const VF_OCR_W = Math.min(W * 0.85, 340);
 const VF_OCR_H = Math.round(VF_OCR_W * (2 / 3));
 const VF_OCR_Y = H * 0.24;
@@ -50,7 +48,6 @@ const BARCODE_TYPES = [
 
 type ScanMode = 'barcode' | 'ingredients' | 'menu';
 
-// ─── Permission screen ────────────────────────────────────────────────────────
 function PermissionScreen({ onRequest }: { onRequest: () => void }) {
   const insets = useSafeAreaInsets();
   return (
@@ -76,7 +73,6 @@ function PermissionScreen({ onRequest }: { onRequest: () => void }) {
   );
 }
 
-// ─── L-shaped corner bracket ──────────────────────────────────────────────────
 function CornerBracket({ position, color }: { position: 'tl' | 'tr' | 'bl' | 'br'; color: string }) {
   const isTop = position === 'tl' || position === 'tr';
   const isLeft = position === 'tl' || position === 'bl';
@@ -119,7 +115,6 @@ function CornerBracket({ position, color }: { position: 'tl' | 'tr' | 'bl' | 'br
   );
 }
 
-// ─── Animated viewfinder ──────────────────────────────────────────────────────
 function FlashingViewfinder({ flashColor }: { flashColor: SharedValue<number> }) {
   const pulseOpacity = useSharedValue(0.5);
   React.useEffect(() => {
@@ -156,7 +151,6 @@ function FlashingViewfinder({ flashColor }: { flashColor: SharedValue<number> })
   );
 }
 
-// ─── Overlay (4 strips) ───────────────────────────────────────────────────────
 const OVERLAY_COLOR = 'rgba(45, 41, 38, 0.62)';
 
 function ScanOverlay({ vfX, vfY, vfW, vfH }: { vfX: number; vfY: number; vfW: number; vfH: number }) {
@@ -178,7 +172,6 @@ function ScanOverlay({ vfX, vfY, vfW, vfH }: { vfX: number; vfY: number; vfW: nu
   );
 }
 
-// ─── Mode chip ────────────────────────────────────────────────────────────────
 function ModeChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity
@@ -193,7 +186,6 @@ function ModeChip({ label, active, onPress }: { label: string; active: boolean; 
   );
 }
 
-// ─── Shutter button (OCR mode) ────────────────────────────────────────────────
 function ShutterButton({ onPress }: { onPress: () => void }) {
   const scale = useSharedValue(1);
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -212,7 +204,6 @@ function ShutterButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-// ─── Web placeholder ──────────────────────────────────────────────────────────
 function WebPlaceholder() {
   const insets = useSafeAreaInsets();
   return (
@@ -231,7 +222,6 @@ function WebPlaceholder() {
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
@@ -243,13 +233,16 @@ export default function ScanScreen() {
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const flashColor = useSharedValue(0);
-  const flashOverlay = useSharedValue(0); // for shutter white flash
+  const flashOverlay = useSharedValue(0);
   const insets = useSafeAreaInsets();
 
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const bottomInset = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  // Computed viewfinder geometry based on mode
+  const { role, linkedFirstName } = useProfile();
+  const isPartner = role === 'partner';
+  const partnerName = linkedFirstName;
+
   const isOCRMode = scanMode === 'ingredients';
   const vfW = isOCRMode ? VF_OCR_W : VF_BARCODE_W;
   const vfH = isOCRMode ? VF_OCR_H : VF_BARCODE_H;
@@ -291,7 +284,6 @@ export default function ScanScreen() {
     if (takingPhoto || !cameraRef.current) return;
     setTakingPhoto(true);
 
-    // Haptic + white flash
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     flashOverlay.value = withSequence(
       withTiming(0.5, { duration: 60 }),
@@ -314,7 +306,6 @@ export default function ScanScreen() {
     opacity: flashOverlay.value,
   }));
 
-  // ── Platform: web ──
   if (Platform.OS === 'web') return <WebPlaceholder />;
   if (!permission) return <View style={[styles.root, { backgroundColor: Colors.background }]} />;
   if (!permission.granted) return <PermissionScreen onRequest={requestPermission} />;
@@ -323,7 +314,6 @@ export default function ScanScreen() {
     <View style={styles.root}>
       <StatusBar style="light" />
 
-      {/* Camera feed */}
       {isActive && (
         <CameraView
           ref={cameraRef}
@@ -335,16 +325,13 @@ export default function ScanScreen() {
         />
       )}
 
-      {/* White flash overlay for shutter */}
       <Animated.View
         style={[StyleSheet.absoluteFill, styles.flashOverlay, flashOverlayStyle]}
         pointerEvents="none"
       />
 
-      {/* Dark cutout overlay */}
       <ScanOverlay vfX={vfX} vfY={vfY} vfW={vfW} vfH={vfH} />
 
-      {/* Animated viewfinder */}
       <View
         style={[styles.viewfinderContainer, { top: vfY, left: vfX, width: vfW, height: vfH }]}
         pointerEvents="none"
@@ -354,7 +341,14 @@ export default function ScanScreen() {
 
       {/* ── Top bar ── */}
       <View style={[styles.topBar, { paddingTop: topInset + Spacing.sm }]}>
-        <Text style={styles.topTitle}>Scanner</Text>
+        {isPartner && partnerName ? (
+          <View style={styles.partnerBanner}>
+            <Feather name="heart" size={14} color={Colors.accent} />
+            <Text style={styles.partnerBannerText}>Scanner pour {partnerName}</Text>
+          </View>
+        ) : (
+          <Text style={styles.topTitle}>Scanner</Text>
+        )}
         <IconButton
           onPress={() => setTorchOn((v) => !v)}
           backgroundColor={torchOn ? Colors.accent : 'rgba(255,255,255,0.18)'}
@@ -397,7 +391,6 @@ export default function ScanScreen() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#000' },
   strip: { position: 'absolute' },
@@ -414,6 +407,23 @@ const styles = StyleSheet.create({
     fontSize: Typography.labelLarge.fontSize,
     letterSpacing: 0.3,
     color: '#fff',
+  },
+  partnerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(201, 169, 110, 0.25)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 110, 0.5)',
+  },
+  partnerBannerText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.labelLarge.fontSize,
+    color: Colors.accentLight,
+    letterSpacing: 0.2,
   },
   hintWrapper: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 10 },
   hintPill: {

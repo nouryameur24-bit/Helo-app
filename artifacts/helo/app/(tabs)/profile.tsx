@@ -1,16 +1,20 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   View,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { NotificationPermissionScreen } from '@/components/NotificationPermissionScreen';
 import { Card } from '@/components/ui/Card';
@@ -18,6 +22,8 @@ import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useProfile, setUserRole } from '@/hooks/useProfile';
+import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
 
 interface SettingRowProps {
   icon: keyof typeof Feather.glyphMap;
@@ -25,9 +31,10 @@ interface SettingRowProps {
   subtitle?: string;
   onPress?: () => void;
   danger?: boolean;
+  rightContent?: React.ReactNode;
 }
 
-function SettingRow({ icon, title, subtitle, onPress, danger }: SettingRowProps) {
+function SettingRow({ icon, title, subtitle, onPress, danger, rightContent }: SettingRowProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -45,7 +52,21 @@ function SettingRow({ icon, title, subtitle, onPress, danger }: SettingRowProps)
           <ThemedText variant="bodySmall" color="textTertiary">{subtitle}</ThemedText>
         ) : null}
       </View>
-      <Feather name="chevron-right" size={16} color={Colors.textTertiary} />
+      {rightContent ?? <Feather name="chevron-right" size={16} color={Colors.textTertiary} />}
+    </Pressable>
+  );
+}
+
+function PartnerCodeChip({ code }: { code: string }) {
+  const handleCopy = () => {
+    Clipboard.setStringAsync(code);
+  };
+  return (
+    <Pressable onPress={handleCopy} style={styles.codeChip}>
+      <ThemedText variant="headlineMedium" color="accent" style={styles.codeText}>
+        {code}
+      </ThemedText>
+      <Feather name="copy" size={16} color={Colors.accent} />
     </Pressable>
   );
 }
@@ -70,6 +91,86 @@ export default function ProfileScreen() {
   const handleNotificationsPress = () => {
     router.push('/notifications-settings' as never);
   };
+
+  const { userId, role, firstName, trimester, partnerCode, linkedUserId, linkedFirstName, refresh } = useProfile();
+  const isPartner = role === 'partner';
+  const [localPartnerCode, setLocalPartnerCode] = useState<string | null>(partnerCode);
+
+  useEffect(() => {
+    setLocalPartnerCode(partnerCode);
+  }, [partnerCode]);
+
+  const handleShareCode = () => {
+    const code = localPartnerCode ?? partnerCode;
+    if (!code) return;
+    Share.share({
+      message: `Rejoins-moi sur Hēlo ! Entre mon code partenaire pour suivre mon placard et scanner des produits pour moi : ${code}`,
+    });
+  };
+
+  const handleRegenerateCode = () => {
+    Alert.alert(
+      'Régénérer le code',
+      'Cela va créer un nouveau code et déconnecter votre partenaire actuel.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Régénérer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const newCode = await regeneratePartnerCode(userId);
+              setLocalPartnerCode(newCode);
+              const profileRaw = await AsyncStorage.getItem('user_profile');
+              if (profileRaw) {
+                const profile = JSON.parse(profileRaw);
+                profile.partnerCode = newCode;
+                await AsyncStorage.setItem('user_profile', JSON.stringify(profile));
+              }
+              await refresh();
+            } catch {
+              Alert.alert('Erreur', 'Impossible de régénérer le code.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDisconnectPartner = () => {
+    const name = isPartner ? linkedFirstName : linkedFirstName;
+    Alert.alert(
+      'Déconnecter',
+      isPartner
+        ? `Voulez-vous vous déconnecter du compte de ${name ?? 'votre proche'} ?`
+        : `Voulez-vous déconnecter ${name ?? 'votre partenaire'} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await unlinkPartner({ userId, role });
+              await setUserRole('pregnant');
+              await AsyncStorage.removeItem('@helo_linked_user_id');
+              await AsyncStorage.removeItem('@helo_linked_first_name');
+              await refresh();
+              if (isPartner) {
+                router.replace('/onboarding/role');
+              }
+            } catch {
+              Alert.alert('Erreur', 'Impossible de déconnecter.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const displayName = firstName || (isPartner ? 'Partenaire' : 'Utilisateur');
+  const displayCode = localPartnerCode ?? partnerCode;
+  const trimesterLabel = trimester ? `${trimester}e trimestre` : 'Non défini';
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
@@ -98,49 +199,137 @@ export default function ProfileScreen() {
         {/* Avatar section */}
         <Animated.View entering={FadeInDown.delay(80).duration(500)} style={styles.avatarSection}>
           <LinearGradient
-            colors={[Colors.accentLight, Colors.accent]}
+            colors={isPartner ? ['#A8C4E0', '#6B9BBF'] : [Colors.accentLight, Colors.accent]}
             style={styles.avatar}
           >
-            <Feather name="user" size={36} color="#fff" />
+            <Feather name={isPartner ? 'heart' : 'user'} size={36} color="#fff" />
           </LinearGradient>
           <View style={styles.avatarInfo}>
-            <ThemedText variant="headlineMedium" color="textPrimary">Sophie Martin</ThemedText>
-            <ThemedText variant="bodyMedium" color="textSecondary">24 semaines de grossesse</ThemedText>
+            <ThemedText variant="headlineMedium" color="textPrimary">
+              {displayName}
+            </ThemedText>
+            {isPartner ? (
+              <ThemedText variant="bodyMedium" color="textSecondary">
+                {linkedFirstName ? `Partenaire de ${linkedFirstName}` : 'Mode Partenaire'}
+              </ThemedText>
+            ) : (
+              <ThemedText variant="bodyMedium" color="textSecondary">
+                {trimesterLabel}
+              </ThemedText>
+            )}
           </View>
-          <View style={[styles.weekBadge, { backgroundColor: Colors.accentLight }]}>
-            <ThemedText variant="labelSmall" color="accentDark">SA 24</ThemedText>
-          </View>
+          {!isPartner && trimester && (
+            <View style={[styles.weekBadge, { backgroundColor: Colors.accentLight }]}>
+              <ThemedText variant="labelSmall" color="accentDark">T{trimester}</ThemedText>
+            </View>
+          )}
         </Animated.View>
 
         {/* Stats */}
-        <Animated.View entering={FadeInDown.delay(140).duration(500)} style={styles.statsRow}>
-          {[
-            { value: '47', label: 'Scans' },
-            { value: '38', label: 'Sûrs' },
-            { value: '9', label: 'Vigilance' },
-          ].map((stat, i) => (
-            <Card key={i} style={styles.statCard} padding={Spacing.lg}>
-              <ThemedText variant="headlineLarge" color="accent">{stat.value}</ThemedText>
-              <ThemedText variant="bodySmall" color="textSecondary">{stat.label}</ThemedText>
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(140).duration(500)} style={styles.statsRow}>
+            {[
+              { value: '47', label: 'Scans' },
+              { value: '38', label: 'Sûrs' },
+              { value: '9', label: 'Vigilance' },
+            ].map((stat, i) => (
+              <Card key={i} style={styles.statCard} padding={Spacing.lg}>
+                <ThemedText variant="headlineLarge" color="accent">{stat.value}</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">{stat.label}</ThemedText>
+              </Card>
+            ))}
+          </Animated.View>
+        )}
+
+        {/* Partner section - pregnant user */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              PARTENAIRE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              {displayCode ? (
+                <>
+                  <View style={styles.settingRow}>
+                    <View style={[styles.settingIcon, { backgroundColor: Colors.backgroundSecondary }]}>
+                      <Feather name="key" size={18} color={Colors.textSecondary} />
+                    </View>
+                    <View style={styles.settingContent}>
+                      <ThemedText variant="bodyLarge" color="textPrimary">Mon code</ThemedText>
+                      <ThemedText variant="bodySmall" color="textTertiary">Partagez ce code avec votre partenaire</ThemedText>
+                    </View>
+                    <PartnerCodeChip code={displayCode} />
+                  </View>
+                  <Divider />
+                  <SettingRow icon="share-2" title="Partager mon code" onPress={handleShareCode} />
+                  <Divider />
+                  <SettingRow icon="refresh-cw" title="Régénérer le code" subtitle="Déconnecte le partenaire actuel" onPress={handleRegenerateCode} />
+                  {linkedUserId && (
+                    <>
+                      <Divider />
+                      <SettingRow
+                        icon="user-x"
+                        title={`Déconnecter ${linkedFirstName ?? 'le partenaire'}`}
+                        danger
+                        onPress={handleDisconnectPartner}
+                      />
+                    </>
+                  )}
+                </>
+              ) : (
+                <SettingRow icon="users" title="Inviter un partenaire" subtitle="Générez un code après avoir créé votre profil" />
+              )}
             </Card>
-          ))}
-        </Animated.View>
+          </Animated.View>
+        )}
 
-        {/* Settings */}
-        <Animated.View entering={FadeInDown.delay(200).duration(500)}>
-          <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
-            GROSSESSE
-          </ThemedText>
-          <Card padding={0} style={styles.settingGroup}>
-            <SettingRow icon="heart" title="Semaine de grossesse" subtitle="Semaine 24" />
-            <Divider />
-            <SettingRow icon="alert-triangle" title="Allergies connues" subtitle="Aucune renseignée" />
-            <Divider />
-            <SettingRow icon="user" title="Profil médical" />
-          </Card>
-        </Animated.View>
+        {/* Partner disconnection for partner role */}
+        {isPartner && (
+          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              PARTENAIRE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              <View style={styles.settingRow}>
+                <View style={[styles.settingIcon, { backgroundColor: Colors.backgroundSecondary }]}>
+                  <Feather name="heart" size={18} color={Colors.textSecondary} />
+                </View>
+                <View style={styles.settingContent}>
+                  <ThemedText variant="bodyLarge" color="textPrimary">
+                    {linkedFirstName ? `Partenaire de ${linkedFirstName}` : 'Mode Partenaire'}
+                  </ThemedText>
+                  <ThemedText variant="bodySmall" color="textTertiary">Vous voyez le placard partagé</ThemedText>
+                </View>
+              </View>
+              <Divider />
+              <SettingRow
+                icon="user-x"
+                title="Déconnecter"
+                subtitle="Revenir à la sélection du rôle"
+                danger
+                onPress={handleDisconnectPartner}
+              />
+            </Card>
+          </Animated.View>
+        )}
 
-        <Animated.View entering={FadeInDown.delay(260).duration(500)}>
+        {/* Settings — pregnancy (only for pregnant users) */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(260).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              GROSSESSE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              <SettingRow icon="heart" title="Semaine de grossesse" subtitle={trimesterLabel} />
+              <Divider />
+              <SettingRow icon="alert-triangle" title="Allergies connues" subtitle="Aucune renseignée" />
+              <Divider />
+              <SettingRow icon="user" title="Profil médical" />
+            </Card>
+          </Animated.View>
+        )}
+
+        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
             APPLICATION
           </ThemedText>
@@ -157,13 +346,13 @@ export default function ProfileScreen() {
           </Card>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(380).duration(500)}>
           <Card padding={0} style={styles.settingGroup}>
             <SettingRow icon="log-out" title="Se déconnecter" danger />
           </Card>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(380).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(440).duration(500)}>
           <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
             Hēlo v1.0.0 · Pour votre bien-être et celui de votre bébé
           </ThemedText>
@@ -234,6 +423,20 @@ const styles = StyleSheet.create({
   settingContent: {
     flex: 1,
     gap: 1,
+  },
+  codeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.accentLight,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+  },
+  codeText: {
+    letterSpacing: 3,
   },
   version: {
     textAlign: 'center',

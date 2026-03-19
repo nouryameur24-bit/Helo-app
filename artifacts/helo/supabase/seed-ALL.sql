@@ -1,0 +1,892 @@
+-- Hēlo — Ingrédients seed data
+-- 50 ingrédients : 20 cosmétiques + 18 alimentaires + 12 médicaments
+-- Run schema.sql first
+
+-- ============================================================
+-- COSMÉTIQUES — DANGER (10)
+-- ============================================================
+INSERT INTO ingredients (id, name, name_inci, synonyms, category,
+  risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding,
+  description_fr, source, source_url)
+VALUES
+
+('cd000001-0000-0000-0000-000000000001',
+ 'Rétinol / Rétinol A',
+ 'Retinol',
+ ARRAY['Retinal', 'Tretinoin', 'All-trans retinoic acid', 'Vitamin A acid', 'Retin-A'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Le rétinol est une forme de vitamine A utilisée dans de nombreuses crèmes anti-âge et soins du visage. À fortes doses, les rétinoïdes ont été associés à des effets tératogènes dans les études animales et chez l''humain après prise orale. Par précaution, il est recommandé d''éviter toute application cutanée pendant la grossesse, même si les données sur l''absorption percutanée restent limitées. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, FDA, CRAT',
+ 'https://www.ansm.sante.fr'),
+
+('cd000002-0000-0000-0000-000000000002',
+ 'Isotrétinoïne',
+ 'Isotretinoin',
+ ARRAY['13-cis-retinoic acid', 'Accutane', 'Roaccutane'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'danger',
+ 'L''isotrétinoïne est un rétinoïde de synthèse utilisé dans certains produits dermatologiques contre l''acné sévère. Elle est formellement contre-indiquée durant toute la grossesse car elle est hautement tératogène : le risque de malformations graves est établi. Elle nécessite une contraception obligatoire chez toute femme en âge de procréer. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, HAS, CRAT',
+ 'https://www.crat.fr/substance/isotretinoin'),
+
+('cd000003-0000-0000-0000-000000000003',
+ 'Hydroquinone',
+ 'Hydroquinone',
+ ARRAY['Benzene-1,4-diol', 'p-Dihydroxybenzene', 'Quinol'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'caution',
+ 'L''hydroquinone est un agent dépigmentant souvent présent dans les crèmes éclaircissantes. Elle présente une absorption percutanée significative et les données disponibles suggèrent qu''il est prudent d''éviter son utilisation pendant la grossesse. Des cas de complications systémiques ont été décrits à forte exposition. Son utilisation est d''ailleurs interdite dans les cosmétiques en Europe (hors prescription médicale). Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, Commission Européenne',
+ 'https://www.ansm.sante.fr'),
+
+('cd000004-0000-0000-0000-000000000004',
+ 'Formaldéhyde / DMDM Hydantoïne',
+ 'DMDM Hydantoin',
+ ARRAY['Formaldehyde', 'Diazolidinyl Urea', 'Imidazolidinyl Urea', 'Quaternium-15', 'Bronopol'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Le formaldéhyde et ses libérateurs (DMDM Hydantoin, Quaternium-15…) sont des conservateurs utilisés dans certains produits capillaires et cosmétiques. Le formaldéhyde est classé cancérigène de catégorie 1B par le CIRC. En raison de son absorption possible par inhalation et voie cutanée, son exposition devrait être minimisée pendant la grossesse, notamment les produits de lissage. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, CIRC, ANSES',
+ 'https://www.anses.fr'),
+
+('cd000005-0000-0000-0000-000000000005',
+ 'Phtalates (DEP, DBP)',
+ 'Diethyl Phthalate',
+ ARRAY['DEP', 'DBP', 'Dibutyl Phthalate', 'Diethyl Phthalate', 'Phthalate'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Les phtalates (DEP, DBP…) sont des plastifiants également utilisés comme solvants dans des parfums, vernis à ongles et laques. Ce sont des perturbateurs endocriniens reconnus. Des études épidémiologiques ont montré des associations avec des effets sur le développement du fœtus à forte exposition. Le DBP est interdit dans les cosmétiques en Europe. Évitez les produits contenant des phtalates pendant la grossesse. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, Commission Européenne, CRAT',
+ 'https://www.anses.fr'),
+
+('cd000006-0000-0000-0000-000000000006',
+ 'Mercure / Thimérosal',
+ 'Thimerosal',
+ ARRAY['Mercury', 'Methylmercury', 'Mercurous chloride', 'Ethylmercury'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'danger',
+ 'Le mercure et ses composés sont neurotoxiques et peuvent traverser le placenta. Ils ont été utilisés comme conservateurs dans certains produits cosmétiques importés (crèmes blanchissantes hors UE). Toute exposition au mercure doit être évitée pendant la grossesse et l''allaitement. Les cosmétiques contenant du mercure sont interdits en Europe. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'OMS, ANSM, FDA',
+ 'https://www.who.int'),
+
+('cd000007-0000-0000-0000-000000000007',
+ 'Acétate de plomb',
+ 'Lead Acetate',
+ ARRAY['Lead', 'Plumb', 'Lead(II) acetate', 'Sugar of lead'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'danger',
+ 'Le plomb est un métal lourd neurotoxique qui peut traverser facilement le placenta et altérer le développement neurologique du fœtus. L''acétate de plomb a été utilisé dans certaines teintures capillaires pour hommes mais est interdit dans les cosmétiques en Europe. Toute exposition doit être évitée pendant la grossesse. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, FDA, Commission Européenne',
+ NULL),
+
+('cd000008-0000-0000-0000-000000000008',
+ 'Toluène',
+ 'Toluene',
+ ARRAY['Methylbenzene', 'Toluol', 'Phenylmethane'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Le toluène est un solvant organique présent dans certains vernis à ongles et dissolvants. C''est un neurotoxique qui peut être inhalé lors de l''application. Des malformations ont été décrites chez les nourrissons de femmes très exposées professionnellement. Par précaution, évitez les vernis contenant du toluène et ventilez bien lors de l''utilisation de produits. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, CRAT, ANSES',
+ NULL),
+
+('cd000009-0000-0000-0000-000000000009',
+ 'Camphre (>11%)',
+ 'Camphor',
+ ARRAY['2-Bornanone', 'Camphor gum', '2-Camphanone'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Le camphre est un ingrédient aromatique et analgésique utilisé dans certains baumes, pommades et produits chauffants. À des concentrations élevées (>11%), il peut être toxique par absorption cutanée ou inhalation et traverser le placenta. Les faibles concentrations (<0,5%) présentes dans certains cosmétiques sont généralement considérées sans risque notable. Évitez les produits à forte concentration en camphre. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, CRAT',
+ NULL),
+
+('cd000010-0000-0000-0000-000000000010',
+ 'Acide rétinoïque (Trétinoïne)',
+ 'Tretinoin',
+ ARRAY['All-trans retinoic acid', 'Retinoic acid', 'Retin-A', 'Tretin-X'],
+ 'cosmetic',
+ 'danger', 'danger', 'danger', 'caution',
+ 'La trétinoïne (acide rétinoïque) est la forme acide du rétinol, utilisée en dermatologie contre l''acné et le vieillissement cutané. Elle est formellement contre-indiquée pendant la grossesse, avec des preuves solides de tératogénicité. Même en application cutanée, les autorités sanitaires recommandent de l''éviter strictement. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, CRAT, FDA',
+ 'https://www.crat.fr/substance/tretinoin');
+
+-- ============================================================
+-- COSMÉTIQUES — PRÉCAUTION (10)
+-- ============================================================
+INSERT INTO ingredients (id, name, name_inci, synonyms, category,
+  risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding,
+  description_fr, source, source_url)
+VALUES
+
+('cc000011-0000-0000-0000-000000000011',
+ 'Acide salicylique (<2%)',
+ 'Salicylic Acid',
+ ARRAY['BHA', '2-Hydroxybenzoic acid', 'Beta hydroxy acid'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'L''acide salicylique est un exfoliant chimique (BHA) largement utilisé contre les imperfections et l''acné. À faibles concentrations (<2%) en application localisée et peu fréquente, le risque systémique est très faible. Cependant, les applications sur de grandes surfaces ou à haute fréquence sont déconseillées par mesure de précaution, car les salicylates peuvent théoriquement affecter la coagulation à forte dose. Préférez des alternatives dès que possible. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, CRAT',
+ NULL),
+
+('cc000012-0000-0000-0000-000000000012',
+ 'Acide glycolique / AHA',
+ 'Glycolic Acid',
+ ARRAY['AHA', 'Alpha hydroxy acid', 'Hydroxyacetic acid', 'Lactic acid', 'Citric acid'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'safe',
+ 'Les acides de fruit (AHA — glycolique, lactique, citrique) sont des exfoliants chimiques courants dans les soins du visage. L''absorption systémique est très faible à faibles concentrations cosmétiques. Par précaution, les produits à haute concentration (>10%) sont déconseillés pendant la grossesse. Les concentrations cosmétiques habituelles sont généralement considérées comme peu risquées. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, FDA',
+ NULL),
+
+('cc000013-0000-0000-0000-000000000013',
+ 'Peroxyde de benzoyle',
+ 'Benzoyl Peroxide',
+ ARRAY['Dibenzoyl peroxide', 'BPO', 'Benzac'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Le peroxyde de benzoyle est utilisé dans les traitements anti-acné. Son absorption cutanée est faible (moins de 2%). Les données disponibles ne montrent pas d''effet tératogène, mais par précaution, son utilisation doit être limitée aux zones localisées et à la concentration minimale efficace. Il est préférable de consulter un dermatologue pour adapter son traitement acné pendant la grossesse. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM',
+ 'https://www.crat.fr/substance/benzoyl-peroxide'),
+
+('cc000014-0000-0000-0000-000000000014',
+ 'Huiles essentielles',
+ 'Eucalyptol',
+ ARRAY['Essential oils', 'Lavandula', 'Tea tree oil', 'Peppermint oil', 'Rosemary oil', 'Clary sage'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Les huiles essentielles sont des extraits végétaux concentrés présents dans de nombreux soins, parfums et produits naturels. En raison de leur concentration élevée en molécules bioactives, leur utilisation est à surveiller pendant la grossesse. Certaines (sauge sclarée, camphre, eucalyptus en grande quantité) sont réputées utérotoniques ou neurotoxiques. Les huiles diluées à usage cosmétique restent généralement bien tolérées en faible quantité. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, HAS',
+ NULL),
+
+('cc000015-0000-0000-0000-000000000015',
+ 'Parabènes',
+ 'Methylparaben',
+ ARRAY['Propylparaben', 'Butylparaben', 'Ethylparaben', 'Benzylparaben', 'Paraben'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Les parabènes (méthyl-, propyl-, butyl-parabène) sont des conservateurs très répandus dans les cosmétiques. Ils ont des propriétés faiblement oestrogéniques. Le propyl- et butylparabène sont restreints en Europe pour les produits destinés aux enfants. À ce jour, les données ne permettent pas de conclure à un risque avéré à doses cosmétiques, mais beaucoup de femmes préfèrent les éviter par précaution. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'Commission Européenne, ANSM, SCCS',
+ NULL),
+
+('cc000016-0000-0000-0000-000000000016',
+ 'Filtres UV chimiques (Oxybenzone)',
+ 'Benzophenone-3',
+ ARRAY['Oxybenzone', 'Octinoxate', 'Homosalate', 'Octocrylene', 'Benzophenone'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Certains filtres UV chimiques comme l''oxybenzone (benzophénone-3) sont des perturbateurs endocriniens potentiels. Ils sont absorbés à travers la peau et ont été détectés dans le lait maternel et le plasma. Les autorités recommandent par précaution de privilégier les filtres minéraux (oxyde de zinc, dioxyde de titane) pendant la grossesse. Les crèmes solaires avec filtres minéraux sont tout aussi efficaces. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, FDA, ANSM',
+ 'https://www.anses.fr'),
+
+('cc000017-0000-0000-0000-000000000017',
+ 'Triclosan',
+ 'Triclosan',
+ ARRAY['5-Chloro-2-(2,4-dichlorophenoxy)phenol', 'Irgasan'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Le triclosan est un agent antibactérien qui était largement utilisé dans les savons et dentifrices avant d''être interdit dans les produits de rinçage en Europe. Il reste présent dans certains produits cosmétiques à concentrations limitées. Des propriétés perturbantes endocriniennes ont été montrées in vitro. Par précaution, il vaut mieux privilégier des alternatives sans triclosan pendant la grossesse. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'Commission Européenne, ANSM, FDA',
+ NULL),
+
+('cc000018-0000-0000-0000-000000000018',
+ 'Sels d''aluminium (Chlorhydrate)',
+ 'Aluminum Chlorohydrate',
+ ARRAY['Aluminum Zirconium', 'Alum', 'Potassium alum', 'Aluminum chloride'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Les sels d''aluminium sont utilisés comme actifs anti-transpirants dans les déodorants. L''ANSM a lancé des études sur leur absorption cutanée, notamment après épilation ou rasage. Le niveau d''exposition via les déodorants cosmétiques reste faible. Par précaution, vous pouvez privilégier des déodorants sans aluminium, notamment en cas de peau irritée. Cette précaution vaut surtout pour une exposition quotidienne prolongée. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, HAS',
+ 'https://www.ansm.sante.fr'),
+
+('cc000019-0000-0000-0000-000000000019',
+ 'Ammoniaque (colorations)',
+ 'Ammonium Hydroxide',
+ ARRAY['Ammonia', 'Aqueous ammonia', 'NH3', 'Ammonium'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'safe',
+ 'L''ammoniaque est utilisée dans les colorations capillaires pour ouvrir les cuticules du cheveu. L''inhalation de vapeurs d''ammoniaque en grande quantité est à éviter, surtout en espace confiné. Les études disponibles ne montrent pas d''effet tératogène avéré pour les colorations utilisées de façon ponctuelle et dans un espace bien ventilé. Par précaution, beaucoup de professionnels recommandent d''attendre le 2e trimestre pour la première coloration. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, HAS',
+ NULL),
+
+('cc000020-0000-0000-0000-000000000020',
+ 'PPD (para-Phénylènediamine)',
+ 'p-Phenylenediamine',
+ ARRAY['PPD', '4-Aminoaniline', 'Paraphenylenediamine', 'Ursol D'],
+ 'cosmetic',
+ 'caution', 'caution', 'caution', 'caution',
+ 'La PPD (para-phénylènediamine) est un colorant utilisé dans les teintures capillaires permanentes et certains henné noirs. Elle peut provoquer des réactions allergiques, parfois sévères, et son absorption cutanée augmente pendant la grossesse. Les données de tératogénicité sont limitées mais par mesure de précaution, il est conseillé de faire un test cutané et de limiter les expositions, en préférant les colorations végétales. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, SCCS',
+ NULL);
+
+-- ============================================================
+-- ALIMENTATION — DANGER (10)
+-- ============================================================
+INSERT INTO ingredients (id, name, name_inci, synonyms, category,
+  risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding,
+  description_fr, source, source_url)
+VALUES
+
+('fd000001-0000-0000-0000-000000000001',
+ 'Alcool éthylique',
+ 'Ethanol',
+ ARRAY['Alcool', 'Alcohol', 'Vin', 'Bière', 'Spirits', 'Ethyl alcohol'],
+ 'food',
+ 'danger', 'danger', 'danger', 'danger',
+ 'L''alcool est la substance la plus documentée comme dangereuse pour le fœtus. L''OMS et toutes les agences sanitaires mondiales indiquent qu''aucune dose d''alcool n''est prouvée sûre pendant la grossesse. L''alcool traverse librement le placenta et peut provoquer le Syndrome d''Alcoolisation Fœtale (SAF), qui entraîne des troubles cognitifs permanents. L''abstinence totale est le seul message de sécurité reconnu. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'OMS, HAS, ANSM',
+ 'https://www.who.int/news-room/fact-sheets/detail/alcohol'),
+
+('fd000002-0000-0000-0000-000000000002',
+ 'Fromages au lait cru',
+ 'Raw milk cheese',
+ ARRAY['Camembert au lait cru', 'Brie de Meaux', 'Roquefort', 'Reblochon', 'Munster', 'Livarot'],
+ 'food',
+ 'danger', 'danger', 'danger', 'safe',
+ 'Les fromages au lait cru (Camembert au lait cru, Reblochon, Brie de Meaux…) peuvent contenir la bactérie Listeria monocytogenes. La listériose est une infection bénigne chez l''adulte sain mais peut être grave en cas de grossesse, pouvant provoquer une fausse couche, un accouchement prématuré ou une infection néonatale. Les fromages pasteurisés à pâte cuite (emmental, comté…) sont en revanche sans risque. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ 'https://www.anses.fr/fr/content/listeria'),
+
+('fd000003-0000-0000-0000-000000000003',
+ 'Viande crue ou peu cuite',
+ 'Raw meat',
+ ARRAY['Tartare de bœuf', 'Carpaccio', 'Steak saignant', 'Viande rosée', 'Raw beef'],
+ 'food',
+ 'danger', 'danger', 'danger', 'safe',
+ 'La viande crue ou insuffisamment cuite (tartare, carpaccio, steak très saignant) est à éviter pendant la grossesse en raison du risque de toxoplasmose. Le parasite Toxoplasma gondii peut traverser le placenta et provoquer de graves lésions chez le fœtus, notamment des atteintes oculaires et neurologiques. La cuisson à cœur (>65°C) élimine le parasite. Si vous n''êtes pas immunisée contre la toxoplasmose, une surveillance mensuelle est recommandée. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS, CRAT',
+ 'https://www.has-sante.fr'),
+
+('fd000004-0000-0000-0000-000000000004',
+ 'Charcuteries crues',
+ 'Raw cured meats',
+ ARRAY['Rillettes', 'Foie gras mi-cuit', 'Saucisson cru', 'Jambon cru', 'Salami', 'Chorizo cru'],
+ 'food',
+ 'danger', 'danger', 'danger', 'safe',
+ 'Les charcuteries crues (saucisson, jambon cru, rillettes, foie gras mi-cuit…) présentent un double risque : toxoplasmose et listériose. La cuisson ou le conditionnement pasteurisé élimine ces risques. Le jambon cuit sous vide est sans danger. Lavez-vous soigneusement les mains après manipulation des charcuteries crues. Les produits cuits (jambon cuit, mortadelle cuite) sont sûrs. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL),
+
+('fd000005-0000-0000-0000-000000000005',
+ 'Poissons à teneur élevée en mercure',
+ 'High-mercury fish',
+ ARRAY['Espadon', 'Swordfish', 'Requin', 'Shark', 'Marlin', 'Thon rouge', 'Lamprey'],
+ 'food',
+ 'danger', 'danger', 'danger', 'danger',
+ 'Certains grands poissons prédateurs (espadon, requin, marlin, thon rouge, lamproie) accumulent le méthylmercure dans leurs tissus — un neurotoxique qui passe le placenta et peut altérer le développement cérébral du fœtus. L''ANSES recommande de ne pas consommer ces espèces pendant la grossesse. Les autres poissons (saumon, thon en conserve, cabillaud) restent bénéfiques et sont à consommer 2x par semaine. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, OMS, FDA',
+ 'https://www.anses.fr/fr/content/mercure-et-methylmercure'),
+
+('fd000006-0000-0000-0000-000000000006',
+ 'Foie et pâtés de foie',
+ 'Liver',
+ ARRAY['Foie de veau', 'Foie de bœuf', 'Foie de volaille', 'Pâté de foie', 'Foie gras'],
+ 'food',
+ 'danger', 'danger', 'danger', 'safe',
+ 'Le foie d''animaux est une source exceptionnellement riche en vitamine A (rétinol). Un excès de vitamine A pendant la grossesse est tératogène : il peut provoquer des malformations du visage, du cœur et du système nerveux central. Une seule portion de foie de veau peut dépasser la limite de sécurité recommandée. Il est conseillé d''éviter le foie et les compléments à base de vitamine A animale (rétinol) pendant la grossesse. La bêta-carotène des végétaux est en revanche sans risque. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS, CRAT',
+ NULL),
+
+('fd000007-0000-0000-0000-000000000007',
+ 'Lait cru non pasteurisé',
+ 'Raw milk',
+ ARRAY['Lait cru', 'Lait non pasteurisé', 'Lait directement de la ferme'],
+ 'food',
+ 'danger', 'danger', 'danger', 'safe',
+ 'Le lait cru non pasteurisé peut contenir des bactéries pathogènes comme Listeria, Salmonella, E. coli O157:H7 ou Campylobacter. La listériose en particulier est dangereuse pendant la grossesse (risque de fausse couche ou d''infection néonatale grave). Tous les laits pasteurisés du commerce sont sans risque. Si vous êtes à la ferme, évitez de consommer du lait cru directement. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL),
+
+('fd000008-0000-0000-0000-000000000008',
+ 'Coquillages crus',
+ 'Raw shellfish',
+ ARRAY['Huîtres', 'Oysters', 'Palourdes crues', 'Moules crues', 'Clams raw'],
+ 'food',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Les coquillages filtreurs (huîtres, moules, palourdes) consommés crus peuvent concentrer de nombreux agents pathogènes : norovirus, Vibrio, Salmonella, HAV (hépatite A). Une intoxication alimentaire pendant la grossesse peut être sévère et entraîner une déshydratation dangereuse. Les coquillages bien cuits (moules marinières, huîtres gratinées) sont en revanche sans risque. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL),
+
+('fd000009-0000-0000-0000-000000000009',
+ 'Sushis au poisson cru',
+ 'Raw fish sushi',
+ ARRAY['Sashimi', 'Sushi', 'Maki poisson cru', 'Nigiri', 'Tartare de saumon'],
+ 'food',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Les poissons consommés crus dans les sushis, sashimis et tartares peuvent contenir des parasites (anisakis) ou des bactéries (Listeria, Salmonella). La congélation professionnelle à -20°C pendant 24h tue l''anisakis — certains établissements le pratiquent. Pendant la grossesse, les poissons doivent être consommés cuits à cœur. Si vous êtes au restaurant japonais, optez pour les makis aux légumes ou au poisson cuit. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL),
+
+('fd000010-0000-0000-0000-000000000010',
+ 'Germes et pousses crues',
+ 'Raw sprouts',
+ ARRAY['Graines germées', 'Alfafa', 'Soja germé', 'Radis germés', 'Luzerne', 'Sprouts'],
+ 'food',
+ 'danger', 'danger', 'danger', 'safe',
+ 'Les graines germées crues (alfalfa, soja, radis, fenugrec…) sont particulièrement à risque de contamination bactérienne (Salmonella, E. coli, Listeria) en raison des conditions chaudes et humides de leur germination. Plusieurs épidémies ont été liées à leur consommation. Elles peuvent être consommées cuites sans problème. Si vous les achetez en supermarché, préférez-les cuites ou évitez-les pendant la grossesse. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, FDA',
+ NULL);
+
+-- ============================================================
+-- ALIMENTATION — PRÉCAUTION (8)
+-- ============================================================
+INSERT INTO ingredients (id, name, name_inci, synonyms, category,
+  risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding,
+  description_fr, source, source_url)
+VALUES
+
+('fc000011-0000-0000-0000-000000000011',
+ 'Caféine',
+ 'Caffeine',
+ ARRAY['Café', 'Thé', 'Cola', 'Guarana', 'Maté', 'Energy drink', '1,3,7-trimethylxanthine'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'La caféine traverse le placenta et le fœtus est incapable de la métaboliser rapidement. L''OMS et l''EFSA recommandent de ne pas dépasser 200 mg de caféine par jour pendant la grossesse (environ 2 expressos). Au-delà, une association avec un risque de faible poids de naissance a été montrée dans certaines études. Un café ou thé modéré par jour reste généralement acceptable. Pensez aussi au thé, chocolat et sodas qui contiennent de la caféine. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'OMS, EFSA, HAS',
+ 'https://www.who.int'),
+
+('fc000012-0000-0000-0000-000000000012',
+ 'Thon en conserve',
+ 'Canned tuna',
+ ARRAY['Thon albacore', 'Thon listao', 'Skipjack tuna', 'Yellowfin tuna'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Le thon en conserve contient du mercure mais en quantité bien moindre que le thon frais ou l''espadon. L''ANSES recommande de le limiter à 1 à 2 portions par semaine pendant la grossesse (140g par portion). Le thon listao (petite boîte) contient moins de mercure que l''albacore (grande boîte). Le poisson reste une excellente source d''oméga-3 bénéfiques pour le développement cérébral du bébé. Variez les espèces pour profiter des bienfaits sans accumulation. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, OMS',
+ 'https://www.anses.fr'),
+
+('fc000013-0000-0000-0000-000000000013',
+ 'Saumon fumé',
+ 'Smoked salmon',
+ ARRAY['Gravlax', 'Truite fumée', 'Smoked trout'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Le saumon fumé à froid n''est pas cuit et peut parfois contenir Listeria monocytogenes. Ce risque est faible mais existe, surtout pour les produits artisanaux ou dépassant leur DLC. Le saumon fumé à chaud ou cuit au four est sans risque. Consommé de façon très occasionnelle dans les limites de la DLC, le risque reste très faible, mais la prudence est de mise. Le saumon cuit reste une excellente source d''oméga-3. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL),
+
+('fc000014-0000-0000-0000-000000000014',
+ 'Œufs crus ou peu cuits',
+ 'Raw eggs',
+ ARRAY['Œuf à la coque', 'Mayonnaise maison', 'Mousse au chocolat', 'Tiramisu', 'Aïoli'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Les œufs crus ou insuffisamment cuits (coque, mouillette, mayonnaise maison, tiramisu…) peuvent être contaminés par Salmonella enteritidis. Une salmonellose pendant la grossesse peut provoquer une déshydratation sévère et, plus rarement, une transmission au fœtus. Les œufs bien cuits (dur, brouillé bien cuit) sont sans risque. Les préparations à base d''œufs pasteurisés (mayonnaise industrielle) sont également sûres. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL),
+
+('fc000015-0000-0000-0000-000000000015',
+ 'Réglisse en quantité',
+ 'Glycyrrhiza',
+ ARRAY['Licorice', 'Glycyrrhizine', 'Glycyrrhizinic acid', 'Bonbons réglisse', 'Pastis', 'Anis'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'La réglisse contient de la glycyrrhizine, qui inhibe une enzyme responsable du métabolisme du cortisol. Des études finlandaises ont montré une association entre consommation élevée de réglisse pendant la grossesse et des troubles cognitifs légers chez l''enfant. La consommation occasionnelle d''infusions ou de bonbons à la réglisse reste généralement acceptable, mais la consommation régulière est déconseillée. Évitez les compléments à base d''extrait de réglisse. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL),
+
+('fc000016-0000-0000-0000-000000000016',
+ 'Saccharine / Édulcorants de synthèse',
+ 'Saccharin',
+ ARRAY['Cyclamate', 'E954', 'E952', 'Aspartame', 'Sucralose', 'Sweet''N Low'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Les édulcorants artificiels comme la saccharine et le cyclamate sont peu étudiés pendant la grossesse chez l''humain. La saccharine peut traverser le placenta et s''éliminer lentement du fœtus. L''EFSA et la FDA considèrent l''aspartame et le sucralose comme sûrs à consommation modérée. Par précaution, les édulcorants de type saccharine et cyclamate sont à éviter. Privilégiez l''eau aromatisée naturellement ou les jus dilués. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'EFSA, ANSES, HAS',
+ NULL),
+
+('fc000017-0000-0000-0000-000000000017',
+ 'Soja en excès',
+ 'Soy',
+ ARRAY['Isoflavones', 'Phytoestrogens', 'Genistein', 'Daidzein', 'Tofu', 'Lait de soja'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Le soja contient des isoflavones (phytoestrogènes) qui peuvent interagir avec le système hormonal. En consommation alimentaire normale (lait de soja, tofu en quantité raisonnable), le soja est considéré sans danger. Les compléments alimentaires concentrés en isoflavones sont en revanche déconseillés pendant la grossesse. L''ANSES recommande la prudence pour les populations sensibles. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ 'https://www.anses.fr'),
+
+('fc000018-0000-0000-0000-000000000018',
+ 'Poissons gras fumés ou marinés',
+ 'Smoked fish',
+ ARRAY['Hareng fumé', 'Maquereau fumé', 'Anguille fumée', 'Sprats', 'Rollmops'],
+ 'food',
+ 'caution', 'caution', 'caution', 'caution',
+ 'Les poissons gras fumés à froid ou marinés (hareng, maquereau, rollmops) peuvent contenir Listeria et, à haute consommation, des quantités non négligeables de polluants organiques persistants (dioxines, PCB). Consommés occasionnellement, leur apport en oméga-3 reste bénéfique. L''ANSES recommande de ne pas dépasser 2 portions hebdomadaires de poissons gras toutes espèces confondues. Préférez les poissons cuits. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'ANSES, HAS',
+ NULL);
+
+-- ============================================================
+-- MÉDICAMENTS — DANGER (6)
+-- ============================================================
+INSERT INTO ingredients (id, name, name_inci, synonyms, category,
+  risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding,
+  description_fr, source, source_url)
+VALUES
+
+('md000001-0000-0000-0000-000000000001',
+ 'Ibuprofène (AINS)',
+ 'Ibuprofen',
+ ARRAY['Advil', 'Nurofen', 'Brufen', 'NSAIDs', 'Anti-inflammatoire non stéroïdien'],
+ 'medication',
+ 'danger', 'danger', 'danger', 'caution',
+ 'L''ibuprofène est un anti-inflammatoire non stéroïdien (AINS) courant. Pendant la grossesse, les AINS sont déconseillés dès le T1 (risque de fausse couche) et formellement contre-indiqués à partir du 6e mois en raison du risque de fermeture prématurée du canal artériel, qui peut être fatal pour le fœtus. Le paracétamol est le seul antalgique recommandé pendant toute la grossesse. Consultez impérativement votre professionnel de santé pour un avis personnalisé.',
+ 'ANSM, CRAT, HAS',
+ 'https://www.crat.fr/substance/ibuprofene'),
+
+('md000002-0000-0000-0000-000000000002',
+ 'Aspirine forte dose (>100mg)',
+ 'Acetylsalicylic Acid',
+ ARRAY['ASA', 'Aspirin', 'Aspégic 500', 'Kardégic 300', 'Acide acétylsalicylique'],
+ 'medication',
+ 'danger', 'danger', 'danger', 'caution',
+ 'L''aspirine à doses analgésiques/antipyrétiques (>100 mg) est déconseillée pendant la grossesse. Au T3, elle augmente les risques hémorragiques pour la mère et le nouveau-né et peut retarder le déclenchement du travail. Elle est également classée AINS. À noter : de faibles doses (<100 mg/j, Kardégic 75 ou 100 mg) peuvent être prescrites médicalement dans certaines grossesses à risque de pré-éclampsie. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM, HAS',
+ 'https://www.crat.fr/substance/acide-acetylsalicylique'),
+
+('md000003-0000-0000-0000-000000000003',
+ 'Misoprostol',
+ 'Misoprostol',
+ ARRAY['Cytotec', 'Prostaglandin E1 analogue'],
+ 'medication',
+ 'danger', 'danger', 'danger', 'danger',
+ 'Le misoprostol est un analogue de prostaglandine E1 qui stimule les contractions utérines. Il est formellement contre-indiqué chez une femme enceinte non suivie médicalement. Il est utilisé uniquement sous strict contrôle médical dans les interruptions médicales de grossesse et l''induction du travail à terme. Toute prise non médicalement encadrée est extrêmement dangereuse. Consultez impérativement votre professionnel de santé.',
+ 'CRAT, ANSM, HAS',
+ 'https://www.crat.fr/substance/misoprostol'),
+
+('md000004-0000-0000-0000-000000000004',
+ 'Méthotrexate',
+ 'Methotrexate',
+ ARRAY['MTX', 'Metoject', 'Novatrex', 'Imeth', 'Folic acid antagonist'],
+ 'medication',
+ 'danger', 'danger', 'danger', 'danger',
+ 'Le méthotrexate est un antagoniste de l''acide folique utilisé comme immunosuppresseur, dans certains cancers et polyarthrites rhumatoïdes. C''est un tératogène majeur avec de nombreux cas de malformations graves documentés. Il est formellement contre-indiqué pendant la grossesse et nécessite une contraception efficace. Si vous prenez du méthotrexate, parlez immédiatement à votre médecin avant ou dès le début d''une grossesse. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM, HAS',
+ 'https://www.crat.fr/substance/methotrexate'),
+
+('md000005-0000-0000-0000-000000000005',
+ 'Kétoprofène (AINS)',
+ 'Ketoprofen',
+ ARRAY['Kétum', 'Profénid', 'Ketoprofen gel', 'AINS topique'],
+ 'medication',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Le kétoprofène est un AINS disponible en gel topique (Kétum) et en comprimés. Comme tous les AINS, il est déconseillé dès le début de la grossesse et formellement contre-indiqué à partir du 6e mois. Même sous forme de gel, une absorption cutanée significative est possible. Le gel de kétoprofène est d''ailleurs interdit chez la femme enceinte dès 6 mois. Le paracétamol reste l''antalgique de choix. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM',
+ 'https://www.crat.fr/substance/ketoprofene'),
+
+('md000006-0000-0000-0000-000000000006',
+ 'Diclofénac (AINS)',
+ 'Diclofenac',
+ ARRAY['Voltarène', 'Voltarol', 'Diclofenac sodium', 'Flector', 'AINS'],
+ 'medication',
+ 'danger', 'danger', 'danger', 'caution',
+ 'Le diclofénac (Voltarène) est un AINS anti-inflammatoire puissant disponible en comprimés, patchs et gel. Comme tous les AINS, il est déconseillé dès le début de la grossesse et totalement contre-indiqué à partir du 6e mois. Des effets sur le rein fœtal et le canal artériel ont été documentés. Même en application locale (gel Voltarène), la prudence s''impose. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM, HAS',
+ 'https://www.crat.fr/substance/diclofenac');
+
+-- ============================================================
+-- MÉDICAMENTS — PRÉCAUTION (6)
+-- ============================================================
+INSERT INTO ingredients (id, name, name_inci, synonyms, category,
+  risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding,
+  description_fr, source, source_url)
+VALUES
+
+('mc000007-0000-0000-0000-000000000007',
+ 'Aspirine faible dose (<100mg)',
+ 'Low-dose Acetylsalicylic Acid',
+ ARRAY['Kardégic 75', 'Aspégic nourrisson', 'Aspirin low dose', 'Baby aspirin'],
+ 'medication',
+ 'caution', 'safe', 'caution', 'caution',
+ 'À très faibles doses (<100mg/j), l''aspirine peut être prescrite médicalement pour prévenir la pré-éclampsie chez les femmes à risque. Cette indication est bien documentée et considérée comme bénéfique lorsqu''elle est prescrite par un médecin. Elle ne doit cependant pas être prise en automédication pendant la grossesse. Si votre médecin vous la prescrit, le rapport bénéfice/risque a été évalué pour vous. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, HAS, ANSM',
+ 'https://www.crat.fr/substance/acide-acetylsalicylique'),
+
+('mc000008-0000-0000-0000-000000000008',
+ 'Diphenhydramine (antihistaminique)',
+ 'Diphenhydramine',
+ ARRAY['Benadryl', 'Nytol', 'Donormyl', 'PM sleep aid', 'Antihistaminique H1'],
+ 'medication',
+ 'caution', 'caution', 'caution', 'caution',
+ 'La diphenhydramine est un antihistaminique H1 de première génération utilisé contre les allergies et comme aide au sommeil (Donormyl, Nytol). Les données disponibles ne montrent pas d''effet tératogène clairement établi. Cependant, au T3, une prise proche de l''accouchement peut provoquer une somnolence ou une dépression respiratoire néonatale. Son usage est à limiter autant que possible et toujours sous avis médical. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM',
+ NULL),
+
+('mc000009-0000-0000-0000-000000000009',
+ 'Pseudoéphédrine (décongestionnant)',
+ 'Pseudoephedrine',
+ ARRAY['Sudafed', 'Actifed', 'Rhinathiol', 'Decongestant'],
+ 'medication',
+ 'caution', 'caution', 'caution', 'caution',
+ 'La pseudoéphédrine est un vasoconstricteur nasal présent dans de nombreux décongestionnants. Elle peut provoquer une vasoconstriction placentaire et une élévation de la pression artérielle. En T1, certaines études ont suggéré une association avec des malformations cardiovasculaires mineures. Son utilisation est déconseillée pendant la grossesse, notamment au T1 et T3. Des alternatives plus sûres existent (lavages nasaux au sérum physiologique). Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM',
+ NULL),
+
+('mc000010-0000-0000-0000-000000000010',
+ 'Bismuth subsalicylate',
+ 'Bismuth Subsalicylate',
+ ARRAY['Pepto-Bismol', 'Bismuth', 'Subsalicylate de bismuth'],
+ 'medication',
+ 'caution', 'caution', 'danger', 'danger',
+ 'Le bismuth subsalicylate (Pepto-Bismol) est utilisé contre les troubles digestifs. Il contient des salicylates qui peuvent traverser le placenta. Au T3, les AINS (dont les salicylates) sont formellement contre-indiqués. Le bismuth lui-même manque de données chez la femme enceinte. De plus, les antiacides courants (carbonate de calcium, hydroxyde de magnésium) sont des alternatives mieux documentées. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM, FDA',
+ NULL),
+
+('mc000011-0000-0000-0000-000000000011',
+ 'Millepertuis (St John''s Wort)',
+ 'Hypericum Perforatum',
+ ARRAY['Millepertuis', 'Hypericum', 'St. John''s wort', 'Jarsin', 'Remotiv'],
+ 'medication',
+ 'caution', 'caution', 'caution', 'danger',
+ 'Le millepertuis est une plante médicinale utilisée contre la dépression légère à modérée. Pendant la grossesse, les données sont insuffisantes pour établir son innocuité. Des interactions médicamenteuses importantes ont été décrites (il accélère le métabolisme de nombreux médicaments y compris les contraceptifs hormonaux). Pendant l''allaitement, un transfert dans le lait maternel a été observé. Si vous prenez du millepertuis, informez votre médecin. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM, EMA',
+ NULL),
+
+('mc000012-0000-0000-0000-000000000012',
+ 'Mélatonine',
+ 'Melatonin',
+ ARRAY['N-acetyl-5-methoxytryptamine', 'Circadin', 'Sleepwell', 'Sleep hormone'],
+ 'medication',
+ 'caution', 'caution', 'caution', 'caution',
+ 'La mélatonine est une hormone naturellement produite par la glande pinéale qui régule le cycle veille-sommeil. Des compléments alimentaires à base de mélatonine sont largement disponibles. Les données chez la femme enceinte sont insuffisantes pour établir son innocuité. La mélatonine traverse le placenta et peut affecter le développement du système circadien du fœtus. En cas de troubles du sommeil pendant la grossesse, des approches non pharmacologiques (hygiène du sommeil) sont à privilégier. Consultez votre professionnel de santé pour un avis personnalisé.',
+ 'CRAT, ANSM, HAS',
+ NULL);
+-- Hēlo — Produits seed data
+-- 20 produits : 10 cosmétiques + 10 alimentaires
+-- Requires schema.sql + seed-ingredients.sql first
+
+-- ============================================================
+-- COSMÉTIQUES (10)
+-- ============================================================
+INSERT INTO products (name, brand, category, barcode, description_fr, ingredient_ids, overall_risk)
+VALUES
+
+(
+  'Crème Soft',
+  'NIVEA',
+  'cosmetic',
+  '4005808222919',
+  'Crème corps et mains nourrissante classique. Formule à base de glycérine et d''huile d''amande douce. Sans rétinol ni AINS. Bien tolérée en usage courant pendant la grossesse.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci IN ('Glycolic Acid')),
+  'safe'
+),
+
+(
+  'Gel Lavant Bébé',
+  'MUSTELA',
+  'cosmetic',
+  '3504105034046',
+  'Gel lavant très doux spécialement conçu pour les peaux sensibles de bébé. Sans parfum, sans colorant, sans parabènes. Formulé pour les mamans et les nourrissons. La formule Mustela est l''une des plus douces du marché.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Sensibio H2O',
+  'BIODERMA',
+  'cosmetic',
+  '3401599000353',
+  'Eau micellaire démaquillante pour peaux sensibles, sans rinçage. Formule douce, sans alcool, sans parabènes. L''une des eaux micellaires les mieux tolérées. Aucun ingrédient problématique identifié pour la grossesse à l''usage normal.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Solution Micellaire Eau de Rose',
+  'GARNIER',
+  'cosmetic',
+  '3600542099844',
+  'Eau micellaire à l''extrait de rose pour peau sensible. Formula douce sans parabènes. Contient de l''eau de rose et de la glycérine. Convient bien pendant la grossesse. Évitez le contact prolongé avec les yeux.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Crème Visage Sensitive',
+  'MIXA',
+  'cosmetic',
+  '3600520981306',
+  'Crème hydratante pour peaux sensibles à l''urée et au carbonate de calcium. Sans parabènes. Formule testée sous contrôle dermatologique. Bien adaptée aux peaux sensibles de la grossesse (qui peuvent être plus réactives).',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Huile Prodigieuse',
+  'NUXE',
+  'cosmetic',
+  '3264680009168',
+  'Huile sèche multi-usage pour visage, corps et cheveux. Contient des huiles végétales précieuses et des huiles essentielles (rose, santal, neroli). La présence d''huiles essentielles invite à la prudence : l''utilisation localisée et modérée reste acceptable mais évitez les grandes surfaces. Préférez la version sans parfum si disponible.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Eucalyptol'),
+  'caution'
+),
+
+(
+  'Effaclar Gel Moussant',
+  'LA ROCHE-POSAY',
+  'cosmetic',
+  '3337872413446',
+  'Gel nettoyant pour peaux grasses et à imperfections. Contient du zinc et du piroctone olamine. Attention : certaines formules Effaclar contiennent de l''acide salicylique (BHA). Vérifiez l''étiquette : si la version que vous utilisez contient de l''acide salicylique, limitez l''usage à des applications localisées et peu fréquentes.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Salicylic Acid'),
+  'caution'
+),
+
+(
+  'Shampooing Extra-Doux Calendula',
+  'KLORANE',
+  'cosmetic',
+  '3282779325004',
+  'Shampooing doux à l''extrait de calendula pour cheveux fragiles et sensibles. Sans silicones lourds, sans colorants. Formule douce et bien tolérée. Peut être utilisé pendant la grossesse sans contrainte particulière. La formule est conçue pour les cuirs chevelus sensibles.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Gel Douche Soin Hydratant',
+  'DOVE',
+  'cosmetic',
+  '8717163552117',
+  'Gel douche crémeux hydratant enrichi en agents hydratants. Sans savon dur. Formule douce qui respecte le film hydrolipidique. Aucun ingrédient problématique identifié pour la grossesse. Convient tout au long de la grossesse.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Elsève Extraordinary Oil Shampooing',
+  'L''ORÉAL PARIS',
+  'cosmetic',
+  '3600523502639',
+  'Shampooing à base d''huiles précieuses pour cheveux secs. Contient des agents de conservation standards et des extraits d''huiles végétales. La formule ne contient pas de rétinol ni d''ingrédients hautement problématiques. Utilisation normale compatible avec la grossesse.',
+  ARRAY[]::UUID[],
+  'safe'
+);
+
+-- ============================================================
+-- ALIMENTATION (10)
+-- ============================================================
+INSERT INTO products (name, brand, category, barcode, description_fr, ingredient_ids, overall_risk)
+VALUES
+
+(
+  'Camembert de Normandie au Lait Cru AOP',
+  'PRÉSIDENT',
+  'food',
+  '3228020070003',
+  'Camembert fabriqué au lait cru de vache non pasteurisé, appellation AOP protégée. À éviter pendant la grossesse en raison du risque de Listeria monocytogenes. Préférez le Camembert Président pasteurisé (en emballage standard, mention "au lait thermisé"). Les fromages à pâte cuite type emmental ou comté restent sans restriction.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Raw milk cheese'),
+  'danger'
+),
+
+(
+  'Jambon Supérieur Cuit',
+  'FLEURY MICHON',
+  'food',
+  '3297341600009',
+  'Jambon de porc cuit, tranché sous vide. Le jambon cuit pasteurisé et emballé sous vide est sans risque de listériose. C''est l''un des aliments protéinés les plus sûrs et pratiques pendant la grossesse. Consommez avant la DLC indiquée et gardez au réfrigérateur.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Saumon Atlantique Fumé',
+  'LABEYRIE',
+  'food',
+  '3057640133606',
+  'Saumon de l''Atlantique fumé à froid, tranché. Le saumon fumé à froid n''est pas cuit et présente un faible risque de Listeria monocytogenes. Consommez-le impérativement avant la DLC, vérifiez que l''emballage est intact. Par précaution, préférez le saumon cuit pendant la grossesse. Si vous en consommez, une fois par semaine au maximum.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Smoked salmon'),
+  'caution'
+),
+
+(
+  'Thon Entier au Naturel',
+  'PETIT NAVIRE',
+  'food',
+  '3261060007607',
+  'Thon albacore entier en boîte, conservé au naturel (eau et sel). Le thon en conserve contient moins de mercure que le thon frais. Limiter à 1-2 portions par semaine (1 boîte moyenne). Il reste une excellente source de protéines et d''oméga-3 à consommer en quantité raisonnée.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Canned tuna'),
+  'caution'
+),
+
+(
+  'Rillettes de Porc du Mans',
+  'BORDEAU CHESNEL',
+  'food',
+  '3560070976102',
+  'Rillettes de porc pur, cuites et stérilisées en boîte. La stérilisation élimine les risques bactériens. En boîte hermétique non ouverte, le risque de contamination est nul. Une fois ouverte, conservez au réfrigérateur et consommez rapidement. Attention à la teneur élevée en sel et en graisses saturées.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Yaourt Nature au Lait Entier',
+  'DANONE',
+  'food',
+  '3033490008773',
+  'Yaourt nature au lait entier pasteurisé. Les yaourts au lait pasteurisé sont totalement sans risque pendant la grossesse. Excellente source de calcium et de protéines essentiels au développement osseux du bébé. À consommer sans modération dans le cadre d''une alimentation équilibrée.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Café Expresso Classique',
+  'NESCAFÉ',
+  'food',
+  '7613032338886',
+  'Café soluble arôme intense. Attention : la caféine est à surveiller pendant la grossesse. Un café soluble standard contient environ 60-80 mg de caféine par tasse. La limite recommandée par l''OMS est de 200 mg/jour, soit environ 2-3 tasses selon la préparation. Comptez aussi la caféine du thé, du chocolat et des sodas.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Caffeine'),
+  'caution'
+),
+
+(
+  'Œufs Frais Plein Air Label Rouge',
+  'LES FERMIERS DE LOUÉ',
+  'food',
+  '3274080007603',
+  'Œufs de poules élevées en plein air, classés A+. Les œufs bien cuits sont une excellente source de protéines, de fer et de choline pour le développement cérébral du bébé. Évitez de les consommer crus ou peu cuits (à la coque, mollets) — préférez les œufs durs ou brouillés bien cuits. Conservez au réfrigérateur.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Raw eggs'),
+  'caution'
+),
+
+(
+  'Lait Entier Pasteurisé Bio',
+  'BIOCOOP',
+  'food',
+  '3329482001234',
+  'Lait entier de vaches élevées en bio, pasteurisé. Le lait pasteurisé est parfaitement sûr pendant la grossesse, contrairement au lait cru. Excellent apport en calcium (environ 120 mg par 100ml), en protéines et en vitamine D. À consommer au quotidien dans le cadre d''une alimentation équilibrée.',
+  ARRAY[]::UUID[],
+  'safe'
+),
+
+(
+  'Foie de Veau Provençale',
+  'SODEBO',
+  'food',
+  '3302744009982',
+  'Préparation culinaire à base de foie de veau cuisiné. Le foie de veau est extrêmement riche en vitamine A (rétinol) : une portion peut dépasser de plusieurs fois la limite de sécurité recommandée pendant la grossesse. Un excès de vitamine A est tératogène. Évitez toute préparation à base de foie d''animal pendant la grossesse.',
+  ARRAY(SELECT id FROM ingredients WHERE name_inci = 'Liver'),
+  'danger'
+);
+-- Migration: product_alternatives & community_submissions
+-- Run after schema.sql
+
+-- ============================================================
+-- PRODUCT ALTERNATIVES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS product_alternatives (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  product_id        UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  alternative_id    UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  category          TEXT NOT NULL CHECK (category IN ('cosmetic', 'food', 'medication')),
+  price_range       TEXT NOT NULL CHECK (price_range IN ('€', '€€', '€€€')) DEFAULT '€€',
+  popularity_count  INT NOT NULL DEFAULT 0,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(product_id, alternative_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_alt_product_id ON product_alternatives(product_id);
+CREATE INDEX IF NOT EXISTS idx_alt_alternative_id ON product_alternatives(alternative_id);
+CREATE INDEX IF NOT EXISTS idx_alt_category ON product_alternatives(category);
+
+-- ============================================================
+-- COMMUNITY SUBMISSIONS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS community_submissions (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name        TEXT NOT NULL,
+  brand       TEXT NOT NULL,
+  category    TEXT NOT NULL CHECK (category IN ('cosmetic', 'food', 'medication')),
+  status      TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_submissions_status ON community_submissions(status);
+
+ALTER TABLE product_alternatives DISABLE ROW LEVEL SECURITY;
+ALTER TABLE community_submissions DISABLE ROW LEVEL SECURITY;
+
+-- ============================================================
+-- SEED: illustrative alternative mappings
+-- ============================================================
+
+-- Huile Prodigieuse (caution) → Crème Soft (safe), Gel Lavant Bébé (safe), Sensibio H2O (safe)
+INSERT INTO product_alternatives (product_id, alternative_id, category, price_range, popularity_count)
+VALUES
+(
+  (SELECT id FROM products WHERE barcode = '3264680009168'),
+  (SELECT id FROM products WHERE barcode = '4005808222919'),
+  'cosmetic', '€', 312
+),
+(
+  (SELECT id FROM products WHERE barcode = '3264680009168'),
+  (SELECT id FROM products WHERE barcode = '3504105034046'),
+  'cosmetic', '€€', 187
+),
+(
+  (SELECT id FROM products WHERE barcode = '3264680009168'),
+  (SELECT id FROM products WHERE barcode = '3401599000353'),
+  'cosmetic', '€€', 245
+)
+ON CONFLICT (product_id, alternative_id) DO NOTHING;
+
+-- Effaclar Gel (caution) → Crème Visage Sensitive (safe), Dove Gel Douche (safe)
+INSERT INTO product_alternatives (product_id, alternative_id, category, price_range, popularity_count)
+VALUES
+(
+  (SELECT id FROM products WHERE barcode = '3337872413446'),
+  (SELECT id FROM products WHERE barcode = '3600520981306'),
+  'cosmetic', '€', 156
+),
+(
+  (SELECT id FROM products WHERE barcode = '3337872413446'),
+  (SELECT id FROM products WHERE barcode = '8717163552117'),
+  'cosmetic', '€', 203
+)
+ON CONFLICT (product_id, alternative_id) DO NOTHING;
+
+-- Camembert au Lait Cru (danger) → Yaourt Nature (safe), Lait Pasteurisé (safe)
+INSERT INTO product_alternatives (product_id, alternative_id, category, price_range, popularity_count)
+VALUES
+(
+  (SELECT id FROM products WHERE barcode = '3228020070003'),
+  (SELECT id FROM products WHERE barcode = '3033490008773'),
+  'food', '€', 421
+),
+(
+  (SELECT id FROM products WHERE barcode = '3228020070003'),
+  (SELECT id FROM products WHERE barcode = '3329482001234'),
+  'food', '€', 298
+)
+ON CONFLICT (product_id, alternative_id) DO NOTHING;
+
+-- Saumon Fumé (caution) → Jambon Supérieur Cuit (safe), Rillettes de Porc (safe)
+INSERT INTO product_alternatives (product_id, alternative_id, category, price_range, popularity_count)
+VALUES
+(
+  (SELECT id FROM products WHERE barcode = '3057640133606'),
+  (SELECT id FROM products WHERE barcode = '3297341600009'),
+  'food', '€', 334
+),
+(
+  (SELECT id FROM products WHERE barcode = '3057640133606'),
+  (SELECT id FROM products WHERE barcode = '3560070976102'),
+  'food', '€€', 178
+)
+ON CONFLICT (product_id, alternative_id) DO NOTHING;
+
+-- Foie de Veau (danger) → Jambon Supérieur Cuit (safe), Yaourt Nature (safe), Rillettes (safe)
+INSERT INTO product_alternatives (product_id, alternative_id, category, price_range, popularity_count)
+VALUES
+(
+  (SELECT id FROM products WHERE barcode = '3302744009982'),
+  (SELECT id FROM products WHERE barcode = '3297341600009'),
+  'food', '€', 389
+),
+(
+  (SELECT id FROM products WHERE barcode = '3302744009982'),
+  (SELECT id FROM products WHERE barcode = '3033490008773'),
+  'food', '€', 267
+),
+(
+  (SELECT id FROM products WHERE barcode = '3302744009982'),
+  (SELECT id FROM products WHERE barcode = '3560070976102'),
+  'food', '€€', 145
+)
+ON CONFLICT (product_id, alternative_id) DO NOTHING;

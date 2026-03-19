@@ -6,3 +6,9 @@ id = "q0JjGmCwnubla7h_0HcBG"
 uri = "file://artifacts/helo/helo-code.tar.gz"
 type = "unspecified"
 title = "helo-code.tar.gz — Code source complet Hēlo"
+
+[[outputs]]
+id = "7Ro-M-1jLzHq5b_wasyWZ"
+uri = "file://helo-current.tar.gz"
+type = "unspecified"
+title = "helo-current.tar.gz — Code source complet (6.6 Mo)"

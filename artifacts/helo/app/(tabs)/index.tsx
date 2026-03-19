@@ -28,6 +28,8 @@ import { GlowScoreCircle } from '@/components/GlowScoreCircle';
 import { GlowScoreMini } from '@/components/GlowScoreMini';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { calculateGlowScore, getGlowLabel } from '@/lib/glowscore';
+import { useTrimester } from '@/hooks/useTrimester';
+import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -136,6 +138,8 @@ export default function HomeScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
 
+  const { weekOfPregnancy } = useTrimester();
+  const { isNew } = useWeeklyBrief(weekOfPregnancy);
   const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(MOCK_SHELF);
   const glowLabel = getGlowLabel(score);
   const hasRisk = countDanger > 0 || countCaution > 0;
@@ -215,6 +219,41 @@ export default function HomeScreen() {
             <ThemedText variant="displayMedium" style={{ color: Colors.caution }}>1</ThemedText>
             <ThemedText variant="bodySmall" color="textSecondary">À vérifier</ThemedText>
           </Card>
+        </Animated.View>
+
+        {/* ── WEEKLY BRIEF ── */}
+        <Animated.View entering={FadeInDown.delay(220).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/weekly-brief')}
+            style={({ pressed }) => [
+              styles.briefCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={styles.briefIconWrap}>
+                <Feather name="book-open" size={22} color={Colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.briefTitleRow}>
+                  <ThemedText variant="labelLarge" color="textPrimary">
+                    Brief · Semaine {weekOfPregnancy}
+                  </ThemedText>
+                  {isNew && (
+                    <View style={styles.newBadge}>
+                      <ThemedText variant="labelSmall" style={{ color: Colors.surface }}>
+                        NOUVEAU
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  Conseils, alertes et découvertes de la semaine
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
         </Animated.View>
 
         {/* ── GLOW SCORE ── */}
@@ -492,5 +531,40 @@ const styles = StyleSheet.create({
   disclaimerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  briefCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    ...Shadows.soft,
+  },
+  briefLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  briefIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  briefTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  newBadge: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
   },
 });

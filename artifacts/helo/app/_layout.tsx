@@ -15,13 +15,17 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { DisclaimerModal } from "@/components/DisclaimerModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { TrimesterTransition } from "@/components/TrimesterTransition";
 import { Colors } from "@/constants/theme";
+import { useTrimester } from "@/hooks/useTrimester";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { trimester, showTrimesterTransition, changedProductsCount, dismissTransition } = useTrimester();
+
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
@@ -38,6 +42,12 @@ function RootLayoutNav() {
         />
       </Stack>
       <DisclaimerModal />
+      <TrimesterTransition
+        visible={showTrimesterTransition}
+        trimester={trimester}
+        changedProductsCount={changedProductsCount}
+        onDismiss={dismissTransition}
+      />
     </>
   );
 }

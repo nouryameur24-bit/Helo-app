@@ -1,0 +1,260 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
+
+export const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
+
+export type NotificationType =
+  | 'weekly_brief'
+  | 'trimester_change'
+  | 'product_reclassified'
+  | 'partner_activity'
+  | 'inactivity_reminder'
+  | 'community_approved';
+
+export interface NotificationSettings {
+  weekly_brief: boolean;
+  trimester_change: boolean;
+  product_reclassified: boolean;
+  partner_activity: boolean;
+  inactivity_reminder: boolean;
+  community_approved: boolean;
+  maxPerWeek: number;
+  quietHours: boolean;
+}
+
+export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  weekly_brief: true,
+  trimester_change: true,
+  product_reclassified: true,
+  partner_activity: true,
+  inactivity_reminder: true,
+  community_approved: true,
+  maxPerWeek: 3,
+  quietHours: true,
+};
+
+export const NOTIFICATION_LABELS: Record<NotificationType, { title: string; description: string }> = {
+  weekly_brief: {
+    title: 'Récapitulatif hebdomadaire',
+    description: 'Un résumé de votre semaine de grossesse chaque lundi matin.',
+  },
+  trimester_change: {
+    title: 'Changement de trimestre',
+    description: 'Une notification lors de chaque passage à un nouveau trimestre.',
+  },
+  product_reclassified: {
+    title: 'Produit reclassifié',
+    description: 'Alertes quand un produit de votre étagère change de verdict.',
+  },
+  partner_activity: {
+    title: 'Activité du partenaire',
+    description: 'Mises à jour lorsque votre partenaire utilise l\'application.',
+  },
+  inactivity_reminder: {
+    title: 'Rappel de scan',
+    description: 'Un rappel doux si vous n\'avez pas scanné de produit récemment.',
+  },
+  community_approved: {
+    title: 'Communauté',
+    description: 'Notifications lors de nouvelles approbations communautaires.',
+  },
+};
+
+export interface NotificationPayload extends Record<string, unknown> {
+  type: NotificationType;
+  data?: Record<string, string | number | boolean>;
+}
+
+export function buildDeepLinkPayload(type: NotificationType, data?: Record<string, string | number | boolean>): NotificationPayload {
+  return { type, data };
+}
+
+export function getDeepLinkRoute(
+  type: NotificationType,
+  data?: Record<string, string | number | boolean>,
+): string {
+  switch (type) {
+    case 'weekly_brief':
+      return '/(tabs)';
+    case 'trimester_change':
+      return '/trimester-milestone';
+    case 'product_reclassified': {
+      const barcode = data?.barcode ? String(data.barcode) : null;
+      if (barcode) {
+        return `/(tabs)/shelf?highlight=${encodeURIComponent(barcode)}`;
+      }
+      return '/(tabs)/shelf';
+    }
+    case 'partner_activity':
+      return '/(tabs)/profile';
+    case 'inactivity_reminder':
+      return '/(tabs)/scan';
+    case 'community_approved':
+      return '/(tabs)';
+    default:
+      return '/(tabs)';
+  }
+}
+
+const QUIET_HOUR_START = 22;
+const QUIET_HOUR_END = 8;
+
+function applyQuietHours(date: Date): Date {
+  const h = date.getHours();
+  const inQuiet =
+    h >= QUIET_HOUR_START || h < QUIET_HOUR_END;
+  if (!inQuiet) return date;
+
+  const next = new Date(date);
+  next.setHours(QUIET_HOUR_END, 0, 0, 0);
+  if (h < QUIET_HOUR_END) {
+    // same day, move to 8h
+  } else {
+    // after 22h, move to 8h next day
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+}
+
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+  try {
+    const raw = await AsyncStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+    if (!raw) return DEFAULT_NOTIFICATION_SETTINGS;
+    return { ...DEFAULT_NOTIFICATION_SETTINGS, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_NOTIFICATION_SETTINGS;
+  }
+}
+
+export async function saveNotificationSettings(settings: NotificationSettings): Promise<void> {
+  await AsyncStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
+}
+
+const WEEKLY_CAP_KEY = 'notification_weekly_cap';
+
+interface WeeklyCap {
+  weekStart: number;
+  count: number;
+}
+
+function getWeekStart(): number {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  return monday.getTime();
+}
+
+async function checkWeeklyCap(maxPerWeek: number): Promise<boolean> {
+  try {
+    const raw = await AsyncStorage.getItem(WEEKLY_CAP_KEY);
+    const weekStart = getWeekStart();
+    const cap: WeeklyCap = raw ? JSON.parse(raw) : { weekStart, count: 0 };
+    if (cap.weekStart !== weekStart) return true;
+    return cap.count < maxPerWeek;
+  } catch {
+    return true;
+  }
+}
+
+async function incrementWeeklyCap(): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(WEEKLY_CAP_KEY);
+    const weekStart = getWeekStart();
+    let cap: WeeklyCap = raw ? JSON.parse(raw) : { weekStart, count: 0 };
+    if (cap.weekStart !== weekStart) {
+      cap = { weekStart, count: 0 };
+    }
+    cap.count++;
+    await AsyncStorage.setItem(WEEKLY_CAP_KEY, JSON.stringify(cap));
+  } catch {
+  }
+}
+
+export async function initAndroidNotificationChannels(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync('helo-default', {
+    name: 'Notifications Hēlo',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#C9A96E',
+  });
+  await Notifications.setNotificationChannelAsync('helo-milestones', {
+    name: 'Jalons de grossesse',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#C9A96E',
+  });
+}
+
+export interface ScheduleOptions {
+  type: NotificationType;
+  title: string;
+  body: string;
+  scheduledAt?: Date;
+  data?: Record<string, string | number | boolean>;
+}
+
+export async function scheduleNotification(opts: ScheduleOptions): Promise<string | null> {
+  if (Platform.OS === 'web') return null;
+
+  const settings = await getNotificationSettings();
+
+  if (!settings[opts.type]) return null;
+
+  const canSend = await checkWeeklyCap(settings.maxPerWeek);
+  if (!canSend) return null;
+
+  let fireDate = opts.scheduledAt ?? new Date(Date.now() + 5000);
+
+  if (settings.quietHours) {
+    fireDate = applyQuietHours(fireDate);
+  }
+
+  const now = Date.now();
+  const seconds = Math.max(1, Math.floor((fireDate.getTime() - now) / 1000));
+
+  const channelId =
+    opts.type === 'trimester_change' ? 'helo-milestones' : 'helo-default';
+
+  try {
+    const id = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: opts.title,
+        body: opts.body,
+        data: buildDeepLinkPayload(opts.type, opts.data),
+        ...(Platform.OS === 'android' ? { channelId } : {}),
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds,
+      },
+    });
+    await incrementWeeklyCap();
+    return id;
+  } catch (err) {
+    console.warn('[notifications] scheduleNotification error:', err);
+    return null;
+  }
+}
+
+export async function cancelNotification(id: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  await Notifications.cancelScheduledNotificationAsync(id);
+}
+
+export async function cancelAllNotifications(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});

@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Platform,
   Pressable,
@@ -12,10 +12,12 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
+import { NotificationPermissionScreen } from '@/components/NotificationPermissionScreen';
 import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface SettingRowProps {
   icon: keyof typeof Feather.glyphMap;
@@ -53,9 +55,32 @@ export default function ProfileScreen() {
   const router = useRouter();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
+  const {
+    showPermissionScreen,
+    setShowPermissionScreen,
+    requestPermission,
+    dismissPermissionScreen,
+    triggerPermissionScreenIfNeeded,
+  } = useNotifications();
+
+  useEffect(() => {
+    triggerPermissionScreenIfNeeded();
+  }, [triggerPermissionScreenIfNeeded]);
+
+  const handleNotificationsPress = () => {
+    router.push('/notifications-settings' as never);
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
+      <NotificationPermissionScreen
+        visible={showPermissionScreen}
+        onAllow={async () => {
+          await requestPermission();
+          setShowPermissionScreen(false);
+        }}
+        onSkip={dismissPermissionScreen}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -120,7 +145,7 @@ export default function ProfileScreen() {
             APPLICATION
           </ThemedText>
           <Card padding={0} style={styles.settingGroup}>
-            <SettingRow icon="bell" title="Notifications" />
+            <SettingRow icon="bell" title="Notifications" onPress={handleNotificationsPress} />
             <Divider />
             <SettingRow icon="file-text" title="Mentions légales" onPress={() => router.push('/legal/terms')} />
             <Divider />

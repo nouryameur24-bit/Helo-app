@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Platform,
@@ -54,6 +55,7 @@ export default function ShelfScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const [activeTab, setActiveTab] = useState<Tab>('placard');
+  const { highlight } = useLocalSearchParams<{ highlight?: string }>();
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
@@ -65,7 +67,7 @@ export default function ShelfScreen() {
       </Animated.View>
 
       {activeTab === 'placard' ? (
-        <MonPlacardView />
+        <MonPlacardView highlightBarcode={highlight} />
       ) : (
         <MaListeView />
       )}

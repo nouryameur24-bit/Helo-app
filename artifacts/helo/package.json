@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.1",
-    "expo-camera": "^55.0.9"
+    "expo-camera": "^55.0.9",
+    "expo-notifications": "^55.0.13"
   }
 }

@@ -17,7 +17,9 @@ import { DisclaimerModal } from "@/components/DisclaimerModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TrimesterTransition } from "@/components/TrimesterTransition";
 import { Colors } from "@/constants/theme";
+import { useNotificationTapRouting } from "@/hooks/useNotifications";
 import { useTrimester } from "@/hooks/useTrimester";
+import { initAndroidNotificationChannels } from "@/lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -25,6 +27,11 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { trimester, showTrimesterTransition, changedProductsCount, dismissTransition } = useTrimester();
+  useNotificationTapRouting();
+
+  useEffect(() => {
+    initAndroidNotificationChannels().catch(() => {});
+  }, []);
 
   return (
     <>
@@ -33,6 +40,8 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="methodology" options={{ headerShown: false }} />
         <Stack.Screen name="legal" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications-settings" options={{ headerShown: false }} />
+        <Stack.Screen name="trimester-milestone" options={{ headerShown: false }} />
         <Stack.Screen
           name="alternatives"
           options={{

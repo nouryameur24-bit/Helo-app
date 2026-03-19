@@ -14,9 +14,18 @@
       "backgroundColor": "#FFFAF5"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSUserNotificationsUsageDescription": "Hēlo vous envoie des rappels hebdomadaires, des jalons de trimestre et des alertes sur vos produits pour votre grossesse."
+      }
     },
-    "android": {},
+    "android": {
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -34,6 +43,16 @@
         {
           "cameraPermission": "Hēlo a besoin d'accéder à votre caméra pour scanner les codes-barres de vos produits.",
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#C9A96E",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "#{unread_notifications} nouvelles notifications"
         }
       ]
     ],

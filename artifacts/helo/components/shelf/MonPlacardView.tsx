@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, StyleSheet, View, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
@@ -12,6 +12,10 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 
+interface MonPlacardViewProps {
+  highlightBarcode?: string;
+}
+
 const MOCK_PRODUCTS: ShelfProduct[] = [
   { id: '1', name: 'Crème hydratante Nuxe', brand: 'NUXE', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
   { id: '2', name: 'Shampooing doux', brand: 'KLORANE', verdict: 'caution', verdictLabel: 'Vigilance', category: 'salle-de-bain', verdictChanged: true },
@@ -21,11 +25,12 @@ const MOCK_PRODUCTS: ShelfProduct[] = [
   { id: '6', name: 'Huile de coco bio', brand: 'NATURALIA', verdict: 'safe', verdictLabel: 'Sûr', category: 'cuisine', verdictChanged: false },
 ];
 
-export function MonPlacardView() {
+export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [products, setProducts] = useState<ShelfProduct[]>([]);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
+  const flatListRef = useRef<FlatList<ShelfProduct>>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -34,6 +39,17 @@ export function MonPlacardView() {
     }, 800);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!highlightBarcode || isLoading || products.length === 0) return;
+    const idx = products.findIndex((p) => p.id === highlightBarcode);
+    if (idx !== -1) {
+      const rowIndex = Math.floor(idx / 2);
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({ index: rowIndex, animated: true, viewPosition: 0.3 });
+      }, 400);
+    }
+  }, [highlightBarcode, isLoading, products]);
 
   const filteredProducts = React.useMemo(() => {
     let result = products;
@@ -67,16 +83,22 @@ export function MonPlacardView() {
   const handleChangeCategory = useCallback((_product: ShelfProduct) => {
   }, []);
 
-  const renderItem = useCallback(({ item }: { item: ShelfProduct }) => (
-    <View style={styles.cardWrapper}>
-      <ShelfCard
-        product={item}
-        onPress={handlePress}
-        onRemove={handleRemove}
-        onChangeCategory={handleChangeCategory}
-      />
-    </View>
-  ), [handlePress, handleRemove, handleChangeCategory]);
+  const renderItem = useCallback(({ item }: { item: ShelfProduct }) => {
+    const isHighlighted = !!highlightBarcode && item.id === highlightBarcode;
+    const highlightStyle: ViewStyle = isHighlighted
+      ? { borderWidth: 2, borderColor: Colors.accent, borderRadius: 12 }
+      : {};
+    return (
+      <View style={[styles.cardWrapper, highlightStyle]}>
+        <ShelfCard
+          product={item}
+          onPress={handlePress}
+          onRemove={handleRemove}
+          onChangeCategory={handleChangeCategory}
+        />
+      </View>
+    );
+  }, [handlePress, handleRemove, handleChangeCategory, highlightBarcode]);
 
   const renderShimmer = useCallback(({ item }: { item: number }) => (
     <View style={styles.cardWrapper}>
@@ -120,6 +142,7 @@ export function MonPlacardView() {
   return (
     <View style={styles.root}>
       <FlatList
+        ref={flatListRef}
         data={filteredProducts}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}

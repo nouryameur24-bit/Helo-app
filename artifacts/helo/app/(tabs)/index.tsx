@@ -194,9 +194,14 @@ export default function HomeScreen() {
             </ThemedText>
             <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
           </View>
-          <IconButton size={44}>
-            <Feather name="bell" size={20} color={Colors.textSecondary} />
-          </IconButton>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            <IconButton size={44} onPress={() => router.push('/search')}>
+              <Feather name="search" size={20} color={Colors.textSecondary} />
+            </IconButton>
+            <IconButton size={44}>
+              <Feather name="bell" size={20} color={Colors.textSecondary} />
+            </IconButton>
+          </View>
         </Animated.View>
 
         {/* Hero Scan CTA */}

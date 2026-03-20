@@ -40,6 +40,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { SCAN_DISCLAIMER } from '@/constants/disclaimers';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
 import { sendShelfAddNotification } from '@/lib/notifications';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -384,6 +385,7 @@ export default function VerdictScreen() {
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();
   const { loading, product, matches, verdict, error, scanBarcode, setDirectResult } = useScan();
+  const { isPremium, requirePremium } = usePremium();
 
   const { role, userId, trimester: profileTrimester, linkedUserId, firstName } = useProfile();
   const isPartner = role === 'partner';
@@ -659,36 +661,61 @@ export default function VerdictScreen() {
           </View>
         </LinearGradient>
 
-        {/* ── INGREDIENTS SIGNALÉS ── */}
-        {flagged.length > 0 && (
-          <View style={styles.section}>
-            <ThemedText variant="headlineMedium" style={styles.sectionTitle}>
-              Ingrédients analysés
-            </ThemedText>
-            {flagged.map((m) => (
-              <IngredientCard key={m.ingredientName} match={m} />
-            ))}
-          </View>
-        )}
+        {/* ── INGREDIENT DETAILS — PREMIUM GATE ── */}
+        {(flagged.length > 0 || noSignal.length > 0) && (
+          <View style={{ position: 'relative' }}>
+            {/* Always render at least preview for free users */}
+            {flagged.length > 0 && (
+              <View style={styles.section}>
+                <ThemedText variant="headlineMedium" style={styles.sectionTitle}>
+                  Ingrédients analysés
+                </ThemedText>
+                {(isPremium ? flagged : flagged.slice(0, 2)).map((m) => (
+                  <IngredientCard key={m.ingredientName} match={m} />
+                ))}
+              </View>
+            )}
 
-        {/* ── NO SIGNAL ── */}
-        {noSignal.length > 0 && (
-          <View style={styles.section}>
-            <ThemedText variant="labelSmall" color="textTertiary" style={styles.noSignalTitle}>
-              AUCUN SIGNALEMENT CONNU ({noSignal.length})
-            </ThemedText>
-            <Card style={styles.noSignalCard} padding={Spacing.lg}>
-              {noSignal.map((m, i) => (
-                <View key={m.ingredientName}>
-                  <ThemedText variant="bodySmall" color="textSecondary" style={styles.noSignalItem}>
-                    {m.ingredientName}
+            {isPremium && noSignal.length > 0 && (
+              <View style={styles.section}>
+                <ThemedText variant="labelSmall" color="textTertiary" style={styles.noSignalTitle}>
+                  AUCUN SIGNALEMENT CONNU ({noSignal.length})
+                </ThemedText>
+                <Card style={styles.noSignalCard} padding={Spacing.lg}>
+                  {noSignal.map((m, i) => (
+                    <View key={m.ingredientName}>
+                      <ThemedText variant="bodySmall" color="textSecondary" style={styles.noSignalItem}>
+                        {m.ingredientName}
+                      </ThemedText>
+                      {i < noSignal.length - 1 && (
+                        <Divider style={{ marginVertical: Spacing.xs }} />
+                      )}
+                    </View>
+                  ))}
+                </Card>
+              </View>
+            )}
+
+            {/* Premium paywall overlay for free users */}
+            {!isPremium && (
+              <View style={styles.premiumGate}>
+                <View style={styles.premiumGateCard}>
+                  <ThemedText style={styles.premiumGateEmoji}>🔍</ThemedText>
+                  <ThemedText variant="headlineMedium" color="textPrimary" style={styles.premiumGateTitle}>
+                    Détails ingrédients
                   </ThemedText>
-                  {i < noSignal.length - 1 && (
-                    <Divider style={{ marginVertical: Spacing.xs }} />
-                  )}
+                  <ThemedText variant="bodyMedium" color="textSecondary" style={styles.premiumGateBody}>
+                    Accédez à l'analyse complète de tous les ingrédients, leurs risques par trimestre et les sources scientifiques.
+                  </ThemedText>
+                  <Pressable
+                    onPress={() => requirePremium('feature')}
+                    style={({ pressed }) => [styles.premiumGateBtn, { opacity: pressed ? 0.88 : 1 }]}
+                  >
+                    <ThemedText style={styles.premiumGateBtnText}>Voir les détails — Premium</ThemedText>
+                  </Pressable>
                 </View>
-              ))}
-            </Card>
+              </View>
+            )}
           </View>
         )}
 
@@ -911,6 +938,31 @@ const styles = StyleSheet.create({
   noSignalTitle: { marginBottom: Spacing.sm },
   noSignalCard: {},
   noSignalItem: { paddingVertical: Spacing.xs },
+
+  // Premium ingredient gate
+  premiumGate: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.xl,
+  },
+  premiumGateCard: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accent,
+    ...Shadows.soft,
+  },
+  premiumGateEmoji: { fontSize: 32, marginBottom: Spacing.sm },
+  premiumGateTitle: { textAlign: 'center', marginBottom: Spacing.sm },
+  premiumGateBody: { textAlign: 'center', marginBottom: Spacing.xl, lineHeight: 20 },
+  premiumGateBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.full,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.xxl,
+  },
+  premiumGateBtnText: { ...Typography.labelLarge, color: '#fff' },
 
   // Disclaimer
   disclaimerSection: {

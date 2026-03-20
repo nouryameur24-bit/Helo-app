@@ -8,6 +8,7 @@ import {
   Platform,
   StyleSheet,
   Text,
+  TextStyle,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -25,8 +26,11 @@ import { Feather } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
+import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { usePremium } from '@/hooks/usePremium';
+import { incrementScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -243,6 +247,8 @@ export default function ScanScreen() {
   const isPartner = role === 'partner';
   const partnerName = linkedFirstName;
 
+  const { isPremium, checkScanLimit, scansRemaining } = usePremium();
+
   const isOCRMode = scanMode === 'ingredients';
   const vfW = isOCRMode ? VF_OCR_W : VF_BARCODE_W;
   const vfH = isOCRMode ? VF_OCR_H : VF_BARCODE_H;
@@ -261,11 +267,23 @@ export default function ScanScreen() {
   );
 
   const handleBarcodeScanned = useCallback(
-    ({ data }: { data: string }) => {
+    async ({ data }: { data: string }) => {
       if (!data || data === lastBarcode.current || scanMode !== 'barcode') return;
       lastBarcode.current = data;
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => { lastBarcode.current = null; }, DEBOUNCE_MS);
+
+      // ── Scan limit gate (free users only) ──
+      // Check BEFORE animation to avoid interrupting scan UX on approval,
+      // but navigate to paywall instead of verdict if limit exceeded.
+      if (!isPremium) {
+        const allowed = await checkScanLimit();
+        if (!allowed) {
+          lastBarcode.current = null; // Allow re-trigger after paywall closes
+          return; // checkScanLimit already navigated to /paywall
+        }
+        await incrementScanCount();
+      }
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       flashColor.value = withSequence(
@@ -277,7 +295,7 @@ export default function ScanScreen() {
         router.push(`/verdict/${encodeURIComponent(data)}`);
       }, 350);
     },
-    [flashColor, scanMode],
+    [flashColor, scanMode, isPremium, checkScanLimit],
   );
 
   const handleShutter = useCallback(async () => {
@@ -376,6 +394,26 @@ export default function ScanScreen() {
         </View>
       )}
 
+      {/* ── Free scan counter ── */}
+      {!isPremium && (
+        <View style={[styles.scanCounter, { bottom: bottomInset + 128 }]}>
+          <Feather
+            name="zap"
+            size={11}
+            color={scansRemaining > 0 ? Colors.accent : Colors.danger}
+          />
+          <ThemedText
+            style={scansRemaining === 0
+              ? [styles.scanCounterText, { color: Colors.danger } as TextStyle]
+              : styles.scanCounterText}
+          >
+            {scansRemaining > 0
+              ? `${scansRemaining} scan${scansRemaining > 1 ? 's' : ''} gratuit${scansRemaining > 1 ? 's' : ''} restant${scansRemaining > 1 ? 's' : ''}`
+              : 'Limite atteinte · Passez à Premium'}
+          </ThemedText>
+        </View>
+      )}
+
       {/* ── Bottom mode chips ── */}
       <View style={[styles.bottomBar, { paddingBottom: bottomInset + Spacing.lg }]}>
         <View style={styles.chipsRow}>
@@ -461,6 +499,22 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: Spacing.sm, paddingTop: Spacing.lg, zIndex: 10,
   },
   chipsRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+  scanCounter: {
+    position: 'absolute',
+    alignSelf: 'center',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    zIndex: 20,
+  },
+  scanCounterText: {
+    ...Typography.labelSmall,
+    color: '#ffffffcc',
+    fontSize: 11,
+  },
   modeChip: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.lg, borderRadius: Radius.full },
   modeChipActive: { backgroundColor: Colors.accent },
   modeChipInactive: { backgroundColor: 'rgba(255,255,255,0.82)' },

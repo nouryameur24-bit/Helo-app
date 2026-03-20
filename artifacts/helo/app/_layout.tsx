@@ -20,6 +20,7 @@ import { Colors } from "@/constants/theme";
 import { useNotificationTapRouting } from "@/hooks/useNotifications";
 import { useTrimester } from "@/hooks/useTrimester";
 import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifications";
+import { configurePurchases } from "@/lib/purchases";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,6 +32,7 @@ function RootLayoutNav() {
 
   useEffect(() => {
     initAndroidNotificationChannels().catch(() => {});
+    configurePurchases().catch(() => {});
   }, []);
 
   return (
@@ -68,6 +70,13 @@ function RootLayoutNav() {
           options={{
             headerShown: false,
             animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="paywall"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
           }}
         />
       </Stack>

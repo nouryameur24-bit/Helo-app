@@ -1,0 +1,121 @@
+/**
+ * hooks/usePremium.ts
+ *
+ * Single source of truth for premium status across the app.
+ * Reads from AsyncStorage cache first (fast), then reconciles with RC.
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+
+import {
+  fetchIsPremium,
+  PREMIUM_KEY,
+  purchasePlan,
+  restorePurchases,
+  type PlanId,
+} from '@/lib/purchases';
+import { canScanFree, getDailyScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
+
+interface UsePremiumReturn {
+  isPremium: boolean;
+  isLoading: boolean;
+  scanCount: number;
+  scansRemaining: number;
+  canScan: boolean;
+  /** Navigate to paywall if not premium. Returns true if navigation happened. */
+  requirePremium: (trigger?: string) => boolean;
+  /** Check scan limit for free users. Returns true if they can scan, false → paywall shown. */
+  checkScanLimit: () => Promise<boolean>;
+  purchase: (planId: PlanId) => Promise<boolean>;
+  restore: () => Promise<boolean>;
+  refresh: () => Promise<void>;
+}
+
+export function usePremium(): UsePremiumReturn {
+  const [isPremium, setIsPremium] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [scanCount, setScanCount] = useState(0);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [premium, count] = await Promise.all([
+        fetchIsPremium(),
+        getDailyScanCount(),
+      ]);
+      setIsPremium(premium);
+      setScanCount(count);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Fast path: read local cache immediately for instant UI
+    AsyncStorage.getItem(PREMIUM_KEY).then((v) => {
+      setIsPremium(v === 'true');
+      setIsLoading(false);
+    });
+    getDailyScanCount().then(setScanCount);
+    // Then reconcile with RC in background
+    refresh();
+  }, []);
+
+  const requirePremium = useCallback(
+    (trigger?: string): boolean => {
+      if (isPremium) return false;
+      router.push({ pathname: '/paywall', params: { trigger: trigger ?? 'feature' } } as never);
+      return true;
+    },
+    [isPremium],
+  );
+
+  const checkScanLimit = useCallback(async (): Promise<boolean> => {
+    if (isPremium) return true;
+    const ok = await canScanFree();
+    if (!ok) {
+      router.push({ pathname: '/paywall', params: { trigger: 'scan_limit' } } as never);
+      return false;
+    }
+    return true;
+  }, [isPremium]);
+
+  const purchase = useCallback(
+    async (planId: PlanId): Promise<boolean> => {
+      const success = await purchasePlan(planId);
+      if (success) {
+        setIsPremium(true);
+        await AsyncStorage.setItem(PREMIUM_KEY, 'true');
+      }
+      return success;
+    },
+    [],
+  );
+
+  const restore = useCallback(async (): Promise<boolean> => {
+    const success = await restorePurchases();
+    if (success) {
+      setIsPremium(true);
+      await AsyncStorage.setItem(PREMIUM_KEY, 'true');
+    }
+    return success;
+  }, []);
+
+  const scansRemaining = Math.max(0, FREE_SCAN_LIMIT - scanCount);
+  const canScan = isPremium || scanCount < FREE_SCAN_LIMIT;
+
+  return {
+    isPremium,
+    isLoading,
+    scanCount,
+    scansRemaining,
+    canScan,
+    requirePremium,
+    checkScanLimit,
+    purchase,
+    restore,
+    refresh,
+  };
+}

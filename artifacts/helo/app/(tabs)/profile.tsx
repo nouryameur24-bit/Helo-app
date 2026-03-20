@@ -24,6 +24,7 @@ import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile, setUserRole } from '@/hooks/useProfile';
 import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface SettingRowProps {
   icon: keyof typeof Feather.glyphMap;
@@ -94,6 +95,26 @@ export default function ProfileScreen() {
 
   const { userId, role, firstName, trimester, partnerCode, linkedUserId, linkedFirstName, refresh } = useProfile();
   const isPartner = role === 'partner';
+
+  const [contributionCount, setContributionCount] = useState(0);
+
+  useEffect(() => {
+    if (!userId || isPartner || !isSupabaseConfigured) return;
+    let cancelled = false;
+    const fetchContributions = async () => {
+      try {
+        const { count } = await supabase
+          .from('community_submissions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'approved');
+        if (!cancelled && count !== null) setContributionCount(count);
+      } catch {}
+    };
+    fetchContributions();
+    return () => { cancelled = true; };
+  }, [userId, isPartner]);
+
   const [localPartnerCode, setLocalPartnerCode] = useState<string | null>(partnerCode);
 
   useEffect(() => {
@@ -217,6 +238,13 @@ export default function ProfileScreen() {
                 {trimesterLabel}
               </ThemedText>
             )}
+            {!isPartner && contributionCount > 5 && (
+              <View style={styles.contributriceBadge}>
+                <ThemedText variant="labelSmall" style={styles.contributriceBadgeText}>
+                  Contributrice ✦
+                </ThemedText>
+              </View>
+            )}
           </View>
           {!isPartner && trimester && (
             <View style={[styles.weekBadge, { backgroundColor: Colors.accentLight }]}>
@@ -232,6 +260,7 @@ export default function ProfileScreen() {
               { value: '47', label: 'Scans' },
               { value: '38', label: 'Sûrs' },
               { value: '9', label: 'Vigilance' },
+              { value: String(contributionCount), label: 'Contributions' },
             ].map((stat, i) => (
               <Card key={i} style={styles.statCard} padding={Spacing.lg}>
                 <ThemedText variant="headlineLarge" color="accent">{stat.value}</ThemedText>
@@ -440,5 +469,22 @@ const styles = StyleSheet.create({
   },
   version: {
     textAlign: 'center',
+  },
+  contributriceBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingVertical: 3,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.accentLight,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+  },
+  contributriceBadgeText: {
+    color: Colors.accentDark,
+    textTransform: 'none',
+    letterSpacing: 0,
+    fontSize: 11,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
 });

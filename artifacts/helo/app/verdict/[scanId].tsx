@@ -519,6 +519,7 @@ export default function VerdictScreen() {
 
   // ── Error ──
   if (error) {
+    const isNotFound = error.startsWith('Produit non trouvé');
     return (
       <View style={[styles.root, { paddingTop: insets.top + Spacing.lg }]}>
         <TouchableOpacity style={styles.backRow} onPress={() => router.back()}>
@@ -526,15 +527,33 @@ export default function VerdictScreen() {
           <ThemedText variant="bodyMedium" style={{ marginLeft: 8 }}>Retour</ThemedText>
         </TouchableOpacity>
         <View style={styles.errorCenter}>
-          <View style={[styles.iconCircle, { backgroundColor: Colors.dangerLight }]}>
-            <Feather name="search" size={32} color={Colors.danger} />
+          <View style={[styles.iconCircle, { backgroundColor: isNotFound ? Colors.cautionBg : Colors.dangerLight }]}>
+            <Feather name={isNotFound ? 'search' : 'wifi-off'} size={32} color={isNotFound ? Colors.caution : Colors.danger} />
           </View>
-          <ThemedText variant="headlineMedium" style={styles.centeredText}>Produit introuvable</ThemedText>
-          <ThemedText variant="bodyMedium" color="textSecondary" style={[styles.centeredText, { marginTop: Spacing.sm }]}>
-            {error}
+          <ThemedText variant="headlineMedium" style={styles.centeredText}>
+            {isNotFound ? 'Produit non trouvé' : 'Erreur de chargement'}
           </ThemedText>
-          <View style={{ marginTop: Spacing.xl, width: '100%' }}>
-            <Button variant="primary" fullWidth onPress={() => router.back()}>
+          <ThemedText variant="bodyMedium" color="textSecondary" style={[styles.centeredText, { marginTop: Spacing.sm }]}>
+            {isNotFound
+              ? 'Ce produit n\'est pas encore dans notre base de données.'
+              : error}
+          </ThemedText>
+          <View style={{ marginTop: Spacing.xl, width: '100%', gap: Spacing.md }}>
+            {isNotFound && (
+              <Button
+                variant="primary"
+                fullWidth
+                onPress={() => {
+                  router.push({
+                    pathname: '/submit-product',
+                    params: { barcode },
+                  } as never);
+                }}
+              >
+                Contribuer — ajouter ce produit ✦
+              </Button>
+            )}
+            <Button variant={isNotFound ? 'secondary' : 'primary'} fullWidth onPress={() => router.back()}>
               Scanner un autre produit
             </Button>
           </View>

@@ -1,5 +1,6 @@
--- Migration: product_alternatives & community_submissions
+-- Migration: product_alternatives
 -- Run after schema.sql
+-- Note: community_submissions is now managed in migration-community-submissions.sql
 
 -- ============================================================
 -- PRODUCT ALTERNATIVES
@@ -19,22 +20,7 @@ CREATE INDEX IF NOT EXISTS idx_alt_product_id ON product_alternatives(product_id
 CREATE INDEX IF NOT EXISTS idx_alt_alternative_id ON product_alternatives(alternative_id);
 CREATE INDEX IF NOT EXISTS idx_alt_category ON product_alternatives(category);
 
--- ============================================================
--- COMMUNITY SUBMISSIONS
--- ============================================================
-CREATE TABLE IF NOT EXISTS community_submissions (
-  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name        TEXT NOT NULL,
-  brand       TEXT NOT NULL,
-  category    TEXT NOT NULL CHECK (category IN ('cosmetic', 'food', 'medication')),
-  status      TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_submissions_status ON community_submissions(status);
-
 ALTER TABLE product_alternatives DISABLE ROW LEVEL SECURITY;
-ALTER TABLE community_submissions DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- SEED: illustrative alternative mappings

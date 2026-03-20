@@ -107,6 +107,28 @@ CREATE TABLE IF NOT EXISTS partner_links (
 CREATE INDEX IF NOT EXISTS idx_partner_links_pregnant ON partner_links(pregnant_user_id);
 CREATE INDEX IF NOT EXISTS idx_partner_links_partner  ON partner_links(partner_user_id);
 
+-- ============================================================
+-- COMMUNITY SUBMISSIONS
+-- ============================================================
+-- See also: supabase/migration-community-submissions.sql for full schema,
+-- RLS policies, and storage bucket setup instructions.
+CREATE TABLE IF NOT EXISTS community_submissions (
+  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id               TEXT NOT NULL,
+  barcode               TEXT NOT NULL,
+  name                  TEXT NOT NULL,
+  brand                 TEXT NOT NULL DEFAULT '',
+  category              TEXT NOT NULL CHECK (category IN ('cosmetic', 'food', 'medication')),
+  product_photo_url     TEXT NOT NULL,
+  ingredients_photo_url TEXT,
+  status                TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
+  submitted_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_submissions_user_id ON community_submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_community_submissions_status  ON community_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_community_submissions_barcode ON community_submissions(barcode);
+
 -- Enable Realtime on scan_history and profiles for shelf sync and partner notifications
 DO $$
 BEGIN

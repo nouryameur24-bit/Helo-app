@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
-import { fetchProductByBarcode, matchIngredients, getVerdict } from '@/lib/openfoodfacts';
+import { fetchProductByBarcode, matchIngredients, getVerdict } from '@/lib/productLookup';
 import { calculateTrimester, getTrimesterPalette, TrimesterInfo, TrimesterPalette } from '@/lib/trimester';
 import type { ScanCache, Trimester } from '@/types';
 

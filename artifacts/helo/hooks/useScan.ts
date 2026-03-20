@@ -5,7 +5,7 @@ import {
   fetchProductByBarcode,
   getVerdict,
   matchIngredients,
-} from '@/lib/openfoodfacts';
+} from '@/lib/productLookup';
 import type {
   MatchResult,
   ProductData,

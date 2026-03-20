@@ -58,7 +58,7 @@ export interface ProductData {
   categories?: string[];
   nutriscore?: string | null;
   ecoscore?: string | null;
-  source?: string;
+  source?: 'openfoodfacts' | 'openbeautyfacts' | 'manual';
 }
 
 export interface MatchResult {

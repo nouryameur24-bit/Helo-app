@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
-import { matchIngredients, getVerdict } from '@/lib/openfoodfacts';
+import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
 import type { ProductData, MatchResult, VerdictResult } from '@/types';
 

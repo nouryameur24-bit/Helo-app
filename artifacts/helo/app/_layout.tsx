@@ -20,7 +20,8 @@ import { Colors } from "@/constants/theme";
 import { useNotificationTapRouting } from "@/hooks/useNotifications";
 import { useTrimester } from "@/hooks/useTrimester";
 import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifications";
-import { configurePurchases } from "@/lib/purchases";
+import { downloadIngredientsDB } from "@/lib/offline";
+import { configurePurchases, PREMIUM_KEY } from "@/lib/purchases";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +34,11 @@ function RootLayoutNav() {
   useEffect(() => {
     initAndroidNotificationChannels().catch(() => {});
     configurePurchases().catch(() => {});
+    AsyncStorage.getItem(PREMIUM_KEY).then((val) => {
+      if (val === 'true') {
+        downloadIngredientsDB().catch(() => {});
+      }
+    }).catch(() => {});
   }, []);
 
   return (

@@ -39,6 +39,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { SCAN_DISCLAIMER } from '@/constants/disclaimers';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
@@ -386,6 +387,7 @@ export default function VerdictScreen() {
   const insets = useSafeAreaInsets();
   const { loading, product, matches, verdict, error, scanBarcode, setDirectResult } = useScan();
   const { isPremium, requirePremium } = usePremium();
+  const { isOffline } = useOffline();
 
   const { role, userId, trimester: profileTrimester, linkedUserId, firstName } = useProfile();
   const isPartner = role === 'partner';
@@ -431,8 +433,8 @@ export default function VerdictScreen() {
       return;
     }
 
-    scanBarcode(barcode, trimester as 1 | 2 | 3);
-  }, [barcode, trimester]); // eslint-disable-line react-hooks/exhaustive-deps
+    scanBarcode(barcode, trimester as 1 | 2 | 3, isOffline);
+  }, [barcode, trimester, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Haptic when verdict arrives
   useEffect(() => {

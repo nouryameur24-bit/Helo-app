@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   Platform,
@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { incrementScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
@@ -226,12 +227,47 @@ function WebPlaceholder() {
   );
 }
 
+function OfflineBadge() {
+  return (
+    <View style={styles.offlineBadge}>
+      <Feather name="wifi-off" size={11} color="rgba(255,255,255,0.9)" />
+      <Text style={styles.offlineBadgeText}>Hors ligne</Text>
+    </View>
+  );
+}
+
+function SyncToast({ visible }: { visible: boolean }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(-16);
+  useEffect(() => {
+    if (visible) {
+      opacity.value = withTiming(1, { duration: 200 });
+      translateY.value = withTiming(0, { duration: 200 });
+    } else {
+      opacity.value = withTiming(0, { duration: 200 });
+      translateY.value = withTiming(-16, { duration: 200 });
+    }
+  }, [visible, opacity, translateY]);
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+  return (
+    <Animated.View style={[styles.syncToast, style]} pointerEvents="none">
+      <Feather name="check-circle" size={14} color="#fff" />
+      <Text style={styles.syncToastText}>Synchronisé ✓</Text>
+    </Animated.View>
+  );
+}
+
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>('barcode');
   const [isActive, setIsActive] = useState(false);
   const [takingPhoto, setTakingPhoto] = useState(false);
+  const [syncToastVisible, setSyncToastVisible] = useState(false);
+  const syncToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lastBarcode = useRef<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -248,6 +284,15 @@ export default function ScanScreen() {
   const partnerName = linkedFirstName;
 
   const { isPremium, checkScanLimit, scansRemaining } = usePremium();
+  const { isOffline, syncComplete } = useOffline();
+
+  useEffect(() => {
+    if (syncComplete) {
+      setSyncToastVisible(true);
+      if (syncToastTimer.current) clearTimeout(syncToastTimer.current);
+      syncToastTimer.current = setTimeout(() => setSyncToastVisible(false), 2500);
+    }
+  }, [syncComplete]);
 
   const isOCRMode = scanMode === 'ingredients';
   const vfW = isOCRMode ? VF_OCR_W : VF_BARCODE_W;
@@ -273,10 +318,9 @@ export default function ScanScreen() {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => { lastBarcode.current = null; }, DEBOUNCE_MS);
 
-      // ── Scan limit gate (free users only) ──
-      // Check BEFORE animation to avoid interrupting scan UX on approval,
-      // but navigate to paywall instead of verdict if limit exceeded.
-      if (!isPremium) {
+      // ── Scan limit gate (free users online only) ──
+      // When offline, skip gating — useScan will show the premium-offline message.
+      if (!isPremium && !isOffline) {
         const allowed = await checkScanLimit();
         if (!allowed) {
           lastBarcode.current = null; // Allow re-trigger after paywall closes
@@ -295,7 +339,7 @@ export default function ScanScreen() {
         router.push(`/verdict/${encodeURIComponent(data)}`);
       }, 350);
     },
-    [flashColor, scanMode, isPremium, checkScanLimit],
+    [flashColor, scanMode, isPremium, isOffline, checkScanLimit],
   );
 
   const handleShutter = useCallback(async () => {
@@ -357,16 +401,22 @@ export default function ScanScreen() {
         <FlashingViewfinder flashColor={flashColor} />
       </View>
 
+      {/* ── Sync Toast ── */}
+      <SyncToast visible={syncToastVisible} />
+
       {/* ── Top bar ── */}
       <View style={[styles.topBar, { paddingTop: topInset + Spacing.sm }]}>
-        {isPartner && partnerName ? (
-          <View style={styles.partnerBanner}>
-            <Feather name="heart" size={14} color={Colors.accent} />
-            <Text style={styles.partnerBannerText}>Scanner pour {partnerName}</Text>
-          </View>
-        ) : (
-          <Text style={styles.topTitle}>Scanner</Text>
-        )}
+        <View style={styles.topLeft}>
+          {isPartner && partnerName ? (
+            <View style={styles.partnerBanner}>
+              <Feather name="heart" size={14} color={Colors.accent} />
+              <Text style={styles.partnerBannerText}>Scanner pour {partnerName}</Text>
+            </View>
+          ) : (
+            <Text style={styles.topTitle}>Scanner</Text>
+          )}
+          {isOffline && <OfflineBadge />}
+        </View>
         <IconButton
           onPress={() => setTorchOn((v) => !v)}
           backgroundColor={torchOn ? Colors.accent : 'rgba(255,255,255,0.18)'}
@@ -440,10 +490,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl, paddingBottom: Spacing.md, zIndex: 10,
   },
+  topLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   topTitle: {
     fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: Typography.labelLarge.fontSize,
     letterSpacing: 0.3,
+    color: '#fff',
+  },
+  offlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(45, 41, 38, 0.55)',
+    paddingVertical: 3,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  offlineBadgeText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.3,
+  },
+  syncToast: {
+    position: 'absolute',
+    top: 60,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.safe,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.full,
+    zIndex: 999,
+  },
+  syncToastText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.bodyMedium.fontSize,
     color: '#fff',
   },
   partnerBanner: {

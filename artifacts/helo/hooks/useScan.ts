@@ -6,6 +6,15 @@ import {
   getVerdict,
   matchIngredients,
 } from '@/lib/productLookup';
+
+import {
+  cacheProduct,
+  enqueueOfflineScan,
+  getCachedProduct,
+  getLocalIngredients,
+  matchIngredientsLocal,
+} from '@/lib/offline';
+import { PREMIUM_KEY } from '@/lib/purchases';
 import type {
   MatchResult,
   ProductData,
@@ -27,7 +36,7 @@ interface ScanState {
 }
 
 interface UseScanReturn extends ScanState {
-  scanBarcode: (barcode: string, trimester?: Trimester) => Promise<void>;
+  scanBarcode: (barcode: string, trimester?: Trimester, isOffline?: boolean) => Promise<void>;
   clearResult: () => void;
   setDirectResult: (product: ProductData, matches: MatchResult[], verdict: VerdictResult) => void;
 }
@@ -37,7 +46,6 @@ async function readCache(barcode: string): Promise<ScanCache | null> {
     const raw = await AsyncStorage.getItem(`${CACHE_PREFIX}${barcode}`);
     if (!raw) return null;
     const cache: ScanCache = JSON.parse(raw);
-    // Expire stale cache
     if (Date.now() - cache.cachedAt > CACHE_TTL_MS) {
       await AsyncStorage.removeItem(`${CACHE_PREFIX}${barcode}`);
       return null;
@@ -67,10 +75,96 @@ export function useScan(): UseScanReturn {
     fromCache: false,
   });
 
-  const scanBarcode = useCallback(async (barcode: string, trimester: Trimester = 2) => {
+  const scanBarcode = useCallback(async (barcode: string, trimester: Trimester = 2, isOffline = false) => {
     setState((s) => ({ ...s, loading: true, error: null, fromCache: false }));
 
     try {
+      // ── Offline path ──────────────────────────────────────────────────────────
+      if (isOffline) {
+        const premiumRaw = await AsyncStorage.getItem(PREMIUM_KEY);
+        const isPremium = premiumRaw === 'true';
+
+        if (!isPremium) {
+          setState((s) => ({
+            ...s,
+            loading: false,
+            error: 'Mode hors-ligne disponible avec Hēlo Premium',
+          }));
+          return;
+        }
+
+        // 1a. Guard: ensure local ingredients DB is available for offline matching
+        const localIngredients = await getLocalIngredients();
+        const hasLocalDB = localIngredients.length > 0;
+
+        // 1. Check 7-day scan cache first
+        const cached = await readCache(barcode);
+        if (cached) {
+          const matches = hasLocalDB
+            ? await matchIngredientsLocal(cached.product.ingredientsList, trimester)
+            : cached.matches;
+          const verdict = getVerdict(matches);
+          await enqueueOfflineScan({
+            barcode,
+            product: cached.product,
+            verdict,
+            trimester,
+            scannedAt: Date.now(),
+          });
+          setState({
+            loading: false,
+            product: cached.product,
+            matches,
+            verdict,
+            error: null,
+            fromCache: true,
+          });
+          return;
+        }
+
+        // 2. Check LRU offline product cache
+        const lruEntry = await getCachedProduct(barcode);
+        if (lruEntry) {
+          const { product } = lruEntry;
+          if (!hasLocalDB) {
+            setState((s) => ({
+              ...s,
+              loading: false,
+              error: 'La base d\'ingrédients locale n\'est pas disponible. Reconnectez-vous pour la télécharger.',
+            }));
+            return;
+          }
+          const matches = await matchIngredientsLocal(product.ingredientsList, trimester);
+          const verdict = getVerdict(matches);
+          await enqueueOfflineScan({
+            barcode,
+            product,
+            verdict,
+            trimester,
+            scannedAt: Date.now(),
+          });
+          setState({
+            loading: false,
+            product,
+            matches,
+            verdict,
+            error: null,
+            fromCache: true,
+          });
+          return;
+        }
+
+        // 3. Cannot identify product offline — no barcode lookup without network
+        setState((s) => ({
+          ...s,
+          loading: false,
+          error: 'Produit non trouvé dans le cache local. Une connexion internet est nécessaire pour scanner de nouveaux produits.',
+        }));
+        return;
+      }
+
+      // ── Online path ───────────────────────────────────────────────────────────
+
       // 1. Check cache first
       const cached = await readCache(barcode);
       if (cached) {
@@ -104,6 +198,9 @@ export function useScan(): UseScanReturn {
 
       // 5. Cache the result
       await writeCache(barcode, { product, matches, verdict });
+
+      // 6. Also store in offline LRU cache
+      await cacheProduct(barcode, product, verdict);
 
       setState({
         loading: false,

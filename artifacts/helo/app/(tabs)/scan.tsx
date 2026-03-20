@@ -1,9 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   Platform,
   StyleSheet,
@@ -31,7 +34,12 @@ import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
+import { analyzeMenu } from '@/lib/restaurant';
 import { incrementScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
+
+const MENU_RESULT_KEY = '@helo_menu_result';
+const RESTAURANT_USED_KEY = '@helo_restaurant_used';
+const MAX_MENU_PHOTOS = 5;
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -42,6 +50,11 @@ const VF_BARCODE_Y = H * 0.28;
 const VF_OCR_W = Math.min(W * 0.85, 340);
 const VF_OCR_H = Math.round(VF_OCR_W * (2 / 3));
 const VF_OCR_Y = H * 0.24;
+
+// Menu mode: wide portrait viewfinder (for A4-ish menus)
+const VF_MENU_W = W - 24;
+const VF_MENU_H = Math.min(Math.round(VF_MENU_W * 1.15), H * 0.5);
+const VF_MENU_Y = H * 0.14;
 
 const CORNER_SIZE = 22;
 const CORNER_THICKNESS = 3;
@@ -294,10 +307,14 @@ export default function ScanScreen() {
     }
   }, [syncComplete]);
 
+  const [menuPhotos, setMenuPhotos] = useState<Array<{ uri: string; base64: string }>>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
   const isOCRMode = scanMode === 'ingredients';
-  const vfW = isOCRMode ? VF_OCR_W : VF_BARCODE_W;
-  const vfH = isOCRMode ? VF_OCR_H : VF_BARCODE_H;
-  const vfY = isOCRMode ? VF_OCR_Y : VF_BARCODE_Y;
+  const isMenuMode = scanMode === 'menu';
+  const vfW = isOCRMode ? VF_OCR_W : isMenuMode ? VF_MENU_W : VF_BARCODE_W;
+  const vfH = isOCRMode ? VF_OCR_H : isMenuMode ? VF_MENU_H : VF_BARCODE_H;
+  const vfY = isOCRMode ? VF_OCR_Y : isMenuMode ? VF_MENU_Y : VF_BARCODE_Y;
   const vfX = (W - vfW) / 2;
 
   useFocusEffect(
@@ -306,6 +323,7 @@ export default function ScanScreen() {
       return () => {
         setIsActive(false);
         setTorchOn(false);
+        setMenuPhotos([]);
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
       };
     }, []),
@@ -363,6 +381,49 @@ export default function ScanScreen() {
       setTakingPhoto(false);
     }
   }, [takingPhoto, flashOverlay]);
+
+  // ── Menu mode: capture one page ──────────────────────────────────────────
+  const handleMenuCapture = useCallback(async () => {
+    if (takingPhoto || !cameraRef.current || menuPhotos.length >= MAX_MENU_PHOTOS) return;
+    setTakingPhoto(true);
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    flashOverlay.value = withSequence(
+      withTiming(0.5, { duration: 60 }),
+      withTiming(0, { duration: 250 }),
+    );
+
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.82 });
+      if (photo?.uri && photo.base64) {
+        setMenuPhotos((prev) => [...prev, { uri: photo.uri, base64: photo.base64! }]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      // silent — user can retry
+    } finally {
+      setTakingPhoto(false);
+    }
+  }, [takingPhoto, flashOverlay, menuPhotos.length]);
+
+  // ── Menu mode: run analysis and navigate ─────────────────────────────────
+  const handleMenuAnalyze = useCallback(async () => {
+    if (menuPhotos.length === 0 || isAnalyzing) return;
+    setIsAnalyzing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const base64Array = menuPhotos.map((p) => p.base64);
+      const result = await analyzeMenu(base64Array);
+      await AsyncStorage.setItem(MENU_RESULT_KEY, JSON.stringify(result));
+      setMenuPhotos([]);
+      router.push('/restaurant-results');
+    } catch {
+      // silent — show error in results screen
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [menuPhotos, isAnalyzing]);
 
   const flashOverlayStyle = useAnimatedStyle(() => ({
     opacity: flashOverlay.value,
@@ -431,7 +492,11 @@ export default function ScanScreen() {
         <View style={styles.hintPill}>
           <Text style={styles.hintText}>
             {isOCRMode
-              ? 'Photographiez la liste d\'ingrédients'
+              ? "Photographiez la liste d'ingrédients"
+              : isMenuMode
+              ? menuPhotos.length === 0
+                ? 'Photographiez la première page du menu'
+                : `Page ${menuPhotos.length}/${MAX_MENU_PHOTOS} · Ajoutez d'autres pages ou analysez`
               : 'Placez le code-barres dans le cadre'}
           </Text>
         </View>
@@ -441,6 +506,62 @@ export default function ScanScreen() {
       {isOCRMode && (
         <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
           <ShutterButton onPress={handleShutter} />
+        </View>
+      )}
+
+      {/* ── Menu mode UI ── */}
+      {isMenuMode && (
+        <View style={[styles.menuPanel, { bottom: bottomInset + 78 }]}>
+          {/* Thumbnail strip */}
+          {menuPhotos.length > 0 && (
+            <View style={styles.menuThumbStrip}>
+              {menuPhotos.map((photo, i) => (
+                <View key={i} style={styles.menuThumb}>
+                  <Image source={{ uri: photo.uri }} style={styles.menuThumbImg} contentFit="cover" />
+                  <TouchableOpacity
+                    style={styles.menuThumbDelete}
+                    onPress={() => setMenuPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                    hitSlop={6}
+                  >
+                    <Feather name="x" size={10} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {menuPhotos.length < MAX_MENU_PHOTOS && (
+                <TouchableOpacity
+                  style={styles.menuThumbAdd}
+                  onPress={handleMenuCapture}
+                  disabled={takingPhoto}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="plus" size={20} color={Colors.accent} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Buttons row */}
+          <View style={styles.menuButtons}>
+            {menuPhotos.length === 0 ? (
+              <ShutterButton onPress={handleMenuCapture} />
+            ) : (
+              <TouchableOpacity
+                style={[styles.analyzeBtn, isAnalyzing && { opacity: 0.7 }]}
+                onPress={handleMenuAnalyze}
+                disabled={isAnalyzing}
+                activeOpacity={0.85}
+              >
+                {isAnalyzing ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Feather name="search" size={18} color="#fff" />
+                )}
+                <Text style={styles.analyzeBtnText}>
+                  {isAnalyzing ? 'Analyse en cours…' : 'Analyser le menu'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       )}
 
@@ -471,8 +592,10 @@ export default function ScanScreen() {
           <ModeChip label="Ingrédients" active={scanMode === 'ingredients'} onPress={() => setScanMode('ingredients')} />
           <ModeChip label="Menu" active={scanMode === 'menu'} onPress={() => setScanMode('menu')} />
         </View>
-        {scanMode === 'menu' && (
-          <Text style={styles.comingSoon}>Bientôt disponible — Mode restaurant</Text>
+        {isMenuMode && menuPhotos.length > 0 && (
+          <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75}>
+            <Text style={styles.comingSoon}>Réinitialiser les photos</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -615,6 +738,70 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.65)',
     textAlign: 'center',
     paddingHorizontal: Spacing.xl,
+  },
+
+  // ── Menu mode ──
+  menuPanel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    gap: Spacing.md,
+    zIndex: 15,
+    paddingHorizontal: Spacing.xl,
+  },
+  menuThumbStrip: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'center',
+  },
+  menuThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: Colors.accent,
+  },
+  menuThumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  menuThumbDelete: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 8,
+    padding: 2,
+  },
+  menuThumbAdd: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.md,
+    borderWidth: 2,
+    borderColor: Colors.accent,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(201,169,110,0.1)',
+  },
+  menuButtons: {
+    alignItems: 'center',
+  },
+  analyzeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.full,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.xxl,
+  },
+  analyzeBtnText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.labelLarge.fontSize,
+    color: '#fff',
   },
   permissionRoot: {
     flex: 1, backgroundColor: Colors.background,

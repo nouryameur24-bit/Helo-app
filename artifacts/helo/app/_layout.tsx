@@ -85,6 +85,13 @@ function RootLayoutNav() {
             presentation: 'modal',
           }}
         />
+        <Stack.Screen
+          name="restaurant-results"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+          }}
+        />
       </Stack>
       <DisclaimerModal />
       <TrimesterTransition

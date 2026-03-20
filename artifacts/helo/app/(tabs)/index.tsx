@@ -1,12 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Dimensions,
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -18,6 +17,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
+import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
+import { GlowScoreShareCard } from '@/components/share/GlowScoreShareCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -155,14 +156,27 @@ export default function HomeScreen() {
   const glowLabel = getGlowLabel(score);
   const hasRisk = countDanger > 0 || countCaution > 0;
 
-  const handleShare = () => {
-    Share.share({
-      message: `Mon Glow Score Hēlo est de ${score}/100 — ${glowLabel.label} ! Analysez vos produits pendant la grossesse avec Hēlo.`,
-    });
-  };
+  const [glowShareVisible, setGlowShareVisible] = useState(false);
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
+      {/* Glow score share bottom sheet */}
+      {glowShareVisible && (
+        <ShareBottomSheet
+          visible={glowShareVisible}
+          onClose={() => setGlowShareVisible(false)}
+          card={
+            <GlowScoreShareCard
+              score={score}
+              week={weekOfPregnancy}
+              scanCount={total}
+              safeCount={countSafe}
+              dangerCount={countDanger}
+            />
+          }
+        />
+      )}
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
@@ -275,6 +289,11 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <View style={styles.sectionHeader}>
             <ThemedText variant="headlineMedium" color="textPrimary">Votre Glow Score</ThemedText>
+            {!isPartner && (
+              <IconButton size={36} onPress={() => setGlowShareVisible(true)}>
+                <Feather name="share-2" size={16} color={Colors.textSecondary} />
+              </IconButton>
+            )}
           </View>
 
           {/* Main circle */}
@@ -328,14 +347,6 @@ export default function HomeScreen() {
               </Pressable>
             )}
 
-            {/* Share button (pregnant only) */}
-            {!isPartner && (
-              <View style={styles.shareRow}>
-                <Button variant="ghost" onPress={handleShare}>
-                  Partager mon score
-                </Button>
-              </View>
-            )}
           </Card>
         </Animated.View>
 

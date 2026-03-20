@@ -10,7 +10,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -30,6 +29,8 @@ import { Circle, Svg } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 
 import { ScanDisclaimerBanner } from '@/components/ScanDisclaimerBanner';
+import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
+import { VerdictShareCard } from '@/components/share/VerdictShareCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -392,6 +393,7 @@ export default function VerdictScreen() {
 
   const [labelVisible, setLabelVisible] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [shareVisible, setShareVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [trimester, setTrimester] = useState(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
@@ -499,13 +501,9 @@ export default function VerdictScreen() {
     toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
   }, [barcode, product, verdict, effectiveUserId, trimester, recipientUserId, senderFirstName]);
 
-  const handleShare = useCallback(async () => {
+  const handleShare = useCallback(() => {
     if (!product || !verdict) return;
-    try {
-      await Share.share({
-        message: `J'ai scanné "${product.name}" avec Hēlo 🌿\nVerdic : ${getVerdictLabel(verdict.verdict)}.\nDécouvrez Hēlo — le scanner de produits pour les futures mamans.`,
-      });
-    } catch {}
+    setShareVisible(true);
   }, [product, verdict]);
 
   const verdictColor = getVerdictColor(verdict?.verdict);
@@ -558,6 +556,23 @@ export default function VerdictScreen() {
         onSelect={handleShelfSelect}
         onClose={() => setSheetVisible(false)}
       />
+
+      {/* Share bottom sheet */}
+      {shareVisible && product && verdict && (
+        <ShareBottomSheet
+          visible={shareVisible}
+          onClose={() => setShareVisible(false)}
+          card={
+            <VerdictShareCard
+              productName={product.name}
+              brand={product.brand ?? undefined}
+              verdict={verdict.verdict as 'safe' | 'caution' | 'danger'}
+              score={glowScore}
+              trimester={trimester}
+            />
+          }
+        />
+      )}
 
       <ScrollView
         style={styles.scroll}

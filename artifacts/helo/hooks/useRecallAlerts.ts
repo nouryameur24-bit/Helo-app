@@ -2,6 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 
 import { scheduleNotification } from '@/lib/notifications';
+import { calculateGlowScore } from '@/lib/glowscore';
+import { calculateTrimester } from '@/lib/trimester';
+import { syncWidgetData, reloadWidgets } from '@/lib/widgetStorage';
 import {
   checkShelfForRecalls,
   fetchRecentRecalls,
@@ -17,6 +20,7 @@ interface RawShelfItem {
   barcode?: string;
   productName?: string;
   brand?: string;
+  verdict?: string;
 }
 
 export interface RecallAlertState {
@@ -40,6 +44,33 @@ export function useRecallAlerts(isPremium: boolean) {
         const shelf: RawShelfItem[] = JSON.parse(raw);
         const updated = shelf.filter((i) => i.barcode !== barcode);
         await AsyncStorage.setItem('@helo_shelf', JSON.stringify(updated));
+        // Sync widget after removal
+        try {
+          const { score } = calculateGlowScore(
+            updated.map((i, idx) => ({
+              id: String(idx),
+              name: '',
+              brand: '',
+              verdict: (i.verdict ?? 'safe') as 'safe' | 'caution' | 'danger',
+              verdictLabel: '',
+              category: 'salle-de-bain' as const,
+              verdictChanged: false,
+            })),
+          );
+          const profileRaw = await AsyncStorage.getItem('user_profile');
+          let weekOfPregnancy = 20;
+          let trimesterNum = 2;
+          if (profileRaw) {
+            const profile = JSON.parse(profileRaw);
+            if (profile.dueDate) {
+              const info = calculateTrimester(profile.dueDate);
+              weekOfPregnancy = info.weekOfPregnancy;
+              trimesterNum = info.trimester;
+            }
+          }
+          await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
+          await reloadWidgets();
+        } catch {}
       } catch {
       }
       await dismiss();

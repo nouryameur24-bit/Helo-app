@@ -8,6 +8,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
+import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -30,11 +31,35 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+function useWidgetDeepLinks() {
+  useEffect(() => {
+    const handleUrl = (event: { url: string }) => {
+      const { url } = event;
+      if (url === 'helo://glowscore') {
+        router.push('/(tabs)');
+      } else if (url === 'helo://scan') {
+        router.push('/(tabs)/scan');
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleUrl);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl({ url });
+    }).catch(() => {});
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+}
+
 function RootLayoutNav() {
   const { trimester, showTrimesterTransition, changedProductsCount, dismissTransition } = useTrimester();
   const { isPremium } = usePremium();
   const { activeAlert, dismiss, removeFromShelf } = useRecallAlerts(isPremium);
   useNotificationTapRouting();
+  useWidgetDeepLinks();
 
   useEffect(() => {
     initAndroidNotificationChannels().catch(() => {});

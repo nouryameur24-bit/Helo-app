@@ -18,6 +18,9 @@ import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { loadLatestBasket, type BasketItem } from '@/lib/basket';
+import { calculateGlowScore } from '@/lib/glowscore';
+import { calculateTrimester } from '@/lib/trimester';
+import { syncWidgetData, reloadWidgets } from '@/lib/widgetStorage';
 import type { Verdict } from '@/types';
 
 const SHELF_KEY = '@helo_shelf';
@@ -142,6 +145,33 @@ export default function BasketResultsScreen() {
         `${newItems.length} produit${newItems.length > 1 ? 's' : ''} ajouté${newItems.length > 1 ? 's' : ''} à votre placard.`,
         [{ text: 'OK' }],
       );
+      // Sync widget after bulk shelf add
+      try {
+        const { score } = calculateGlowScore(
+          (merged as Array<{ verdict?: string }>).map((i, idx) => ({
+            id: String(idx),
+            name: '',
+            brand: '',
+            verdict: (i.verdict ?? 'safe') as 'safe' | 'caution' | 'danger',
+            verdictLabel: '',
+            category: 'salle-de-bain' as const,
+            verdictChanged: false,
+          })),
+        );
+        const profileRaw = await AsyncStorage.getItem('user_profile');
+        let weekOfPregnancy = 20;
+        let trimesterNum = 2;
+        if (profileRaw) {
+          const profile = JSON.parse(profileRaw);
+          if (profile.dueDate) {
+            const info = calculateTrimester(profile.dueDate);
+            weekOfPregnancy = info.weekOfPregnancy;
+            trimesterNum = info.trimester;
+          }
+        }
+        await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
+        await reloadWidgets();
+      } catch {}
     } catch {}
   }, [items]);
 

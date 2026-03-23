@@ -3,6 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ShelfProduct, ShelfCategory } from '@/components/shelf/ShelfCard';
+import { calculateGlowScore } from '@/lib/glowscore';
+import { calculateTrimester } from '@/lib/trimester';
+import { syncWidgetData, reloadWidgets } from '@/lib/widgetStorage';
 
 type RawShelfItem = {
   barcode?: string;
@@ -29,6 +32,26 @@ function mapRawToShelf(raw: RawShelfItem, index: number): ShelfProduct {
     category: (raw.category ?? 'salle-de-bain') as ShelfCategory,
     verdictChanged: false,
   };
+}
+
+async function syncWidgetFromShelf(products: ShelfProduct[]): Promise<void> {
+  try {
+    const { score } = calculateGlowScore(products);
+    const profileRaw = await AsyncStorage.getItem('user_profile');
+    let weekOfPregnancy = 20;
+    let trimester = 2;
+    if (profileRaw) {
+      const profile = JSON.parse(profileRaw);
+      if (profile.dueDate) {
+        const info = calculateTrimester(profile.dueDate);
+        weekOfPregnancy = info.weekOfPregnancy;
+        trimester = info.trimester;
+      }
+    }
+    await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester });
+    await reloadWidgets();
+  } catch {
+  }
 }
 
 export function useShelfData(userId?: string | null) {
@@ -78,6 +101,7 @@ export function useShelfData(userId?: string | null) {
           });
           setShelf(items);
           setLoading(false);
+          syncWidgetFromShelf(items).catch(() => {});
           return;
         }
       } catch {
@@ -88,7 +112,9 @@ export function useShelfData(userId?: string | null) {
       const raw = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
       const all: RawShelfItem[] = JSON.parse(raw);
       const filtered = all.filter((i) => !i.userId || i.userId === userId);
-      setShelf(filtered.map(mapRawToShelf));
+      const items = filtered.map(mapRawToShelf);
+      setShelf(items);
+      syncWidgetFromShelf(items).catch(() => {});
     } catch {
       setShelf([]);
     } finally {

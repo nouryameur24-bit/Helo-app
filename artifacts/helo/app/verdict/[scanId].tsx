@@ -3,6 +3,9 @@ import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
+import { syncWidgetData, reloadWidgets } from '@/lib/widgetStorage';
+import { calculateGlowScore } from '@/lib/glowscore';
+import { calculateTrimester } from '@/lib/trimester';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Linking,
@@ -478,6 +481,33 @@ export default function VerdictScreen() {
         userId: shelfUserId,
       });
       await AsyncStorage.setItem('@helo_shelf', JSON.stringify(shelf));
+      // Sync widget immediately after shelf write
+      try {
+        const { score } = calculateGlowScore(
+          shelf.map((i: { verdict?: string }, idx: number) => ({
+            id: String(idx),
+            name: '',
+            brand: '',
+            verdict: (i.verdict ?? 'safe') as 'safe' | 'caution' | 'danger',
+            verdictLabel: '',
+            category: 'salle-de-bain' as const,
+            verdictChanged: false,
+          })),
+        );
+        const profileRaw = await AsyncStorage.getItem('user_profile');
+        let weekOfPregnancy = 20;
+        let trimesterNum = 2;
+        if (profileRaw) {
+          const profile = JSON.parse(profileRaw);
+          if (profile.dueDate) {
+            const info = calculateTrimester(profile.dueDate);
+            weekOfPregnancy = info.weekOfPregnancy;
+            trimesterNum = info.trimester;
+          }
+        }
+        await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
+        await reloadWidgets();
+      } catch {}
     } catch {}
 
     if (isSupabaseConfigured && shelfUserId) {

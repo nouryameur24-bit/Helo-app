@@ -15,6 +15,11 @@
     },
     "ios": {
       "supportsTablet": false,
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.com.helo.widget"
+        ]
+      },
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "Hēlo vous envoie des rappels hebdomadaires, des jalons de trimestre et des alertes sur vos produits pour votre grossesse."
       }
@@ -53,6 +58,15 @@
           "sounds": [],
           "androidMode": "default",
           "androidCollapsedTitle": "#{unread_notifications} nouvelles notifications"
+        }
+      ],
+      [
+        "react-native-ios-widget",
+        {
+          "widgetsFolder": "widgets",
+          "groupIdentifier": "group.com.helo.widget",
+          "targetName": "HeloWidgetsExtension",
+          "bundleIdentifier": "com.helo.widgets"
         }
       ]
     ],

@@ -65,6 +65,7 @@
     "expo-notifications": "^55.0.13",
     "expo-print": "^55.0.9",
     "expo-sharing": "^55.0.14",
+    "react-native-ios-widget": "^0.0.13",
     "react-native-purchases": "^9.14.0",
     "react-native-view-shot": "^4.0.3"
   }

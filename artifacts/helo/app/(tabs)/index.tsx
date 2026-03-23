@@ -237,6 +237,28 @@ export default function HomeScreen() {
           </LinearGradient>
         </Animated.View>
 
+        {/* Mon Panier shortcut */}
+        <Animated.View entering={FadeInDown.delay(150).duration(500)}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.basketCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+            onPress={() => router.push('/basket-scan' as never)}
+          >
+            <View style={styles.basketIcon}>
+              <Feather name="shopping-cart" size={20} color={Colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="labelLarge" color="textPrimary">Scanner mon panier</ThemedText>
+              <ThemedText variant="bodySmall" color="textTertiary">
+                Analysez plusieurs produits d'un coup
+              </ThemedText>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Stats row */}
         <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.statsRow}>
           <Card style={styles.statCard} padding={Spacing.lg}>
@@ -564,6 +586,26 @@ const styles = StyleSheet.create({
   disclaimerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  basketCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+    ...Shadows.soft,
+  },
+  basketIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accentLight + '55',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accentLight,
   },
   briefCard: {
     flexDirection: 'row',

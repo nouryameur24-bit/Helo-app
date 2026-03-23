@@ -478,13 +478,24 @@ export default function ScanScreen() {
           )}
           {isOffline && <OfflineBadge />}
         </View>
-        <IconButton
-          onPress={() => setTorchOn((v) => !v)}
-          backgroundColor={torchOn ? Colors.accent : 'rgba(255,255,255,0.18)'}
-          size={40}
-        >
-          <Feather name={torchOn ? 'zap' : 'zap-off'} size={18} color="#fff" />
-        </IconButton>
+        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+          {scanMode === 'barcode' && (
+            <IconButton
+              onPress={() => router.push('/basket-scan' as never)}
+              backgroundColor="rgba(255,255,255,0.18)"
+              size={40}
+            >
+              <Feather name="shopping-cart" size={18} color="#fff" />
+            </IconButton>
+          )}
+          <IconButton
+            onPress={() => setTorchOn((v) => !v)}
+            backgroundColor={torchOn ? Colors.accent : 'rgba(255,255,255,0.18)'}
+            size={40}
+          >
+            <Feather name={torchOn ? 'zap' : 'zap-off'} size={18} color="#fff" />
+          </IconButton>
+        </View>
       </View>
 
       {/* ── Hint pill under viewfinder ── */}

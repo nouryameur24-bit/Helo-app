@@ -112,6 +112,13 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="compare"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
           name="journal-entry"
           options={{
             headerShown: false,

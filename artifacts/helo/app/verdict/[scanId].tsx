@@ -814,6 +814,17 @@ export default function VerdictScreen() {
           <IconButton onPress={handleShare} size={44}>
             <Feather name="share-2" size={18} color={Colors.textSecondary} />
           </IconButton>
+          <IconButton
+            onPress={() =>
+              router.push({
+                pathname: '/compare',
+                params: { barcode, slot: 'A' },
+              } as never)
+            }
+            size={44}
+          >
+            <Feather name="git-branch" size={18} color={Colors.textSecondary} />
+          </IconButton>
           <IconButton onPress={() => router.back()} size={44}>
             <Feather name="camera" size={18} color={Colors.textSecondary} />
           </IconButton>

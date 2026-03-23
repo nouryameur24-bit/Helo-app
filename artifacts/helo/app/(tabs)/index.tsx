@@ -237,25 +237,42 @@ export default function HomeScreen() {
           </LinearGradient>
         </Animated.View>
 
-        {/* Mon Panier shortcut */}
-        <Animated.View entering={FadeInDown.delay(150).duration(500)}>
+        {/* Quick actions row */}
+        <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.quickRow}>
           <Pressable
             style={({ pressed }) => [
-              styles.basketCard,
-              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+              styles.quickCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
             ]}
             onPress={() => router.push('/basket-scan' as never)}
           >
-            <View style={styles.basketIcon}>
-              <Feather name="shopping-cart" size={20} color={Colors.accent} />
+            <View style={[styles.quickIcon, { backgroundColor: Colors.accentLight + '55', borderColor: Colors.accentLight }]}>
+              <Feather name="shopping-cart" size={18} color={Colors.accent} />
             </View>
-            <View style={{ flex: 1 }}>
-              <ThemedText variant="labelLarge" color="textPrimary">Scanner mon panier</ThemedText>
-              <ThemedText variant="bodySmall" color="textTertiary">
-                Analysez plusieurs produits d'un coup
-              </ThemedText>
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
+              Mon panier
+            </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
+              Plusieurs produits
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+            ]}
+            onPress={() => router.push('/compare' as never)}
+          >
+            <View style={[styles.quickIcon, { backgroundColor: Colors.safeBg, borderColor: Colors.safeLight }]}>
+              <Feather name="git-branch" size={18} color={Colors.safe} />
             </View>
-            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
+              Comparer
+            </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
+              2 produits côte à côte
+            </ThemedText>
           </Pressable>
         </Animated.View>
 
@@ -587,25 +604,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  basketCard: {
+  quickRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  quickCard: {
+    flex: 1,
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
-    gap: Spacing.md,
-    marginBottom: Spacing.sm,
+    alignItems: 'center',
     ...Shadows.soft,
   },
-  basketIcon: {
-    width: 44,
-    height: 44,
+  quickIcon: {
+    width: 48,
+    height: 48,
     borderRadius: Radius.md,
-    backgroundColor: Colors.accentLight + '55',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.accentLight,
   },
   briefCard: {
     flexDirection: 'row',

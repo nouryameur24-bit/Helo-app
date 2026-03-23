@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY ?? '';
 const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-3-5-haiku-20241022';
+const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 1024;
 
 export interface ChatMessage {

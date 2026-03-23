@@ -12,3 +12,9 @@ id = "7Ro-M-1jLzHq5b_wasyWZ"
 uri = "file://helo-current.tar.gz"
 type = "unspecified"
 title = "helo-current.tar.gz — Code source complet à jour (6.7 Mo)"
+
+[[outputs]]
+id = "hW_tOuP2zqXnPXUZQZFcY"
+uri = "file://helo_20260323.tar.gz"
+type = "unspecified"
+title = "Hēlo — code source complet (23 mars 2026)"

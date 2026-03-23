@@ -29,6 +29,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "clock", selected: "clock.fill" }} />
         <Label>Historique</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="chat">
+        <Icon sf={{ default: "message", selected: "message.fill" }} />
+        <Label>Chat IA</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="community">
         <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
         <Label>Communauté</Label>

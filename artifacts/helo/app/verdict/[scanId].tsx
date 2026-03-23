@@ -44,6 +44,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
 import { sendShelfAddNotification } from '@/lib/notifications';
+import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
+import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { MatchResult, RiskLevel, VerdictResult } from '@/types';
 
@@ -397,6 +399,7 @@ export default function VerdictScreen() {
 
   const [labelVisible, setLabelVisible] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [recallMatch, setRecallMatch] = useState<RappelConsoRecord | null>(null);
   const [shareVisible, setShareVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [trimester, setTrimester] = useState(2);
@@ -435,6 +438,14 @@ export default function VerdictScreen() {
 
     scanBarcode(barcode, trimester as 1 | 2 | 3, isOffline);
   }, [barcode, trimester, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check recall for scanned barcode (premium only)
+  useEffect(() => {
+    if (!barcode || barcode.startsWith('ocr_') || !isPremium) return;
+    fetchRecallForBarcode(barcode)
+      .then((r) => setRecallMatch(r))
+      .catch(() => {});
+  }, [barcode, isPremium]);
 
   // Haptic when verdict arrives
   useEffect(() => {
@@ -662,6 +673,27 @@ export default function VerdictScreen() {
             )}
           </View>
         </LinearGradient>
+
+        {/* ── RECALL ALERT BANNER ── */}
+        {recallMatch && (
+          <Pressable
+            style={styles.recallBanner}
+            onPress={() => Linking.openURL(recallMatch.lien_vers_la_fiche_rappel).catch(() => {})}
+          >
+            <View style={styles.recallBannerIcon}>
+              <Feather name="alert-triangle" size={20} color={Colors.danger} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="labelLarge" style={{ color: Colors.danger }}>
+                RAPPEL OFFICIEL EN COURS
+              </ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }} numberOfLines={2}>
+                {recallMatch.motif_rappel}
+              </ThemedText>
+            </View>
+            <Feather name="external-link" size={16} color={Colors.danger + '88'} />
+          </Pressable>
+        )}
 
         {/* ── INGREDIENT DETAILS — PREMIUM GATE ── */}
         {(flagged.length > 0 || noSignal.length > 0) && (
@@ -940,6 +972,30 @@ const styles = StyleSheet.create({
   noSignalTitle: { marginBottom: Spacing.sm },
   noSignalCard: {},
   noSignalItem: { paddingVertical: Spacing.xs },
+
+  // Recall alert banner
+  recallBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.dangerLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.danger + '44',
+  },
+  recallBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.dangerBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.danger + '33',
+  },
 
   // Premium ingredient gate
   premiumGate: {

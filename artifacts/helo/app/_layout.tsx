@@ -15,9 +15,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { DisclaimerModal } from "@/components/DisclaimerModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { RecallAlertModal } from "@/components/RecallAlertModal";
 import { TrimesterTransition } from "@/components/TrimesterTransition";
 import { Colors } from "@/constants/theme";
 import { useNotificationTapRouting } from "@/hooks/useNotifications";
+import { usePremium } from "@/hooks/usePremium";
+import { useRecallAlerts } from "@/hooks/useRecallAlerts";
 import { useTrimester } from "@/hooks/useTrimester";
 import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifications";
 import { downloadIngredientsDB } from "@/lib/offline";
@@ -29,6 +32,8 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { trimester, showTrimesterTransition, changedProductsCount, dismissTransition } = useTrimester();
+  const { isPremium } = usePremium();
+  const { activeAlert, dismiss, removeFromShelf } = useRecallAlerts(isPremium);
   useNotificationTapRouting();
 
   useEffect(() => {
@@ -113,6 +118,11 @@ function RootLayoutNav() {
         trimester={trimester}
         changedProductsCount={changedProductsCount}
         onDismiss={dismissTransition}
+      />
+      <RecallAlertModal
+        alert={activeAlert}
+        onDismiss={dismiss}
+        onRemoveFromShelf={removeFromShelf}
       />
     </>
   );

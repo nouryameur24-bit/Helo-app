@@ -12,7 +12,8 @@ export type NotificationType =
   | 'product_reclassified'
   | 'partner_activity'
   | 'inactivity_reminder'
-  | 'community_approved';
+  | 'community_approved'
+  | 'recall_alert';
 
 export interface NotificationSettings {
   weekly_brief: boolean;
@@ -21,6 +22,7 @@ export interface NotificationSettings {
   partner_activity: boolean;
   inactivity_reminder: boolean;
   community_approved: boolean;
+  recall_alert: boolean;
   maxPerWeek: number;
   quietHours: boolean;
 }
@@ -32,6 +34,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   partner_activity: true,
   inactivity_reminder: true,
   community_approved: true,
+  recall_alert: true,
   maxPerWeek: 3,
   quietHours: true,
 };
@@ -60,6 +63,10 @@ export const NOTIFICATION_LABELS: Record<NotificationType, { title: string; desc
   community_approved: {
     title: 'Communauté',
     description: 'Notifications lors de nouvelles approbations communautaires.',
+  },
+  recall_alert: {
+    title: 'Alertes rappels produits',
+    description: 'Alertes urgentes si un produit de votre placard fait l\'objet d\'un rappel.',
   },
 };
 

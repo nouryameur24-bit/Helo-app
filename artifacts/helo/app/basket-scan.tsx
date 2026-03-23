@@ -27,6 +27,8 @@ import { Feather } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { fetchProductByBarcode, matchIngredients, getVerdict } from '@/lib/productLookup';
+import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
+import type { Phase } from '@/types';
 import { saveBasket, verdictLabel, type BasketItem } from '@/lib/basket';
 import { useProfile } from '@/hooks/useProfile';
 import type { Verdict } from '@/types';
@@ -93,11 +95,12 @@ export default function BasketScanScreen() {
         const product = await fetchProductByBarcode(data);
         const name = product?.name ?? data;
         const brand = product?.brand ?? '';
-        const t = (trimester as 1 | 2 | 3 | null) ?? 2;
+        const isBF = await getBreastfeedingMode().catch(() => false);
+        const phase: Phase = isBF ? 'breastfeeding' : ((trimester as 1 | 2 | 3 | null) ?? 2);
 
         const rawIngredients = product?.ingredientsList ?? [];
         const matches = rawIngredients.length > 0
-          ? await matchIngredients(rawIngredients, t)
+          ? await matchIngredients(rawIngredients, phase)
           : [];
         const verdictResult = getVerdict(matches);
         const verdict = verdictResult.verdict;

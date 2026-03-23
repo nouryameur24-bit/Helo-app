@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Colors, Radius } from '@/constants/theme';
+import type { Phase } from '@/types';
 
 type VerdictType = 'safe' | 'caution' | 'danger';
 
@@ -10,7 +11,7 @@ interface VerdictShareCardProps {
   brand?: string;
   verdict: VerdictType;
   score: number;
-  trimester: number;
+  phase: Phase;
 }
 
 function getVerdictColor(v: VerdictType) {
@@ -31,9 +32,10 @@ function getVerdictLabel(v: VerdictType) {
   return 'Compatible';
 }
 
-function trimesterLabel(t: number) {
-  if (t === 1) return '1er trimestre';
-  if (t === 2) return '2ème trimestre';
+function phaseLabel(p: Phase): string {
+  if (p === 'breastfeeding') return 'Allaitement';
+  if (p === 1) return '1er trimestre';
+  if (p === 2) return '2ème trimestre';
   return '3ème trimestre';
 }
 
@@ -43,7 +45,7 @@ const CIRCLE_SIZE = 280;
 const STROKE = 18;
 
 export const VerdictShareCard = React.forwardRef<View, VerdictShareCardProps>(
-  function VerdictShareCard({ productName, brand, verdict, score, trimester }, ref) {
+  function VerdictShareCard({ productName, brand, verdict, score, phase }, ref) {
     const color = getVerdictColor(verdict);
     const gradColors = getVerdictBg(verdict);
     const label = getVerdictLabel(verdict);
@@ -75,9 +77,13 @@ export const VerdictShareCard = React.forwardRef<View, VerdictShareCardProps>(
         <View style={styles.productSection}>
           <Text style={styles.productName} numberOfLines={3}>{productName}</Text>
           {brand ? <Text style={styles.brand}>{brand}</Text> : null}
-          <View style={[styles.trimesterBadge, { backgroundColor: Colors.accentLight }]}>
-            <Text style={[styles.trimesterText, { color: Colors.accentDark }]}>
-              {trimesterLabel(trimester)}
+          <View style={[styles.trimesterBadge, {
+            backgroundColor: phase === 'breastfeeding' ? '#F0D0DC' : Colors.accentLight,
+          }]}>
+            <Text style={[styles.trimesterText, {
+              color: phase === 'breastfeeding' ? '#D4A0B0' : Colors.accentDark,
+            }]}>
+              {phase === 'breastfeeding' ? 'Allaitement 🤱' : phaseLabel(phase)}
             </Text>
           </View>
         </View>

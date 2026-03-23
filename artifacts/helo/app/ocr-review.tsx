@@ -21,6 +21,8 @@ import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { matchIngredients, getVerdict } from '@/lib/productLookup';
+import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
+import type { Phase } from '@/types';
 import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
 import type { ProductData, MatchResult, VerdictResult } from '@/types';
 
@@ -153,17 +155,22 @@ export default function OcrReviewScreen() {
       const cleaned = cleanOCRText(ocrText);
       const ingredients = parseINCI(cleaned);
 
-      // Get trimester from user profile
-      let trimester: 1 | 2 | 3 = 2;
+      // Get phase from user profile (breastfeeding takes priority)
+      let phase: Phase = 2;
       try {
-        const raw = await AsyncStorage.getItem('user_profile');
-        if (raw) {
-          const p = JSON.parse(raw);
-          if (p.trimester) trimester = p.trimester;
+        const isBF = await getBreastfeedingMode();
+        if (isBF) {
+          phase = 'breastfeeding';
+        } else {
+          const raw = await AsyncStorage.getItem('user_profile');
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (p.trimester) phase = p.trimester as Phase;
+          }
         }
       } catch {}
 
-      const matchesArr = await matchIngredients(ingredients, trimester);
+      const matchesArr = await matchIngredients(ingredients, phase);
       const verdictResult = getVerdict(matchesArr);
 
       // Build a fake ProductData from user inputs

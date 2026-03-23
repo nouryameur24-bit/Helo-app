@@ -2,9 +2,9 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type {
   IngredientData,
   MatchResult,
+  Phase,
   ProductData,
   RiskLevel,
-  Trimester,
   VerdictResult,
 } from '@/types';
 
@@ -115,17 +115,18 @@ export function parseIngredients(ingredientsText: string): string[] {
 
 // ─── 4. Match ingredients against Supabase DB ────────────────────────────────
 
-function getRiskForTrimester(ingredient: IngredientData, trimester: Trimester): RiskLevel {
-  switch (trimester) {
+function getRiskForPhase(ingredient: IngredientData, phase: Phase): RiskLevel {
+  switch (phase) {
     case 1: return ingredient.risk_level_t1;
     case 2: return ingredient.risk_level_t2;
     case 3: return ingredient.risk_level_t3;
+    case 'breastfeeding': return ingredient.risk_level_breastfeeding ?? ingredient.risk_level_t3;
   }
 }
 
 export async function matchIngredients(
   ingredientsList: string[],
-  trimester: Trimester,
+  phase: Phase,
 ): Promise<MatchResult[]> {
   if (!isSupabaseConfigured || ingredientsList.length === 0) {
     return ingredientsList.map((ingredientName) => ({
@@ -160,7 +161,7 @@ export async function matchIngredients(
     });
 
     if (matched) {
-      const riskLevel = getRiskForTrimester(matched, trimester);
+      const riskLevel = getRiskForPhase(matched, phase);
       return { ingredientName, matched: true, ingredient: matched, riskLevel };
     }
 

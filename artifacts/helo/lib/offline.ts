@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { IngredientData, MatchResult, ProductData, RiskLevel, Trimester, VerdictResult } from '@/types';
+import type { IngredientData, MatchResult, Phase, ProductData, RiskLevel, Trimester, VerdictResult } from '@/types';
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ export interface OfflineQueueEntry {
   barcode: string;
   product: ProductData;
   verdict: VerdictResult;
-  trimester: Trimester;
+  trimester: Phase;
   scannedAt: number;
 }
 
@@ -76,17 +76,18 @@ export async function getLocalIngredients(): Promise<IngredientData[]> {
 
 // ─── 3. matchIngredientsLocal ─────────────────────────────────────────────────
 
-function getRiskForTrimester(ingredient: IngredientData, trimester: Trimester): RiskLevel {
-  switch (trimester) {
+function getRiskForPhase(ingredient: IngredientData, phase: Phase): RiskLevel {
+  switch (phase) {
     case 1: return ingredient.risk_level_t1;
     case 2: return ingredient.risk_level_t2;
     case 3: return ingredient.risk_level_t3;
+    case 'breastfeeding': return ingredient.risk_level_breastfeeding ?? ingredient.risk_level_t3;
   }
 }
 
 export async function matchIngredientsLocal(
   ingredientsList: string[],
-  trimester: Trimester,
+  phase: Phase,
 ): Promise<MatchResult[]> {
   const dbIngredients = await getLocalIngredients();
 
@@ -104,7 +105,7 @@ export async function matchIngredientsLocal(
     });
 
     if (matched) {
-      const riskLevel = getRiskForTrimester(matched, trimester);
+      const riskLevel = getRiskForPhase(matched, phase);
       return { ingredientName, matched: true, ingredient: matched, riskLevel };
     }
 

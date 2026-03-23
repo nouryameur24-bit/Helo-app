@@ -17,9 +17,9 @@ import {
 import { PREMIUM_KEY } from '@/lib/purchases';
 import type {
   MatchResult,
+  Phase,
   ProductData,
   ScanCache,
-  Trimester,
   VerdictResult,
 } from '@/types';
 
@@ -36,7 +36,7 @@ interface ScanState {
 }
 
 interface UseScanReturn extends ScanState {
-  scanBarcode: (barcode: string, trimester?: Trimester, isOffline?: boolean) => Promise<void>;
+  scanBarcode: (barcode: string, phase?: Phase, isOffline?: boolean) => Promise<void>;
   clearResult: () => void;
   setDirectResult: (product: ProductData, matches: MatchResult[], verdict: VerdictResult) => void;
 }
@@ -75,7 +75,7 @@ export function useScan(): UseScanReturn {
     fromCache: false,
   });
 
-  const scanBarcode = useCallback(async (barcode: string, trimester: Trimester = 2, isOffline = false) => {
+  const scanBarcode = useCallback(async (barcode: string, phase: Phase = 2, isOffline = false) => {
     setState((s) => ({ ...s, loading: true, error: null, fromCache: false }));
 
     try {
@@ -101,14 +101,14 @@ export function useScan(): UseScanReturn {
         const cached = await readCache(barcode);
         if (cached) {
           const matches = hasLocalDB
-            ? await matchIngredientsLocal(cached.product.ingredientsList, trimester)
+            ? await matchIngredientsLocal(cached.product.ingredientsList, phase)
             : cached.matches;
           const verdict = getVerdict(matches);
           await enqueueOfflineScan({
             barcode,
             product: cached.product,
             verdict,
-            trimester,
+            trimester: phase,
             scannedAt: Date.now(),
           });
           setState({
@@ -134,13 +134,13 @@ export function useScan(): UseScanReturn {
             }));
             return;
           }
-          const matches = await matchIngredientsLocal(product.ingredientsList, trimester);
+          const matches = await matchIngredientsLocal(product.ingredientsList, phase);
           const verdict = getVerdict(matches);
           await enqueueOfflineScan({
             barcode,
             product,
             verdict,
-            trimester,
+            trimester: phase,
             scannedAt: Date.now(),
           });
           setState({
@@ -191,7 +191,7 @@ export function useScan(): UseScanReturn {
       }
 
       // 3. Match ingredients against DB
-      const matches = await matchIngredients(product.ingredientsList, trimester);
+      const matches = await matchIngredients(product.ingredientsList, phase);
 
       // 4. Compute verdict
       const verdict = getVerdict(matches);

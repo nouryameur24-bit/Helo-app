@@ -46,11 +46,12 @@ import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
+import { getBreastfeedingMode, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
 import { sendShelfAddNotification } from '@/lib/notifications';
 import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
 import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { MatchResult, RiskLevel, VerdictResult } from '@/types';
+import type { MatchResult, Phase, RiskLevel, VerdictResult } from '@/types';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const CIRCLE_RADIUS = 60;
@@ -104,9 +105,10 @@ function sortMatches(matches: MatchResult[]): MatchResult[] {
   const order: Record<RiskLevel, number> = { danger: 0, caution: 1, safe: 2, no_signal: 3 };
   return [...matches].sort((a, b) => order[a.riskLevel] - order[b.riskLevel]);
 }
-function trimesterLabel(t: number) {
-  if (t === 1) return '1er trimestre';
-  if (t === 2) return '2ème trimestre';
+function phaseLabel(p: Phase): string {
+  if (p === 'breastfeeding') return 'mode allaitement';
+  if (p === 1) return '1er trimestre';
+  if (p === 2) return '2ème trimestre';
   return '3ème trimestre';
 }
 
@@ -405,22 +407,28 @@ export default function VerdictScreen() {
   const [recallMatch, setRecallMatch] = useState<RappelConsoRecord | null>(null);
   const [shareVisible, setShareVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const [trimester, setTrimester] = useState(2);
+  const [phase, setPhase] = useState<Phase>(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load trimester: use mother's trimester for partner, else local profile
+  // Load phase: check breastfeeding mode first, then trimester from profile
   useEffect(() => {
-    if (profileTrimester !== null && profileTrimester !== undefined) {
-      setTrimester(profileTrimester);
-    } else {
-      AsyncStorage.getItem('user_profile').then((raw) => {
-        if (raw) {
-          const p = JSON.parse(raw);
-          if (p.trimester) setTrimester(p.trimester);
-        }
-      }).catch(() => {});
-    }
+    getBreastfeedingMode().then((isBF) => {
+      if (isBF) {
+        setPhase('breastfeeding');
+        return;
+      }
+      if (profileTrimester !== null && profileTrimester !== undefined) {
+        setPhase(profileTrimester as Phase);
+      } else {
+        AsyncStorage.getItem('user_profile').then((raw) => {
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (p.trimester) setPhase(p.trimester as Phase);
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
   }, [profileTrimester]);
 
   useEffect(() => {
@@ -439,8 +447,8 @@ export default function VerdictScreen() {
       return;
     }
 
-    scanBarcode(barcode, trimester as 1 | 2 | 3, isOffline);
-  }, [barcode, trimester, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
+    scanBarcode(barcode, phase, isOffline);
+  }, [barcode, phase, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check recall for scanned barcode (premium only)
   useEffect(() => {
@@ -523,7 +531,7 @@ export default function VerdictScreen() {
         await supabase.from('scan_history').insert({
           user_id: shelfUserId,
           product_id: productId,
-          trimester,
+          trimester: phase === 'breastfeeding' ? null : phase,
           in_shelf: true,
           shelf_category: category,
           verdict_at_shelf_add: verdict?.verdict ?? null,
@@ -544,7 +552,7 @@ export default function VerdictScreen() {
     setToastVisible(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
-  }, [barcode, product, verdict, effectiveUserId, trimester, recipientUserId, senderFirstName]);
+  }, [barcode, product, verdict, effectiveUserId, phase, recipientUserId, senderFirstName]);
 
   const handleShare = useCallback(() => {
     if (!product || !verdict) return;
@@ -632,7 +640,7 @@ export default function VerdictScreen() {
               brand={product.brand ?? undefined}
               verdict={verdict.verdict as 'safe' | 'caution' | 'danger'}
               score={glowScore}
-              trimester={trimester}
+              phase={phase}
             />
           }
         />
@@ -698,8 +706,10 @@ export default function VerdictScreen() {
           <View style={styles.trimesterBadgeRow}>
             {isOCRMode ? (
               <Badge variant="accent">Analysé par lecture d'ingrédients</Badge>
+            ) : phase === 'breastfeeding' ? (
+              <Badge variant="accent">Mode allaitement 🤱</Badge>
             ) : (
-              <Badge variant="accent">Évalué pour votre {trimesterLabel(trimester)}</Badge>
+              <Badge variant="accent">Évalué pour votre {phaseLabel(phase)}</Badge>
             )}
           </View>
         </LinearGradient>

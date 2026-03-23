@@ -2,6 +2,7 @@ export type RiskLevel = 'safe' | 'caution' | 'danger' | 'no_signal';
 export type Verdict = 'safe' | 'caution' | 'danger';
 export type Category = 'cosmetic' | 'food' | 'medication';
 export type Trimester = 1 | 2 | 3;
+export type Phase = Trimester | 'breastfeeding';
 export type UserRole = 'pregnant' | 'partner';
 
 export interface UserProfile {

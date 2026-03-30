@@ -14,7 +14,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 
 export type VerdictFilter = 'tous' | 'safe' | 'caution' | 'danger';
-export type CategoryFilter = 'salle-de-bain' | 'cuisine' | 'pharmacie';
+export type CategoryFilter = 'salle-de-bain' | 'cuisine' | 'pharmacie' | 'couches' | 'lingettes-bebe' | 'creme-change' | 'lait-bebe' | 'shampoing-bebe';
 export type SortOrder = 'recent' | 'oldest';
 
 export interface FilterState {
@@ -47,6 +47,11 @@ const CATEGORY_OPTIONS: { key: CategoryFilter; label: string }[] = [
   { key: 'salle-de-bain', label: 'Salle de bain' },
   { key: 'cuisine', label: 'Cuisine' },
   { key: 'pharmacie', label: 'Pharmacie' },
+  { key: 'couches', label: '👶 Couches' },
+  { key: 'lingettes-bebe', label: '👶 Lingettes bébé' },
+  { key: 'creme-change', label: '👶 Crème de change' },
+  { key: 'lait-bebe', label: '👶 Lait bébé' },
+  { key: 'shampoing-bebe', label: '👶 Shampoing bébé' },
 ];
 
 const SORT_OPTIONS: { key: SortOrder; label: string }[] = [

@@ -9,6 +9,7 @@ import {
   ScrollView,
   Share,
   StyleSheet,
+  Switch,
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -18,6 +19,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBabyMode } from '@/hooks/useBabyMode';
+import { useBreastfeeding } from '@/hooks/useBreastfeeding';
 
 import type { JournalEntry } from '@/app/(tabs)/journal';
 
@@ -115,6 +118,14 @@ export default function ProfileScreen() {
 
   const { userId, role, firstName, trimester, dueDate, partnerCode, linkedUserId, linkedFirstName, refresh } = useProfile();
   const isPartner = role === 'partner';
+  const { babyMode, enableBabyMode, disableBabyMode } = useBabyMode();
+  const { isBreastfeeding } = useBreastfeeding();
+
+  useEffect(() => {
+    if (isBreastfeeding && !babyMode) {
+      enableBabyMode();
+    }
+  }, [isBreastfeeding, babyMode, enableBabyMode]);
 
   const {
     isBreastfeeding,
@@ -727,6 +738,37 @@ export default function ProfileScreen() {
                     true: BREASTFEEDING_PALETTE.accent,
                   }}
                   thumbColor={isBreastfeeding ? '#FFF' : Colors.textTertiary}
+                />
+              </View>
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* MODE BÉBÉ */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(230).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MODE BÉBÉ
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              <View style={styles.settingRow}>
+                <View style={[styles.settingIcon, { backgroundColor: '#FFF0E8' }]}>
+                  <ThemedText style={{ fontSize: 18 }}>👶</ThemedText>
+                </View>
+                <View style={styles.settingContent}>
+                  <ThemedText variant="bodyLarge" color="textPrimary">Scanner aussi pour bébé</ThemedText>
+                  <ThemedText variant="bodySmall" color="textTertiary">
+                    {isBreastfeeding
+                      ? 'Activé automatiquement avec le mode allaitement'
+                      : 'Analyse les ingrédients selon les risques bébé (0-3 ans)'}
+                  </ThemedText>
+                </View>
+                <Switch
+                  value={babyMode}
+                  onValueChange={(val) => val ? enableBabyMode() : disableBabyMode()}
+                  disabled={isBreastfeeding}
+                  trackColor={{ false: Colors.borderLight, true: Colors.accent }}
+                  thumbColor={babyMode ? Colors.accentDark : '#f4f3f4'}
                 />
               </View>
             </Card>

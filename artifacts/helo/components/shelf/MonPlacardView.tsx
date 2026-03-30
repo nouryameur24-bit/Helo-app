@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, View, ViewStyle } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
@@ -8,10 +9,12 @@ import { FilterSheet, FilterState, DEFAULT_FILTERS } from '@/components/shelf/Fi
 import { ShelfCard, ShelfProduct } from '@/components/shelf/ShelfCard';
 import { ShimmerCard } from '@/components/shelf/ShimmerCard';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { getBabyMode } from '@/hooks/useBabyMode';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ShelfCategory } from '@/components/shelf/ShelfCard';
 import type { VerdictFilter } from '@/components/shelf/FilterSheet';
@@ -45,6 +48,17 @@ const MOCK_PRODUCTS: ShelfProduct[] = [
   { id: '6', name: 'Huile de coco bio', brand: 'NATURALIA', verdict: 'safe', verdictLabel: 'Sûr', category: 'cuisine', verdictChanged: false },
 ];
 
+type LocalShelfItem = {
+  barcode: string;
+  productName: string;
+  brand?: string;
+  category?: string;
+  verdict?: string;
+  savedAt: number;
+  userId?: string;
+  baby_product?: boolean;
+};
+
 export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   const { role, linkedUserId, linkedFirstName } = useProfile();
   const isPartner = role === 'partner' && !!linkedUserId;
@@ -54,6 +68,21 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
   const flatListRef = useRef<FlatList<ShelfProduct>>(null);
+  const [isBabyMode, setIsBabyMode] = useState(false);
+  const [babyProducts, setBabyProducts] = useState<LocalShelfItem[]>([]);
+
+  useEffect(() => {
+    getBabyMode().then(setIsBabyMode).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isBabyMode) return;
+    AsyncStorage.getItem('@helo_shelf').then((raw) => {
+      if (!raw) return;
+      const all: LocalShelfItem[] = JSON.parse(raw);
+      setBabyProducts(all.filter((item) => item.baby_product === true));
+    }).catch(() => {});
+  }, [isBabyMode]);
 
   useEffect(() => {
     if (isPartner && isSupabaseConfigured && linkedUserId) {
@@ -279,6 +308,29 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
         filters={filters}
         onApply={setFilters}
       />
+
+      {isBabyMode && babyProducts.length > 0 && (
+        <View style={styles.babySection}>
+          <ThemedText variant="labelSmall" color="textTertiary" style={styles.babySectionLabel}>
+            👶 PRODUITS BÉBÉ
+          </ThemedText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.babyScroll}>
+            {babyProducts.map((item, i) => (
+              <Card key={`${item.barcode}-${i}`} padding={Spacing.md} style={styles.babyCard}>
+                <View style={[styles.babyVerdictDot, {
+                  backgroundColor: item.verdict === 'safe' ? Colors.safe : item.verdict === 'danger' ? Colors.danger : Colors.caution,
+                }]} />
+                <ThemedText variant="bodyMedium" numberOfLines={2} style={{ flex: 1 }}>
+                  {item.productName}
+                </ThemedText>
+                {item.brand ? (
+                  <ThemedText variant="bodySmall" color="textTertiary" numberOfLines={1}>{item.brand}</ThemedText>
+                ) : null}
+              </Card>
+            ))}
+          </ScrollView>
+        </View>
+      )}
     </View>
   );
 }
@@ -335,5 +387,27 @@ const styles = StyleSheet.create({
   emptyBody: {
     textAlign: 'center',
     lineHeight: 22,
+  },
+  babySection: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    marginTop: Spacing.lg,
+  },
+  babySectionLabel: {
+    marginBottom: Spacing.md,
+  },
+  babyScroll: {
+    gap: Spacing.md,
+    paddingRight: Spacing.xl,
+  },
+  babyCard: {
+    width: 140,
+    gap: Spacing.xs,
+  },
+  babyVerdictDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    alignSelf: 'flex-end',
   },
 });

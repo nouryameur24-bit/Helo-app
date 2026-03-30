@@ -47,8 +47,10 @@ import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
 import { getBreastfeedingMode, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { getBabyMode } from '@/hooks/useBabyMode';
 import { sendShelfAddNotification } from '@/lib/notifications';
 import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
+import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { MatchResult, Phase, RiskLevel, VerdictResult } from '@/types';
@@ -317,16 +319,26 @@ const SHELF_OPTIONS = [
   { key: 'salle-de-bain', label: 'Salle de bain', icon: 'droplet' as const },
   { key: 'cuisine',       label: 'Cuisine',       icon: 'coffee'  as const },
   { key: 'pharmacie',     label: 'Pharmacie',     icon: 'plus-circle' as const },
-] as const;
+];
+
+const BABY_SHELF_OPTIONS = [
+  { key: 'couches',        label: 'Couches',           icon: 'package'     as const },
+  { key: 'lingettes-bebe', label: 'Lingettes bébé',    icon: 'wind'        as const },
+  { key: 'creme-change',   label: 'Crème de change',   icon: 'sun'         as const },
+  { key: 'lait-bebe',      label: 'Lait bébé',         icon: 'thermometer' as const },
+  { key: 'shampoing-bebe', label: 'Shampoing bébé',    icon: 'droplet'     as const },
+];
 
 function ShelfBottomSheet({
   visible,
   onSelect,
   onClose,
+  babyMode,
 }: {
   visible: boolean;
   onSelect: (category: string) => void;
   onClose: () => void;
+  babyMode?: boolean;
 }) {
   const checkScale = useSharedValue(0);
   const [chosen, setChosen] = useState<string | null>(null);
@@ -363,7 +375,7 @@ function ShelfBottomSheet({
           </View>
         ) : (
           <View style={styles.sheetOptions}>
-            {SHELF_OPTIONS.map((opt) => (
+            {(babyMode ? BABY_SHELF_OPTIONS : SHELF_OPTIONS).map((opt) => (
               <TouchableOpacity
                 key={opt.key}
                 style={styles.sheetOption}
@@ -409,6 +421,10 @@ export default function VerdictScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [phase, setPhase] = useState<Phase>(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
+  const [isBabyMode, setIsBabyMode] = useState(false);
+  const [babyMatches, setBabyMatches] = useState<MatchResult[]>([]);
+  const [babyVerdict, setBabyVerdict] = useState<VerdictResult | null>(null);
+  const [activeTab, setActiveTab] = useState<'pregnancy' | 'baby'>('pregnancy');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load phase: check breastfeeding mode first, then trimester from profile
@@ -450,6 +466,22 @@ export default function VerdictScreen() {
     scanBarcode(barcode, phase, isOffline);
   }, [barcode, phase, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Load baby mode on mount
+  useEffect(() => {
+    getBabyMode().then(setIsBabyMode).catch(() => {});
+  }, []);
+
+  // Compute baby verdict when product is available and baby mode is active
+  useEffect(() => {
+    if (!isBabyMode || !product || !product.ingredientsList || product.ingredientsList.length === 0) return;
+    matchIngredients(product.ingredientsList, 'baby')
+      .then((babyM) => {
+        setBabyMatches(babyM);
+        setBabyVerdict(getVerdict(babyM));
+      })
+      .catch(() => {});
+  }, [isBabyMode, product]);
+
   // Check recall for scanned barcode (premium only)
   useEffect(() => {
     if (!barcode || barcode.startsWith('ocr_') || !isPremium) return;
@@ -487,6 +519,7 @@ export default function VerdictScreen() {
         verdict: verdict?.verdict,
         savedAt: Date.now(),
         userId: shelfUserId,
+        ...(isBabyMode ? { baby_product: true } : {}),
       });
       await AsyncStorage.setItem('@helo_shelf', JSON.stringify(shelf));
       // Sync widget immediately after shelf write
@@ -559,10 +592,13 @@ export default function VerdictScreen() {
     setShareVisible(true);
   }, [product, verdict]);
 
-  const verdictColor = getVerdictColor(verdict?.verdict);
-  const verdictBgColor = getVerdictBg(verdict?.verdict);
-  const glowScore = verdict ? computeGlowScore(verdict) : 0;
-  const sorted = sortMatches(matches);
+  const displayVerdict = isBabyMode && activeTab === 'baby' ? (babyVerdict ?? verdict) : verdict;
+  const displayMatches = isBabyMode && activeTab === 'baby' ? babyMatches : matches;
+
+  const verdictColor = getVerdictColor(displayVerdict?.verdict);
+  const verdictBgColor = getVerdictBg(displayVerdict?.verdict);
+  const glowScore = displayVerdict ? computeGlowScore(displayVerdict) : 0;
+  const sorted = sortMatches(displayMatches);
   const flagged = sorted.filter((m) => m.riskLevel !== 'no_signal');
   const noSignal = sorted.filter((m) => m.riskLevel === 'no_signal');
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -627,6 +663,7 @@ export default function VerdictScreen() {
         visible={sheetVisible}
         onSelect={handleShelfSelect}
         onClose={() => setSheetVisible(false)}
+        babyMode={isBabyMode}
       />
 
       {/* Share bottom sheet */}
@@ -676,7 +713,7 @@ export default function VerdictScreen() {
               onAnimDone={() => setLabelVisible(true)}
             />
             <VerdictLabel
-              label={getVerdictLabel(verdict.verdict)}
+              label={getVerdictLabel(displayVerdict?.verdict ?? verdict.verdict)}
               color={verdictColor}
               visible={labelVisible}
             />
@@ -713,6 +750,34 @@ export default function VerdictScreen() {
             )}
           </View>
         </LinearGradient>
+
+        {/* ── BABY MODE TABS ── */}
+        {isBabyMode && (
+          <View style={styles.tabRow}>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'pregnancy' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('pregnancy')}
+            >
+              <ThemedText
+                variant="labelLarge"
+                style={{ color: activeTab === 'pregnancy' ? Colors.accent : Colors.textSecondary }}
+              >
+                🤰 Ma grossesse
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'baby' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('baby')}
+            >
+              <ThemedText
+                variant="labelLarge"
+                style={{ color: activeTab === 'baby' ? Colors.accent : Colors.textSecondary }}
+              >
+                👶 Mon bébé
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* ── RECALL ALERT BANNER ── */}
         {recallMatch && (
@@ -1023,6 +1088,26 @@ const styles = StyleSheet.create({
   noSignalTitle: { marginBottom: Spacing.sm },
   noSignalCard: {},
   noSignalItem: { paddingVertical: Spacing.xs },
+
+  // Baby mode tabs
+  tabRow: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabBtnActive: {
+    borderBottomColor: Colors.accent,
+  },
 
   // Recall alert banner
   recallBanner: {

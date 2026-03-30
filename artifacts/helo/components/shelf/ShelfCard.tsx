@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
-export type ShelfCategory = 'salle-de-bain' | 'cuisine' | 'pharmacie';
+export type ShelfCategory = 'salle-de-bain' | 'cuisine' | 'pharmacie' | 'couches' | 'lingettes-bebe' | 'creme-change' | 'lait-bebe' | 'shampoing-bebe';
 export type Verdict = 'safe' | 'caution' | 'danger' | 'unknown';
 
 export interface ShelfProduct {
@@ -26,6 +26,7 @@ export interface ShelfProduct {
   verdictLabel: string;
   category?: ShelfCategory;
   verdictChanged: boolean;
+  baby_product?: boolean;
 }
 
 interface ShelfCardProps {
@@ -39,6 +40,11 @@ const categoryIconMap: Record<ShelfCategory, keyof typeof Feather.glyphMap> = {
   'salle-de-bain': 'droplet',
   'cuisine': 'coffee',
   'pharmacie': 'heart',
+  'couches': 'package',
+  'lingettes-bebe': 'wind',
+  'creme-change': 'sun',
+  'lait-bebe': 'thermometer',
+  'shampoing-bebe': 'droplet',
 };
 
 const verdictBadgeMap: Record<Verdict, 'safe' | 'caution' | 'danger' | 'accent'> = {

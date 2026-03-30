@@ -2,7 +2,7 @@ export type RiskLevel = 'safe' | 'caution' | 'danger' | 'no_signal';
 export type Verdict = 'safe' | 'caution' | 'danger';
 export type Category = 'cosmetic' | 'food' | 'medication';
 export type Trimester = 1 | 2 | 3;
-export type Phase = Trimester | 'breastfeeding';
+export type Phase = Trimester | 'breastfeeding' | 'baby';
 export type UserRole = 'pregnant' | 'partner';
 
 export interface UserProfile {
@@ -32,6 +32,8 @@ export interface ProfileState {
   linkedUserId: string | null;
   linkedFirstName: string | null;
   isLoading: boolean;
+  babyMode: boolean;
+  breastfeedingMode: boolean;
 }
 
 export interface IngredientData {
@@ -44,6 +46,7 @@ export interface IngredientData {
   risk_level_t2: RiskLevel;
   risk_level_t3: RiskLevel;
   risk_level_breastfeeding: RiskLevel;
+  risk_level_baby?: RiskLevel;
   description_fr: string;
   source: string;
   source_url: string | null;
@@ -81,6 +84,8 @@ export interface ScanCache {
   product: ProductData;
   matches: MatchResult[];
   verdict: VerdictResult;
+  babyMatches?: MatchResult[];
+  babyVerdict?: VerdictResult;
   cachedAt: number;
 }
 
@@ -88,6 +93,8 @@ export interface OcrScanResult {
   product: ProductData;
   matches: MatchResult[];
   verdict: VerdictResult;
+  babyMatches?: MatchResult[];
+  babyVerdict?: VerdictResult;
   isOCR: true;
   savedAt: number;
 }

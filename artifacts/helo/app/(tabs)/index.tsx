@@ -33,6 +33,8 @@ import { useTrimester } from '@/hooks/useTrimester';
 import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
 import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
+import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -146,7 +148,19 @@ export default function HomeScreen() {
   const shelfUserId = isPartner && linkedUserId ? linkedUserId : userId;
   const displayName = isPartner ? (linkedFirstName ?? 'Votre proche') : (firstName || 'Hēlo');
 
-  const { weekOfPregnancy } = useTrimester();
+  const {
+    weekOfPregnancy,
+    shouldSuggestBreastfeeding,
+    dismissBreastfeedingSuggestion,
+  } = useTrimester();
+
+  const {
+    isBreastfeeding,
+    enableBreastfeeding,
+    showTransition: showBFTransition,
+    changedProductsCount: bfChangedCount,
+    dismissTransition: dismissBFTransition,
+  } = useBreastfeeding();
   const { isNew } = useWeeklyBrief(weekOfPregnancy);
 
   const { shelf: realShelf } = useShelfData(shelfUserId || undefined);
@@ -160,6 +174,12 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
+      <BreastfeedingTransition
+        visible={showBFTransition}
+        changedProductsCount={bfChangedCount}
+        onDismiss={dismissBFTransition}
+      />
+
       {/* Glow score share bottom sheet */}
       {glowShareVisible && (
         <ShareBottomSheet
@@ -203,6 +223,53 @@ export default function HomeScreen() {
             </IconButton>
           </View>
         </Animated.View>
+
+        {/* Breastfeeding mode suggestion banner */}
+        {shouldSuggestBreastfeeding && !isBreastfeeding && (
+          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+            <View style={styles.bfSuggestionBanner}>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
+                  Mode allaitement disponible 🤱
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Votre DPA est dépassé. Activez le mode allaitement pour des analyses adaptées.
+                </ThemedText>
+              </View>
+              <View style={{ gap: Spacing.sm }}>
+                <Pressable
+                  onPress={async () => {
+                    await enableBreastfeeding();
+                    dismissBreastfeedingSuggestion();
+                  }}
+                  style={styles.bfSuggestionCTA}
+                >
+                  <ThemedText variant="labelSmall" style={{ color: '#FFF' }}>Activer</ThemedText>
+                </Pressable>
+                <Pressable onPress={dismissBreastfeedingSuggestion}>
+                  <ThemedText variant="bodySmall" color="textTertiary" style={{ textAlign: 'center' }}>Ignorer</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Breastfeeding mode active banner */}
+        {isBreastfeeding && (
+          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+            <View style={[styles.bfSuggestionBanner, { borderColor: BREASTFEEDING_PALETTE.accentLight }]}>
+              <ThemedText style={{ fontSize: 20 }}>🤱</ThemedText>
+              <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+                <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
+                  Mode allaitement actif
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Vos analyses sont adaptées à la période d'allaitement
+                </ThemedText>
+              </View>
+            </View>
+          </Animated.View>
+        )}
 
         {/* Hero Scan CTA */}
         <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.heroSection}>
@@ -602,6 +669,24 @@ const styles = StyleSheet.create({
   },
   disclaimerHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bfSuggestionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F5',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#F0D0DC',
+    padding: Spacing.lg,
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  bfSuggestionCTA: {
+    backgroundColor: '#D4A0B0',
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
     alignItems: 'center',
   },
   quickRow: {

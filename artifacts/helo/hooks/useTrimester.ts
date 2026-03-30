@@ -3,17 +3,21 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { fetchProductByBarcode, matchIngredients, getVerdict } from '@/lib/productLookup';
 import { calculateTrimester, getTrimesterPalette, TrimesterInfo, TrimesterPalette } from '@/lib/trimester';
+import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { ScanCache, Trimester } from '@/types';
 
 const LAST_TRIMESTER_KEY = '@helo_last_trimester';
 const SHELF_KEY = '@helo_shelf';
 const SCAN_CACHE_PREFIX = '@helo_scan_cache_';
+const BF_SUGGESTION_KEY = '@helo_bf_suggestion_dismissed';
 
 interface UseTrimesterReturn extends TrimesterInfo {
   trimesterPalette: TrimesterPalette;
   showTrimesterTransition: boolean;
   changedProductsCount: number;
   dismissTransition: () => void;
+  shouldSuggestBreastfeeding: boolean;
+  dismissBreastfeedingSuggestion: () => void;
 }
 
 export function useTrimester(): UseTrimesterReturn {
@@ -27,9 +31,15 @@ export function useTrimester(): UseTrimesterReturn {
   );
   const [showTrimesterTransition, setShowTrimesterTransition] = useState(false);
   const [changedProductsCount, setChangedProductsCount] = useState(0);
+  const [shouldSuggestBreastfeeding, setShouldSuggestBreastfeeding] = useState(false);
 
   const dismissTransition = useCallback(() => {
     setShowTrimesterTransition(false);
+  }, []);
+
+  const dismissBreastfeedingSuggestion = useCallback(() => {
+    setShouldSuggestBreastfeeding(false);
+    AsyncStorage.setItem(BF_SUGGESTION_KEY, 'true').catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -46,6 +56,18 @@ export function useTrimester(): UseTrimesterReturn {
 
         setInfo(calculated);
         setTrimesterPalette(palette);
+
+        // Auto-suggest breastfeeding mode if post-partum and not already active
+        if (calculated.isPostPartum) {
+          const [isBF, alreadyDismissed] = await Promise.all([
+            getBreastfeedingMode(),
+            AsyncStorage.getItem(BF_SUGGESTION_KEY),
+          ]);
+          if (!isBF && alreadyDismissed !== 'true') {
+            setShouldSuggestBreastfeeding(true);
+          }
+          return; // don't trigger trimester transition post-partum
+        }
 
         const lastTrimesterRaw = await AsyncStorage.getItem(LAST_TRIMESTER_KEY);
         const lastTrimester = lastTrimesterRaw ? (parseInt(lastTrimesterRaw, 10) as Trimester) : null;
@@ -72,6 +94,8 @@ export function useTrimester(): UseTrimesterReturn {
     showTrimesterTransition,
     changedProductsCount,
     dismissTransition,
+    shouldSuggestBreastfeeding,
+    dismissBreastfeedingSuggestion,
   };
 }
 

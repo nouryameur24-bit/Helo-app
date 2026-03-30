@@ -26,9 +26,12 @@ import { NotificationPermissionScreen } from '@/components/NotificationPermissio
 import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
+import { Switch } from 'react-native';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile, setUserRole } from '@/hooks/useProfile';
+import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -86,8 +89,8 @@ function computeWeekFromDueDate(dueDate: string | null): number | null {
     const msPerWeek = 7 * 24 * 60 * 60 * 1000;
     const weeksRemaining = (due.getTime() - now.getTime()) / msPerWeek;
     const week = Math.round(40 - weeksRemaining);
-    if (week < 1 || week > 40) return null;
-    return week;
+    if (week < 1) return null;
+    return week; // may be > 40 post-partum
   } catch {
     return null;
   }
@@ -112,6 +115,15 @@ export default function ProfileScreen() {
 
   const { userId, role, firstName, trimester, dueDate, partnerCode, linkedUserId, linkedFirstName, refresh } = useProfile();
   const isPartner = role === 'partner';
+
+  const {
+    isBreastfeeding,
+    enableBreastfeeding,
+    disableBreastfeeding,
+    showTransition: showBFTransition,
+    changedProductsCount: bfChangedCount,
+    dismissTransition: dismissBFTransition,
+  } = useBreastfeeding();
 
   const [contributionCount, setContributionCount] = useState(0);
   const [scanCount, setScanCount] = useState(0);
@@ -484,9 +496,12 @@ export default function ProfileScreen() {
   const displayCode = localPartnerCode ?? partnerCode;
   const trimesterLabel = trimester ? `${trimester}e trimestre` : null;
   const currentWeek = computeWeekFromDueDate(dueDate);
-  const weekProgress = currentWeek ? currentWeek / 40 : 0;
+  const isPostPartum = currentWeek !== null && currentWeek > 40;
+  const weekProgress = currentWeek ? Math.min(1, currentWeek / 40) : 0;
 
   const weekAndTrimesterLabel = (() => {
+    if (isBreastfeeding) return 'Mode allaitement 🤱';
+    if (isPostPartum) return 'Après l\'accouchement';
     if (currentWeek && trimesterLabel) return `Semaine ${currentWeek} · ${trimesterLabel}`;
     if (trimesterLabel) return trimesterLabel;
     return null;
@@ -505,6 +520,11 @@ export default function ProfileScreen() {
           setShowPermissionScreen(false);
         }}
         onSkip={dismissPermissionScreen}
+      />
+      <BreastfeedingTransition
+        visible={showBFTransition}
+        changedProductsCount={bfChangedCount}
+        onDismiss={dismissBFTransition}
       />
       <ScrollView
         contentContainerStyle={[
@@ -670,8 +690,51 @@ export default function ProfileScreen() {
           </Animated.View>
         )}
 
+        {/* MODE — breastfeeding toggle */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(250).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MODE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              <View style={styles.settingRow}>
+                <View style={[styles.settingIcon, {
+                  backgroundColor: isBreastfeeding ? BREASTFEEDING_PALETTE.accentLight : Colors.accentLight,
+                }]}>
+                  <ThemedText style={{ fontSize: 18 }}>🤱</ThemedText>
+                </View>
+                <View style={styles.settingContent}>
+                  <ThemedText variant="labelLarge" color="textPrimary">
+                    Mode allaitement
+                  </ThemedText>
+                  <ThemedText variant="bodySmall" color="textTertiary">
+                    {isBreastfeeding
+                      ? 'Actif — analyses adaptées à l\'allaitement'
+                      : 'Analyse vos produits pour l\'allaitement'}
+                  </ThemedText>
+                </View>
+                <Switch
+                  value={isBreastfeeding}
+                  onValueChange={async (val) => {
+                    if (val) {
+                      await enableBreastfeeding();
+                    } else {
+                      await disableBreastfeeding();
+                    }
+                  }}
+                  trackColor={{
+                    false: Colors.borderLight,
+                    true: BREASTFEEDING_PALETTE.accent,
+                  }}
+                  thumbColor={isBreastfeeding ? '#FFF' : Colors.textTertiary}
+                />
+              </View>
+            </Card>
+          </Animated.View>
+        )}
+
         {/* COMPTE menu */}
-        <Animated.View entering={FadeInDown.delay(260).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(270).duration(500)}>
           <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
             COMPTE
           </ThemedText>

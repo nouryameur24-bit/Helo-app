@@ -4,6 +4,7 @@ export interface TrimesterInfo {
   trimester: Trimester;
   weekOfPregnancy: number;
   daysUntilDue: number;
+  isPostPartum?: boolean;
 }
 
 export interface TrimesterPalette {
@@ -23,7 +24,8 @@ export function calculateTrimester(dueDate: Date | string): TrimesterInfo {
 
   const conceptionDate = new Date(due.getTime() - PREGNANCY_DAYS * MS_PER_DAY);
   const daysSinceConception = Math.round((now.getTime() - conceptionDate.getTime()) / MS_PER_DAY);
-  const weekOfPregnancy = Math.max(1, Math.min(40, Math.floor(daysSinceConception / 7) + 1));
+  const rawWeek = Math.max(1, Math.floor(daysSinceConception / 7) + 1);
+  const weekOfPregnancy = Math.min(40, rawWeek);
 
   let trimester: Trimester;
   if (weekOfPregnancy <= 13) {
@@ -34,7 +36,14 @@ export function calculateTrimester(dueDate: Date | string): TrimesterInfo {
     trimester = 3;
   }
 
-  return { trimester, weekOfPregnancy, daysUntilDue };
+  return { trimester, weekOfPregnancy, daysUntilDue, isPostPartum: rawWeek > 40 };
+}
+
+export function isPostPartumDate(dueDate: Date | string): boolean {
+  const due = typeof dueDate === 'string' ? new Date(dueDate) : dueDate;
+  const now = new Date();
+  const daysAfterDue = Math.round((now.getTime() - due.getTime()) / MS_PER_DAY);
+  return daysAfterDue >= 7;
 }
 
 export function getTrimesterPalette(trimester: Trimester): TrimesterPalette {

@@ -24,3 +24,9 @@ id = "vTCDFKV_5fPgaumGqY351"
 uri = "file://helo_src_20260323.tar.gz"
 type = "unspecified"
 title = "Hēlo — code source sans node_modules (23 mars 2026)"
+
+[[outputs]]
+id = "4MDo94xI4apKRUNXNZocw"
+uri = "file://helo-latest.tar.gz"
+type = "unspecified"
+title = "helo-latest.tar.gz"

@@ -20,7 +20,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBabyMode } from '@/hooks/useBabyMode';
-import { useBreastfeeding } from '@/hooks/useBreastfeeding';
+import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 
 import type { JournalEntry } from '@/app/(tabs)/journal';
 
@@ -29,12 +30,9 @@ import { NotificationPermissionScreen } from '@/components/NotificationPermissio
 import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Switch } from 'react-native';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile, setUserRole } from '@/hooks/useProfile';
-import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
-import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -119,14 +117,6 @@ export default function ProfileScreen() {
   const { userId, role, firstName, trimester, dueDate, partnerCode, linkedUserId, linkedFirstName, refresh } = useProfile();
   const isPartner = role === 'partner';
   const { babyMode, enableBabyMode, disableBabyMode } = useBabyMode();
-  const { isBreastfeeding } = useBreastfeeding();
-
-  useEffect(() => {
-    if (isBreastfeeding && !babyMode) {
-      enableBabyMode();
-    }
-  }, [isBreastfeeding, babyMode, enableBabyMode]);
-
   const {
     isBreastfeeding,
     enableBreastfeeding,
@@ -135,6 +125,12 @@ export default function ProfileScreen() {
     changedProductsCount: bfChangedCount,
     dismissTransition: dismissBFTransition,
   } = useBreastfeeding();
+
+  useEffect(() => {
+    if (isBreastfeeding && !babyMode) {
+      enableBabyMode();
+    }
+  }, [isBreastfeeding, babyMode, enableBabyMode]);
 
   const [contributionCount, setContributionCount] = useState(0);
   const [scanCount, setScanCount] = useState(0);

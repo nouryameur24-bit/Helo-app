@@ -23,6 +23,8 @@ export function useProfile() {
     partnerCode: null,
     linkedUserId: null,
     linkedFirstName: null,
+    babyMode: false,
+    breastfeedingMode: false,
     isLoading: true,
   });
   const initialized = useRef(false);
@@ -122,6 +124,8 @@ export function useProfile() {
         partnerCode,
         linkedUserId,
         linkedFirstName,
+        babyMode: false,
+        breastfeedingMode: false,
         isLoading: false,
       });
     } catch (err) {

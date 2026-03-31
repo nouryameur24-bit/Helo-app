@@ -127,24 +127,35 @@ export default function ProfileSetupScreen() {
         createdAt: new Date().toISOString(),
         partnerCode,
       };
+
+      // ── 1. Save locally first — this is the source of truth ──────────────────
       await AsyncStorage.multiSet([
         ["onboarding_completed", "true"],
         ["user_profile", JSON.stringify(profile)],
       ]);
 
-      const userId = await getOrCreateUserId();
-      await upsertProfile({
-        userId,
-        firstName: firstName.trim(),
-        dueDate: parsedDate!.toISOString().split("T")[0],
-        trimester: trimesterInfo?.trimester ?? null,
-        partnerCode,
-      });
-
+      // ── 2. Navigate immediately — app works offline ───────────────────────────
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
-    } catch {
-      Alert.alert("Erreur", "Impossible de sauvegarder votre profil. Réessayez.");
+
+      // ── 3. Sync to Supabase in the background (non-blocking) ─────────────────
+      getOrCreateUserId().then((userId) => {
+        upsertProfile({
+          userId,
+          firstName: firstName.trim(),
+          dueDate: parsedDate!.toISOString().split("T")[0],
+          trimester: trimesterInfo?.trimester ?? null,
+          partnerCode,
+        }).catch((err) => {
+          console.error('[onboarding] Supabase upsert failed:', err?.message ?? err);
+        });
+      }).catch((err) => {
+        console.error('[onboarding] getOrCreateUserId failed:', err?.message ?? err);
+      });
+
+    } catch (err: any) {
+      console.error('[onboarding] handleSubmit error:', err?.message ?? err);
+      Alert.alert("Erreur", "Impossible de sauvegarder votre profil localement. Réessayez.");
     } finally {
       setLoading(false);
     }

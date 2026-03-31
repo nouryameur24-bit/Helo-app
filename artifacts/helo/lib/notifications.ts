@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, getAuthedClient, isSupabaseConfigured } from '@/lib/supabase';
 
 export const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
 
@@ -321,6 +321,92 @@ async function sendExpoPushNotification(
     },
     body: JSON.stringify(message),
   });
+}
+
+export async function sendCircleScanNotification(params: {
+  senderFirstName: string;
+  productName: string;
+  verdict: string;
+  circleId: string;
+  senderUserId: string;
+}): Promise<void> {
+  if (!isSupabaseConfigured) return;
+
+  const verdictLabel =
+    params.verdict === 'danger' ? 'À éviter' :
+    params.verdict === 'caution' ? 'Précaution' : 'Compatible';
+  const title = 'Mon Cercle';
+  const body = `${params.senderFirstName} a scanné ${params.productName} — ${verdictLabel}`;
+
+  try {
+    const db = getAuthedClient(params.senderUserId);
+
+    const { data: members } = await db
+      .from('circle_members')
+      .select('user_id')
+      .eq('circle_id', params.circleId)
+      .neq('user_id', params.senderUserId);
+
+    if (!members || members.length === 0) return;
+
+    const memberIds = members.map((m: { user_id: string }) => m.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('push_token')
+      .in('user_id', memberIds);
+
+    const pushPromises = (profiles ?? []).map(async (p: { push_token: string | null }) => {
+      const token = p.push_token;
+      if (token && typeof token === 'string' && token.startsWith('ExponentPushToken')) {
+        await sendExpoPushNotification(token, title, body);
+      }
+    });
+
+    await Promise.allSettled(pushPromises);
+  } catch (err) {
+    console.warn('[notifications] sendCircleScanNotification error:', err);
+  }
+}
+
+export async function sendCircleWeekNotification(params: {
+  memberFirstName: string;
+  weekNumber: number;
+  circleId: string;
+  memberUserId: string;
+}): Promise<void> {
+  if (!isSupabaseConfigured) return;
+
+  const title = 'Mon Cercle 🎉';
+  const body = `${params.memberFirstName} entre dans sa ${params.weekNumber}ème semaine !`;
+
+  try {
+    const db = getAuthedClient(params.memberUserId);
+
+    const { data: members } = await db
+      .from('circle_members')
+      .select('user_id')
+      .eq('circle_id', params.circleId)
+      .neq('user_id', params.memberUserId);
+
+    if (!members || members.length === 0) return;
+
+    const memberIds = members.map((m: { user_id: string }) => m.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('push_token')
+      .in('user_id', memberIds);
+
+    const pushPromises = (profiles ?? []).map(async (p: { push_token: string | null }) => {
+      const token = p.push_token;
+      if (token && typeof token === 'string' && token.startsWith('ExponentPushToken')) {
+        await sendExpoPushNotification(token, title, body);
+      }
+    });
+
+    await Promise.allSettled(pushPromises);
+  } catch (err) {
+    console.warn('[notifications] sendCircleWeekNotification error:', err);
+  }
 }
 
 export async function sendShelfAddNotification(params: {

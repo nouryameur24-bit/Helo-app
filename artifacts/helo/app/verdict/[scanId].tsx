@@ -14,6 +14,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -48,8 +49,9 @@ import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
 import { getBreastfeedingMode, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
 import { getBabyMode } from '@/hooks/useBabyMode';
-import { sendShelfAddNotification } from '@/lib/notifications';
+import { sendShelfAddNotification, sendCircleScanNotification } from '@/lib/notifications';
 import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
+import { getCircle, postScanToCircle } from '@/lib/circleUtils';
 import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -427,6 +429,16 @@ export default function VerdictScreen() {
   const [babyVerdict, setBabyVerdict] = useState<VerdictResult | null>(null);
   const [activeTab, setActiveTab] = useState<'pregnancy' | 'baby'>('pregnancy');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [circleId, setCircleId] = useState<string | null>(null);
+  const [sharedToCircle, setSharedToCircle] = useState(false);
+
+  useEffect(() => {
+    if (!userId) return;
+    getCircle(userId).then((data) => {
+      setCircleId(data?.circle?.id ?? null);
+    }).catch(() => {});
+  }, [userId]);
 
   // Load phase: check breastfeeding mode first, then trimester from profile
   useEffect(() => {
@@ -885,6 +897,55 @@ export default function VerdictScreen() {
           </View>
         )}
 
+        {/* ── PARTAGER DANS MON CERCLE ── */}
+        {circleId && !isPartner && verdict && product && (
+          <View style={styles.circleSectionWrap}>
+            <Divider style={{ marginVertical: Spacing.lg }} />
+            <View style={styles.circleShareRow}>
+              <View style={styles.circleShareIcon}>
+                <Feather name="users" size={18} color={Colors.accentDark} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="bodyLarge" color="textPrimary">Partager dans mon cercle</ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">
+                  {sharedToCircle ? 'Partagé ! Vos proches ont été notifiées.' : 'Notifie vos proches de ce scan'}
+                </ThemedText>
+              </View>
+              <Switch
+                value={sharedToCircle}
+                onValueChange={async (val) => {
+                  if (val && !sharedToCircle) {
+                    const scanVerdict = (verdict.verdict ?? 'safe') as 'safe' | 'caution' | 'danger';
+                    const senderName = firstName || 'Anonyme';
+                    try {
+                      await postScanToCircle({
+                        circleId: circleId,
+                        userId,
+                        firstName: senderName,
+                        productName: product.name,
+                        verdict: scanVerdict,
+                      });
+                      setSharedToCircle(true);
+                      sendCircleScanNotification({
+                        senderFirstName: senderName,
+                        productName: product.name,
+                        verdict: scanVerdict,
+                        circleId: circleId,
+                        senderUserId: userId,
+                      }).catch(() => {});
+                    } catch {
+                      setSharedToCircle(false);
+                    }
+                  }
+                }}
+                trackColor={{ false: Colors.borderLight, true: Colors.accent }}
+                thumbColor={sharedToCircle ? Colors.accentDark : '#f4f3f4'}
+                disabled={sharedToCircle}
+              />
+            </View>
+          </View>
+        )}
+
         {/* ── DISCLAIMER ── */}
         <View style={styles.disclaimerSection}>
           <Divider style={{ marginVertical: Spacing.lg }} />
@@ -1317,5 +1378,25 @@ const styles = StyleSheet.create({
     fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: Typography.bodyMedium.fontSize,
     color: '#fff',
+  },
+
+  circleSectionWrap: {
+    paddingHorizontal: Spacing.xl,
+  },
+  circleShareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+  },
+  circleShareIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

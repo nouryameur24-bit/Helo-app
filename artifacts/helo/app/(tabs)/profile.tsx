@@ -4,12 +4,14 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Switch,
+  TextInput,
   View,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
@@ -34,6 +36,8 @@ import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile, setUserRole } from '@/hooks/useProfile';
 import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
+import { getCircle, createCircle, joinCircle, checkAndSendWeekMilestoneNotification, type CircleData } from '@/lib/circleUtils';
+import { usePremium } from '@/hooks/usePremium';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface SettingRowProps {
@@ -131,6 +135,31 @@ export default function ProfileScreen() {
       enableBabyMode();
     }
   }, [isBreastfeeding, babyMode, enableBabyMode]);
+
+  const { isPremium, requirePremium } = usePremium();
+
+  const [circleData, setCircleData] = useState<CircleData | null | undefined>(undefined);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [isCreatingCircle, setIsCreatingCircle] = useState(false);
+
+  useEffect(() => {
+    if (!userId || isPartner) return;
+    getCircle(userId).then(setCircleData).catch(() => setCircleData(null));
+  }, [userId, isPartner]);
+
+  useEffect(() => {
+    if (!userId || isPartner || !firstName) return;
+    const week = computeWeekFromDueDate(dueDate);
+    if (week && week >= 1 && week <= 42) {
+      checkAndSendWeekMilestoneNotification({
+        userId,
+        firstName,
+        currentWeek: week,
+      }).catch(() => {});
+    }
+  }, [userId, isPartner, firstName, dueDate]);
 
   const [contributionCount, setContributionCount] = useState(0);
   const [scanCount, setScanCount] = useState(0);
@@ -625,6 +654,109 @@ export default function ProfileScreen() {
           </Animated.View>
         )}
 
+        {/* Mon Cercle section */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(190).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MON CERCLE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              {circleData ? (
+                <SettingRow
+                  icon="users"
+                  title="Mon Cercle"
+                  subtitle={`${circleData.members.length} membre${circleData.members.length > 1 ? 's' : ''} · Voir le fil d'activité`}
+                  onPress={() => router.push('/circle' as never)}
+                />
+              ) : (
+                <>
+                  <SettingRow
+                    icon="users"
+                    title="Créer mon cercle"
+                    subtitle={isPremium ? 'Invitez jusqu\'à 8 proches' : 'Fonctionnalité Premium ✦'}
+                    onPress={async () => {
+                      if (!isPremium) {
+                        requirePremium('circle');
+                        return;
+                      }
+                      setIsCreatingCircle(true);
+                      try {
+                        await createCircle(userId, firstName || 'Anonyme');
+                        const data = await getCircle(userId);
+                        setCircleData(data);
+                        router.push('/circle' as never);
+                      } catch (err) {
+                        const msg = err instanceof Error ? err.message : 'Erreur';
+                        if (msg !== 'PREMIUM_REQUIRED') Alert.alert('Erreur', msg);
+                      } finally {
+                        setIsCreatingCircle(false);
+                      }
+                    }}
+                  />
+                  <Divider />
+                  <SettingRow
+                    icon="link"
+                    title="Rejoindre un cercle"
+                    subtitle="Entrez un code d'invitation"
+                    onPress={() => setShowJoinModal(true)}
+                  />
+                </>
+              )}
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* Join circle modal */}
+        <Modal visible={showJoinModal} transparent animationType="slide" onRequestClose={() => setShowJoinModal(false)}>
+          <Pressable style={styles.modalOverlay} onPress={() => setShowJoinModal(false)} />
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <ThemedText variant="headlineMedium" style={styles.modalTitle}>
+              Rejoindre un cercle
+            </ThemedText>
+            <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginBottom: Spacing.xl }}>
+              Entrez le code à 8 caractères partagé par la créatrice du cercle.
+            </ThemedText>
+            <TextInput
+              style={styles.circleCodeInput}
+              value={joinCode}
+              onChangeText={(t) => setJoinCode(t.toUpperCase())}
+              placeholder="EX: AB3C7DEF"
+              placeholderTextColor={Colors.textTertiary}
+              autoCapitalize="characters"
+              maxLength={8}
+              autoFocus
+            />
+            <Pressable
+              onPress={async () => {
+                if (!joinCode.trim() || isJoining) return;
+                setIsJoining(true);
+                try {
+                  await joinCircle(userId, firstName || 'Anonyme', joinCode.trim());
+                  const data = await getCircle(userId);
+                  setCircleData(data);
+                  setShowJoinModal(false);
+                  setJoinCode('');
+                  router.push('/circle' as never);
+                } catch (err) {
+                  Alert.alert('Erreur', err instanceof Error ? err.message : 'Code invalide');
+                } finally {
+                  setIsJoining(false);
+                }
+              }}
+              disabled={isJoining || !joinCode.trim()}
+              style={({ pressed }) => [styles.joinBtn, { opacity: pressed || isJoining ? 0.7 : 1 }]}
+            >
+              <ThemedText variant="labelLarge" style={{ color: '#fff' }}>
+                {isJoining ? 'Rejoindre…' : 'Rejoindre'}
+              </ThemedText>
+            </Pressable>
+            <Pressable onPress={() => setShowJoinModal(false)} style={styles.cancelModalBtn}>
+              <ThemedText variant="bodyMedium" color="textSecondary">Annuler</ThemedText>
+            </Pressable>
+          </View>
+        </Modal>
+
         {/* Partner section - pregnant user */}
         {!isPartner && (
           <Animated.View entering={FadeInDown.delay(200).duration(500)}>
@@ -1022,5 +1154,58 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     fontSize: 11,
     fontFamily: 'PlusJakartaSans_600SemiBold',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(45,41,38,0.4)',
+  },
+  modalSheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.massive,
+    paddingTop: Spacing.md,
+    alignItems: 'center',
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.borderLight,
+    alignSelf: 'center',
+    marginBottom: Spacing.xl,
+  },
+  modalTitle: {
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  circleCodeInput: {
+    width: '100%',
+    height: 56,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+    paddingHorizontal: Spacing.xl,
+    fontSize: 22,
+    letterSpacing: 6,
+    textAlign: 'center',
+    color: Colors.textPrimary,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    marginBottom: Spacing.xl,
+  },
+  joinBtn: {
+    width: '100%',
+    borderRadius: Radius.full,
+    backgroundColor: Colors.accent,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  cancelModalBtn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
   },
 });

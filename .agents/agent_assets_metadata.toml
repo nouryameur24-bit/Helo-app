@@ -30,3 +30,9 @@ id = "4MDo94xI4apKRUNXNZocw"
 uri = "file://helo-latest.tar.gz"
 type = "unspecified"
 title = "helo-latest.tar.gz"
+
+[[outputs]]
+id = "LN81uTzPAP7W36-_8ga78"
+uri = "file://helo-20260331.tar.gz"
+type = "unspecified"
+title = "Hēlo — Code source complet (31 mars 2026)"

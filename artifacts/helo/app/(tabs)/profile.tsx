@@ -838,6 +838,13 @@ export default function ProfileScreen() {
             />
             <Divider />
             <SettingRow
+              icon="calendar"
+              title="Ma Timeline de Grossesse"
+              subtitle="Fresque visuelle de vos 40 semaines"
+              onPress={() => router.push('/timeline' as never)}
+            />
+            <Divider />
+            <SettingRow
               icon="book"
               title="Exporter mon journal"
               subtitle="Générer un PDF de votre journal de grossesse"

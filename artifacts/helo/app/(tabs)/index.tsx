@@ -472,6 +472,37 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Ma Timeline card */}
+        <Animated.View entering={FadeInDown.delay(175).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/timeline' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              {
+                backgroundColor: Colors.surface,
+                borderColor: Colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={[styles.briefIconWrap, { backgroundColor: '#E8F5EE', borderColor: '#C5E8D5' }]}>
+                <Feather name="calendar" size={22} color={Colors.safe} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Ma Timeline 🗓️
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Fresque de vos 40 semaines
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Shelf scan CTA */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
           <Pressable

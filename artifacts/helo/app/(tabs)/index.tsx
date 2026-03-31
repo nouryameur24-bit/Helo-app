@@ -343,6 +343,37 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Nutrition card */}
+        <Animated.View entering={FadeInDown.delay(155).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/nutrition' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              {
+                backgroundColor: Colors.surface,
+                borderColor: Colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={[styles.briefIconWrap, { backgroundColor: Colors.cautionLight, borderColor: Colors.caution + '44' }]}>
+                <Feather name="heart" size={22} color={Colors.caution} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Votre Nutrition
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Recettes & besoins de votre trimestre
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Mon Environnement card */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
           <Pressable

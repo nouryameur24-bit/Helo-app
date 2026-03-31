@@ -30,6 +30,8 @@ A luxury pregnancy product scanner app ("Yuka for pregnancy"). Design: Luxe & Se
 - **Shelf components**: `components/shelf/` — ShelfCard, ShimmerCard, FilterSheet, MonPlacardView, MaListeView
 - **Screens**: Home, Scan, Shelf (Mon Placard + Ma Liste), History, Profile tabs
 - **Legal pages**: `app/methodology.tsx`, `app/legal/terms.tsx` (CGU), `app/legal/privacy.tsx` (GDPR privacy policy)
+- **Score Environnement**: `app/home-score.tsx` — 4 room cards (🛁🍳💊🛏️) with per-room GlowScore, global house score, progress bars, confetti celebration, "Maison 100% Safe" badge (AsyncStorage `@helo_home_badge_unlocked`)
+- **Nutrition IA**: `app/nutrition.tsx` — phase-aware nutritional needs (T1/T2/T3/allaitement/bébé) with fill bars from shelf scans, 6-7 recommended foods, 3 weekly recipes (4-rotation cycle, changes every Monday); `constants/nutritionNeeds.ts` (nutrients, food sources, caffeine keywords); `constants/recipes.ts` (Recipe type + getRecipesForPhase + getWeekRotation)
 
 ## Structure
 

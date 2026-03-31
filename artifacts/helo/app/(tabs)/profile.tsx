@@ -778,6 +778,12 @@ export default function ProfileScreen() {
           </ThemedText>
           <Card padding={0} style={styles.settingGroup}>
             <SettingRow
+              icon="heart"
+              title="Ma Nutrition"
+              onPress={() => router.push('/nutrition' as never)}
+            />
+            <Divider />
+            <SettingRow
               icon="home"
               title="Mon Environnement"
               onPress={() => router.push('/home-score' as never)}

@@ -14,7 +14,8 @@ export type NotificationType =
   | 'inactivity_reminder'
   | 'community_approved'
   | 'recall_alert'
-  | 'pact_reminder';
+  | 'pact_reminder'
+  | 'capsule_ready';
 
 export interface NotificationSettings {
   weekly_brief: boolean;
@@ -25,6 +26,7 @@ export interface NotificationSettings {
   community_approved: boolean;
   recall_alert: boolean;
   pact_reminder: boolean;
+  capsule_ready: boolean;
   maxPerWeek: number;
   quietHours: boolean;
 }
@@ -38,6 +40,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   community_approved: true,
   recall_alert: true,
   pact_reminder: true,
+  capsule_ready: true,
   maxPerWeek: 3,
   quietHours: true,
 };
@@ -75,6 +78,10 @@ export const NOTIFICATION_LABELS: Record<NotificationType, { title: string; desc
     title: 'Rappel du Pacte',
     description: 'Un rappel à 20h si vous n\'avez pas encore scanné aujourd\'hui.',
   },
+  capsule_ready: {
+    title: 'Capsule Hēlo prête',
+    description: 'Une notification le jour où une capsule souvenir peut être ouverte.',
+  },
 };
 
 export interface NotificationPayload extends Record<string, unknown> {
@@ -108,6 +115,12 @@ export function getDeepLinkRoute(
       return '/(tabs)/scan';
     case 'community_approved':
       return '/(tabs)';
+    case 'recall_alert':
+      return '/(tabs)/shelf';
+    case 'pact_reminder':
+      return '/pact';
+    case 'capsule_ready':
+      return '/memories';
     default:
       return '/(tabs)';
   }

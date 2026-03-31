@@ -950,6 +950,13 @@ export default function ProfileScreen() {
             />
             <Divider />
             <SettingRow
+              icon="package"
+              title="Hēlo Memories"
+              subtitle="Capsules temporelles de grossesse"
+              onPress={() => router.push('/memories' as never)}
+            />
+            <Divider />
+            <SettingRow
               icon="heart"
               title="Ma Nutrition"
               onPress={() => router.push('/nutrition' as never)}

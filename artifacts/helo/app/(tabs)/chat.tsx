@@ -279,6 +279,21 @@ export default function ChatScreen() {
 
       {/* ── Bottom area ── */}
       <View style={[styles.bottomArea, { paddingBottom: insets.bottom + Spacing.sm }]}>
+        {/* Prescription scanner shortcut */}
+        {!hasMessages && (
+          <TouchableOpacity
+            style={styles.prescriptionCTA}
+            onPress={() => router.push('/prescription-scan' as never)}
+            activeOpacity={0.8}
+          >
+            <Feather name="file-text" size={15} color={Colors.accent} />
+            <ThemedText style={styles.prescriptionCTAText}>Scanner mon ordonnance</ThemedText>
+            <View style={styles.prescriptionBadge}>
+              <ThemedText style={styles.prescriptionBadgeText}>Premium</ThemedText>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Suggestions */}
         {!hasMessages && (
           <ScrollView
@@ -544,6 +559,37 @@ const styles = StyleSheet.create({
   },
 
   // Suggestions
+  prescriptionCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+  },
+  prescriptionCTAText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'PlusJakartaSans_500Medium',
+    color: Colors.textPrimary,
+  },
+  prescriptionBadge: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  prescriptionBadgeText: {
+    fontSize: 10,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    color: '#fff',
+    letterSpacing: 0.3,
+  },
   suggestionsScroll: {
     marginBottom: Spacing.sm,
   },

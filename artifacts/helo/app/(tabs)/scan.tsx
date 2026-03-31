@@ -602,6 +602,7 @@ export default function ScanScreen() {
           <ModeChip label="Code-barres" active={scanMode === 'barcode'} onPress={() => setScanMode('barcode')} />
           <ModeChip label="Ingrédients" active={scanMode === 'ingredients'} onPress={() => setScanMode('ingredients')} />
           <ModeChip label="Menu" active={scanMode === 'menu'} onPress={() => setScanMode('menu')} />
+          <ModeChip label="💊 Ordonnance" active={false} onPress={() => router.push('/prescription-scan' as never)} />
         </View>
         {isMenuMode && menuPhotos.length > 0 && (
           <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75}>

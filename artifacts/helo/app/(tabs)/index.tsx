@@ -405,6 +405,40 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Mode Voyage card */}
+        <Animated.View entering={FadeInDown.delay(168).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/travel' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              {
+                backgroundColor: Colors.surface,
+                borderColor: Colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={[styles.briefIconWrap, { backgroundColor: '#E8F0FF', borderColor: '#C5D5FF' }]}>
+                <Feather name="map" size={22} color="#6B8FDB" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Mode Voyage ✈️
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Briefing santé par destination
+                </ThemedText>
+              </View>
+            </View>
+            <View style={styles.shelfScanPremium}>
+              <Feather name="star" size={10} color={Colors.accentDark} />
+              <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
+            </View>
+          </Pressable>
+        </Animated.View>
+
         {/* Shelf scan CTA */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
           <Pressable

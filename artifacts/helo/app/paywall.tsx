@@ -162,6 +162,7 @@ export default function PaywallScreen() {
     ocr:          'L\'analyse par photo est réservée aux abonnées Premium.',
     scan_party:   'Scan Party est réservé aux abonnées Premium.',
     shelf_scan:   'Le scan d\'étagère est réservé aux abonnées Premium.',
+    voyage:       'Le Mode Voyage est réservé aux abonnées Premium.',
   };
   const triggerMsg = trigger ? (triggerMessages[trigger] ?? null) : null;
 

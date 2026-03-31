@@ -63,6 +63,7 @@ export interface ProductData {
   nutriscore?: string | null;
   ecoscore?: string | null;
   source?: 'openfoodfacts' | 'openbeautyfacts' | 'manual';
+  isPhotoIdentified?: boolean;
 }
 
 export interface MatchResult {

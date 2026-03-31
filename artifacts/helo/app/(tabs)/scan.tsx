@@ -56,6 +56,11 @@ const VF_MENU_W = W - 24;
 const VF_MENU_H = Math.min(Math.round(VF_MENU_W * 1.15), H * 0.5);
 const VF_MENU_Y = H * 0.14;
 
+// Photo mode: landscape viewfinder (for product front face)
+const VF_PHOTO_W = Math.min(W * 0.85, 340);
+const VF_PHOTO_H = Math.round(VF_PHOTO_W * (2 / 3));
+const VF_PHOTO_Y = H * 0.24;
+
 const CORNER_SIZE = 22;
 const CORNER_THICKNESS = 3;
 const DEBOUNCE_MS = 3000;
@@ -64,7 +69,7 @@ const BARCODE_TYPES = [
   'ean13', 'ean8', 'upc_a', 'upc_e', 'code128',
 ] as const;
 
-type ScanMode = 'barcode' | 'ingredients' | 'menu';
+type ScanMode = 'barcode' | 'ingredients' | 'menu' | 'photo';
 
 function PermissionScreen({ onRequest }: { onRequest: () => void }) {
   const insets = useSafeAreaInsets();
@@ -312,9 +317,10 @@ export default function ScanScreen() {
 
   const isOCRMode = scanMode === 'ingredients';
   const isMenuMode = scanMode === 'menu';
-  const vfW = isOCRMode ? VF_OCR_W : isMenuMode ? VF_MENU_W : VF_BARCODE_W;
-  const vfH = isOCRMode ? VF_OCR_H : isMenuMode ? VF_MENU_H : VF_BARCODE_H;
-  const vfY = isOCRMode ? VF_OCR_Y : isMenuMode ? VF_MENU_Y : VF_BARCODE_Y;
+  const isPhotoMode = scanMode === 'photo';
+  const vfW = isOCRMode ? VF_OCR_W : isMenuMode ? VF_MENU_W : isPhotoMode ? VF_PHOTO_W : VF_BARCODE_W;
+  const vfH = isOCRMode ? VF_OCR_H : isMenuMode ? VF_MENU_H : isPhotoMode ? VF_PHOTO_H : VF_BARCODE_H;
+  const vfY = isOCRMode ? VF_OCR_Y : isMenuMode ? VF_MENU_Y : isPhotoMode ? VF_PHOTO_Y : VF_BARCODE_Y;
   const vfX = (W - vfW) / 2;
 
   useFocusEffect(
@@ -425,6 +431,35 @@ export default function ScanScreen() {
     }
   }, [menuPhotos, isAnalyzing]);
 
+  // ── Photo mode: capture and navigate ─────────────────────────────────────
+  const handlePhotoCapture = useCallback(async () => {
+    if (takingPhoto || !cameraRef.current) return;
+
+    // Gate: Premium only
+    if (!isPremium) {
+      router.push({ pathname: '/paywall', params: { trigger: 'photo_scan' } } as never);
+      return;
+    }
+
+    setTakingPhoto(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    flashOverlay.value = withSequence(
+      withTiming(0.5, { duration: 60 }),
+      withTiming(0, { duration: 250 }),
+    );
+
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.8 });
+      if (photo?.base64) {
+        router.push(`/photo-result?base64=${encodeURIComponent(photo.base64)}`);
+      }
+    } catch {
+      // silent — user can retry
+    } finally {
+      setTakingPhoto(false);
+    }
+  }, [takingPhoto, flashOverlay, isPremium]);
+
   const flashOverlayStyle = useAnimatedStyle(() => ({
     opacity: flashOverlay.value,
   }));
@@ -508,6 +543,8 @@ export default function ScanScreen() {
               ? menuPhotos.length === 0
                 ? 'Photographiez la première page du menu'
                 : `Page ${menuPhotos.length}/${MAX_MENU_PHOTOS} · Ajoutez d'autres pages ou analysez`
+              : isPhotoMode
+              ? 'Photographiez la face avant du produit'
               : 'Placez le code-barres dans le cadre'}
           </Text>
         </View>
@@ -517,6 +554,13 @@ export default function ScanScreen() {
       {isOCRMode && (
         <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
           <ShutterButton onPress={handleShutter} />
+        </View>
+      )}
+
+      {/* ── Photo mode shutter button ── */}
+      {isPhotoMode && (
+        <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
+          <ShutterButton onPress={handlePhotoCapture} />
         </View>
       )}
 
@@ -603,6 +647,7 @@ export default function ScanScreen() {
           <ModeChip label="Ingrédients" active={scanMode === 'ingredients'} onPress={() => setScanMode('ingredients')} />
           <ModeChip label="Menu" active={scanMode === 'menu'} onPress={() => setScanMode('menu')} />
           <ModeChip label="💊 Ordonnance" active={false} onPress={() => router.push('/prescription-scan' as never)} />
+          <ModeChip label="📷 Photo" active={scanMode === 'photo'} onPress={() => setScanMode('photo')} />
         </View>
         {isMenuMode && menuPhotos.length > 0 && (
           <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75}>

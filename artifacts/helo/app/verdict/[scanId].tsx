@@ -421,6 +421,7 @@ export default function VerdictScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [phase, setPhase] = useState<Phase>(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
+  const [isPhotoMode, setIsPhotoMode] = useState(false);
   const [isBabyMode, setIsBabyMode] = useState(false);
   const [babyMatches, setBabyMatches] = useState<MatchResult[]>([]);
   const [babyVerdict, setBabyVerdict] = useState<VerdictResult | null>(null);
@@ -463,6 +464,18 @@ export default function VerdictScreen() {
       return;
     }
 
+    // Photo mode: load pre-computed result from AsyncStorage
+    if (barcode === 'photo-scan') {
+      setIsPhotoMode(true);
+      AsyncStorage.getItem('@helo_photo_scan_result').then((raw) => {
+        if (raw) {
+          const data = JSON.parse(raw);
+          setDirectResult(data.product, data.matches, data.verdict);
+        }
+      }).catch(() => {});
+      return;
+    }
+
     scanBarcode(barcode, phase, isOffline);
   }, [barcode, phase, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -484,7 +497,7 @@ export default function VerdictScreen() {
 
   // Check recall for scanned barcode (premium only)
   useEffect(() => {
-    if (!barcode || barcode.startsWith('ocr_') || !isPremium) return;
+    if (!barcode || barcode.startsWith('ocr_') || barcode === 'photo-scan' || !isPremium) return;
     fetchRecallForBarcode(barcode)
       .then((r) => setRecallMatch(r))
       .catch(() => {});
@@ -743,6 +756,8 @@ export default function VerdictScreen() {
           <View style={styles.trimesterBadgeRow}>
             {isOCRMode ? (
               <Badge variant="accent">Analysé par lecture d'ingrédients</Badge>
+            ) : isPhotoMode ? (
+              <Badge variant="accent">Identifié par photo 📷</Badge>
             ) : phase === 'breastfeeding' ? (
               <Badge variant="accent">Mode allaitement 🤱</Badge>
             ) : (
@@ -776,6 +791,18 @@ export default function VerdictScreen() {
                 👶 Mon bébé
               </ThemedText>
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── PHOTO IDENTIFICATION BANNER ── */}
+        {product?.isPhotoIdentified && (
+          <View style={styles.photoBanner}>
+            <View style={styles.photoBannerIcon}>
+              <Feather name="info" size={18} color={Colors.accent} />
+            </View>
+            <ThemedText variant="bodySmall" style={styles.photoBannerText}>
+              Ce produit a été identifié visuellement. Pour un résultat plus précis, scannez le code-barres ou la liste d'ingrédients.
+            </ThemedText>
           </View>
         )}
 
@@ -1107,6 +1134,36 @@ const styles = StyleSheet.create({
   },
   tabBtnActive: {
     borderBottomColor: Colors.accent,
+  },
+
+  // Photo identification banner
+  photoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.accent + '44',
+  },
+  photoBannerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.accent + '22',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accent + '33',
+    flexShrink: 0,
+  },
+  photoBannerText: {
+    flex: 1,
+    color: Colors.accent,
+    lineHeight: 18,
   },
 
   // Recall alert banner

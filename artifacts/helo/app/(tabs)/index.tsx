@@ -343,6 +343,37 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Mon Environnement card */}
+        <Animated.View entering={FadeInDown.delay(165).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/home-score' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              {
+                backgroundColor: Colors.surface,
+                borderColor: Colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={[styles.briefIconWrap, { backgroundColor: Colors.safeBg, borderColor: Colors.safeLight }]}>
+                <Feather name="home" size={22} color={Colors.safe} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Mon Environnement
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Score de sécurité par pièce
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Stats row */}
         <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.statsRow}>
           <Card style={styles.statCard} padding={Spacing.lg}>

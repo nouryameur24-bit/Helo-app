@@ -26,6 +26,7 @@ export default function PartnerCodeScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(""));
+  const [myFirstName, setMyFirstName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRefs = useRef<Array<TextInput | null>>(Array(CODE_LENGTH).fill(null));
@@ -109,10 +110,12 @@ export default function PartnerCodeScreen() {
       await setUserRole("partner", result.userId);
       await AsyncStorage.setItem("@helo_linked_first_name", result.firstName);
       await AsyncStorage.setItem("@helo_linked_user_id", result.userId);
+      if (myFirstName.trim()) {
+        await AsyncStorage.setItem("@helo_partner_first_name", myFirstName.trim());
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await AsyncStorage.setItem("onboarding_completed", "true");
-      router.replace("/(tabs)");
+      router.replace("/onboarding/partner-welcome");
     } catch (err) {
       setError("Une erreur est survenue. Réessayez.");
       triggerShake();
@@ -144,6 +147,21 @@ export default function PartnerCodeScreen() {
           <ThemedText variant="bodyLarge" color="textSecondary" style={styles.subtitle}>
             Demandez à votre proche de partager son code à 6 caractères depuis l'application.
           </ThemedText>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.nameField}>
+          <ThemedText variant="labelMedium" color="textSecondary" style={styles.nameLabel}>
+            Votre prénom
+          </ThemedText>
+          <TextInput
+            style={styles.nameInput}
+            value={myFirstName}
+            onChangeText={setMyFirstName}
+            placeholder="Ex : Thomas"
+            placeholderTextColor={Colors.textTertiary}
+            autoCorrect={false}
+            returnKeyType="next"
+          />
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(100).duration(400)} style={shakeStyle}>
@@ -251,5 +269,21 @@ const styles = StyleSheet.create({
   },
   cta: {
     width: "100%",
+  },
+  nameField: {
+    gap: Spacing.sm,
+  },
+  nameLabel: {
+    marginBottom: 2,
+  },
+  nameInput: {
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.lg,
+    backgroundColor: Colors.surface,
+    ...Typography.bodyLarge,
+    color: Colors.textPrimary,
   },
 });

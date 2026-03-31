@@ -36,6 +36,8 @@ import { useShelfData } from '@/hooks/useShelfData';
 import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
 import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
+import { getPartnerTipForWeek } from '@/constants/partnerTips';
+import { calculateTrimester } from '@/lib/trimester';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -138,6 +140,233 @@ function CompositionBar({ count, total, color, label }: {
   );
 }
 
+function PartnerHomeScreen() {
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : 0;
+
+  const { linkedUserId, linkedFirstName, dueDate } = useProfile();
+  const momName = linkedFirstName ?? 'Votre proche';
+  const week = dueDate ? calculateTrimester(dueDate).weekOfPregnancy : 20;
+
+  const { shelf } = useShelfData(linkedUserId ?? undefined);
+  const activeShelf = shelf.length > 0 ? shelf : MOCK_SHELF;
+  const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
+
+  const tip = getPartnerTipForWeek(week);
+
+  const recentProducts = activeShelf.slice(0, 3);
+
+  return (
+    <View style={[styles.root, { backgroundColor: Colors.background }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPadding + Spacing.lg, paddingBottom: bottomPadding + 120 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        {/* Partner Header */}
+        <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <ThemedText variant="bodySmall" color="textTertiary">
+              Placard de {momName} · Semaine {week}
+            </ThemedText>
+            <ThemedText variant="headlineLarge" color="textPrimary">{momName}</ThemedText>
+          </View>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            <IconButton size={44} onPress={() => router.push('/search')}>
+              <Feather name="search" size={20} color={Colors.textSecondary} />
+            </IconButton>
+            <IconButton size={44}>
+              <Feather name="bell" size={20} color={Colors.textSecondary} />
+            </IconButton>
+          </View>
+        </Animated.View>
+
+        {/* Tip de la semaine */}
+        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
+          <View style={partnerStyles.tipBanner}>
+            <View style={partnerStyles.tipBannerLeft}>
+              <View style={partnerStyles.tipIconWrap}>
+                <Feather name="lightbulb" size={20} color={Colors.accentDark} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelSmall" style={{ color: Colors.accentDark, marginBottom: 4 }}>
+                  TIP CO-PARENT · SEMAINE {week}
+                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary" numberOfLines={2}>
+                  {tip.title}
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 4 }} numberOfLines={3}>
+                  {tip.body}
+                </ThemedText>
+              </View>
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* Mission de la semaine */}
+        <Animated.View entering={FadeInDown.delay(130).duration(500)}>
+          <View style={partnerStyles.missionCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm }}>
+              <Feather name="target" size={16} color={Colors.safe} />
+              <ThemedText variant="labelSmall" style={{ color: Colors.safe }}>
+                MISSION DE LA SEMAINE
+              </ThemedText>
+            </View>
+            <ThemedText variant="bodyMedium" color="textSecondary">
+              {tip.mission}
+            </ThemedText>
+          </View>
+        </Animated.View>
+
+        {/* Glow Score de la maman */}
+        <Animated.View entering={FadeInDown.delay(180).duration(500)}>
+          <Card padding={Spacing.xl} style={styles.glowCard}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={{ marginBottom: Spacing.md }}>
+              GLOW SCORE DE {momName.toUpperCase()}
+            </ThemedText>
+            <View style={styles.glowCircleRow}>
+              <GlowScoreCircle score={score} size="large" animated />
+            </View>
+            <ThemedText variant="bodyMedium" color="textSecondary" style={styles.glowSubtitle}>
+              Basé sur {total} produit{total > 1 ? 's' : ''} dans son placard
+            </ThemedText>
+          </Card>
+        </Animated.View>
+
+        {/* Scanner un produit pour la maman */}
+        <Animated.View entering={FadeInDown.delay(220).duration(500)}>
+          <LinearGradient
+            colors={['#E8D5B0', '#C9A96E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.heroBanner, { borderRadius: Radius.xl }]}
+          >
+            <View style={styles.heroContent}>
+              <ThemedText variant="headlineMedium" style={{ color: '#FFFFFF', marginBottom: 4 }}>
+                Scanner pour {momName}
+              </ThemedText>
+              <ThemedText variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)', marginBottom: Spacing.xl }}>
+                Analysez la sécurité d'un produit pour elle
+              </ThemedText>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.heroButton,
+                  { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                ]}
+                onPress={() => router.push('/(tabs)/scan')}
+              >
+                <Feather name="camera" size={18} color={Colors.accentDark} />
+                <Text style={styles.heroButtonText}>Scanner maintenant</Text>
+              </Pressable>
+            </View>
+            <View style={styles.heroDecoration}>
+              <View style={styles.heroCircle1} />
+              <View style={styles.heroCircle2} />
+            </View>
+          </LinearGradient>
+        </Animated.View>
+
+        {/* Accès rapide */}
+        <Animated.View entering={FadeInDown.delay(260).duration(500)} style={styles.quickRow}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+            ]}
+            onPress={() => router.push('/(tabs)/partner-checklist-tab' as never)}
+          >
+            <View style={[styles.quickIcon, { backgroundColor: Colors.safeLight, borderColor: Colors.safe + '66' }]}>
+              <Feather name="check-square" size={18} color={Colors.safe} />
+            </View>
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
+              Ma checklist
+            </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
+              Maison, achats, RDV
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+            ]}
+            onPress={() => router.push('/partner-weekly-brief' as never)}
+          >
+            <View style={[styles.quickIcon, { backgroundColor: Colors.accentLight + '88', borderColor: Colors.accent + '66' }]}>
+              <Feather name="book-open" size={18} color={Colors.accent} />
+            </View>
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
+              Brief co-parent
+            </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
+              Semaine {week}
+            </ThemedText>
+          </Pressable>
+        </Animated.View>
+
+        {/* Derniers produits scannés */}
+        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
+          <View style={styles.sectionHeader}>
+            <ThemedText variant="headlineMedium" color="textPrimary">
+              Placard de {momName}
+            </ThemedText>
+            <Pressable onPress={() => router.push('/(tabs)/shelf')}>
+              <ThemedText variant="labelLarge" color="accent">Voir tout</ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={styles.scanList}>
+            {recentProducts.map((product, index) => (
+              <Animated.View key={product.id} entering={FadeInDown.delay(340 + index * 60).duration(400)}>
+                <View style={[styles.scanCard, { backgroundColor: Colors.surface }]}>
+                  <View style={[
+                    styles.scanCardIcon,
+                    {
+                      backgroundColor:
+                        product.verdict === 'safe' ? Colors.safeBg :
+                        product.verdict === 'caution' ? Colors.cautionBg :
+                        Colors.dangerBg,
+                    },
+                  ]}>
+                    <Feather
+                      name={
+                        product.verdict === 'safe' ? 'check-circle' :
+                        product.verdict === 'caution' ? 'alert-circle' :
+                        'x-circle'
+                      }
+                      size={20}
+                      color={
+                        product.verdict === 'safe' ? Colors.safe :
+                        product.verdict === 'caution' ? Colors.caution :
+                        Colors.danger
+                      }
+                    />
+                  </View>
+                  <View style={styles.scanCardContent}>
+                    <ThemedText variant="labelLarge" color="textPrimary" numberOfLines={1}>
+                      {product.name}
+                    </ThemedText>
+                    <ThemedText variant="bodySmall" color="textTertiary">
+                      {product.brand} · {product.verdictLabel}
+                    </ThemedText>
+                  </View>
+                  <Badge variant={product.verdict}>{product.verdictLabel}</Badge>
+                </View>
+              </Animated.View>
+            ))}
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
@@ -145,8 +374,6 @@ export default function HomeScreen() {
 
   const { role, userId, linkedUserId, firstName, linkedFirstName } = useProfile();
   const isPartner = role === 'partner';
-  const shelfUserId = isPartner && linkedUserId ? linkedUserId : userId;
-  const displayName = isPartner ? (linkedFirstName ?? 'Votre proche') : (firstName || 'Hēlo');
 
   const {
     weekOfPregnancy,
@@ -163,6 +390,9 @@ export default function HomeScreen() {
   } = useBreastfeeding();
   const { isNew } = useWeeklyBrief(weekOfPregnancy);
 
+  const shelfUserId = userId;
+  const displayName = firstName || 'Hēlo';
+
   const { shelf: realShelf } = useShelfData(shelfUserId || undefined);
   const activeShelf = realShelf.length > 0 ? realShelf : MOCK_SHELF;
 
@@ -171,6 +401,10 @@ export default function HomeScreen() {
   const hasRisk = countDanger > 0 || countCaution > 0;
 
   const [glowShareVisible, setGlowShareVisible] = useState(false);
+
+  if (isPartner) {
+    return <PartnerHomeScreen />;
+  }
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
@@ -999,5 +1233,38 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
+  },
+});
+
+const partnerStyles = StyleSheet.create({
+  tipBanner: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.accent + '55',
+    ...Shadows.soft,
+  },
+  tipBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  tipIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  missionCard: {
+    backgroundColor: Colors.safeBg,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.safeLight,
+    ...Shadows.soft,
   },
 });

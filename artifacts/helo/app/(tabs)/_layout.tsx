@@ -9,8 +9,12 @@ import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
+import { useProfile } from "@/hooks/useProfile";
 
 function NativeTabLayout() {
+  const { role } = useProfile();
+  const isPartner = role === 'partner';
+
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
@@ -25,6 +29,12 @@ function NativeTabLayout() {
         <Icon sf={{ default: "archivebox", selected: "archivebox.fill" }} />
         <Label>Placard</Label>
       </NativeTabs.Trigger>
+      {isPartner && (
+        <NativeTabs.Trigger name="partner-checklist-tab">
+          <Icon sf={{ default: "checklist", selected: "checklist" }} />
+          <Label>Checklist</Label>
+        </NativeTabs.Trigger>
+      )}
       <NativeTabs.Trigger name="history">
         <Icon sf={{ default: "clock", selected: "clock.fill" }} />
         <Label>Historique</Label>
@@ -53,6 +63,8 @@ function ClassicTabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const { role } = useProfile();
+  const isPartner = role === 'partner';
 
   return (
     <Tabs
@@ -118,6 +130,19 @@ function ClassicTabLayout() {
               <SymbolView name="archivebox" tintColor={color} size={24} />
             ) : (
               <Feather name="archive" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="partner-checklist-tab"
+        options={{
+          title: "Checklist",
+          tabBarItemStyle: { display: isPartner ? 'flex' : 'none' },
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="checklist" tintColor={color} size={24} />
+            ) : (
+              <Feather name="check-square" size={22} color={color} />
             ),
         }}
       />

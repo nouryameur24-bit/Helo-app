@@ -436,7 +436,7 @@ export default function ShelfResultsScreen() {
             size={18}
             color={addedToShelf ? Colors.safe : Colors.textPrimary}
           />
-          <ThemedText style={[styles.addBtnText, addedToShelf && { color: Colors.safe }]}>
+          <ThemedText style={[styles.addBtnText, addedToShelf ? { color: Colors.safe } : undefined]}>
             {addedToShelf ? 'Ajouté au placard' : 'Tout ajouter au placard'}
           </ThemedText>
         </TouchableOpacity>

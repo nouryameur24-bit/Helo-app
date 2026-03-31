@@ -150,7 +150,7 @@ export default function PartnerCodeScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.nameField}>
-          <ThemedText variant="labelMedium" color="textSecondary" style={styles.nameLabel}>
+          <ThemedText variant="labelSmall" color="textSecondary" style={styles.nameLabel}>
             Votre prénom
           </ThemedText>
           <TextInput

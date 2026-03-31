@@ -57,7 +57,7 @@ function CategoryChip({ category }: { category: string }) {
   );
 }
 
-function SubmissionCard({ item }: { item: CommunitySubmission }) {
+const SubmissionCard = React.memo(function SubmissionCard({ item }: { item: CommunitySubmission }) {
   return (
     <Card style={styles.card} padding={0}>
       <View style={styles.cardContent}>
@@ -92,7 +92,7 @@ function SubmissionCard({ item }: { item: CommunitySubmission }) {
       </View>
     </Card>
   );
-}
+});
 
 function EmptyState() {
   return (
@@ -150,6 +150,9 @@ export default function CommunityScreen() {
         data={submissions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <SubmissionCard item={item} />}
+        maxToRenderPerBatch={10}
+        initialNumToRender={6}
+        removeClippedSubviews
         contentContainerStyle={{
           paddingTop: topPadding + Spacing.lg,
           paddingBottom: bottomPadding + 120,

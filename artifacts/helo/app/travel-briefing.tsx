@@ -170,7 +170,7 @@ function ChecklistSection({
               </View>
               <ThemedText
                 variant="bodyMedium"
-                style={[cl.itemText, item.checked && cl.itemTextChecked]}
+                style={[cl.itemText, item.checked ? cl.itemTextChecked : undefined]}
               >
                 {item.label}
               </ThemedText>

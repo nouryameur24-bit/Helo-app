@@ -9,9 +9,12 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
 } from "react-native";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { ThemedText } from "@/components/ui/ThemedText";
+import { Colors, Radius, Shadows, Spacing } from "@/constants/theme";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -19,26 +22,13 @@ export type ErrorFallbackProps = {
 };
 
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
-
-  const theme = {
-    background: isDark ? "#000000" : "#FFFFFF",
-    backgroundSecondary: isDark ? "#1C1C1E" : "#F2F2F7",
-    text: isDark ? "#FFFFFF" : "#000000",
-    textSecondary: isDark ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
-    link: "#007AFF",
-    buttonText: "#FFFFFF",
-  };
-
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const handleRestart = async () => {
     try {
       await reloadAppAsync();
-    } catch (restartError) {
-      console.error("Failed to restart app:", restartError);
+    } catch {
       resetError();
     }
   };
@@ -58,113 +48,86 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   });
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {__DEV__ ? (
         <Pressable
           onPress={() => setIsModalVisible(true)}
-          accessibilityLabel="View error details"
+          accessibilityLabel="Voir les détails de l'erreur"
           accessibilityRole="button"
           style={({ pressed }) => [
-            styles.topButton,
-            {
-              top: insets.top + 16,
-              backgroundColor: theme.backgroundSecondary,
-              opacity: pressed ? 0.8 : 1,
-            },
+            styles.devButton,
+            { top: insets.top + 16, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <Feather name="alert-circle" size={20} color={theme.text} />
+          <Feather name="alert-circle" size={18} color={Colors.textSecondary} />
         </Pressable>
       ) : null}
 
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Something went wrong
-        </Text>
+      <Animated.View entering={FadeInUp.delay(100).duration(600)} style={styles.illustrationWrap}>
+        <View style={styles.illustrationCircle}>
+          <ThemedText style={styles.illustrationEmoji}>🌿</ThemedText>
+        </View>
+      </Animated.View>
 
-        <Text style={[styles.message, { color: theme.textSecondary }]}>
-          Please reload the app to continue.
-        </Text>
+      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.content}>
+        <ThemedText variant="headlineLarge" color="textPrimary" style={styles.title}>
+          Un instant…
+        </ThemedText>
+        <ThemedText variant="bodyMedium" color="textSecondary" style={styles.message}>
+          Une petite erreur s'est glissée. Rechargez l'application pour continuer en douceur.
+        </ThemedText>
 
         <Pressable
           onPress={handleRestart}
           style={({ pressed }) => [
             styles.button,
-            {
-              backgroundColor: theme.link,
-              opacity: pressed ? 0.9 : 1,
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-            },
+            { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
           ]}
         >
-          <Text style={[styles.buttonText, { color: theme.buttonText }]}>
-            Try Again
-          </Text>
+          <ThemedText variant="labelLarge" style={styles.buttonText}>
+            Réessayer
+          </ThemedText>
         </Pressable>
-      </View>
+
+        <Pressable
+          onPress={resetError}
+          style={({ pressed }) => [styles.secondaryButton, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <ThemedText variant="bodySmall" color="textTertiary">
+            Ignorer et continuer
+          </ThemedText>
+        </Pressable>
+      </Animated.View>
 
       {__DEV__ ? (
         <Modal
           visible={isModalVisible}
           animationType="slide"
-          transparent={true}
+          transparent
           onRequestClose={() => setIsModalVisible(false)}
         >
           <View style={styles.modalOverlay}>
-            <View
-              style={[
-                styles.modalContainer,
-                { backgroundColor: theme.background },
-              ]}
-            >
-              <View
-                style={[
-                  styles.modalHeader,
-                  {
-                    borderBottomColor: isDark
-                      ? "rgba(255, 255, 255, 0.1)"
-                      : "rgba(0, 0, 0, 0.1)",
-                  },
-                ]}
-              >
-                <Text style={[styles.modalTitle, { color: theme.text }]}>
-                  Error Details
-                </Text>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <ThemedText variant="headlineMedium" color="textPrimary">
+                  Détails de l'erreur
+                </ThemedText>
                 <Pressable
                   onPress={() => setIsModalVisible(false)}
-                  accessibilityLabel="Close error details"
-                  accessibilityRole="button"
-                  style={({ pressed }) => [
-                    styles.closeButton,
-                    { opacity: pressed ? 0.6 : 1 },
-                  ]}
+                  style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.6 : 1 }]}
                 >
-                  <Feather name="x" size={24} color={theme.text} />
+                  <Feather name="x" size={24} color={Colors.textPrimary} />
                 </Pressable>
               </View>
 
               <ScrollView
                 style={styles.modalScrollView}
-                contentContainerStyle={[
-                  styles.modalScrollContent,
-                  { paddingBottom: insets.bottom + 16 },
-                ]}
+                contentContainerStyle={[styles.modalScrollContent, { paddingBottom: insets.bottom + 16 }]}
                 showsVerticalScrollIndicator
               >
-                <View
-                  style={[
-                    styles.errorContainer,
-                    { backgroundColor: theme.backgroundSecondary },
-                  ]}
-                >
+                <View style={styles.errorContainer}>
                   <Text
-                    style={[
-                      styles.errorText,
-                      {
-                        color: theme.text,
-                        fontFamily: monoFont,
-                      },
-                    ]}
+                    style={[styles.errorText, { fontFamily: monoFont }]}
                     selectable
                   >
                     {formatErrorDetails()}
@@ -182,83 +145,88 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
+    backgroundColor: Colors.background,
     alignItems: "center",
-    padding: 24,
+    justifyContent: "center",
+    padding: Spacing.xl,
+  },
+  illustrationWrap: {
+    marginBottom: Spacing.xl,
+  },
+  illustrationCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.accentLight,
+    alignItems: "center",
+    justifyContent: "center",
+    ...Shadows.soft,
+  },
+  illustrationEmoji: {
+    fontSize: 44,
   },
   content: {
     alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
+    gap: Spacing.md,
+    maxWidth: 340,
     width: "100%",
-    maxWidth: 600,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "700",
     textAlign: "center",
-    lineHeight: 40,
   },
   message: {
-    fontSize: 16,
     textAlign: "center",
     lineHeight: 24,
   },
-  topButton: {
+  button: {
+    backgroundColor: Colors.accent,
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: Radius.xl,
+    marginTop: Spacing.sm,
+    minWidth: 200,
+    alignItems: "center",
+    ...Shadows.medium,
+  },
+  buttonText: {
+    color: Colors.surface,
+  },
+  secondaryButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  devButton: {
     position: "absolute",
     right: 16,
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    flexDirection: "row",
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.borderLight,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
   },
-  button: {
-    paddingVertical: 16,
-    borderRadius: 8,
-    paddingHorizontal: 24,
-    minWidth: 200,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  buttonText: {
-    fontWeight: "600",
-    textAlign: "center",
-    fontSize: 16,
-  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(45, 41, 38, 0.4)",
     justifyContent: "flex-end",
   },
   modalContainer: {
     width: "100%",
     height: "90%",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    backgroundColor: Colors.background,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "600",
+    borderBottomColor: Colors.border,
   },
   closeButton: {
     width: 44,
@@ -270,17 +238,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   modalScrollContent: {
-    padding: 16,
+    padding: Spacing.lg,
   },
   errorContainer: {
-    width: "100%",
-    borderRadius: 8,
-    overflow: "hidden",
-    padding: 16,
+    backgroundColor: Colors.borderLight,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   errorText: {
     fontSize: 12,
     lineHeight: 18,
-    width: "100%",
+    color: Colors.textSecondary,
   },
 });

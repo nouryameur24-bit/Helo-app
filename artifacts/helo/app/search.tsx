@@ -568,6 +568,9 @@ export default function SearchScreen() {
               <FlatList
                 data={displayList}
                 keyExtractor={(item) => item.id}
+                maxToRenderPerBatch={10}
+                initialNumToRender={8}
+                removeClippedSubviews
                 contentContainerStyle={[
                   scr.scroll,
                   { paddingBottom: insets.bottom + 100 },

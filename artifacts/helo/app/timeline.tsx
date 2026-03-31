@@ -97,7 +97,7 @@ function WeekColumn({
         </View>
       )}
 
-      <ThemedText variant="labelSmall" style={[styles.weekNumber, isCurrent && { color: Colors.accentDark }]}>
+      <ThemedText variant="labelSmall" style={[styles.weekNumber, isCurrent ? { color: Colors.accentDark } : undefined]}>
         S{data.week}
       </ThemedText>
 

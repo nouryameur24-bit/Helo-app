@@ -80,7 +80,7 @@ function showActionSheet(
   }
 }
 
-export function ShelfCard({ product, onPress, onRemove, onChangeCategory }: ShelfCardProps) {
+export const ShelfCard = React.memo(function ShelfCard({ product, onPress, onRemove, onChangeCategory }: ShelfCardProps) {
   const catIcon = product.category ? categoryIconMap[product.category] : 'box';
 
   return (
@@ -116,7 +116,7 @@ export function ShelfCard({ product, onPress, onRemove, onChangeCategory }: Shel
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

@@ -192,7 +192,7 @@ function PartnerHomeScreen() {
           <View style={partnerStyles.tipBanner}>
             <View style={partnerStyles.tipBannerLeft}>
               <View style={partnerStyles.tipIconWrap}>
-                <Feather name="lightbulb" size={20} color={Colors.accentDark} />
+                <Feather name="zap" size={20} color={Colors.accentDark} />
               </View>
               <View style={{ flex: 1 }}>
                 <ThemedText variant="labelSmall" style={{ color: Colors.accentDark, marginBottom: 4 }}>
@@ -357,7 +357,7 @@ function PartnerHomeScreen() {
                       {product.brand} · {product.verdictLabel}
                     </ThemedText>
                   </View>
-                  <Badge variant={product.verdict}>{product.verdictLabel}</Badge>
+                  <Badge variant={product.verdict as 'safe' | 'caution' | 'danger'}>{product.verdictLabel}</Badge>
                 </View>
               </Animated.View>
             ))}

@@ -1,16 +1,17 @@
 import React from 'react';
-import { Text, TextStyle } from 'react-native';
+import { StyleProp, Text, TextStyle } from 'react-native';
 import { Colors, Typography } from '@/constants/theme';
 
 type TextVariant = keyof typeof Typography;
 type TextColor = keyof typeof Colors;
 
-interface ThemedTextProps {
+export interface ThemedTextProps {
   variant?: TextVariant;
   color?: TextColor | string;
-  style?: TextStyle | TextStyle[];
+  style?: StyleProp<TextStyle>;
   children: React.ReactNode;
   numberOfLines?: number;
+  selectable?: boolean;
 }
 
 export function ThemedText({
@@ -19,6 +20,7 @@ export function ThemedText({
   style,
   children,
   numberOfLines,
+  selectable,
 }: ThemedTextProps) {
   const resolvedColor =
     color in Colors
@@ -33,6 +35,7 @@ export function ThemedText({
         style,
       ]}
       numberOfLines={numberOfLines}
+      selectable={selectable}
     >
       {children}
     </Text>

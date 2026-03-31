@@ -95,7 +95,7 @@ function SlideSemaine({
         </Card>
 
         <View style={slide.tipPreview}>
-          <Feather name="lightbulb" size={16} color={Colors.accent} />
+          <Feather name="zap" size={16} color={Colors.accent} />
           <ThemedText variant="bodyMedium" color="textSecondary" style={{ flex: 1, marginLeft: Spacing.sm }}>
             {tip.title}
           </ThemedText>

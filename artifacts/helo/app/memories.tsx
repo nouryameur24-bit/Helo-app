@@ -1,15 +1,13 @@
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Sharing from 'expo-sharing';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,12 +17,10 @@ import {
 import Animated, {
   Easing,
   FadeIn,
-  FadeOut,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withRepeat,
   withSequence,
   withSpring,
   withTiming,
@@ -399,7 +395,7 @@ function CapsuleContentView({
         {/* Belly photo */}
         {capsule.photoUri ? (
           <View style={styles.contentPhotoWrap}>
-            <Image source={{ uri: capsule.photoUri }} style={styles.contentPhoto} resizeMode="cover" />
+            <Image source={{ uri: capsule.photoUri }} style={styles.contentPhoto} contentFit="cover" />
             <LinearGradient
               colors={['transparent', Colors.background]}
               style={styles.contentPhotoGradient}
@@ -969,7 +965,7 @@ function StepPersonal({
         onPress={onPickPhoto}
       >
         {photoUri ? (
-          <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
+          <Image source={{ uri: photoUri }} style={styles.photoPreview} contentFit="cover" />
         ) : (
           <>
             <View style={styles.photoIcon}>

@@ -49,7 +49,7 @@ function computeWeekFromDueDate(dueDate: string | null): number | null {
   }
 }
 
-function EntryCard({ entry }: { entry: JournalEntry }) {
+const EntryCard = React.memo(function EntryCard({ entry }: { entry: JournalEntry }) {
   const [expanded, setExpanded] = useState(false);
   const date = new Date(entry.date);
   const dateLabel = date.toLocaleDateString('fr-FR', {
@@ -111,7 +111,7 @@ function EntryCard({ entry }: { entry: JournalEntry }) {
       </Card>
     </Pressable>
   );
-}
+});
 
 export default function JournalScreen() {
   const insets = useSafeAreaInsets();
@@ -144,6 +144,9 @@ export default function JournalScreen() {
       <FlatList
         data={entries}
         keyExtractor={(item) => item.id}
+        maxToRenderPerBatch={10}
+        initialNumToRender={6}
+        removeClippedSubviews
         contentContainerStyle={{
           paddingTop: topPadding + Spacing.lg,
           paddingBottom: bottomPadding + 120,

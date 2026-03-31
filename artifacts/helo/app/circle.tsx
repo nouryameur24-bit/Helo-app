@@ -146,7 +146,7 @@ function FeedCard({
               <ThemedText style={styles.reactionEmoji}>{emoji}</ThemedText>
               {count > 0 && (
                 <ThemedText
-                  style={[styles.reactionCount, isActive && { color: Colors.accent }]}
+                  style={[styles.reactionCount, isActive ? { color: Colors.accent } : undefined]}
                 >
                   {count}
                 </ThemedText>

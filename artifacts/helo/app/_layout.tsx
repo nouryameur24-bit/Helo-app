@@ -180,6 +180,13 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="ar-mirror"
+          options={{
+            headerShown: false,
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
           name="timeline"
           options={{
             headerShown: false,

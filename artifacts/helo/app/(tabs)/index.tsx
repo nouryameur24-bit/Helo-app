@@ -768,6 +768,37 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Miroir AR card */}
+        <Animated.View entering={FadeInDown.delay(185).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/ar-mirror' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              {
+                backgroundColor: Colors.surface,
+                borderColor: Colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={[styles.briefIconWrap, { backgroundColor: '#F0F8F4', borderColor: '#C0E4D0' }]}>
+                <ThemedText style={{ fontSize: 20 }}>🪞</ThemedText>
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Mode Miroir AR ✨
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Halos colorés sur vos produits en temps réel
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={16} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Shelf scan CTA */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
           <Pressable

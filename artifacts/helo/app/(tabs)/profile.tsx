@@ -977,6 +977,13 @@ export default function ProfileScreen() {
             />
             <Divider />
             <SettingRow
+              icon="camera"
+              title="Mode Miroir AR"
+              subtitle="Halos colorés sur vos produits en temps réel"
+              onPress={() => router.push('/ar-mirror' as never)}
+            />
+            <Divider />
+            <SettingRow
               icon="smartphone"
               title="Widget & Apple Watch"
               subtitle="Glow Score sur l'écran d'accueil"

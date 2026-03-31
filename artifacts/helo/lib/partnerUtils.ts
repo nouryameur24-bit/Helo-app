@@ -39,7 +39,7 @@ export async function upsertProfileSafe(params: Parameters<typeof upsertProfile>
   try {
     await upsertProfile(params);
   } catch (err) {
-    console.warn('[upsertProfile] error:', err instanceof Error ? err.message : err);
+    if (__DEV__) console.warn('[upsertProfile] error:', err instanceof Error ? err.message : err);
   }
 }
 

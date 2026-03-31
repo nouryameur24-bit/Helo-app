@@ -8,7 +8,9 @@
 
 import type { ProductData } from '@/types';
 
-const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY ?? '';
+import { Config } from '@/lib/config';
+
+const API_KEY = Config.anthropicKey;
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-opus-4-5';
 const MAX_TOKENS = 1024;
@@ -76,7 +78,7 @@ export async function identifyProduct(base64Image: string): Promise<ProductData>
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    console.error('[Hēlo VisionScan] Anthropic error:', res.status, err);
+    if (__DEV__) console.error('[Hēlo VisionScan] Anthropic error:', res.status, err);
     if (res.status === 401) throw new Error('Clé API invalide.');
     if (res.status === 429) throw new Error('Trop de requêtes. Réessayez dans quelques instants.');
     throw new Error("Erreur lors de l'identification visuelle. Réessayez.");
@@ -91,7 +93,7 @@ export async function identifyProduct(base64Image: string): Promise<ProductData>
     if (!jsonMatch) throw new Error('No JSON found');
     parsed = JSON.parse(jsonMatch[0]) as VisionResponse;
   } catch {
-    console.error('[Hēlo VisionScan] JSON parse error:', rawText);
+    if (__DEV__) console.error('[Hēlo VisionScan] JSON parse error:', rawText);
     throw new Error("Impossible d'analyser la réponse de Claude. Réessayez.");
   }
 
@@ -176,7 +178,7 @@ export async function scanShelf(base64Image: string): Promise<ShelfDetectedProdu
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    console.error('[Hēlo ShelfScan] Anthropic error:', res.status, err);
+    if (__DEV__) console.error('[Hēlo ShelfScan] Anthropic error:', res.status, err);
     if (res.status === 401) throw new Error('Clé API invalide.');
     if (res.status === 429) throw new Error('Trop de requêtes. Réessayez dans quelques instants.');
     throw new Error("Erreur lors de l'analyse de l'étagère. Réessayez.");
@@ -192,7 +194,7 @@ export async function scanShelf(base64Image: string): Promise<ShelfDetectedProdu
     parsed = JSON.parse(jsonMatch[0]) as ShelfDetectedProduct[];
     if (!Array.isArray(parsed)) throw new Error('Not an array');
   } catch {
-    console.error('[Hēlo ShelfScan] JSON parse error:', rawText);
+    if (__DEV__) console.error('[Hēlo ShelfScan] JSON parse error:', rawText);
     throw new Error("Impossible d'analyser la réponse de Claude. Réessayez.");
   }
 

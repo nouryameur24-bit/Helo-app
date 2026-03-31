@@ -603,7 +603,7 @@ export default function VerdictScreen() {
           });
         }
       } catch (err) {
-        console.warn('[verdict] shelf Supabase insert error:', err);
+        if (__DEV__) console.warn('[verdict] shelf Supabase insert error:', err);
       }
     }
 

@@ -1,0 +1,206 @@
+Audit complet de sécurité et hardening professionnel de l'app Hēlo. L'objectif est qu'un développeur senior qui review le code ne trouve RIEN à redire. Zéro raccourci, zéro faille, zéro "vibe coding".
+
+═══════════════════════════════════════════════════════════════
+1. SÉCURITÉ API & SECRETS
+═══════════════════════════════════════════════════════════════
+
+- Vérifier qu'AUCUNE clé API n'est hardcodée dans le code source. Toutes doivent venir de process.env.
+- Créer lib/config.ts qui centralise TOUS les accès aux variables d'environnement :
+  export const Config = {
+    supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',
+    supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
+    googleVisionKey: process.env.EXPO_PUBLIC_GOOGLE_VISION_KEY ?? '',
+    anthropicKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY ?? '',
+    revenueCatKey: process.env.EXPO_PUBLIC_RC_KEY_IOS ?? '',
+  }
+- Remplacer tous les process.env directs dans le code par Config.xxx
+- Ajouter une vérification au démarrage : si une clé critique manque → log warning (pas crash)
+
+IMPORTANT — CLÉS API CÔTÉ CLIENT :
+- La clé Anthropic (pour le chatbot) ne doit PAS être exposée côté client en production.
+- Créer une Supabase Edge Function (supabase/functions/chat/index.ts) qui proxie les appels à Claude :
+  * L'app envoie le message à la Edge Function
+  * La Edge Function appelle Claude avec la clé stockée côté serveur (Supabase Vault ou env)
+  * La Edge Function retourne la réponse à l'app
+- Même chose pour Google Vision : créer supabase/functions/ocr/index.ts
+- L'app n'a plus AUCUNE clé API tierce côté client, seulement la clé Supabase anon
+
+═══════════════════════════════════════════════════════════════
+2. SUPABASE ROW LEVEL SECURITY (RLS)
+═══════════════════════════════════════════════════════════════
+
+Vérifier et renforcer les RLS policies sur CHAQUE table :
+
+- ingredients : SELECT pour tous (public, lecture seule). Pas d'INSERT/UPDATE/DELETE via anon.
+- products : SELECT pour tous (public, lecture seule). Pas d'INSERT/UPDATE/DELETE via anon.
+- scan_history : SELECT/INSERT/UPDATE/DELETE uniquement WHERE user_id = auth.uid() OU user_id match le header custom
+- shopping_list : SELECT/INSERT/UPDATE/DELETE uniquement pour le propriétaire
+- community_submissions : INSERT pour tous (soumettre), SELECT pour les approved, pas de DELETE/UPDATE via anon
+- profiles : SELECT/UPDATE uniquement pour le propriétaire
+- partner_links : SELECT uniquement si l'utilisateur est un des deux côtés du lien
+
+Générer le fichier SQL complet : supabase/rls-policies.sql
+
+═══════════════════════════════════════════════════════════════
+3. VALIDATION & SANITIZATION DES INPUTS
+═══════════════════════════════════════════════════════════════
+
+Créer lib/validation.ts :
+
+- sanitizeText(input): strip HTML tags, trim, max length 500 chars
+- sanitizeBarcode(input): ne garder que les chiffres, longueur 8 ou 13
+- sanitizeEmail(input): regex validation basique
+- sanitizeName(input): strip caractères spéciaux dangereux, max 100 chars
+
+Appliquer sur TOUS les inputs utilisateur :
+- Champ prénom (onboarding)
+- Champ recherche (search)
+- Soumission communautaire (nom, marque)
+- Messages chatbot
+- Code partenaire
+
+Aucun input utilisateur ne doit atteindre Supabase ou une API sans être sanitisé.
+
+═══════════════════════════════════════════════════════════════
+4. ERROR HANDLING GLOBAL
+═══════════════════════════════════════════════════════════════
+
+- Vérifier que le ErrorBoundary dans app/_layout.tsx capture TOUTES les erreurs React
+- Créer lib/errorReporting.ts :
+  * logError(error, context): log structuré avec timestamp, écran, user_id anonymisé
+  * Pour la V1 : stocker dans AsyncStorage (max 50 dernières erreurs)
+  * Préparer l'intégration future Sentry (commentaire TODO avec le code)
+- Chaque appel API doit avoir un try/catch avec message d'erreur user-friendly
+- Chaque appel Supabase doit vérifier { data, error } et gérer le cas error
+- AUCUN console.log en production. Remplacer par :
+  if (__DEV__) console.log(...)
+
+═══════════════════════════════════════════════════════════════
+5. TYPESCRIPT STRICT
+═══════════════════════════════════════════════════════════════
+
+- tsconfig.json : activer strict: true, noImplicitAny: true, strictNullChecks: true
+- Lancer tsc --noEmit et corriger TOUTES les erreurs
+- Zéro "as any", zéro "// @ts-ignore", zéro "// @ts-expect-error"
+- Chaque fonction exportée doit avoir des types de retour explicites
+- Les types dans types/index.ts doivent couvrir TOUTES les structures de données
+
+═══════════════════════════════════════════════════════════════
+6. TESTS UNITAIRES DU CŒUR
+═══════════════════════════════════════════════════════════════
+
+Installer jest + @testing-library/react-native.
+
+Créer __tests__/ avec des tests pour les fonctions critiques :
+
+__tests__/glowscore.test.ts :
+- calculateGlowScore([]) → score 0
+- calculateGlowScore([safe, safe, safe]) → score 105 clampé à 100
+- calculateGlowScore([danger]) → score 0
+- calculateGlowScore([safe, caution, danger]) → score 46
+- getGlowLabel(85) → 'Excellent'
+- getGlowLabel(35) → 'Attention'
+
+__tests__/trimester.test.ts :
+- calculateTrimester(date dans 250 jours) → trimester 1
+- calculateTrimester(date dans 150 jours) → trimester 2
+- calculateTrimester(date dans 50 jours) → trimester 3
+- calculateTrimester(date passée) → trimester 3, weekOfPregnancy 40
+
+__tests__/openfoodfacts.test.ts :
+- parseIngredients("eau, sucre, sel") → ['eau', 'sucre', 'sel']
+- parseIngredients("aqua (water), sodium lauryl sulfate") → ['aqua', 'sodium lauryl sulfate']
+- parseIngredients("") → []
+- getVerdict avec 1 danger → verdict 'danger'
+- getVerdict avec 0 danger 1 caution → verdict 'caution'
+- getVerdict avec tout safe → verdict 'safe'
+
+__tests__/validation.test.ts :
+- sanitizeText("<script>alert('xss')</script>") → "alert('xss')"
+- sanitizeBarcode("3017620425400") → "3017620425400"
+- sanitizeBarcode("abc123") → "123"
+- sanitizeName("Sophie<>") → "Sophie"
+
+__tests__/restaurant.test.ts :
+- Un plat avec "tartare" → danger
+- Un plat avec "grillé" → safe
+- Un plat avec "tiramisu" → danger (œufs crus)
+- Un plat avec "saumon fumé" → danger
+
+Script : "test": "jest --passWithNoTests" dans package.json
+
+═══════════════════════════════════════════════════════════════
+7. PERFORMANCE & MÉMOIRE
+═══════════════════════════════════════════════════════════════
+
+- Vérifier que CHAQUE useEffect a son cleanup (return () => ...)
+- Vérifier que les subscriptions Supabase Realtime sont unsubscribe dans le cleanup
+- Vérifier que les timers (setTimeout, setInterval) sont clearés
+- React.memo sur TOUS les composants utilisés dans des FlatList :
+  ShelfCard, ScanCard, CommunityCard, SearchResultCard
+- useMemo sur les calculs : Glow Score, filtrage placard, tri recherche
+- useCallback sur les handlers passés en props
+- FlatList : ajouter getItemLayout, maxToRenderPerBatch={10}, windowSize={5}
+- Images : vérifier expo-image partout (pas Image de react-native)
+
+═══════════════════════════════════════════════════════════════
+8. ACCESSIBILITÉ (a11y)
+═══════════════════════════════════════════════════════════════
+
+- Ajouter accessibilityLabel sur TOUS les boutons et icônes
+- Ajouter accessibilityRole sur les éléments interactifs (button, link, header)
+- Ajouter accessibilityHint sur les actions non évidentes ("Double-tap pour scanner")
+- Les badges de verdict doivent avoir un accessibilityLabel ("Produit sûr" / "Produit à éviter")
+- Le Glow Score doit être lisible par VoiceOver ("Votre Glow Score est de 87 sur 100, excellent")
+- Contraste des couleurs : vérifier que textPrimary sur background passe WCAG AA (ratio ≥ 4.5:1)
+
+═══════════════════════════════════════════════════════════════
+9. CODE CLEANUP
+═══════════════════════════════════════════════════════════════
+
+- Supprimer TOUS les console.log (remplacer par if (__DEV__))
+- Supprimer TOUS les commentaires TODO/FIXME ou les résoudre
+- Supprimer TOUS les fichiers inutilisés (test-scan.tsx si plus nécessaire)
+- Supprimer TOUTES les données mock restantes (MOCK_PRODUCTS, MOCK_SHOPPING, RECENT_SCANS)
+  → Remplacer par des empty states élégants si pas de vraies données
+- Vérifier que chaque import est utilisé (pas d'imports orphelins)
+- Vérifier que chaque fichier exporté est importé quelque part
+- Ordre des imports cohérent partout : React → RN → Expo → External → Internal (@/)
+
+═══════════════════════════════════════════════════════════════
+10. DOCUMENTATION TECHNIQUE
+═══════════════════════════════════════════════════════════════
+
+Créer docs/ARCHITECTURE.md :
+- Schéma de l'architecture (app → APIs → Supabase)
+- Liste des tables Supabase avec leurs relations
+- Description du flux de scan (barcode → OFF/OBF → match → verdict)
+- Liste des variables d'environnement nécessaires
+- Comment lancer le projet en développement
+- Comment lancer les tests
+- Comment lancer le pipeline d'ingrédients (prompt 49)
+
+Créer docs/SECURITY.md :
+- Politique RLS
+- Gestion des clés API
+- Sanitization des inputs
+- Edge Functions pour les clés sensibles
+
+Ce fichier est la preuve qu'un professionnel a pensé l'architecture. N'importe quel dev ou investisseur qui ouvre le repo comprend le projet en 5 minutes.
+
+═══════════════════════════════════════════════════════════════
+RÉSULTAT ATTENDU
+═══════════════════════════════════════════════════════════════
+
+Quand ce prompt est terminé :
+- tsc --noEmit → 0 erreurs
+- npm test → tous les tests passent
+- Aucune clé API côté client (tout passe par Edge Functions)
+- RLS sur chaque table
+- Inputs sanitisés partout
+- Error handling complet
+- Accessibilité VoiceOver fonctionnelle
+- Documentation technique complète
+- Zéro mock data, zéro console.log, zéro TODO
+
+Un développeur senior qui audite ce code doit dire : "C'est propre."

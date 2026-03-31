@@ -81,7 +81,7 @@ export function useTrimester(): UseTrimesterReturn {
           await AsyncStorage.setItem(LAST_TRIMESTER_KEY, String(calculated.trimester));
         }
       } catch (err) {
-        console.warn('[useTrimester] Error:', err);
+        if (__DEV__) console.warn('[useTrimester] Error:', err);
       }
     };
 
@@ -173,7 +173,7 @@ async function recalculateShelfVerdicts(newTrimester: Trimester): Promise<number
     await AsyncStorage.setItem(SHELF_KEY, JSON.stringify(shelf));
     return changedCount;
   } catch (err) {
-    console.warn('[useTrimester] recalculateShelfVerdicts error:', err);
+    if (__DEV__) console.warn('[useTrimester] recalculateShelfVerdicts error:', err);
     return 0;
   }
 }

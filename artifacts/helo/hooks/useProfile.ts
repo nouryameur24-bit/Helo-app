@@ -132,7 +132,7 @@ export function useProfile() {
         isLoading: false,
       });
     } catch (err) {
-      console.warn('[useProfile] Error:', err);
+      if (__DEV__) console.warn('[useProfile] Error:', err);
       setState((prev) => ({ ...prev, isLoading: false }));
     }
   }, []);

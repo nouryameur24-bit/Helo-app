@@ -142,7 +142,7 @@ export async function matchIngredients(
     .select('*');
 
   if (error || !dbIngredients) {
-    console.warn('[Hēlo] Supabase match error:', error?.message);
+    if (__DEV__) console.warn('[Hēlo] Supabase match error:', error?.message);
     return ingredientsList.map((ingredientName) => ({
       ingredientName,
       matched: false,

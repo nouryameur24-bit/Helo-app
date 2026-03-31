@@ -122,7 +122,7 @@ export async function checkMedications(
     .limit(50);
 
   if (error) {
-    console.warn('[prescription] Supabase error:', error.message);
+    if (__DEV__) console.warn('[prescription] Supabase error:', error.message);
   }
 
   const dbRows = data ?? [];

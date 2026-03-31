@@ -36,7 +36,7 @@ export async function getAlternativesByBarcode(
     .single();
 
   if (productError || !product) {
-    console.warn('[Hēlo] Product lookup error:', productError?.message);
+    if (__DEV__) console.warn('[Hēlo] Product lookup error:', productError?.message);
     return [];
   }
 
@@ -71,7 +71,7 @@ export async function getAlternatives(
     .eq('overall_risk', 'safe');
 
   if (prodError || !products) {
-    console.warn('[Hēlo] getAlternatives products error:', prodError?.message);
+    if (__DEV__) console.warn('[Hēlo] getAlternatives products error:', prodError?.message);
     return [];
   }
 
@@ -117,7 +117,7 @@ export async function submitAlternativeSuggestion(
     .insert({ name, brand, category });
 
   if (error) {
-    console.warn('[Hēlo] submitAlternativeSuggestion error:', error.message);
+    if (__DEV__) console.warn('[Hēlo] submitAlternativeSuggestion error:', error.message);
     return { success: false, error: error.message };
   }
 

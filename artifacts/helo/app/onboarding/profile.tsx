@@ -147,14 +147,14 @@ export default function ProfileSetupScreen() {
           trimester: trimesterInfo?.trimester ?? null,
           partnerCode,
         }).catch((err) => {
-          console.error('[onboarding] Supabase upsert failed:', err?.message ?? err);
+          if (__DEV__) console.error('[onboarding] Supabase upsert failed:', err?.message ?? err);
         });
       }).catch((err) => {
-        console.error('[onboarding] getOrCreateUserId failed:', err?.message ?? err);
+        if (__DEV__) console.error('[onboarding] getOrCreateUserId failed:', err?.message ?? err);
       });
 
     } catch (err: any) {
-      console.error('[onboarding] handleSubmit error:', err?.message ?? err);
+      if (__DEV__) console.error('[onboarding] handleSubmit error:', err?.message ?? err);
       Alert.alert("Erreur", "Impossible de sauvegarder votre profil localement. Réessayez.");
     } finally {
       setLoading(false);

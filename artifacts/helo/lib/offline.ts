@@ -46,7 +46,7 @@ export async function downloadIngredientsDB(): Promise<boolean> {
   try {
     const { data, error } = await supabase.from('ingredients').select('*');
     if (error || !data) {
-      console.warn('[Hēlo offline] Failed to download ingredients DB:', error?.message);
+      if (__DEV__) console.warn('[Hēlo offline] Failed to download ingredients DB:', error?.message);
       return false;
     }
     const store: IngredientsStore = {
@@ -56,7 +56,7 @@ export async function downloadIngredientsDB(): Promise<boolean> {
     await AsyncStorage.setItem(INGREDIENTS_DB_KEY, JSON.stringify(store));
     return true;
   } catch (err) {
-    console.warn('[Hēlo offline] downloadIngredientsDB error:', err);
+    if (__DEV__) console.warn('[Hēlo offline] downloadIngredientsDB error:', err);
     return false;
   }
 }
@@ -138,7 +138,7 @@ export async function cacheProduct(
 
     await AsyncStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(cache));
   } catch (err) {
-    console.warn('[Hēlo offline] cacheProduct error:', err);
+    if (__DEV__) console.warn('[Hēlo offline] cacheProduct error:', err);
   }
 }
 
@@ -172,7 +172,7 @@ export async function enqueueOfflineScan(entry: OfflineQueueEntry): Promise<void
     queue.push(entry);
     await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
   } catch (err) {
-    console.warn('[Hēlo offline] enqueueOfflineScan error:', err);
+    if (__DEV__) console.warn('[Hēlo offline] enqueueOfflineScan error:', err);
   }
 }
 
@@ -204,7 +204,7 @@ export async function syncOfflineScans(): Promise<SyncResult> {
 
     const { error } = await supabase.from('scans').insert(inserts);
     if (error) {
-      console.warn('[Hēlo offline] syncOfflineScans error:', error.message);
+      if (__DEV__) console.warn('[Hēlo offline] syncOfflineScans error:', error.message);
       return { success: false, pushedCount: 0 };
     }
 
@@ -212,7 +212,7 @@ export async function syncOfflineScans(): Promise<SyncResult> {
     await AsyncStorage.setItem(LAST_SYNC_KEY, new Date().toISOString());
     return { success: true, pushedCount: queue.length };
   } catch (err) {
-    console.warn('[Hēlo offline] syncOfflineScans exception:', err);
+    if (__DEV__) console.warn('[Hēlo offline] syncOfflineScans exception:', err);
     return { success: false, pushedCount: 0 };
   } finally {
     _isSyncing = false;

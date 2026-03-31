@@ -58,7 +58,7 @@ async function uploadImageToSupabase(
   });
 
   if (error) {
-    console.warn('[submit] storage upload error:', error);
+    if (__DEV__) console.warn('[submit] storage upload error:', error);
     return null;
   }
 
@@ -195,7 +195,7 @@ export default function SubmitProductScreen() {
         });
 
         if (insertError) {
-          console.warn('[submit] DB insert error:', insertError);
+          if (__DEV__) console.warn('[submit] DB insert error:', insertError);
           throw new Error(insertError.message);
         }
       } else {
@@ -208,7 +208,7 @@ export default function SubmitProductScreen() {
         router.back();
       }, 2800);
     } catch (e) {
-      console.warn('[submit] error:', e);
+      if (__DEV__) console.warn('[submit] error:', e);
       setError("Une erreur est survenue. Réessayez.");
     } finally {
       setSubmitting(false);

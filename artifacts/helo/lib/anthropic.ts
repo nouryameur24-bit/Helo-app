@@ -7,7 +7,9 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY ?? '';
+import { Config } from '@/lib/config';
+
+const API_KEY = Config.anthropicKey;
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 1024;
@@ -125,7 +127,7 @@ export async function sendMessage(
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      console.error('[Hēlo Chat] Anthropic error:', res.status, err);
+      if (__DEV__) console.error('[Hēlo Chat] Anthropic error:', res.status, err);
       if (res.status === 401) return "Clé API invalide. Veuillez vérifier la configuration.";
       if (res.status === 429) return "Trop de requêtes. Veuillez patienter quelques instants avant de réessayer.";
       return "Une erreur est survenue. Veuillez réessayer dans quelques instants.";
@@ -134,7 +136,7 @@ export async function sendMessage(
     const data = await res.json();
     return data.content?.[0]?.text ?? "Désolée, je n'ai pas pu générer une réponse. Réessayez.";
   } catch (e) {
-    console.error('[Hēlo Chat] Network error:', e);
+    if (__DEV__) console.error('[Hēlo Chat] Network error:', e);
     return "Impossible de joindre l'assistant. Vérifiez votre connexion internet.";
   }
 }

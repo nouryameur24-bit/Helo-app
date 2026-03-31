@@ -1,7 +1,9 @@
 // ─── OCR utilities for Hēlo ingredient scanning ─────────────────────────────
 // Uses Google Cloud Vision API (DOCUMENT_TEXT_DETECTION)
 
-const VISION_KEY = process.env.EXPO_PUBLIC_GOOGLE_VISION_KEY ?? '';
+import { Config } from '@/lib/config';
+
+const VISION_KEY = Config.googleVisionKey;
 const VISION_URL = `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`;
 
 // ─── Main OCR call ────────────────────────────────────────────────────────────

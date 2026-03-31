@@ -263,7 +263,7 @@ export async function scheduleNotification(opts: ScheduleOptions): Promise<strin
     await incrementWeeklyCap();
     return id;
   } catch (err) {
-    console.warn('[notifications] scheduleNotification error:', err);
+    if (__DEV__) console.warn('[notifications] scheduleNotification error:', err);
     return null;
   }
 }
@@ -313,7 +313,7 @@ export async function registerPushToken(userId: string): Promise<void> {
         );
     }
   } catch (err) {
-    console.warn('[notifications] registerPushToken error:', err);
+    if (__DEV__) console.warn('[notifications] registerPushToken error:', err);
   }
 }
 
@@ -384,7 +384,7 @@ export async function sendCircleScanNotification(params: {
 
     await Promise.allSettled(pushPromises);
   } catch (err) {
-    console.warn('[notifications] sendCircleScanNotification error:', err);
+    if (__DEV__) console.warn('[notifications] sendCircleScanNotification error:', err);
   }
 }
 
@@ -425,7 +425,7 @@ export async function sendCircleWeekNotification(params: {
 
     await Promise.allSettled(pushPromises);
   } catch (err) {
-    console.warn('[notifications] sendCircleWeekNotification error:', err);
+    if (__DEV__) console.warn('[notifications] sendCircleWeekNotification error:', err);
   }
 }
 
@@ -460,6 +460,6 @@ export async function sendShelfAddNotification(params: {
       });
     }
   } catch (err) {
-    console.warn('[notifications] sendShelfAddNotification error:', err);
+    if (__DEV__) console.warn('[notifications] sendShelfAddNotification error:', err);
   }
 }

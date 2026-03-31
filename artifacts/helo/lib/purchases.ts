@@ -13,6 +13,8 @@
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { Config } from '@/lib/config';
+
 export const PREMIUM_KEY = '@helo_is_premium';
 
 // ─── Product / Entitlement IDs ────────────────────────────────────────────────
@@ -92,19 +94,16 @@ export async function configurePurchases(): Promise<void> {
   const RC = await getRC();
   if (!RC) return;
   try {
-    const apiKey =
-      Platform.OS === 'ios'
-        ? (process.env.EXPO_PUBLIC_RC_KEY_IOS ?? '')
-        : (process.env.EXPO_PUBLIC_RC_KEY_ANDROID ?? '');
+    const apiKey = Config.revenueCatKey;
 
     if (!apiKey) {
-      console.warn('[Hēlo Purchases] No RC API key set — IAP disabled.');
+      if (__DEV__) console.warn('[Hēlo Purchases] No RC API key set — IAP disabled.');
       return;
     }
     RC.configure({ apiKey });
     _initialized = true;
   } catch (e) {
-    console.warn('[Hēlo Purchases] configure failed:', e);
+    if (__DEV__) console.warn('[Hēlo Purchases] configure failed:', e);
   }
 }
 
@@ -133,7 +132,7 @@ export async function fetchIsPremium(): Promise<boolean> {
 export async function purchasePlan(planId: PlanId): Promise<boolean> {
   const RC = await getRC();
   if (!RC || !_initialized) {
-    console.warn('[Hēlo Purchases] RC not initialized — cannot purchase.');
+    if (__DEV__) console.warn('[Hēlo Purchases] RC not initialized — cannot purchase.');
     return false;
   }
 
@@ -146,7 +145,7 @@ export async function purchasePlan(planId: PlanId): Promise<boolean> {
     );
 
     if (!pkg) {
-      console.warn('[Hēlo Purchases] Package not found for', productId);
+      if (__DEV__) console.warn('[Hēlo Purchases] Package not found for', productId);
       return false;
     }
 

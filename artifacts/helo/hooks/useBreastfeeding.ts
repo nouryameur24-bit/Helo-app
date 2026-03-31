@@ -83,7 +83,7 @@ async function recalculateShelfForBreastfeeding(): Promise<number> {
     await AsyncStorage.setItem(SHELF_KEY, JSON.stringify(shelf));
     return changedCount;
   } catch (err) {
-    console.warn('[useBreastfeeding] recalculateShelf error:', err);
+    if (__DEV__) console.warn('[useBreastfeeding] recalculateShelf error:', err);
     return 0;
   }
 }

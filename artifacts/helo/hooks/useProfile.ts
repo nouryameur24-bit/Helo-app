@@ -1,12 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Crypto from 'expo-crypto';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ProfileState, UserRole } from '@/types';
 
 function generateUUID(): string {
-  return Crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 const USER_ID_KEY = '@helo_user_id';

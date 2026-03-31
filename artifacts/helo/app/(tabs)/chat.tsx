@@ -230,6 +230,13 @@ export default function ChatScreen() {
             </ThemedText>
           </View>
         </View>
+        <TouchableOpacity
+          onPress={() => router.push('/voice' as never)}
+          hitSlop={12}
+          style={styles.voiceBtn}
+        >
+          <Feather name="mic" size={18} color={Colors.accent} />
+        </TouchableOpacity>
         {hasMessages && (
           <TouchableOpacity onPress={handleClear} hitSlop={12} style={styles.clearBtn}>
             <Feather name="trash-2" size={18} color={Colors.textTertiary} />
@@ -419,6 +426,15 @@ const styles = StyleSheet.create({
   },
   clearBtn: {
     padding: Spacing.sm,
+  },
+  voiceBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.xs,
   },
 
   // Scroll

@@ -164,6 +164,14 @@ function RootLayoutNav() {
             animation: 'slide_from_right',
           }}
         />
+        <Stack.Screen
+          name="voice"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_bottom',
+            presentation: 'modal',
+          }}
+        />
       </Stack>
       <DisclaimerModal />
       <TrimesterTransition

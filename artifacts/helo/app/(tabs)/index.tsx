@@ -439,6 +439,39 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Mode Vocal card */}
+        <Animated.View entering={FadeInDown.delay(172).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/voice' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              {
+                backgroundColor: Colors.surface,
+                borderColor: Colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={[styles.briefIconWrap, { backgroundColor: '#F0E8FF', borderColor: '#D5C5FF' }]}>
+                <Feather name="mic" size={22} color="#8B6BDB" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Mode Vocal 🎙️
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Posez vos questions à voix haute
+                </ThemedText>
+              </View>
+            </View>
+            <View style={[styles.shelfScanPremium, { backgroundColor: '#F0E8FF', borderColor: '#D5C5FF' }]}>
+              <ThemedText style={[styles.shelfScanPremiumText, { color: '#8B6BDB' }]}>3/j gratuit</ThemedText>
+            </View>
+          </Pressable>
+        </Animated.View>
+
         {/* Shelf scan CTA */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
           <Pressable

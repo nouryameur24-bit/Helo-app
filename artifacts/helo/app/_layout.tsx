@@ -187,6 +187,14 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="pact"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_bottom',
+            presentation: 'modal',
+          }}
+        />
+        <Stack.Screen
           name="timeline"
           options={{
             headerShown: false,

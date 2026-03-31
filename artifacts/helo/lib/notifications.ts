@@ -13,7 +13,8 @@ export type NotificationType =
   | 'partner_activity'
   | 'inactivity_reminder'
   | 'community_approved'
-  | 'recall_alert';
+  | 'recall_alert'
+  | 'pact_reminder';
 
 export interface NotificationSettings {
   weekly_brief: boolean;
@@ -23,6 +24,7 @@ export interface NotificationSettings {
   inactivity_reminder: boolean;
   community_approved: boolean;
   recall_alert: boolean;
+  pact_reminder: boolean;
   maxPerWeek: number;
   quietHours: boolean;
 }
@@ -35,6 +37,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   inactivity_reminder: true,
   community_approved: true,
   recall_alert: true,
+  pact_reminder: true,
   maxPerWeek: 3,
   quietHours: true,
 };
@@ -67,6 +70,10 @@ export const NOTIFICATION_LABELS: Record<NotificationType, { title: string; desc
   recall_alert: {
     title: 'Alertes rappels produits',
     description: 'Alertes urgentes si un produit de votre placard fait l\'objet d\'un rappel.',
+  },
+  pact_reminder: {
+    title: 'Rappel du Pacte',
+    description: 'Un rappel à 20h si vous n\'avez pas encore scanné aujourd\'hui.',
   },
 };
 

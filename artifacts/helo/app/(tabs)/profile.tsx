@@ -39,6 +39,7 @@ import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
 import { getCircle, createCircle, joinCircle, checkAndSendWeekMilestoneNotification, type CircleData } from '@/lib/circleUtils';
 import { usePremium } from '@/hooks/usePremium';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { loadEarnedBadges, PACT_BADGES, type PactBadgeId } from '@/lib/pact';
 
 interface SettingRowProps {
   icon: keyof typeof Feather.glyphMap;
@@ -164,6 +165,11 @@ export default function ProfileScreen() {
   const [contributionCount, setContributionCount] = useState(0);
   const [scanCount, setScanCount] = useState(0);
   const [safeCount, setSafeCount] = useState(0);
+  const [pactBadges, setPactBadges] = useState<PactBadgeId[]>([]);
+
+  useEffect(() => {
+    loadEarnedBadges().then(setPactBadges);
+  }, []);
 
   useEffect(() => {
     if (!userId || isPartner || !isSupabaseConfigured) return;
@@ -903,12 +909,46 @@ export default function ProfileScreen() {
           </Animated.View>
         )}
 
+        {/* Pact badges */}
+        {pactBadges.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(265).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MES BADGES PACTE
+            </ThemedText>
+            <View style={styles.pactBadgesRow}>
+              {PACT_BADGES.map((b) => {
+                const earned = pactBadges.includes(b.id);
+                return (
+                  <View
+                    key={b.id}
+                    style={[styles.pactBadgeTile, !earned && { opacity: 0.35 }]}
+                  >
+                    <ThemedText style={{ fontSize: 28 }}>{b.emoji}</ThemedText>
+                    <ThemedText
+                      style={!earned ? [styles.pactBadgeLabel, { color: Colors.textTertiary }] : styles.pactBadgeLabel}
+                    >
+                      {b.label}
+                    </ThemedText>
+                  </View>
+                );
+              })}
+            </View>
+          </Animated.View>
+        )}
+
         {/* COMPTE menu */}
         <Animated.View entering={FadeInDown.delay(270).duration(500)}>
           <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
             COMPTE
           </ThemedText>
           <Card padding={0} style={styles.settingGroup}>
+            <SettingRow
+              icon="zap"
+              title="Mon Pacte"
+              subtitle="Engagement quotidien · Streak 🔥"
+              onPress={() => router.push('/pact' as never)}
+            />
+            <Divider />
             <SettingRow
               icon="heart"
               title="Ma Nutrition"
@@ -1099,6 +1139,27 @@ const styles = StyleSheet.create({
   sectionLabel: {
     marginBottom: Spacing.sm,
     paddingHorizontal: Spacing.sm,
+  },
+  pactBadgesRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  pactBadgeTile: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xs,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.accentLight,
+    gap: 4,
+  },
+  pactBadgeLabel: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: 10,
+    color: Colors.textPrimary,
+    textAlign: 'center',
   },
   settingGroup: {
     overflow: 'hidden',

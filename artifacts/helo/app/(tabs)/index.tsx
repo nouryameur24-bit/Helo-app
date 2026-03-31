@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   Platform,
@@ -38,6 +38,7 @@ import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 import { getPartnerTipForWeek } from '@/constants/partnerTips';
 import { calculateTrimester } from '@/lib/trimester';
+import { PactWidget } from '@/components/PactWidget';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -536,6 +537,11 @@ export default function HomeScreen() {
               <View style={styles.heroCircle2} />
             </View>
           </LinearGradient>
+        </Animated.View>
+
+        {/* Pact Widget — only if an active pact exists */}
+        <Animated.View entering={FadeInDown.delay(120).duration(500)}>
+          <PactWidget />
         </Animated.View>
 
         {/* Quick actions row */}

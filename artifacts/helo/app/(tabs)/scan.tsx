@@ -36,6 +36,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { analyzeMenu } from '@/lib/restaurant';
 import { incrementScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
+import { onProductScanned } from '@/lib/pact';
 
 const MENU_RESULT_KEY = '@helo_menu_result';
 const RESTAURANT_USED_KEY = '@helo_restaurant_used';
@@ -297,7 +298,7 @@ export default function ScanScreen() {
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const bottomInset = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const { role, linkedFirstName } = useProfile();
+  const { role, linkedFirstName, firstName: scanFirstName } = useProfile();
   const isPartner = role === 'partner';
   const partnerName = linkedFirstName;
 
@@ -352,6 +353,9 @@ export default function ScanScreen() {
         }
         await incrementScanCount();
       }
+
+      // Track pact streak (fire-and-forget)
+      onProductScanned(scanFirstName || '').catch(() => {});
 
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       flashColor.value = withSequence(

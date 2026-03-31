@@ -161,6 +161,7 @@ export default function PaywallScreen() {
     search:       'La recherche par nom est réservée aux abonnées Premium.',
     ocr:          'L\'analyse par photo est réservée aux abonnées Premium.',
     scan_party:   'Scan Party est réservé aux abonnées Premium.',
+    shelf_scan:   'Le scan d\'étagère est réservé aux abonnées Premium.',
   };
   const triggerMsg = trigger ? (triggerMessages[trigger] ?? null) : null;
 

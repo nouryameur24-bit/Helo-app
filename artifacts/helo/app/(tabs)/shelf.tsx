@@ -1,18 +1,20 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Platform,
   Pressable,
   StyleSheet,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 
 import { MaListeView } from '@/components/shelf/MaListeView';
 import { MonPlacardView } from '@/components/shelf/MonPlacardView';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 
 type Tab = 'placard' | 'liste';
 
@@ -64,6 +66,20 @@ export default function ShelfScreen() {
         style={[styles.headerContainer, { paddingTop: topPadding + Spacing.lg }]}
       >
         <SegmentedControl selected={activeTab} onSelect={setActiveTab} />
+
+        {/* Shelf scanner button */}
+        <TouchableOpacity
+          style={styles.shelfScanBtn}
+          onPress={() => router.push('/shelf-scan' as never)}
+          activeOpacity={0.82}
+        >
+          <Feather name="layers" size={16} color={Colors.accentDark} />
+          <ThemedText style={styles.shelfScanText}>Scanner une étagère</ThemedText>
+          <View style={styles.premiumBadge}>
+            <Feather name="star" size={9} color={Colors.accentDark} />
+            <ThemedText style={styles.premiumBadgeText}>PREMIUM</ThemedText>
+          </View>
+        </TouchableOpacity>
       </Animated.View>
 
       {activeTab === 'placard' ? (
@@ -82,6 +98,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: Spacing.xl,
     paddingBottom: Spacing.md,
+    gap: Spacing.md,
   },
   segmented: {
     flexDirection: 'row',
@@ -102,5 +119,40 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  shelfScanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent + '44',
+    ...Shadows.soft,
+  },
+  shelfScanText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.accentDark,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: Colors.accent + '33',
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  premiumBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.accentDark,
+    fontFamily: 'PlusJakartaSans_700Bold',
+    letterSpacing: 0.5,
   },
 });

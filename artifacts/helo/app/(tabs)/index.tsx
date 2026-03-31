@@ -374,6 +374,33 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Shelf scan CTA */}
+        <Animated.View entering={FadeInDown.delay(165).duration(500)}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.shelfScanCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+            onPress={() => router.push('/shelf-scan' as never)}
+          >
+            <View style={styles.shelfScanIconWrap}>
+              <Feather name="layers" size={22} color={Colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="labelLarge" color="textPrimary">
+                Scanner une étagère
+              </ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
+                Analysez tous vos produits en une photo
+              </ThemedText>
+            </View>
+            <View style={styles.shelfScanPremium}>
+              <Feather name="star" size={10} color={Colors.accentDark} />
+              <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
+            </View>
+          </Pressable>
+        </Animated.View>
+
         {/* Stats row */}
         <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.statsRow}>
           <Card style={styles.statCard} padding={Spacing.lg}>
@@ -740,6 +767,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+  },
+  shelfScanCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.accent + '44',
+    ...Shadows.soft,
+  },
+  shelfScanIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  shelfScanPremium: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: Colors.accent + '33',
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    flexShrink: 0,
+  },
+  shelfScanPremiumText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.accentDark,
+    fontFamily: 'PlusJakartaSans_700Bold',
+    letterSpacing: 0.5,
   },
   briefCard: {
     flexDirection: 'row',

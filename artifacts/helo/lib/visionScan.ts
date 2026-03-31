@@ -110,3 +110,93 @@ export async function identifyProduct(base64Image: string): Promise<ProductData>
 
   return product;
 }
+
+// ─── Shelf Scan ────────────────────────────────────────────────────────────────
+
+export interface ShelfDetectedProduct {
+  name: string;
+  brand: string;
+  category: string;
+}
+
+const SHELF_VISION_PROMPT = `Tu es un expert en cosmétiques et produits ménagers. Analyse cette photo d'étagère et identifie TOUS les produits visibles.
+
+Réponds UNIQUEMENT avec un tableau JSON valide, sans markdown, sans explication. Format exact :
+[
+  {
+    "name": "Nom complet du produit",
+    "brand": "Marque du produit",
+    "category": "cosmétique" | "alimentaire" | "ménager" | "médicament" | "autre"
+  }
+]
+
+Règles :
+- Liste tous les produits visibles sur l'étagère (flacons, tubes, boîtes, bouteilles, etc.)
+- Si tu vois un produit mais ne le reconnais pas précisément, donne le type de produit et la marque si visible
+- Minimum 1 produit, maximum 30 produits
+- Réponds en français pour les noms et marques
+- Si aucun produit n'est identifiable, retourne un tableau vide []`;
+
+export async function scanShelf(base64Image: string): Promise<ShelfDetectedProduct[]> {
+  if (!API_KEY) {
+    throw new Error("La clé API Anthropic n'est pas configurée.");
+  }
+
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 2048,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: base64Image,
+              },
+            },
+            {
+              type: 'text',
+              text: SHELF_VISION_PROMPT,
+            },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    console.error('[Hēlo ShelfScan] Anthropic error:', res.status, err);
+    if (res.status === 401) throw new Error('Clé API invalide.');
+    if (res.status === 429) throw new Error('Trop de requêtes. Réessayez dans quelques instants.');
+    throw new Error("Erreur lors de l'analyse de l'étagère. Réessayez.");
+  }
+
+  const data = await res.json();
+  const rawText: string = data.content?.[0]?.text ?? '';
+
+  let parsed: ShelfDetectedProduct[];
+  try {
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('No JSON array found');
+    parsed = JSON.parse(jsonMatch[0]) as ShelfDetectedProduct[];
+    if (!Array.isArray(parsed)) throw new Error('Not an array');
+  } catch {
+    console.error('[Hēlo ShelfScan] JSON parse error:', rawText);
+    throw new Error("Impossible d'analyser la réponse de Claude. Réessayez.");
+  }
+
+  return parsed.filter(
+    (p) => p && typeof p.name === 'string' && p.name.trim().length > 0,
+  );
+}

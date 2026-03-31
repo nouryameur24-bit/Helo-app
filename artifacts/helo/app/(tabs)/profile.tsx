@@ -845,6 +845,13 @@ export default function ProfileScreen() {
             />
             <Divider />
             <SettingRow
+              icon="smartphone"
+              title="Widget & Apple Watch"
+              subtitle="Glow Score sur l'écran d'accueil"
+              onPress={() => router.push('/widget-preview' as never)}
+            />
+            <Divider />
+            <SettingRow
               icon="book"
               title="Exporter mon journal"
               subtitle="Générer un PDF de votre journal de grossesse"

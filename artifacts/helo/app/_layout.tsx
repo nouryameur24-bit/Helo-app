@@ -173,6 +173,13 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="widget-preview"
+          options={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
           name="timeline"
           options={{
             headerShown: false,

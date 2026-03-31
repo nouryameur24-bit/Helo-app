@@ -1,0 +1,38 @@
+Crée "Mon Cercle" — le réseau privé de grossesse entre proches. LA feature de rétention.
+
+TABLE SUPABASE circles :
+- id (uuid PK), name (text default 'Mon Cercle'), created_by (uuid FK profiles), created_at
+TABLE circle_members :
+- id (uuid PK), circle_id (uuid FK circles), user_id (uuid FK profiles), joined_at
+TABLE circle_feed :
+- id (uuid PK), circle_id (uuid FK circles), user_id (uuid FK profiles), type (text: 'scan'/'message'/'reaction'), product_name (text nullable), verdict (text nullable), message (text nullable), created_at
+
+CRÉATION DU CERCLE :
+- Dans le profil → "Mon Cercle" → "Créer mon cercle"
+- Génère un code d'invitation 8 chars
+- Partage via Share API : "Rejoins mon cercle Hēlo ! Code : XXXXXXXX"
+- Max 8 membres par cercle
+
+REJOINDRE :
+- "Rejoindre un cercle" → input code → validation → ajout comme membre
+
+app/circle.tsx — LE FEED :
+- Feed chronologique des scans des membres du cercle
+- Chaque entrée = Card :
+  * Avatar (initiale + couleur unique par membre) + prénom + "il y a X min"
+  * "[Prénom] a scanné [Produit] — [Verdict]" avec badge coloré
+  * Row de réactions : 😱 🤣 👍 ❤️ (compteur par réaction, tap pour réagir)
+  * Au tap sur le produit → verdict détaillé
+- Input message en bas pour commenter (texte simple, pas de photos)
+
+QUAND L'UTILISATRICE SCANNE UN PRODUIT :
+- Option sur le verdict screen : "Partager dans mon cercle" (toggle, off par défaut)
+- Si activé : le scan apparaît dans le feed du cercle en temps réel (Supabase Realtime)
+- Notification push aux membres : "[Prénom] a scanné un produit [verdict]"
+
+FEATURES SOCIALES :
+- "Classement Glow Score" du cercle : qui a le meilleur score ? (affiché de manière bienveillante, pas compétitive : "Le Glow Score du cercle : X/100 en moyenne — bravo à toutes !")
+- "Challenge de la semaine" : auto-généré chaque lundi ("Scannez 5 produits chacune cette semaine"), progression visible
+- Anniversaires de semaine : quand une membre change de semaine de grossesse → notification au cercle "Sophie entre dans sa 20ème semaine ! 🎉"
+
+PREMIUM : créer un cercle = premium. Rejoindre = gratuit (pour maximiser la viralité).

@@ -503,6 +503,37 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Widget & Watch card */}
+        <Animated.View entering={FadeInDown.delay(176).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/widget-preview' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              {
+                backgroundColor: Colors.surface,
+                borderColor: Colors.border,
+                opacity: pressed ? 0.88 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+              },
+            ]}
+          >
+            <View style={styles.briefLeft}>
+              <View style={[styles.briefIconWrap, { backgroundColor: '#F5F0FF', borderColor: '#DDD0FF' }]}>
+                <ThemedText style={{ fontSize: 20 }}>📱</ThemedText>
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Widget & Apple Watch ⌚
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Glow Score sur votre écran d'accueil
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={16} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Shelf scan CTA */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
           <Pressable

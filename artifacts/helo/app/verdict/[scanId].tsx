@@ -84,6 +84,10 @@ export default function VerdictScreen() {
   const [babyVerdict, setBabyVerdict] = useState<VerdictResult | null>(null);
   const [activeTab, setActiveTab] = useState<'pregnancy' | 'baby'>('pregnancy');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Prevent double-scan: phase change (async profile load) must not re-trigger
+  // a second concurrent fetchProductByBarcode that could timeout and overwrite success.
+  const activeScanRef = useRef<string | null>(null);
+  const phaseRef = useRef<Phase>(2);
 
   const [circleId, setCircleId] = useState<string | null>(null);
   const [sharedToCircle, setSharedToCircle] = useState(false);
@@ -99,15 +103,20 @@ export default function VerdictScreen() {
     getBreastfeedingMode().then((isBF) => {
       if (isBF) {
         setPhase('breastfeeding');
+        phaseRef.current = 'breastfeeding';
         return;
       }
       if (profileTrimester !== null && profileTrimester !== undefined) {
         setPhase(profileTrimester as Phase);
+        phaseRef.current = profileTrimester as Phase;
       } else {
         AsyncStorage.getItem('user_profile').then((raw) => {
           if (raw) {
             const p = JSON.parse(raw);
-            if (p.trimester) setPhase(p.trimester as Phase);
+            if (p.trimester) {
+              setPhase(p.trimester as Phase);
+              phaseRef.current = p.trimester as Phase;
+            }
           }
         }).catch(() => {});
       }
@@ -140,7 +149,17 @@ export default function VerdictScreen() {
       return;
     }
 
-    scanBarcode(barcode, phase, isOffline);
+    // Guard: fire only once per barcode — phase change (async profile load) must
+    // not launch a second concurrent OFF fetch that could timeout + overwrite success.
+    if (activeScanRef.current === barcode) return;
+    activeScanRef.current = barcode;
+
+    // Short delay so AsyncStorage phase reads (getBreastfeedingMode, user_profile)
+    // can complete before the scan starts — ensures phaseRef.current is correct.
+    const t = setTimeout(() => {
+      scanBarcode(barcode, phaseRef.current, isOffline);
+    }, 50);
+    return () => clearTimeout(t);
     // `scanBarcode` and `setDirectResult` are stable refs from useScan — intentionally omitted
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [barcode, phase, isOffline]);

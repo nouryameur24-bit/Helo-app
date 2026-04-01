@@ -22,7 +22,6 @@ export async function upsertProfile(params: {
 
   const row: Record<string, unknown> = {
     user_id: params.userId,
-    updated_at: new Date().toISOString(),
   };
 
   if (params.firstName !== undefined) row.first_name = params.firstName;

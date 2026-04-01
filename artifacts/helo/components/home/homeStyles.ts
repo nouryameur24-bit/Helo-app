@@ -250,6 +250,12 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 2,
   },
+  featureCellSubtitle: {
+    fontSize: 11,
+    color: Colors.textTertiary,
+    lineHeight: 14,
+    marginTop: 1,
+  },
   featureCellPremiumDot: {
     position: 'absolute',
     top: Spacing.sm,

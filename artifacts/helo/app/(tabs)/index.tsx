@@ -346,14 +346,81 @@ export default function HomeScreen() {
           </View>
           <View style={styles.featureGrid}>
             {([
-              { label: 'Nutrition', icon: 'heart', iconBg: Colors.cautionLight, iconColor: Colors.caution, route: '/nutrition' },
-              { label: 'Maison', icon: 'home', iconBg: Colors.safeBg, iconColor: Colors.safe, route: '/home-score' },
-              { label: 'Voyage', icon: 'map', iconBg: '#E8F0FF', iconColor: '#6B8FDB', route: '/travel', premium: true },
-              { label: 'Vocal', icon: 'mic', iconBg: '#F0E8FF', iconColor: '#8B6BDB', route: '/voice', badge: '3/j' },
-              { label: 'Timeline', icon: 'calendar', iconBg: '#E8F5EE', iconColor: Colors.safe, route: '/timeline' },
-              { label: 'Widget', icon: 'watch', iconBg: '#F5F0FF', iconColor: '#8B6BDB', route: '/widget-preview' },
-              { label: 'Miroir AR', icon: 'aperture', iconBg: '#F0F8F4', iconColor: Colors.safe, route: '/ar-mirror' },
-            ] as const).map((f) => (
+              {
+                label: 'Nutrition',
+                subtitle: 'Besoins du trimestre',
+                icon: 'heart' as const,
+                iconBg: Colors.cautionLight,
+                iconColor: Colors.caution,
+                route: '/nutrition',
+              },
+              {
+                label: 'Maison',
+                subtitle: 'Score environnement',
+                icon: 'home' as const,
+                iconBg: Colors.safeBg,
+                iconColor: Colors.safe,
+                route: '/home-score',
+              },
+              {
+                label: 'Restau',
+                subtitle: 'Analysez le menu',
+                icon: 'coffee' as const,
+                iconBg: '#FFF0E8',
+                iconColor: '#C97B40',
+                route: '/(tabs)/scan',
+              },
+              {
+                label: 'Voyage',
+                subtitle: 'Briefing santé',
+                icon: 'map' as const,
+                iconBg: '#E8F0FF',
+                iconColor: '#6B8FDB',
+                route: '/travel',
+                premium: true,
+              },
+              {
+                label: 'Vocal',
+                subtitle: 'Question IA par voix',
+                icon: 'mic' as const,
+                iconBg: '#F0E8FF',
+                iconColor: '#8B6BDB',
+                route: '/voice',
+                badge: '3/j',
+              },
+              {
+                label: 'Timeline',
+                subtitle: 'Semaine par semaine',
+                icon: 'calendar' as const,
+                iconBg: '#E8F5EE',
+                iconColor: Colors.safe,
+                route: '/timeline',
+              },
+              {
+                label: 'Scan Partie',
+                subtitle: 'Scanner en groupe',
+                icon: 'users' as const,
+                iconBg: '#FFF5E0',
+                iconColor: Colors.accentDark,
+                route: '/scan-party',
+              },
+              {
+                label: 'Miroir AR',
+                subtitle: 'Scanner en direct',
+                icon: 'aperture' as const,
+                iconBg: '#F0F8F4',
+                iconColor: Colors.safe,
+                route: '/ar-mirror',
+              },
+              {
+                label: 'Widget Glow',
+                subtitle: 'Widget écran d\'accueil',
+                icon: 'watch' as const,
+                iconBg: '#F5F0FF',
+                iconColor: '#8B6BDB',
+                route: '/widget-preview',
+              },
+            ]).map((f) => (
               <Pressable
                 key={f.label}
                 style={({ pressed }) => [
@@ -368,6 +435,7 @@ export default function HomeScreen() {
                   <Feather name={f.icon} size={20} color={f.iconColor} />
                 </View>
                 <ThemedText variant="labelLarge" color="textPrimary">{f.label}</ThemedText>
+                <Text style={styles.featureCellSubtitle}>{f.subtitle}</Text>
                 {'badge' in f && f.badge && (
                   <View style={styles.featureCellBadge}>
                     <ThemedText style={styles.featureCellBadgeText}>{f.badge}</ThemedText>

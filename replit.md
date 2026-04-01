@@ -18,6 +18,14 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ## Artifacts
 
+### Ingredients Pipeline (`scripts/src/ingredients-pipeline/`) — **MILESTONE: 5,000 unique entries**
+- **Scrapers**: `cosing.ts` (2,039 — cosmétiques), `efsa.ts` (1,540 — alimentation), `crat.ts` (1,094 — médicaments génériques), `medications.ts` (1,019 — marques/vaccins/hémato/cardio)
+- **Total raw**: 5,692 | **Unique (by name_inci)**: **exactly 5,000** ✓
+- **TypeScript**: 0 errors ✓
+- **Run pipeline**: `pnpm --filter @workspace/scripts run ingredients-pipeline`
+- **Count script**: `cd scripts && pnpm exec tsx src/count-test.ts`
+- **Requires**: `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY` env vars
+
 ### `artifacts/helo` — Hēlo Mobile App (Expo)
 A luxury pregnancy product scanner app ("Yuka for pregnancy"). Design: Luxe & Serene with warm nude/cream/gold tones.
 

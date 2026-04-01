@@ -1,0 +1,45 @@
+We have 2952 ingredients. We need 5000. Add exactly 2100 MORE unique ingredients that don't exist yet in the datasets:
+
+1. scrapers/cosing.ts — ADD 800 more:
+- All hair care INCI (cetrimonium chloride, behentrimonium methosulfate, polyquaternium-7 through -80, guar hydroxypropyltrimonium, hydrolyzed wheat protein, etc.)
+- All sunscreen actives worldwide (tinosorb S, tinosorb M, uvinul A plus, uvinul T150, mexoryl SX, mexoryl XL, etc.)
+- All AHA/BHA/PHA variants (gluconolactone, lactobionic acid, azelaic acid, kojic acid, arbutin, tranexamic acid, etc.)
+- All ceramides (ceramide NP, ceramide AP, ceramide EOP, phytosphingosine, sphingolipids)
+- All peptides used in skincare (matrixyl, argireline, copper peptides, palmitoyl tripeptide, etc.)
+- All botanical oils (marula, baobab, tamanu, moringa, hemp seed, evening primrose, borage, etc.)
+- All clays and muds (rhassoul, french green clay, dead sea mud, white kaolin, etc.)
+- All fermented ingredients (galactomyces, saccharomyces, bifida ferment, etc.)
+- All preservative systems (sodium benzoate, potassium sorbate, ethylhexylglycerin, caprylyl glycol, etc.)
+
+2. scrapers/efsa.ts — ADD 600 more:
+- All E-numbers E400-E499 (thickeners, stabilizers: xanthan, carrageenan, pectin, agar, guar gum, locust bean gum, etc.)
+- All E-numbers E500-E599 (acidity regulators)
+- All E-numbers E600-E699 (flavor enhancers)
+- All E-numbers E900-E999 (glazing agents, gases, sweeteners)
+- All mushroom varieties with pregnancy safety
+- All seaweed and algae types
+- All fermented foods (kimchi, sauerkraut, kombucha, miso, tempeh, natto)
+- All tropical fruits with specific pregnancy notes (jackfruit, dragonfruit, guava, lychee, rambutan, etc.)
+- All seed oils (grape seed, pumpkin seed, black seed, safflower, sunflower variants)
+- All protein powders and supplements (whey, casein, pea protein, collagen peptides, BCAA, creatine, etc.)
+
+3. scrapers/crat.ts — ADD 400 more:
+- All antiepileptics (levetiracetam, topiramate, pregabalin, gabapentin, phenobarbital, etc.)
+- All immunosuppressants (azathioprine, ciclosporin, tacrolimus, mycophenolate, etc.)
+- All biologics (adalimumab, infliximab, etanercept, etc.)
+- All antivirals (acyclovir, valacyclovir, oseltamivir, remdesivir, etc.)
+- All antifungals (fluconazole, itraconazole, terbinafine, clotrimazole, miconazole, etc.)
+- All antimalarials (chloroquine, mefloquine, atovaquone, etc.)
+- All muscle relaxants (baclofen, tizanidine, methocarbamol, etc.)
+- All migraine medications (sumatriptan, rizatriptan, topiramate, propranolol, etc.)
+
+4. scrapers/medications.ts — ADD 300 more French brands:
+- All remaining Sanofi products
+- All remaining Pfizer products
+- All remaining Servier products
+- All remaining Pierre Fabre products  
+- All common pharmacy parapharmacy brands (Nuxe, La Roche-Posay medical, Avène medical, Bioderma medical products)
+- All common French probiotics (Lactibiane, Ergyphilus, Bioprotus, Probiolog, etc.)
+- All common French pregnancy supplements (Gynefam Plus, Femibion, Elevit, Natalist, etc.)
+
+Pre-computed risk levels for each. No API calls. Target: 5000+ after pipeline rerun.

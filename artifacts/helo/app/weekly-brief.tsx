@@ -34,6 +34,8 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { calculateGlowScore } from '@/lib/glowscore';
 import { getTipForWeek } from '@/constants/weeklyTips';
 import { useTrimester } from '@/hooks/useTrimester';
+import { useProfile } from '@/hooks/useProfile';
+import { useShelfData } from '@/hooks/useShelfData';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 
@@ -42,14 +44,6 @@ const SLIDE_COUNT = 5;
 
 const BRIEF_READ_KEY = '@helo_last_brief_read';
 
-const MOCK_SHELF: ShelfProduct[] = [
-  { id: '1', name: 'Crème hydratante Nuxe', brand: 'NUXE', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
-  { id: '2', name: 'Shampooing doux Klorane', brand: 'KLORANE', verdict: 'caution', verdictLabel: 'Vigilance', category: 'salle-de-bain', verdictChanged: false },
-  { id: '3', name: 'Gel douche Garnier', brand: 'GARNIER', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
-  { id: '4', name: 'Sérum vitamine C Vichy', brand: 'VICHY', verdict: 'safe', verdictLabel: 'Sûr', category: 'pharmacie', verdictChanged: false },
-  { id: '5', name: 'Fond de teint Bourjois', brand: 'BOURJOIS', verdict: 'danger', verdictLabel: 'Déconseillé', category: 'salle-de-bain', verdictChanged: true },
-  { id: '6', name: 'Huile de coco bio', brand: 'NATURALIA', verdict: 'safe', verdictLabel: 'Sûr', category: 'cuisine', verdictChanged: false },
-];
 
 const FEATURED_PRODUCT = {
   name: 'Sensibio H2O',
@@ -425,10 +419,13 @@ export default function WeeklyBriefScreen() {
   const [currentPage, setCurrentPage] = useState(0);
 
   const week = weekOfPregnancy;
-  const { score: glowScore } = calculateGlowScore(MOCK_SHELF);
+
+  const { userId } = useProfile();
+  const { shelf } = useShelfData(userId ?? undefined);
+  const { score: glowScore } = calculateGlowScore(shelf);
   const riskProducts = useMemo(
-    () => MOCK_SHELF.filter((p) => p.verdict === 'danger' || p.verdict === 'caution'),
-    [],
+    () => shelf.filter((p) => p.verdict === 'danger' || p.verdict === 'caution'),
+    [shelf],
   );
 
   const trimesterLabel =

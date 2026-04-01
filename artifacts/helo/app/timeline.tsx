@@ -329,7 +329,7 @@ export default function TimelineScreen() {
 
       if (viewShotRef.current) {
         try {
-          const uri = await (viewShotRef.current as any).capture();
+          const uri = await (viewShotRef.current as { capture(): Promise<string> }).capture();
           if (uri && isSharingAvailable) {
             await Sharing.shareAsync(uri, {
               mimeType: 'image/png',

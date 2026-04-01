@@ -82,7 +82,7 @@ function getRiskForPhase(ingredient: IngredientData, phase: Phase): RiskLevel {
     case 2: return ingredient.risk_level_t2;
     case 3: return ingredient.risk_level_t3;
     case 'breastfeeding': return ingredient.risk_level_breastfeeding ?? ingredient.risk_level_t3;
-    case 'baby': return (ingredient as any).risk_level_baby ?? ingredient.risk_level_t3;
+    case 'baby': return ingredient.risk_level_baby ?? ingredient.risk_level_t3;
     default: return ingredient.risk_level_t3;
   }
 }

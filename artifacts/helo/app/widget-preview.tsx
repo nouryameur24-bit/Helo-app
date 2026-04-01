@@ -350,7 +350,7 @@ export default function WidgetPreviewScreen() {
                 {i > 0 && <View style={styles.stepDivider} />}
                 <View style={styles.dataRow}>
                   <View style={[styles.dataIcon, { backgroundColor: item.color + '22' }]}>
-                    <Feather name={item.icon as any} size={16} color={item.color} />
+                    <Feather name={item.icon as keyof typeof Feather.glyphMap} size={16} color={item.color} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <ThemedText variant="labelLarge" color="textPrimary">{item.label}</ThemedText>

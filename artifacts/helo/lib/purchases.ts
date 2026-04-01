@@ -69,9 +69,29 @@ export const PLANS: Plan[] = [
   },
 ];
 
+// ─── Minimal RC type (avoids `any` while keeping lazy-load pattern) ──────────
+interface RCPackage {
+  product?: { identifier: string };
+}
+interface RCEntitlements {
+  active: Record<string, unknown>;
+}
+interface RCCustomerInfo {
+  entitlements: RCEntitlements;
+}
+interface RCOfferings {
+  current?: { availablePackages?: RCPackage[] };
+}
+interface RCModule {
+  configure(config: { apiKey: string }): void;
+  getOfferings(): Promise<RCOfferings>;
+  purchasePackage(pkg: RCPackage): Promise<{ customerInfo: RCCustomerInfo }>;
+  getCustomerInfo(): Promise<RCCustomerInfo | null>;
+  restorePurchases(): Promise<RCCustomerInfo>;
+}
+
 // ─── RC loader (lazy-loaded to avoid web crash) ───────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let Purchases: any = null;
+let Purchases: RCModule | null = null;
 
 async function getRC() {
   if (Platform.OS === 'web') return null;
@@ -79,7 +99,7 @@ async function getRC() {
   try {
     // Dynamic import to avoid crashing on web
     const mod = await import('react-native-purchases');
-    Purchases = mod.default;
+    Purchases = mod.default as unknown as RCModule;
     return Purchases;
   } catch {
     return null;
@@ -140,8 +160,7 @@ export async function purchasePlan(planId: PlanId): Promise<boolean> {
     const productId = PRODUCT_IDS[planId];
     const offerings = await RC.getOfferings();
     const pkg = offerings?.current?.availablePackages?.find(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (p: any) => p.product?.identifier === productId,
+      (p: RCPackage) => p.product?.identifier === productId,
     );
 
     if (!pkg) {

@@ -48,13 +48,37 @@ const EXAMPLE_QUESTIONS = [
   'Puis-je boire du café ?',
 ];
 
+// ─── Minimal Web Speech API types (not in TS stdlib by default) ──────────────
+interface WebSpeechRecognitionResult {
+  0: { transcript: string };
+}
+interface WebSpeechRecognitionEvent {
+  results: ArrayLike<WebSpeechRecognitionResult>;
+}
+interface WebSpeechRecognitionErrorEvent {
+  error: string;
+}
+interface WebSpeechRecognition {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onstart: (() => void) | null;
+  onresult: ((event: WebSpeechRecognitionEvent) => void) | null;
+  onerror: ((event: WebSpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+interface WindowWithSpeech extends Window {
+  SpeechRecognition?: { new(): WebSpeechRecognition };
+  webkitSpeechRecognition?: { new(): WebSpeechRecognition };
+}
+
 // ─── Check Web Speech API availability ───────────────────────────────────────
 function isSpeechRecognitionAvailable(): boolean {
   if (Platform.OS !== 'web') return false;
-  return !!(
-    typeof window !== 'undefined' &&
-    ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
-  );
+  const w = window as WindowWithSpeech;
+  return !!(typeof window !== 'undefined' && (w.SpeechRecognition || w.webkitSpeechRecognition));
 }
 
 // ─── Strip markdown for TTS (remove **, *, #, etc.) ─────────────────────────
@@ -304,11 +328,11 @@ export default function VoiceScreen() {
   const startListening = useCallback(() => {
     if (!canUseVoice) return;
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const w = window as WindowWithSpeech;
+    const SpeechRecognitionCtor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionCtor();
     recognition.lang = 'fr-FR';
     recognition.continuous = false;
     recognition.interimResults = true;
@@ -320,9 +344,9 @@ export default function VoiceScreen() {
       setAiResponse('');
     };
 
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results as any[])
-        .map((r: any) => r[0].transcript)
+    recognition.onresult = (event: WebSpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results as ArrayLike<WebSpeechRecognitionResult>)
+        .map((r: WebSpeechRecognitionResult) => r[0].transcript)
         .join('');
       recognizedTextRef.current = transcript;
       setRecognizedText(transcript);

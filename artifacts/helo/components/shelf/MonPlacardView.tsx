@@ -39,15 +39,6 @@ interface MonPlacardViewProps {
   highlightBarcode?: string;
 }
 
-const MOCK_PRODUCTS: ShelfProduct[] = [
-  { id: '1', name: 'Crème hydratante Nuxe', brand: 'NUXE', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
-  { id: '2', name: 'Shampooing doux', brand: 'KLORANE', verdict: 'caution', verdictLabel: 'Vigilance', category: 'salle-de-bain', verdictChanged: true },
-  { id: '3', name: 'Gel douche aloe vera', brand: 'GARNIER', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
-  { id: '4', name: 'Sérum vitamine C', brand: 'VICHY', verdict: 'safe', verdictLabel: 'Sûr', category: 'pharmacie', verdictChanged: false },
-  { id: '5', name: 'Fond de teint Bourjois', brand: 'BOURJOIS', verdict: 'danger', verdictLabel: 'Déconseillé', category: 'salle-de-bain', verdictChanged: true },
-  { id: '6', name: 'Huile de coco bio', brand: 'NATURALIA', verdict: 'safe', verdictLabel: 'Sûr', category: 'cuisine', verdictChanged: false },
-];
-
 type LocalShelfItem = {
   barcode: string;
   productName: string;
@@ -107,11 +98,8 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
         supabase.removeChannel(channel);
       };
     } else {
-      const timer = setTimeout(() => {
-        setProducts(MOCK_PRODUCTS);
-        setIsLoading(false);
-      }, 800);
-      return () => clearTimeout(timer);
+      setProducts([]);
+      setIsLoading(false);
     }
   }, [isPartner, linkedUserId]);
 

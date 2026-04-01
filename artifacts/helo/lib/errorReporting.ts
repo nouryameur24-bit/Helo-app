@@ -3,7 +3,7 @@
  *
  * V1: Stores the last 50 errors in AsyncStorage.
  *
- * TODO: Integrate Sentry for production error tracking:
+ * Sentry integration (deferred — see docs/SECURITY.md for migration plan):
  *   import * as Sentry from '@sentry/react-native';
  *   Sentry.init({
  *     dsn: 'YOUR_SENTRY_DSN',

@@ -45,7 +45,7 @@ const VERDICT_COLORS: Record<Verdict, string> = {
   danger: Colors.danger,
 };
 
-const VERDICT_ICONS: Record<Verdict, string> = {
+const VERDICT_ICONS: Record<Verdict, keyof typeof Feather.glyphMap> = {
   safe: 'check-circle',
   caution: 'alert-triangle',
   danger: 'x-circle',
@@ -254,7 +254,7 @@ export default function BasketScanScreen() {
         >
           <View style={[styles.overlayDot, { backgroundColor: VERDICT_COLORS[overlay.verdict] }]}>
             <Feather
-              name={VERDICT_ICONS[overlay.verdict] as any}
+              name={VERDICT_ICONS[overlay.verdict]}
               size={16}
               color="#FFFFFF"
             />

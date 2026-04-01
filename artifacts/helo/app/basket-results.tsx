@@ -30,7 +30,7 @@ const VERDICT_COLORS: Record<Verdict, string> = {
   caution: Colors.caution,
   danger: Colors.danger,
 };
-const VERDICT_ICONS: Record<Verdict, string> = {
+const VERDICT_ICONS: Record<Verdict, keyof typeof Feather.glyphMap> = {
   safe: 'check-circle',
   caution: 'alert-triangle',
   danger: 'x-circle',
@@ -74,7 +74,7 @@ function ProductCard({ item, index }: { item: BasketItem; index: number }) {
         <Card style={styles.productCard} padding={Spacing.lg}>
           <View style={[styles.productIcon, { backgroundColor: VERDICT_BG[item.verdict] }]}>
             <Feather
-              name={VERDICT_ICONS[item.verdict] as any}
+              name={VERDICT_ICONS[item.verdict]}
               size={18}
               color={VERDICT_COLORS[item.verdict]}
             />

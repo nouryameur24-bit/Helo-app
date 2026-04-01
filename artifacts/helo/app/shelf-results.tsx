@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Dimensions,
+  DimensionValue,
   Image,
   Modal,
   Pressable,
@@ -352,8 +353,8 @@ export default function ShelfResultsScreen() {
                 style={[
                   styles.dot,
                   {
-                    left: `${p.dotX * 100}%` as any,
-                    top: `${p.dotY * 100}%` as any,
+                    left: `${p.dotX * 100}%` as DimensionValue,
+                    top: `${p.dotY * 100}%` as DimensionValue,
                     backgroundColor: p.dotColor,
                   },
                 ]}

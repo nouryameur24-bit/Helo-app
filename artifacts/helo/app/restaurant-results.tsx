@@ -55,7 +55,7 @@ const RISK_LABELS: Record<DishRisk, string> = {
   danger: 'Déconseillé',
 };
 
-const RISK_ICONS: Record<DishRisk, string> = {
+const RISK_ICONS: Record<DishRisk, keyof typeof Feather.glyphMap> = {
   safe: 'check-circle',
   caution: 'alert-triangle',
   danger: 'x-circle',
@@ -95,7 +95,7 @@ function DishCard({
           <View style={styles.dishHeader}>
             <View style={styles.dishNameRow}>
               <Feather
-                name={RISK_ICONS[dish.risk] as any}
+                name={RISK_ICONS[dish.risk]}
                 size={16}
                 color={RISK_COLORS[dish.risk]}
                 style={{ marginTop: 1 }}

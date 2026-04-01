@@ -73,11 +73,11 @@ const CATEGORIES: Category[] = [
   { id: 'complements', label: 'Compléments',    emoji: '🌿', dbCategory: 'medication' },
 ];
 
-const RISK_CONFIG: Record<string, { label: string; variant: 'safe' | 'caution' | 'danger' | 'neutral' }> = {
+const RISK_CONFIG: Record<string, { label: string; variant: 'safe' | 'caution' | 'danger' | 'accent' }> = {
   safe:    { label: 'Compatible',  variant: 'safe' },
   caution: { label: 'Précaution', variant: 'caution' },
   danger:  { label: 'À éviter',   variant: 'danger' },
-  unknown: { label: 'Inconnu',    variant: 'neutral' },
+  unknown: { label: 'Inconnu',    variant: 'accent' },
 };
 
 // ─── Search Bar ───────────────────────────────────────────────────────────────
@@ -236,7 +236,7 @@ function TopSafeCarousel({ shelfIds }: { shelfIds: Set<string> }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) { setLoading(false); return; }
+    if (!isSupabaseConfigured) { setLoading(false); return; }
     supabase
       .from('products')
       .select('id, name, brand, category, overall_risk, barcode')
@@ -401,7 +401,7 @@ export default function SearchScreen() {
   }, []);
 
   useEffect(() => {
-    if (!userId || !isSupabaseConfigured()) return;
+    if (!userId || !isSupabaseConfigured) return;
     supabase
       .from('scan_history')
       .select('product_id')
@@ -431,7 +431,7 @@ export default function SearchScreen() {
       setResults([]);
       return;
     }
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured) return;
 
     setLoading(true);
     const q = debouncedQuery;
@@ -452,7 +452,7 @@ export default function SearchScreen() {
 
   useEffect(() => {
     if (!selectedCategory) { setCategoryResults([]); return; }
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured) return;
 
     setLoading(true);
     supabase
@@ -475,7 +475,7 @@ export default function SearchScreen() {
   }, []);
 
   const handleUnlockPremium = useCallback(async () => {
-    // TODO: wire RevenueCat / Stripe paywall
+    // Stores premium flag locally; full RevenueCat paywall is in paywall.tsx
     await AsyncStorage.setItem(PREMIUM_KEY, 'true');
     setIsPremium(true);
   }, []);

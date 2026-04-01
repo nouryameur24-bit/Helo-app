@@ -153,8 +153,8 @@ export default function ProfileSetupScreen() {
         if (__DEV__) console.error('[onboarding] getOrCreateUserId failed:', err?.message ?? err);
       });
 
-    } catch (err: any) {
-      if (__DEV__) console.error('[onboarding] handleSubmit error:', err?.message ?? err);
+    } catch (err: unknown) {
+      if (__DEV__) console.error('[onboarding] handleSubmit error:', err instanceof Error ? err.message : err);
       Alert.alert("Erreur", "Impossible de sauvegarder votre profil localement. Réessayez.");
     } finally {
       setLoading(false);

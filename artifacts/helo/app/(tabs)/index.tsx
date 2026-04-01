@@ -42,53 +42,23 @@ import { PactWidget } from '@/components/PactWidget';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const RECENT_SCANS = [
-  {
-    id: '1',
-    name: 'Crème hydratante Nuxe',
-    brand: 'NUXE',
-    status: 'safe' as const,
-    statusLabel: 'Sûr',
-    date: 'Aujourd\'hui',
-    ingredients: 12,
-  },
-  {
-    id: '2',
-    name: 'Shampooing doux Klorane',
-    brand: 'KLORANE',
-    status: 'caution' as const,
-    statusLabel: 'Vigilance',
-    date: 'Hier',
-    ingredients: 8,
-  },
-  {
-    id: '3',
-    name: 'Sérum vitamine C',
-    brand: 'VICHY',
-    status: 'safe' as const,
-    statusLabel: 'Sûr',
-    date: '12 mars',
-    ingredients: 15,
-  },
-];
 
-const MOCK_SHELF: ShelfProduct[] = [
-  { id: '1', name: 'Crème hydratante Nuxe', brand: 'NUXE', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
-  { id: '2', name: 'Shampooing doux', brand: 'KLORANE', verdict: 'caution', verdictLabel: 'Vigilance', category: 'salle-de-bain', verdictChanged: true },
-  { id: '3', name: 'Gel douche aloe vera', brand: 'GARNIER', verdict: 'safe', verdictLabel: 'Sûr', category: 'salle-de-bain', verdictChanged: false },
-  { id: '4', name: 'Sérum vitamine C', brand: 'VICHY', verdict: 'safe', verdictLabel: 'Sûr', category: 'pharmacie', verdictChanged: false },
-  { id: '5', name: 'Fond de teint Bourjois', brand: 'BOURJOIS', verdict: 'danger', verdictLabel: 'Déconseillé', category: 'salle-de-bain', verdictChanged: true },
-  { id: '6', name: 'Huile de coco bio', brand: 'NATURALIA', verdict: 'safe', verdictLabel: 'Sûr', category: 'cuisine', verdictChanged: false },
-];
-
-const statusColors = {
-  safe: { bg: Colors.safeBg, accent: Colors.safe, icon: 'check-circle' as const },
-  caution: { bg: Colors.cautionBg, accent: Colors.caution, icon: 'alert-circle' as const },
-  danger: { bg: Colors.dangerBg, accent: Colors.danger, icon: 'x-circle' as const },
+const statusColors: Record<string, { bg: string; accent: string; icon: 'check-circle' | 'alert-circle' | 'x-circle' | 'help-circle' }> = {
+  safe:    { bg: Colors.safeBg,    accent: Colors.safe,    icon: 'check-circle'  },
+  caution: { bg: Colors.cautionBg, accent: Colors.caution, icon: 'alert-circle'  },
+  danger:  { bg: Colors.dangerBg,  accent: Colors.danger,  icon: 'x-circle'      },
+  unknown: { bg: Colors.background, accent: Colors.textTertiary, icon: 'help-circle' },
 };
 
-function ScanCard({ item, index }: { item: typeof RECENT_SCANS[0]; index: number }) {
-  const { bg, accent, icon } = statusColors[item.status];
+type SafeBadgeVariant = 'safe' | 'caution' | 'danger' | 'accent';
+function verdictToBadge(v: string): SafeBadgeVariant {
+  if (v === 'safe' || v === 'caution' || v === 'danger') return v;
+  return 'accent';
+}
+
+function ScanCard({ item, index }: { item: ShelfProduct; index: number }) {
+  const color = statusColors[item.verdict] ?? statusColors.unknown;
+  const { bg, accent, icon } = color;
   return (
     <Animated.View entering={FadeInDown.delay(index * 80).duration(400)}>
       <Pressable
@@ -105,10 +75,10 @@ function ScanCard({ item, index }: { item: typeof RECENT_SCANS[0]; index: number
             {item.name}
           </ThemedText>
           <ThemedText variant="bodySmall" color="textTertiary">
-            {item.brand} · {item.date}
+            {item.brand}
           </ThemedText>
         </View>
-        <Badge variant={item.status}>{item.statusLabel}</Badge>
+        <Badge variant={verdictToBadge(item.verdict)}>{item.verdictLabel}</Badge>
       </Pressable>
     </Animated.View>
   );
@@ -151,7 +121,7 @@ function PartnerHomeScreen() {
   const week = dueDate ? calculateTrimester(dueDate).weekOfPregnancy : 20;
 
   const { shelf } = useShelfData(linkedUserId ?? undefined);
-  const activeShelf = shelf.length > 0 ? shelf : MOCK_SHELF;
+  const activeShelf = shelf;
   const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
 
   const tip = getPartnerTipForWeek(week);
@@ -395,7 +365,7 @@ export default function HomeScreen() {
   const displayName = firstName || 'Hēlo';
 
   const { shelf: realShelf } = useShelfData(shelfUserId || undefined);
-  const activeShelf = realShelf.length > 0 ? realShelf : MOCK_SHELF;
+  const activeShelf = realShelf;
 
   const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
   const glowLabel = getGlowLabel(score);
@@ -960,9 +930,21 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.scanList}>
-            {RECENT_SCANS.map((item, index) => (
-              <ScanCard key={item.id} item={item} index={index} />
-            ))}
+            {activeShelf.length === 0 ? (
+              <Pressable
+                onPress={() => router.push('/scan')}
+                style={[styles.scanCard, { backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xl }]}
+              >
+                <Feather name="camera" size={24} color={Colors.accent} />
+                <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
+                  Scannez votre premier produit
+                </ThemedText>
+              </Pressable>
+            ) : (
+              activeShelf.slice(0, 3).map((item, index) => (
+                <ScanCard key={item.id} item={item} index={index} />
+              ))
+            )}
           </View>
         </Animated.View>
 

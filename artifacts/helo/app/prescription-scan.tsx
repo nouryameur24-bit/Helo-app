@@ -95,8 +95,8 @@ export default function PrescriptionScanScreen() {
 
       const encoded = encodeURIComponent(JSON.stringify(results));
       router.push(`/prescription-results?results=${encoded}` as never);
-    } catch (err: any) {
-      const msg = err?.message ?? '';
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
       if (msg === 'NO_TEXT_DETECTED') {
         setError("Aucun texte détecté. Assurez-vous que l'ordonnance est bien éclairée et lisible.");
       } else if (msg.startsWith('NO_API_KEY')) {

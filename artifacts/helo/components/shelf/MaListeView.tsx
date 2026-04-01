@@ -25,13 +25,6 @@ interface ShoppingItem {
   checked: boolean;
 }
 
-const MOCK_SHOPPING: ShoppingItem[] = [
-  { id: 's1', productName: 'Shampooing solide Lamazuna', brand: 'LAMAZUNA', checked: false },
-  { id: 's2', productName: 'Dentifrice bio Cattier', brand: 'CATTIER', checked: true },
-  { id: 's3', productName: 'Déodorant naturel Schmidt\'s', brand: 'SCHMIDT\'S', checked: false },
-  { id: 's4', productName: 'Crème solaire bio Acorelle', brand: 'ACORELLE', checked: false },
-];
-
 function ShoppingRow({
   item,
   onToggle,
@@ -96,7 +89,7 @@ function ShoppingRow({
 }
 
 export function MaListeView() {
-  const [items, setItems] = useState<ShoppingItem[]>(MOCK_SHOPPING);
+  const [items, setItems] = useState<ShoppingItem[]>([]);
 
   const handleToggle = useCallback((id: string) => {
     setItems((prev) =>
@@ -122,7 +115,7 @@ export function MaListeView() {
       <View style={styles.emptyRoot}>
         <Feather name="shopping-cart" size={48} color={Colors.textTertiary} />
         <ThemedText variant="headlineLarge" color="textPrimary" style={styles.emptyTitle}>
-          Liste vide
+          Votre liste est vide
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
           Ajoutez des alternatives depuis les résultats de scan pour créer votre liste de courses.

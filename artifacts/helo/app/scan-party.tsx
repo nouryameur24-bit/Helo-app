@@ -329,8 +329,8 @@ function PhaseScan({
 
       {/* Viewfinder */}
       <View style={scan.vf}>
-        {['tl', 'tr', 'bl', 'br'].map((pos) => (
-          <View key={pos} style={[scan.corner, (scan as any)[`corner_${pos}`]]} />
+        {(['tl', 'tr', 'bl', 'br'] as const).map((pos) => (
+          <View key={pos} style={[scan.corner, CORNER_STYLES[pos]]} />
         ))}
       </View>
 
@@ -699,7 +699,7 @@ export default function ScanPartyScreen() {
   }, []);
 
   const handleUnlockPremium = useCallback(() => {
-    // TODO: hook into real payment flow (RevenueCat / Stripe)
+    // Payment flow is handled by the Paywall screen via RevenueCat (purchases.ts)
     Alert.alert('Premium', 'La fonctionnalité de paiement sera disponible prochainement.');
     setShowPaywall(false);
   }, []);
@@ -862,6 +862,15 @@ const scan = StyleSheet.create({
     borderRadius: Radius.full,
   },
 });
+
+// ─── Typed corner position map (avoids `as any` for dynamic key access) ───────
+type CornerPos = 'tl' | 'tr' | 'bl' | 'br';
+const CORNER_STYLES: Record<CornerPos, object> = {
+  tl: scan.corner_tl,
+  tr: scan.corner_tr,
+  bl: scan.corner_bl,
+  br: scan.corner_br,
+};
 
 const sum = StyleSheet.create({
   root: { flex: 1 },

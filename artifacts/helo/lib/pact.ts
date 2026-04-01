@@ -101,7 +101,9 @@ async function savePact(pact: PactState): Promise<void> {
       longest_streak: pact.longestStreak,
       status: pact.status,
     }, { onConflict: 'id' });
-  } catch {}
+  } catch {
+    // Supabase sync failure — pact stored locally, synced on next successful connection
+  }
 }
 
 export async function loadEarnedBadges(): Promise<PactBadgeId[]> {
@@ -145,7 +147,9 @@ export async function createPact(
         invited_via: 'circle' as const,
       }));
       await supabase.from('pact_witnesses').insert(witnessRows);
-    } catch {}
+    } catch {
+      // Witness invite insert failure — pact created without witnesses, user can re-invite later
+    }
   }
 
   return pact;

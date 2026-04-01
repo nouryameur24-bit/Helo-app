@@ -143,7 +143,9 @@ export default function VerdictScreen() {
     }
 
     scanBarcode(barcode, phase, isOffline);
-  }, [barcode, phase, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
+    // `scanBarcode` and `setDirectResult` are stable refs from useScan — intentionally omitted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barcode, phase, isOffline]);
 
   useEffect(() => {
     getBabyMode().then(setIsBabyMode).catch(() => {});
@@ -222,8 +224,12 @@ export default function VerdictScreen() {
         }
         await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
         await reloadWidgets();
-      } catch {}
-    } catch {}
+      } catch {
+        // Widget sync failure is non-critical — home screen widget falls back to last known data
+      }
+    } catch {
+      // Shelf AsyncStorage update failure — verdict still shown, widget update skipped
+    }
 
     if (isSupabaseConfigured && shelfUserId) {
       try {

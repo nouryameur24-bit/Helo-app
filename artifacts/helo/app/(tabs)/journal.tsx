@@ -130,7 +130,9 @@ export default function JournalScreen() {
       const parsed: JournalEntry[] = raw ? JSON.parse(raw) : [];
       parsed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setEntries(parsed);
-    } catch {}
+    } catch {
+      // AsyncStorage parse failure — journal shows empty state gracefully
+    }
   }, []);
 
   useFocusEffect(

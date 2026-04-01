@@ -140,7 +140,7 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
 
       setProducts(shelfProducts);
     } catch (err) {
-      console.warn('[MonPlacardView] loadMotherShelf error:', err);
+      if (__DEV__) console.warn('[MonPlacardView] loadMotherShelf error:', err);
     } finally {
       setIsLoading(false);
     }

@@ -85,7 +85,9 @@ function PhaseScan({ theme, results, onScanResult, onFinish, trimester }: PhaseS
         verdict === 'danger' ? Haptics.NotificationFeedbackType.Error :
         Haptics.NotificationFeedbackType.Warning,
       );
-    } catch {}
+    } catch {
+      // Scan processing or haptics failure — debounce still resets so user can retry
+    }
     finally { setTimeout(() => setScanning(false), DEBOUNCE_MS); }
   }, [scanning, trimester, onScanResult, showVerdictFlash]);
 

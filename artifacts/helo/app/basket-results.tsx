@@ -171,8 +171,12 @@ export default function BasketResultsScreen() {
         }
         await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
         await reloadWidgets();
-      } catch {}
-    } catch {}
+      } catch {
+        // Widget sync failure is non-critical — home screen widget falls back to last known data
+      }
+    } catch {
+      // Shelf read/write failure — basket results still shown, widget update skipped
+    }
   }, [items]);
 
   // ── Share ─────────────────────────────────────────────────────────────────

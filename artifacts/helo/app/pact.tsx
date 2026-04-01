@@ -95,7 +95,9 @@ export default function PactScreen() {
         const { Share } = await import('react-native');
         await Share.share({ message: msg });
       }
-    } catch {}
+    } catch {
+      // Share sheet can be dismissed or fail silently — no action needed
+    }
   }, [firstName]);
 
   const handleAbandon = useCallback(() => {

@@ -58,7 +58,7 @@ export async function getAlternatives(
     .order('popularity_count', { ascending: false });
 
   if (altError || !altRows || altRows.length === 0) {
-    if (altError) console.warn('[Hēlo] getAlternatives error:', altError.message);
+    if (__DEV__ && altError) console.warn('[Hēlo] getAlternatives error:', altError.message);
     return [];
   }
 

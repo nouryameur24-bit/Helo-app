@@ -84,5 +84,7 @@ export async function getErrorLog(): Promise<ErrorReport[]> {
 export async function clearErrorLog(): Promise<void> {
   try {
     await AsyncStorage.removeItem(ERROR_LOG_KEY);
-  } catch {}
+  } catch {
+    // Non-critical — error log cleared on next successful write
+  }
 }

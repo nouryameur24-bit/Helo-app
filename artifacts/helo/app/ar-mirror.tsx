@@ -73,7 +73,9 @@ export default function ARMirrorScreen() {
           }
         }
         cacheRef.current = map;
-      } catch {}
+      } catch {
+        // Cache load failure — AR overlay continues without history data
+      }
     })();
   }, []);
 
@@ -134,7 +136,9 @@ export default function ARMirrorScreen() {
           await Sharing.shareAsync(uri, { mimeType: 'image/jpeg', dialogTitle: 'Partager mon Miroir AR — Hēlo' });
         }
       }
-    } catch {}
+    } catch {
+      // Screenshot or share sheet failure — user can retry via the button
+    }
     setCapturing(false);
   }, [capturing, sharingAvailable]);
 

@@ -146,7 +146,9 @@ export default function OcrReviewScreen() {
     if (hasRun.current) return;
     hasRun.current = true;
     runOCR();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Intentional one-shot effect — hasRun.current ref prevents double execution in StrictMode
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAnalyse = async () => {
     if (!ocrText.trim()) return;
@@ -168,7 +170,9 @@ export default function OcrReviewScreen() {
             if (p.trimester) phase = p.trimester as Phase;
           }
         }
-      } catch {}
+      } catch {
+        // Profile read failure — OCR analysis continues with default phase
+      }
 
       const matchesArr = await matchIngredients(ingredients, phase);
       const verdictResult = getVerdict(matchesArr);

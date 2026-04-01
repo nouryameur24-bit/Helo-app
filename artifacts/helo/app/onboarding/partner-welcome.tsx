@@ -35,7 +35,9 @@ export default function PartnerWelcomeScreen() {
           try {
             const parsed = JSON.parse(profile);
             if (parsed.firstName) setMyName(parsed.firstName);
-          } catch {}
+          } catch {
+            // Malformed profile JSON — name stays empty, screen still renders
+          }
         }
       }
     };

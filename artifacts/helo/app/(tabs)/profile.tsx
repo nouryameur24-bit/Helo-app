@@ -161,7 +161,9 @@ export default function ProfileScreen() {
           .eq('user_id', userId)
           .eq('safety_level', 'safe');
         if (!cancelled && safe !== null) setSafeCount(safe);
-      } catch {}
+      } catch {
+        // Stats are non-critical — profile still renders without them
+      }
     };
     fetchStats();
     return () => { cancelled = true; };
@@ -725,13 +727,13 @@ export default function ProfileScreen() {
             <Divider />
             <SettingRow icon="home" title="Mon Environnement" onPress={() => router.push('/home-score' as never)} />
             <Divider />
-            <SettingRow icon="user" title="Mon profil" onPress={() => { try { router.push('/profile/edit' as never); } catch {} }} />
+            <SettingRow icon="user" title="Mon profil" onPress={() => router.push('/profile/edit' as never)} />
             <Divider />
-            <SettingRow icon="heart" title="Mode Partenaire" onPress={() => { try { router.push('/onboarding/role' as never); } catch {} }} />
+            <SettingRow icon="heart" title="Mode Partenaire" onPress={() => router.push('/onboarding/role' as never)} />
             <Divider />
             <SettingRow icon="bell" title="Notifications" onPress={() => router.push('/notifications-settings' as never)} />
             <Divider />
-            <SettingRow icon="star" title="Hēlo Premium" onPress={() => { try { router.push('/premium' as never); } catch {} }} />
+            <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push('/premium' as never)} />
             <Divider />
             <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push('/methodology' as never)} />
             <Divider />

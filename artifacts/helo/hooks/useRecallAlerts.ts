@@ -82,8 +82,11 @@ export function useRecallAlerts(isPremium: boolean) {
           }
           await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
           await reloadWidgets();
-        } catch {}
+        } catch {
+          // Widget sync failure is non-critical — home screen widget falls back to last known data
+        }
       } catch {
+        // Shelf update failure — item not removed from storage, alert still dismissed
       }
       await dismiss();
     },

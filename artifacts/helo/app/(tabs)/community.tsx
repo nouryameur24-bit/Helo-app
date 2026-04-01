@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { type ComponentProps, useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   Platform,
@@ -208,14 +208,16 @@ function EmptySubmissions() {
         Comment ça marche ?
       </ThemedText>
 
-      {[
-        { icon: 'camera', step: '1', text: 'Scannez un produit inconnu avec Hēlo' },
-        { icon: 'send', step: '2', text: 'Soumettez-le via le bouton ci-dessus' },
-        { icon: 'check-circle', step: '3', text: "Notre équipe vérifie et l\u2019ajoute ici" },
-      ].map(({ icon, step, text }) => (
+      {(
+        [
+          { icon: 'camera', step: '1', text: 'Scannez un produit inconnu avec Hēlo' },
+          { icon: 'send', step: '2', text: 'Soumettez-le via le bouton ci-dessus' },
+          { icon: 'check-circle', step: '3', text: "Notre \u00e9quipe v\u00e9rifie et l\u2019ajoute ici" },
+        ] as Array<{ icon: ComponentProps<typeof Feather>['name']; step: string; text: string }>
+      ).map(({ icon, step, text }) => (
         <View key={step} style={styles.stepRow}>
           <View style={styles.stepBubble}>
-            <Feather name={icon as any} size={16} color={Colors.accent} />
+            <Feather name={icon} size={16} color={Colors.accent} />
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={{ flex: 1, lineHeight: 20 }}>
             {text}

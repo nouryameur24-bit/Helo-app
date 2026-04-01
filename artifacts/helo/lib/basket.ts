@@ -29,7 +29,9 @@ export async function saveBasket(items: BasketItem[]): Promise<void> {
   try {
     const basket: Basket = { items, createdAt: new Date().toISOString() };
     await AsyncStorage.setItem(BASKET_KEY, JSON.stringify(basket));
-  } catch {}
+  } catch {
+    // AsyncStorage write failure — basket session may not persist
+  }
 }
 
 export async function loadLatestBasket(): Promise<Basket | null> {
@@ -45,7 +47,9 @@ export async function loadLatestBasket(): Promise<Basket | null> {
 export async function clearBasket(): Promise<void> {
   try {
     await AsyncStorage.removeItem(BASKET_KEY);
-  } catch {}
+  } catch {
+    // Non-critical — basket key will be overwritten on the next session
+  }
 }
 
 export function verdictLabel(verdict: Verdict): string {

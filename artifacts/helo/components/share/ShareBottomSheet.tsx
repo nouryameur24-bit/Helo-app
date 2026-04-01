@@ -39,8 +39,8 @@ export function ShareBottomSheet({ visible, onClose, card }: ShareBottomSheetPro
       const uri = await captureShareCard(viewShotRef);
       await shareImage(uri);
     } catch (err) {
-      console.warn('[ShareBottomSheet] share error:', err);
-      setErrorMsg('Impossible de partager l\'image. Veuillez réessayer.');
+      if (__DEV__) console.warn('[ShareBottomSheet] share error:', err);
+      setErrorMsg("Impossible de partager l\u2019image. Veuillez r\u00e9essayer.");
     } finally {
       setLoading(false);
     }

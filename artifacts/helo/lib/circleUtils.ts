@@ -386,7 +386,9 @@ export async function checkAndSendWeekMilestoneNotification(params: {
       circleId: data.circle.id,
       memberUserId: params.userId,
     });
-  } catch {}
+  } catch {
+    // Notification delivery failure — circle still created, user can enable notifications later
+  }
 }
 
 export function getRelativeTime(dateStr: string): string {

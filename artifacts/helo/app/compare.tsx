@@ -79,7 +79,9 @@ export default function CompareScreen() {
     } else if (paramBarcode && paramSlot === 'B') {
       handleBarcodeScan(paramBarcode, 'B');
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Runs once on mount to pre-load barcode from navigation params
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openCamera = useCallback((slot: 'A' | 'B') => {
     setScanningSlot(slot);

@@ -200,7 +200,7 @@ export default function RestaurantResultsScreen() {
           setAnalysis(JSON.parse(raw) as MenuAnalysis);
         }
       } catch {
-        // ignore
+        // AsyncStorage read failure is non-critical — screen will show empty state
       } finally {
         setLoading(false);
       }

@@ -37,13 +37,17 @@ export async function saveChatHistory(messages: ChatMessage[]): Promise<void> {
   try {
     const trimmed = messages.slice(-MAX_HISTORY);
     await AsyncStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(trimmed));
-  } catch {}
+  } catch {
+    // Non-critical — history may be lost; conversation still works
+  }
 }
 
 export async function clearChatHistory(): Promise<void> {
   try {
     await AsyncStorage.removeItem(CHAT_HISTORY_KEY);
-  } catch {}
+  } catch {
+    // Non-critical — stale history will be overwritten on the next session
+  }
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────

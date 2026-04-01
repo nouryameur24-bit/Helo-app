@@ -82,7 +82,8 @@ export default function VoiceScreen() {
   useEffect(() => {
     return () => {
       Speech.stop();
-      if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch {} }
+      // WebSpeechAPI abort() throws if recognition is not active — safe to swallow
+      if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch { /* no-op */ } }
     };
   }, []);
 
@@ -144,7 +145,8 @@ export default function VoiceScreen() {
 
   const handleReset = useCallback(() => {
     Speech.stop();
-    if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch {} }
+    // WebSpeechAPI abort() throws if recognition is not active — safe to swallow
+    if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch { /* no-op */ } }
     setPhase('idle');
     setRecognizedText('');
     setAiResponse('');

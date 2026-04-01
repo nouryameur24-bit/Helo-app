@@ -109,7 +109,9 @@ async function saveTravelBriefing(briefing: TravelBriefing, storageKey: string):
     }
 
     await AsyncStorage.setItem(TRAVEL_BRIEFINGS_INDEX_KEY, JSON.stringify(updated));
-  } catch {}
+  } catch {
+    // AsyncStorage write failure — briefing may not appear until app restarts
+  }
 }
 
 export async function deleteTravelBriefing(storageKey: string): Promise<void> {
@@ -118,7 +120,9 @@ export async function deleteTravelBriefing(storageKey: string): Promise<void> {
     const index = await loadTravelBriefingsIndex();
     const updated = index.filter((m) => m.storageKey !== storageKey);
     await AsyncStorage.setItem(TRAVEL_BRIEFINGS_INDEX_KEY, JSON.stringify(updated));
-  } catch {}
+  } catch {
+    // AsyncStorage failure — item may reappear after restart; user can delete again
+  }
 }
 
 const VALID_RISK_LEVELS = new Set(['low', 'medium', 'high']);

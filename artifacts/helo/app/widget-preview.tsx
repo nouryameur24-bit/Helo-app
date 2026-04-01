@@ -231,7 +231,9 @@ export default function WidgetPreviewScreen() {
           const w = parseInt(wRaw, 10);
           if (!isNaN(w)) setWeek(w);
         }
-      } catch {}
+      } catch {
+        // AsyncStorage read failure — widget renders with default values
+      }
     })();
   }, []);
 

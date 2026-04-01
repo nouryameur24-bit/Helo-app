@@ -36,7 +36,9 @@ async function readLimit(): Promise<ChatLimitData> {
 async function writeLimit(data: ChatLimitData): Promise<void> {
   try {
     await AsyncStorage.setItem(LIMIT_KEY, JSON.stringify(data));
-  } catch {}
+  } catch {
+    // Non-blocking — counter may not persist across restarts in edge cases
+  }
 }
 
 export async function getDailyChatCount(): Promise<number> {

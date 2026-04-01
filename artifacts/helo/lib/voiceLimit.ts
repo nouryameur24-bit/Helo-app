@@ -35,7 +35,9 @@ async function readLimit(): Promise<VoiceLimitData> {
 async function writeLimit(data: VoiceLimitData): Promise<void> {
   try {
     await AsyncStorage.setItem(LIMIT_KEY, JSON.stringify(data));
-  } catch {}
+  } catch {
+    // Non-blocking — voice counter may not persist across restarts in edge cases
+  }
 }
 
 export async function getDailyVoiceCount(): Promise<number> {

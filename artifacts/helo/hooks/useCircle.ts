@@ -75,7 +75,9 @@ async function saveCachedCircle(data: CircleData | null): Promise<void> {
     } else {
       await AsyncStorage.removeItem(CIRCLE_CACHE_KEY);
     }
-  } catch {}
+  } catch {
+    // Cache write failure — circle data re-fetched from Supabase on next mount
+  }
 }
 
 async function loadCachedFeed(): Promise<CircleFeedEntry[]> {
@@ -91,7 +93,9 @@ async function loadCachedFeed(): Promise<CircleFeedEntry[]> {
 async function saveCachedFeed(feed: CircleFeedEntry[]): Promise<void> {
   try {
     await AsyncStorage.setItem(FEED_CACHE_KEY, JSON.stringify(feed));
-  } catch {}
+  } catch {
+    // Cache write failure — feed re-fetched from Supabase on next mount
+  }
 }
 
 export function useCircle(userId: string, firstName: string): UseCircleReturn {

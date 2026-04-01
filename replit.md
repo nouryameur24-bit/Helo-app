@@ -33,6 +33,26 @@ A luxury pregnancy product scanner app ("Yuka for pregnancy"). Design: Luxe & Se
 - **Score Environnement**: `app/home-score.tsx` — 4 room cards (🛁🍳💊🛏️) with per-room GlowScore, global house score, progress bars, confetti celebration, "Maison 100% Safe" badge (AsyncStorage `@helo_home_badge_unlocked`)
 - **Nutrition IA**: `app/nutrition.tsx` — phase-aware nutritional needs (T1/T2/T3/allaitement/bébé) with fill bars from shelf scans, 6-7 recommended foods, 3 weekly recipes (4-rotation cycle, changes every Monday); `constants/nutritionNeeds.ts` (nutrients, food sources, caffeine keywords); `constants/recipes.ts` (Recipe type + getRecipesForPhase + getWeekRotation)
 
+### Component architecture (refactored)
+
+All large screens have been split into focused sub-components:
+
+- **`components/compare/`** — Comparateur: `compareHelpers.ts` (computeScore, verdictColor, buildAvis, types), `CameraModal.tsx`, `SlotViews.tsx` (EmptySlot + LoadingSlot), `FilledSlotCard.tsx`, `IngredientRows.tsx` → `app/compare.tsx` is now a thin orchestrator (~360L, was 916L)
+- **`components/scan/`** — Scanner: `scanConstants.ts` (VF dims, CORNER_*, ScanMode), `ScanViewfinder.tsx` (CornerBracket + FlashingViewfinder + ScanOverlay), `ScanControls.tsx` (ModeChip + ShutterButton), `ScanStatusUI.tsx` (OfflineBadge + SyncToast + PermissionScreen + WebPlaceholder) → `app/(tabs)/scan.tsx` is now ~567L (was 888L)
+- **`components/circle/`** — `CircleUtils` helpers, `CircleFeedCard.tsx`, `WeeklyChallenge.tsx`
+- **`components/voice/`** — `voiceStyles.ts`, `PulsingCircle.tsx`, `PhaseLabel.tsx`
+- **`components/nutrition/`** — `nutritionStyles.ts`, `NutrientRow.tsx`, `FoodCard.tsx`, `RecipeCard.tsx`, `TipPill.tsx`
+- **`components/search/`** — `searchStyles.ts`, `SearchBar.tsx`, `CategoryGrid.tsx`, `ProductCard.tsx`, `TopSafeCarousel.tsx`, `PremiumOverlay.tsx`
+
+### Tests — 190 tests, 15 suites (npx jest)
+
+New suites added: `circleUtils.test.ts`, `voiceLimit.test.ts`, `scanLimit.test.ts`, `offline.test.ts`, `travel.test.ts`
+
+### Code quality
+
+- `.eslintrc.js` — strict TypeScript + React hooks rules
+- `npx tsc --noEmit` → 0 errors
+
 ## Structure
 
 ```text

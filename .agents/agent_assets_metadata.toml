@@ -42,3 +42,9 @@ id = "1viASleghSfoTVxUSX7Gi"
 uri = "file://helo_latest.tar.gz"
 type = "unspecified"
 title = "Hēlo — code source à jour (6.9 Mo)"
+
+[[outputs]]
+id = "UMR45YtN1XUP7ctieNC9x"
+uri = "file://helo-projet.tar.gz"
+type = "unspecified"
+title = "helo-projet.tar.gz — Projet Hēlo complet"

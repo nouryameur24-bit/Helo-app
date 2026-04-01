@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -148,11 +148,12 @@ export default function PaywallScreen() {
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  // Already premium — shouldn't be here, go back
-  if (isPremium) {
-    router.back();
-    return null;
-  }
+  // Already premium — shouldn't be here, go back (must be in useEffect, not during render)
+  useEffect(() => {
+    if (isPremium) {
+      router.back();
+    }
+  }, [isPremium]);
 
   const triggerMessages: Record<string, string> = {
     scan_limit:   'Vous avez atteint vos 5 scans gratuits du jour.',

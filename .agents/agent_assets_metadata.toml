@@ -60,3 +60,9 @@ id = "bRHEx8dzBjkCxtHQPCsuu"
 uri = "file://helo-pipeline.tar.gz"
 type = "unspecified"
 title = "helo-pipeline — 5 000 ingrédients + sources app (476 Ko)"
+
+[[outputs]]
+id = "rfxXpYKIlA0ZPNJhnJnco"
+uri = "file://helo-complete.tar.gz"
+type = "unspecified"
+title = "Hēlo — Projet complet (552 Ko, 296 fichiers)"

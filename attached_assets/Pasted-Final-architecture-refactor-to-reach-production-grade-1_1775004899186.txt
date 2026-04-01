@@ -1,0 +1,33 @@
+Final architecture refactor to reach production-grade 10/10:
+
+1. SPLIT LARGE FILES — Every file over 500 lines must be decomposed:
+- app/memories.tsx (1672 lines) → split into MemoryCreation, MemoryCapsule, MemoryTimeline components
+- app/verdict/[scanId].tsx (1402 lines) → split into VerdictHeader, VerdictIngredientList, VerdictActions
+- app/(tabs)/index.tsx (1307 lines) → split into HomeHeader, HomeGlowScore, HomeRecentScans, HomeWeeklyCard
+- app/(tabs)/profile.tsx (1286 lines) → split into ProfileHeader, ProfileStats, ProfileSettings, ProfileDangerZone
+- app/pact.tsx (1014 lines) → split into PactCreation, PactTracker, PactRewards
+- app/ar-mirror.tsx (976 lines) → split into ARCamera, AROverlay, ARCapture
+- app/scan-party.tsx (973 lines) → split into ScanPartyCamera, ScanPartyResults, ScanPartyExport
+- Each sub-component goes in a folder: components/verdict/, components/home/, components/profile/, etc.
+- Max 300 lines per file
+
+2. EDGE FUNCTION MIGRATION — lib/anthropic.ts still calls api.anthropic.com directly. Replace with:
+   const { data, error } = await supabase.functions.invoke('chat', { body: { messages, system } });
+   Same for lib/ocr.ts — replace Google Vision direct call with:
+   const { data, error } = await supabase.functions.invoke('ocr', { body: { imageBase64 } });
+   Then remove EXPO_PUBLIC_ANTHROPIC_API_KEY and EXPO_PUBLIC_GOOGLE_VISION_KEY from lib/config.ts
+
+3. ADD MISSING TESTS — Add test files for:
+   - __tests__/anthropic.test.ts (mock the edge function, test error handling)
+   - __tests__/prescription.test.ts (test medication extraction patterns)
+   - __tests__/basket.test.ts (test save/load/clear)
+   - __tests__/pact.test.ts (test streak calculation)
+   - __tests__/memories.test.ts (test capsule creation)
+   Target: 10+ test suites covering all critical lib/ functions
+
+4. ACCESSIBILITY AUDIT — For every touchable element:
+   - Add accessibilityLabel in French
+   - Add accessibilityRole (button, header, image, etc.)
+   - Verify contrast ratio meets WCAG AA (4.5:1 for text)
+
+5. Verify: npx tsc --noEmit passes with zero errors after all changes.

@@ -1,18 +1,16 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dimensions,
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
 import Animated, {
   FadeInDown,
-  FadeInUp,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -20,14 +18,12 @@ import { Feather } from '@expo/vector-icons';
 import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
 import { GlowScoreShareCard } from '@/components/share/GlowScoreShareCard';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { GlowScoreCircle } from '@/components/GlowScoreCircle';
-import { GlowScoreMini } from '@/components/GlowScoreMini';
-import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { calculateGlowScore, getGlowLabel } from '@/lib/glowscore';
 import { useTrimester } from '@/hooks/useTrimester';
 import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
@@ -36,12 +32,11 @@ import { useShelfData } from '@/hooks/useShelfData';
 import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
 import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
-import { getPartnerTipForWeek } from '@/constants/partnerTips';
-import { calculateTrimester } from '@/lib/trimester';
 import { PactWidget } from '@/components/PactWidget';
+import { PartnerHomeScreen } from '@/components/home/PartnerHomeScreen';
+import { styles } from '@/components/home/homeStyles';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 
 const statusColors: Record<string, { bg: string; accent: string; icon: 'check-circle' | 'alert-circle' | 'x-circle' | 'help-circle' }> = {
   safe:    { bg: Colors.safeBg,    accent: Colors.safe,    icon: 'check-circle'  },
@@ -66,6 +61,8 @@ function ScanCard({ item, index }: { item: ShelfProduct; index: number }) {
           styles.scanCard,
           { backgroundColor: Colors.surface, opacity: pressed ? 0.9 : 1 },
         ]}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.name}, ${item.verdictLabel}`}
       >
         <View style={[styles.scanCardIcon, { backgroundColor: bg }]}>
           <Feather name={icon} size={20} color={accent} />
@@ -111,239 +108,12 @@ function CompositionBar({ count, total, color, label }: {
   );
 }
 
-function PartnerHomeScreen() {
-  const insets = useSafeAreaInsets();
-  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPadding = Platform.OS === 'web' ? 34 : 0;
-
-  const { linkedUserId, linkedFirstName, dueDate } = useProfile();
-  const momName = linkedFirstName ?? 'Votre proche';
-  const week = dueDate ? calculateTrimester(dueDate).weekOfPregnancy : 20;
-
-  const { shelf } = useShelfData(linkedUserId ?? undefined);
-  const activeShelf = shelf;
-  const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
-
-  const tip = getPartnerTipForWeek(week);
-
-  const recentProducts = activeShelf.slice(0, 3);
-
-  return (
-    <View style={[styles.root, { backgroundColor: Colors.background }]}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: topPadding + Spacing.lg, paddingBottom: bottomPadding + 120 },
-        ]}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        {/* Partner Header */}
-        <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <ThemedText variant="bodySmall" color="textTertiary">
-              Placard de {momName} · Semaine {week}
-            </ThemedText>
-            <ThemedText variant="headlineLarge" color="textPrimary">{momName}</ThemedText>
-          </View>
-          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            <IconButton size={44} onPress={() => router.push('/search')}>
-              <Feather name="search" size={20} color={Colors.textSecondary} />
-            </IconButton>
-            <IconButton size={44}>
-              <Feather name="bell" size={20} color={Colors.textSecondary} />
-            </IconButton>
-          </View>
-        </Animated.View>
-
-        {/* Tip de la semaine */}
-        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
-          <View style={partnerStyles.tipBanner}>
-            <View style={partnerStyles.tipBannerLeft}>
-              <View style={partnerStyles.tipIconWrap}>
-                <Feather name="zap" size={20} color={Colors.accentDark} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelSmall" style={{ color: Colors.accentDark, marginBottom: 4 }}>
-                  TIP CO-PARENT · SEMAINE {week}
-                </ThemedText>
-                <ThemedText variant="labelLarge" color="textPrimary" numberOfLines={2}>
-                  {tip.title}
-                </ThemedText>
-                <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 4 }} numberOfLines={3}>
-                  {tip.body}
-                </ThemedText>
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* Mission de la semaine */}
-        <Animated.View entering={FadeInDown.delay(130).duration(500)}>
-          <View style={partnerStyles.missionCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm }}>
-              <Feather name="target" size={16} color={Colors.safe} />
-              <ThemedText variant="labelSmall" style={{ color: Colors.safe }}>
-                MISSION DE LA SEMAINE
-              </ThemedText>
-            </View>
-            <ThemedText variant="bodyMedium" color="textSecondary">
-              {tip.mission}
-            </ThemedText>
-          </View>
-        </Animated.View>
-
-        {/* Glow Score de la maman */}
-        <Animated.View entering={FadeInDown.delay(180).duration(500)}>
-          <Card padding={Spacing.xl} style={styles.glowCard}>
-            <ThemedText variant="labelSmall" color="textTertiary" style={{ marginBottom: Spacing.md }}>
-              GLOW SCORE DE {momName.toUpperCase()}
-            </ThemedText>
-            <View style={styles.glowCircleRow}>
-              <GlowScoreCircle score={score} size="large" animated />
-            </View>
-            <ThemedText variant="bodyMedium" color="textSecondary" style={styles.glowSubtitle}>
-              Basé sur {total} produit{total > 1 ? 's' : ''} dans son placard
-            </ThemedText>
-          </Card>
-        </Animated.View>
-
-        {/* Scanner un produit pour la maman */}
-        <Animated.View entering={FadeInDown.delay(220).duration(500)}>
-          <LinearGradient
-            colors={['#E8D5B0', '#C9A96E']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[styles.heroBanner, { borderRadius: Radius.xl }]}
-          >
-            <View style={styles.heroContent}>
-              <ThemedText variant="headlineMedium" style={{ color: '#FFFFFF', marginBottom: 4 }}>
-                Scanner pour {momName}
-              </ThemedText>
-              <ThemedText variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)', marginBottom: Spacing.xl }}>
-                Analysez la sécurité d'un produit pour elle
-              </ThemedText>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.heroButton,
-                  { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-                ]}
-                onPress={() => router.push('/(tabs)/scan')}
-              >
-                <Feather name="camera" size={18} color={Colors.accentDark} />
-                <Text style={styles.heroButtonText}>Scanner maintenant</Text>
-              </Pressable>
-            </View>
-            <View style={styles.heroDecoration}>
-              <View style={styles.heroCircle1} />
-              <View style={styles.heroCircle2} />
-            </View>
-          </LinearGradient>
-        </Animated.View>
-
-        {/* Accès rapide */}
-        <Animated.View entering={FadeInDown.delay(260).duration(500)} style={styles.quickRow}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.quickCard,
-              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-            ]}
-            onPress={() => router.push('/(tabs)/partner-checklist-tab' as never)}
-          >
-            <View style={[styles.quickIcon, { backgroundColor: Colors.safeLight, borderColor: Colors.safe + '66' }]}>
-              <Feather name="check-square" size={18} color={Colors.safe} />
-            </View>
-            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
-              Ma checklist
-            </ThemedText>
-            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
-              Maison, achats, RDV
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.quickCard,
-              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-            ]}
-            onPress={() => router.push('/partner-weekly-brief' as never)}
-          >
-            <View style={[styles.quickIcon, { backgroundColor: Colors.accentLight + '88', borderColor: Colors.accent + '66' }]}>
-              <Feather name="book-open" size={18} color={Colors.accent} />
-            </View>
-            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
-              Brief co-parent
-            </ThemedText>
-            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
-              Semaine {week}
-            </ThemedText>
-          </Pressable>
-        </Animated.View>
-
-        {/* Derniers produits scannés */}
-        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
-          <View style={styles.sectionHeader}>
-            <ThemedText variant="headlineMedium" color="textPrimary">
-              Placard de {momName}
-            </ThemedText>
-            <Pressable onPress={() => router.push('/(tabs)/shelf')}>
-              <ThemedText variant="labelLarge" color="accent">Voir tout</ThemedText>
-            </Pressable>
-          </View>
-
-          <View style={styles.scanList}>
-            {recentProducts.map((product, index) => (
-              <Animated.View key={product.id} entering={FadeInDown.delay(340 + index * 60).duration(400)}>
-                <View style={[styles.scanCard, { backgroundColor: Colors.surface }]}>
-                  <View style={[
-                    styles.scanCardIcon,
-                    {
-                      backgroundColor:
-                        product.verdict === 'safe' ? Colors.safeBg :
-                        product.verdict === 'caution' ? Colors.cautionBg :
-                        Colors.dangerBg,
-                    },
-                  ]}>
-                    <Feather
-                      name={
-                        product.verdict === 'safe' ? 'check-circle' :
-                        product.verdict === 'caution' ? 'alert-circle' :
-                        'x-circle'
-                      }
-                      size={20}
-                      color={
-                        product.verdict === 'safe' ? Colors.safe :
-                        product.verdict === 'caution' ? Colors.caution :
-                        Colors.danger
-                      }
-                    />
-                  </View>
-                  <View style={styles.scanCardContent}>
-                    <ThemedText variant="labelLarge" color="textPrimary" numberOfLines={1}>
-                      {product.name}
-                    </ThemedText>
-                    <ThemedText variant="bodySmall" color="textTertiary">
-                      {product.brand} · {product.verdictLabel}
-                    </ThemedText>
-                  </View>
-                  <Badge variant={product.verdict as 'safe' | 'caution' | 'danger'}>{product.verdictLabel}</Badge>
-                </View>
-              </Animated.View>
-            ))}
-          </View>
-        </Animated.View>
-      </ScrollView>
-    </View>
-  );
-}
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
 
-  const { role, userId, linkedUserId, firstName, linkedFirstName } = useProfile();
+  const { role, userId, firstName } = useProfile();
   const isPartner = role === 'partner';
 
   const {
@@ -361,14 +131,12 @@ export default function HomeScreen() {
   } = useBreastfeeding();
   const { isNew } = useWeeklyBrief(weekOfPregnancy);
 
-  const shelfUserId = userId;
   const displayName = firstName || 'Hēlo';
 
-  const { shelf: realShelf } = useShelfData(shelfUserId || undefined);
+  const { shelf: realShelf } = useShelfData(userId || undefined);
   const activeShelf = realShelf;
 
   const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
-  const glowLabel = getGlowLabel(score);
   const hasRisk = countDanger > 0 || countCaution > 0;
 
   const [glowShareVisible, setGlowShareVisible] = useState(false);
@@ -385,7 +153,6 @@ export default function HomeScreen() {
         onDismiss={dismissBFTransition}
       />
 
-      {/* Glow score share bottom sheet */}
       {glowShareVisible && (
         <ShareBottomSheet
           visible={glowShareVisible}
@@ -414,22 +181,20 @@ export default function HomeScreen() {
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
           <View>
-            <ThemedText variant="bodySmall" color="textTertiary">
-              {isPartner ? `Placard de` : 'Bonjour'}
-            </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary">Bonjour</ThemedText>
             <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
           </View>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            <IconButton size={44} onPress={() => router.push('/search')}>
+            <IconButton size={44} onPress={() => router.push('/search')} accessibilityLabel="Rechercher">
               <Feather name="search" size={20} color={Colors.textSecondary} />
             </IconButton>
-            <IconButton size={44}>
+            <IconButton size={44} accessibilityLabel="Notifications">
               <Feather name="bell" size={20} color={Colors.textSecondary} />
             </IconButton>
           </View>
         </Animated.View>
 
-        {/* Breastfeeding mode suggestion banner */}
+        {/* Breastfeeding suggestion banner */}
         {shouldSuggestBreastfeeding && !isBreastfeeding && (
           <Animated.View entering={FadeInDown.delay(50).duration(400)}>
             <View style={styles.bfSuggestionBanner}>
@@ -448,10 +213,16 @@ export default function HomeScreen() {
                     dismissBreastfeedingSuggestion();
                   }}
                   style={styles.bfSuggestionCTA}
+                  accessibilityRole="button"
+                  accessibilityLabel="Activer le mode allaitement"
                 >
                   <ThemedText variant="labelSmall" style={{ color: '#FFF' }}>Activer</ThemedText>
                 </Pressable>
-                <Pressable onPress={dismissBreastfeedingSuggestion}>
+                <Pressable
+                  onPress={dismissBreastfeedingSuggestion}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ignorer"
+                >
                   <ThemedText variant="bodySmall" color="textTertiary" style={{ textAlign: 'center' }}>Ignorer</ThemedText>
                 </Pressable>
               </View>
@@ -459,7 +230,7 @@ export default function HomeScreen() {
           </Animated.View>
         )}
 
-        {/* Breastfeeding mode active banner */}
+        {/* Breastfeeding active banner */}
         {isBreastfeeding && (
           <Animated.View entering={FadeInDown.delay(50).duration(400)}>
             <View style={[styles.bfSuggestionBanner, { borderColor: BREASTFEEDING_PALETTE.accentLight }]}>
@@ -497,6 +268,8 @@ export default function HomeScreen() {
                   { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
                 ]}
                 onPress={() => router.push('/(tabs)/scan')}
+                accessibilityRole="button"
+                accessibilityLabel="Scanner maintenant"
               >
                 <Feather name="camera" size={18} color={Colors.accentDark} />
                 <Text style={styles.heroButtonText}>Scanner maintenant</Text>
@@ -509,7 +282,7 @@ export default function HomeScreen() {
           </LinearGradient>
         </Animated.View>
 
-        {/* Pact Widget — only if an active pact exists */}
+        {/* Pact Widget */}
         <Animated.View entering={FadeInDown.delay(120).duration(500)}>
           <PactWidget />
         </Animated.View>
@@ -522,6 +295,8 @@ export default function HomeScreen() {
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
             ]}
             onPress={() => router.push('/basket-scan' as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Mon panier"
           >
             <View style={[styles.quickIcon, { backgroundColor: Colors.accentLight + '55', borderColor: Colors.accentLight }]}>
               <Feather name="shopping-cart" size={18} color={Colors.accent} />
@@ -540,6 +315,8 @@ export default function HomeScreen() {
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
             ]}
             onPress={() => router.push('/compare' as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Comparer deux produits"
           >
             <View style={[styles.quickIcon, { backgroundColor: Colors.safeBg, borderColor: Colors.safeLight }]}>
               <Feather name="git-branch" size={18} color={Colors.safe} />
@@ -553,7 +330,7 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Nutrition card */}
+        {/* Feature discovery cards */}
         <Animated.View entering={FadeInDown.delay(155).duration(500)}>
           <Pressable
             onPress={() => router.push('/nutrition' as never)}
@@ -566,15 +343,15 @@ export default function HomeScreen() {
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Votre Nutrition"
           >
             <View style={styles.briefLeft}>
               <View style={[styles.briefIconWrap, { backgroundColor: Colors.cautionLight, borderColor: Colors.caution + '44' }]}>
                 <Feather name="heart" size={22} color={Colors.caution} />
               </View>
               <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">
-                  Votre Nutrition
-                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary">Votre Nutrition</ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Recettes & besoins de votre trimestre
                 </ThemedText>
@@ -584,7 +361,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Mon Environnement card */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
           <Pressable
             onPress={() => router.push('/home-score' as never)}
@@ -597,15 +373,15 @@ export default function HomeScreen() {
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Mon Environnement"
           >
             <View style={styles.briefLeft}>
               <View style={[styles.briefIconWrap, { backgroundColor: Colors.safeBg, borderColor: Colors.safeLight }]}>
                 <Feather name="home" size={22} color={Colors.safe} />
               </View>
               <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">
-                  Mon Environnement
-                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary">Mon Environnement</ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Score de sécurité par pièce
                 </ThemedText>
@@ -615,7 +391,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Mode Voyage card */}
         <Animated.View entering={FadeInDown.delay(168).duration(500)}>
           <Pressable
             onPress={() => router.push('/travel' as never)}
@@ -628,15 +403,15 @@ export default function HomeScreen() {
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Mode Voyage"
           >
             <View style={styles.briefLeft}>
               <View style={[styles.briefIconWrap, { backgroundColor: '#E8F0FF', borderColor: '#C5D5FF' }]}>
                 <Feather name="map" size={22} color="#6B8FDB" />
               </View>
               <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">
-                  Mode Voyage ✈️
-                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary">Mode Voyage ✈️</ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Briefing santé par destination
                 </ThemedText>
@@ -649,7 +424,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Mode Vocal card */}
         <Animated.View entering={FadeInDown.delay(172).duration(500)}>
           <Pressable
             onPress={() => router.push('/voice' as never)}
@@ -662,15 +436,15 @@ export default function HomeScreen() {
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Mode Vocal"
           >
             <View style={styles.briefLeft}>
               <View style={[styles.briefIconWrap, { backgroundColor: '#F0E8FF', borderColor: '#D5C5FF' }]}>
                 <Feather name="mic" size={22} color="#8B6BDB" />
               </View>
               <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">
-                  Mode Vocal 🎙️
-                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary">Mode Vocal 🎙️</ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Posez vos questions à voix haute
                 </ThemedText>
@@ -682,7 +456,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Ma Timeline card */}
         <Animated.View entering={FadeInDown.delay(175).duration(500)}>
           <Pressable
             onPress={() => router.push('/timeline' as never)}
@@ -695,15 +468,15 @@ export default function HomeScreen() {
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Ma Timeline"
           >
             <View style={styles.briefLeft}>
               <View style={[styles.briefIconWrap, { backgroundColor: '#E8F5EE', borderColor: '#C5E8D5' }]}>
                 <Feather name="calendar" size={22} color={Colors.safe} />
               </View>
               <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">
-                  Ma Timeline 🗓️
-                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary">Ma Timeline 🗓️</ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Fresque de vos 40 semaines
                 </ThemedText>
@@ -713,7 +486,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Widget & Watch card */}
         <Animated.View entering={FadeInDown.delay(176).duration(500)}>
           <Pressable
             onPress={() => router.push('/widget-preview' as never)}
@@ -726,15 +498,15 @@ export default function HomeScreen() {
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Widget et Apple Watch"
           >
             <View style={styles.briefLeft}>
               <View style={[styles.briefIconWrap, { backgroundColor: '#F5F0FF', borderColor: '#DDD0FF' }]}>
                 <ThemedText style={{ fontSize: 20 }}>📱</ThemedText>
               </View>
               <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">
-                  Widget & Apple Watch ⌚
-                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary">Widget & Apple Watch ⌚</ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Glow Score sur votre écran d'accueil
                 </ThemedText>
@@ -744,7 +516,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Miroir AR card */}
         <Animated.View entering={FadeInDown.delay(185).duration(500)}>
           <Pressable
             onPress={() => router.push('/ar-mirror' as never)}
@@ -757,15 +528,15 @@ export default function HomeScreen() {
                 transform: [{ scale: pressed ? 0.98 : 1 }],
               },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel="Mode Miroir AR"
           >
             <View style={styles.briefLeft}>
               <View style={[styles.briefIconWrap, { backgroundColor: '#F0F8F4', borderColor: '#C0E4D0' }]}>
                 <ThemedText style={{ fontSize: 20 }}>🪞</ThemedText>
               </View>
               <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">
-                  Mode Miroir AR ✨
-                </ThemedText>
+                <ThemedText variant="labelLarge" color="textPrimary">Mode Miroir AR ✨</ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Halos colorés sur vos produits en temps réel
                 </ThemedText>
@@ -783,6 +554,8 @@ export default function HomeScreen() {
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
             ]}
             onPress={() => router.push('/shelf-scan' as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Scanner une étagère"
           >
             <View style={styles.shelfScanIconWrap}>
               <Feather name="layers" size={22} color={Colors.accent} />
@@ -818,8 +591,7 @@ export default function HomeScreen() {
           </Card>
         </Animated.View>
 
-        {/* ── WEEKLY BRIEF (pregnant only) ── */}
-        {!isPartner && (
+        {/* Weekly brief */}
         <Animated.View entering={FadeInDown.delay(220).duration(500)}>
           <Pressable
             onPress={() => router.push('/weekly-brief')}
@@ -827,6 +599,8 @@ export default function HomeScreen() {
               styles.briefCard,
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Brief Semaine ${weekOfPregnancy}`}
           >
             <View style={styles.briefLeft}>
               <View style={styles.briefIconWrap}>
@@ -853,21 +627,17 @@ export default function HomeScreen() {
             <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
           </Pressable>
         </Animated.View>
-        )}
 
-        {/* ── GLOW SCORE ── */}
+        {/* Glow Score */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <View style={styles.sectionHeader}>
             <ThemedText variant="headlineMedium" color="textPrimary">Votre Glow Score</ThemedText>
-            {!isPartner && (
-              <IconButton size={36} onPress={() => setGlowShareVisible(true)}>
-                <Feather name="share-2" size={16} color={Colors.textSecondary} />
-              </IconButton>
-            )}
+            <IconButton size={36} onPress={() => setGlowShareVisible(true)} accessibilityLabel="Partager le Glow Score">
+              <Feather name="share-2" size={16} color={Colors.textSecondary} />
+            </IconButton>
           </View>
 
-          {/* Main circle */}
-          <Card padding={Spacing.xxl} style={styles.glowCard}>
+          <Card padding={Spacing.xl} style={styles.glowCard}>
             <View style={styles.glowCircleRow}>
               <GlowScoreCircle score={score} size="large" animated />
             </View>
@@ -881,7 +651,6 @@ export default function HomeScreen() {
 
             <Divider style={{ marginVertical: Spacing.xl }} />
 
-            {/* Composition bars */}
             <ThemedText variant="labelLarge" color="textPrimary" style={{ marginBottom: Spacing.md }}>
               Composition
             </ThemedText>
@@ -891,14 +660,15 @@ export default function HomeScreen() {
               <CompositionBar count={countDanger} total={total} color={Colors.danger} label="À risque" />
             </View>
 
-            {/* Améliorer card (pregnant only) */}
-            {!isPartner && hasRisk && (
+            {hasRisk && (
               <Pressable
                 onPress={() => router.push('/(tabs)/shelf')}
                 style={({ pressed }) => [
                   styles.improveCard,
                   { opacity: pressed ? 0.85 : 1 },
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel="Améliorez votre score"
               >
                 <View style={styles.improveCardLeft}>
                   <View style={styles.improveIcon}>
@@ -916,7 +686,6 @@ export default function HomeScreen() {
                 <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
               </Pressable>
             )}
-
           </Card>
         </Animated.View>
 
@@ -924,7 +693,7 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <View style={styles.sectionHeader}>
             <ThemedText variant="headlineMedium" color="textPrimary">Récents</ThemedText>
-            <Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Voir tous les scans récents">
               <ThemedText variant="labelLarge" color="accent">Voir tout</ThemedText>
             </Pressable>
           </View>
@@ -934,6 +703,8 @@ export default function HomeScreen() {
               <Pressable
                 onPress={() => router.push('/scan')}
                 style={[styles.scanCard, { backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xl }]}
+                accessibilityRole="button"
+                accessibilityLabel="Scanner votre premier produit"
               >
                 <Feather name="camera" size={24} color={Colors.accent} />
                 <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
@@ -966,324 +737,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xxl,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  heroSection: {
-    borderRadius: Radius.xl,
-    overflow: 'hidden',
-    ...Shadows.medium,
-  },
-  heroBanner: {
-    borderRadius: Radius.xl,
-    padding: Spacing.xxl,
-    overflow: 'hidden',
-  },
-  heroContent: {
-    zIndex: 1,
-  },
-  heroButton: {
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: Radius.full,
-    alignSelf: 'flex-start',
-  },
-  heroButtonText: {
-    ...Typography.labelLarge,
-    color: Colors.accentDark,
-  },
-  heroDecoration: {
-    position: 'absolute',
-    right: -20,
-    top: -20,
-    bottom: -20,
-  },
-  heroCircle1: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    position: 'absolute',
-    right: 10,
-    top: 10,
-  },
-  heroCircle2: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    position: 'absolute',
-    right: 50,
-    bottom: 10,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  glowCard: {
-    alignItems: 'stretch',
-  },
-  glowCircleRow: {
-    alignItems: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  glowSubtitle: {
-    textAlign: 'center',
-    marginTop: Spacing.md,
-  },
-  barsContainer: {
-    gap: Spacing.md,
-  },
-  barRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  barLabel: {
-    width: 64,
-  },
-  barTrack: {
-    flex: 1,
-    height: 8,
-    backgroundColor: Colors.borderLight,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: 8,
-    borderRadius: Radius.full,
-  },
-  barCount: {
-    width: 20,
-    textAlign: 'right',
-  },
-  improveCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.accentLight,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    marginTop: Spacing.xl,
-  },
-  improveCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    flex: 1,
-  },
-  improveIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shareRow: {
-    alignItems: 'center',
-    marginTop: Spacing.lg,
-  },
-  scanList: {
-    gap: Spacing.sm,
-  },
-  scanCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    padding: Spacing.lg,
-    borderRadius: Radius.lg,
-    ...Shadows.soft,
-  },
-  scanCardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scanCardContent: {
-    flex: 1,
-    gap: 2,
-  },
-  disclaimerCard: {
-    backgroundColor: Colors.backgroundSecondary,
-  },
-  disclaimerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  bfSuggestionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF0F5',
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: '#F0D0DC',
-    padding: Spacing.lg,
-    marginBottom: Spacing.sm,
-    gap: Spacing.md,
-  },
-  bfSuggestionCTA: {
-    backgroundColor: '#D4A0B0',
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  quickCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    alignItems: 'center',
-    ...Shadows.soft,
-  },
-  quickIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  shelfScanCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.accentLight,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.accent + '44',
-    ...Shadows.soft,
-  },
-  shelfScanIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  shelfScanPremium: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: Colors.accent + '33',
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    flexShrink: 0,
-  },
-  shelfScanPremiumText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: Colors.accentDark,
-    fontFamily: 'PlusJakartaSans_700Bold',
-    letterSpacing: 0.5,
-  },
-  briefCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.md,
-    ...Shadows.soft,
-  },
-  briefLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  briefIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  briefTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  newBadge: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-  },
-});
-
-const partnerStyles = StyleSheet.create({
-  tipBanner: {
-    backgroundColor: Colors.accentLight,
-    borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.accent + '55',
-    ...Shadows.soft,
-  },
-  tipBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  tipIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  missionCard: {
-    backgroundColor: Colors.safeBg,
-    borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    borderWidth: 1,
-    borderColor: Colors.safeLight,
-    ...Shadows.soft,
-  },
-});

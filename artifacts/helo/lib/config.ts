@@ -4,9 +4,9 @@
  * All environment variable access MUST go through this module.
  * Never call process.env directly in application code.
  *
- * NOTE: EXPO_PUBLIC_* variables are inlined at build time by Expo.
- * Sensitive keys (Anthropic, Google Vision) should be moved to
- * Supabase Edge Functions in production. See docs/SECURITY.md.
+ * Sensitive API keys (Anthropic, Google Vision) are now managed server-side
+ * via Supabase Edge Function secrets — they are NOT exposed to the client app.
+ * See docs/SECURITY.md for the full architecture.
  */
 
 import { Platform } from 'react-native';
@@ -18,12 +18,6 @@ function readEnv(key: string): string {
 export const Config = {
   supabaseUrl: readEnv('EXPO_PUBLIC_SUPABASE_URL'),
   supabaseAnonKey: readEnv('EXPO_PUBLIC_SUPABASE_ANON_KEY'),
-
-  // ⚠️ These keys are transitionally client-side.
-  // In production they must live in Supabase Edge Functions (supabase/functions/).
-  // See docs/SECURITY.md for the migration guide.
-  googleVisionKey: readEnv('EXPO_PUBLIC_GOOGLE_VISION_KEY'),
-  anthropicKey: readEnv('EXPO_PUBLIC_ANTHROPIC_API_KEY'),
 
   // RevenueCat — separate keys per platform
   revenueCatKey:

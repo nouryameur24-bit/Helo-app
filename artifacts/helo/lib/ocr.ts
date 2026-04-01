@@ -1,46 +1,41 @@
-// ─── OCR utilities for Hēlo ingredient scanning ─────────────────────────────
-// Uses Google Cloud Vision API (DOCUMENT_TEXT_DETECTION)
+/**
+ * lib/ocr.ts — OCR utilities for Hēlo ingredient scanning
+ *
+ * Image analysis is proxied through the `ocr` edge function so that the
+ * Google Vision API key never leaves the server.
+ * Deploy: supabase functions deploy ocr --no-verify-jwt
+ * Set secret: supabase secrets set GOOGLE_VISION_KEY=AIza…
+ */
 
-import { Config } from '@/lib/config';
-
-const VISION_KEY = Config.googleVisionKey;
-const VISION_URL = `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`;
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 // ─── Main OCR call ────────────────────────────────────────────────────────────
 /**
- * Sends a base64-encoded image to Google Vision API and returns raw OCR text.
+ * Sends a base64-encoded image to the OCR edge function and returns raw text.
  * @param base64 — raw base64 string (no data: prefix)
  */
 export async function processOCRImage(base64: string): Promise<string> {
-  if (!VISION_KEY) {
+  if (!isSupabaseConfigured) {
     throw new Error(
-      'NO_API_KEY: Ajoutez EXPO_PUBLIC_GOOGLE_VISION_KEY dans vos variables d\'environnement.',
+      'NO_SERVICE: La fonction OCR nécessite une connexion Supabase configurée.',
     );
   }
 
-  const body = {
-    requests: [
-      {
-        image: { content: base64 },
-        features: [{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }],
-        imageContext: { languageHints: ['fr', 'en'] },
-      },
-    ],
-  };
-
-  const response = await fetch(VISION_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  const { data, error } = await supabase.functions.invoke('ocr', {
+    body: {
+      imageBase64: base64,
+      features: [{ type: 'DOCUMENT_TEXT_DETECTION', maxResults: 1 }],
+    },
   });
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(`Vision API ${response.status}: ${text.slice(0, 200)}`);
+  if (error) {
+    throw new Error(`OCR edge function error: ${error.message}`);
   }
 
-  const data = await response.json();
-  const fullText: string = data.responses?.[0]?.fullTextAnnotation?.text ?? '';
+  type VisionData = {
+    responses?: Array<{ fullTextAnnotation?: { text?: string } }>;
+  };
+  const fullText = (data as VisionData)?.responses?.[0]?.fullTextAnnotation?.text ?? '';
 
   if (!fullText.trim()) {
     throw new Error('NO_TEXT_DETECTED');
@@ -58,27 +53,18 @@ export async function processOCRImage(base64: string): Promise<string> {
  */
 export function cleanOCRText(rawText: string): string {
   return rawText
-    // Normalise line endings
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
-    // Common INCI OCR errors
     .replace(/\bAOUA\b/gi, 'AQUA')
     .replace(/\bAQOA\b/gi, 'AQUA')
     .replace(/\bEAU\s*\/\s*WATER\b/gi, 'AQUA')
-    // Zero for letter-O between capital letters (e.g. C0COYL → COCOYL)
     .replace(/(?<=[A-Z])0(?=[A-Z])/g, 'O')
-    // Digit-1 at start of word followed by capitals (e.g. 1NGRÉDIENTS → INGRÉDIENTS)
     .replace(/\b1(?=[A-Z])/g, 'I')
-    // Strip percentages and standalone numbers
     .replace(/\b\d+[.,]\d+\s*%/g, '')
     .replace(/\b\d+\s*%/g, '')
-    // Remove "INGRÉDIENTS :", "INGREDIENTS:", etc. header
     .replace(/ingr[eé]dients?\s*:?\s*/gi, '')
-    // Normalise comma spacing
     .replace(/\s*,\s*/g, ', ')
-    // Collapse newlines into spaces (INCI list is one long line)
     .replace(/\n+/g, ' ')
-    // Collapse multiple spaces
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -106,17 +92,16 @@ export function parseINCI(cleanedText: string): string[] {
     }
   }
 
-  // Last segment
   const last = buffer.trim();
   if (last) parts.push(last);
 
   return parts
     .map((p) =>
       p
-        .replace(/\.$/, '')   // remove trailing period
-        .replace(/\*+$/, '')  // remove asterisks (organic marks)
+        .replace(/\.$/, '')
+        .replace(/\*+$/, '')
         .trim(),
     )
-    .filter((p) => p.length > 1 && p.length < 100) // filter noise
-    .filter((p) => !/^\d+$/.test(p));               // filter pure numbers
+    .filter((p) => p.length > 1 && p.length < 100)
+    .filter((p) => !/^\d+$/.test(p));
 }

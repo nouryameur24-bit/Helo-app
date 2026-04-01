@@ -9,27 +9,14 @@ import { calculateTrimester } from '@/lib/trimester';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Linking,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Switch,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, {
-  runOnJS,
-  useAnimatedProps,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Circle, Svg } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 
 import { ScanDisclaimerBanner } from '@/components/ScanDisclaimerBanner';
@@ -41,13 +28,28 @@ import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
+
+import { LoadingScreen, ScoreCircle, VerdictLabel, Toast } from '@/components/verdict/VerdictAnimations';
+import { IngredientCard } from '@/components/verdict/IngredientCard';
+import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
+import {
+  getVerdictColor,
+  getVerdictBg,
+  getVerdictLabel,
+  computeGlowScore,
+  sortMatches,
+  phaseLabel,
+  BOTTOM_BAR_HEIGHT,
+} from '@/components/verdict/verdictHelpers';
+import styles from '@/components/verdict/verdictStyles';
+
 import { SCAN_DISCLAIMER } from '@/constants/disclaimers';
-import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
-import { getBreastfeedingMode, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import { getBabyMode } from '@/hooks/useBabyMode';
 import { sendShelfAddNotification, sendCircleScanNotification } from '@/lib/notifications';
 import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
@@ -55,353 +57,8 @@ import { getCircle, postScanToCircle } from '@/lib/circleUtils';
 import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { MatchResult, Phase, RiskLevel, VerdictResult } from '@/types';
+import type { MatchResult, Phase, VerdictResult } from '@/types';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
-const CIRCLE_RADIUS = 60;
-const CIRCLE_STROKE = 8;
-const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
-const BOTTOM_BAR_HEIGHT = 120;
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function getVerdictColor(v?: string) {
-  if (v === 'danger') return Colors.danger;
-  if (v === 'caution') return Colors.caution;
-  return Colors.safe;
-}
-function getVerdictBg(v?: string) {
-  if (v === 'danger') return Colors.dangerBg;
-  if (v === 'caution') return Colors.cautionBg;
-  return Colors.safeBg;
-}
-function getVerdictLabel(v?: string) {
-  if (v === 'danger') return 'À éviter';
-  if (v === 'caution') return 'Précaution';
-  return 'Compatible';
-}
-function getRiskColor(r: RiskLevel) {
-  if (r === 'danger') return Colors.danger;
-  if (r === 'caution') return Colors.caution;
-  if (r === 'safe') return Colors.safe;
-  return Colors.textTertiary;
-}
-function getRiskVariant(r: RiskLevel): 'danger' | 'caution' | 'safe' | 'accent' {
-  if (r === 'danger') return 'danger';
-  if (r === 'caution') return 'caution';
-  if (r === 'safe') return 'safe';
-  return 'accent';
-}
-function getRiskBadgeLabel(r: RiskLevel) {
-  if (r === 'danger') return 'À éviter';
-  if (r === 'caution') return 'Précaution';
-  if (r === 'safe') return 'Compatible';
-  return 'Aucun signal';
-}
-function computeGlowScore(verdict: VerdictResult): number {
-  const danger = verdict.flaggedIngredients.filter((m) => m.riskLevel === 'danger').length;
-  const caution = verdict.flaggedIngredients.filter((m) => m.riskLevel === 'caution').length;
-  const penaltyD = Math.min(danger * 25, 65);
-  const penaltyC = Math.min(caution * 10, 30);
-  return Math.max(10, 100 - penaltyD - penaltyC);
-}
-function sortMatches(matches: MatchResult[]): MatchResult[] {
-  const order: Record<RiskLevel, number> = { danger: 0, caution: 1, safe: 2, no_signal: 3 };
-  return [...matches].sort((a, b) => order[a.riskLevel] - order[b.riskLevel]);
-}
-function phaseLabel(p: Phase): string {
-  if (p === 'breastfeeding') return 'mode allaitement';
-  if (p === 1) return '1er trimestre';
-  if (p === 2) return '2ème trimestre';
-  return '3ème trimestre';
-}
-
-// ─── Loading screen ───────────────────────────────────────────────────────────
-function LoadingScreen() {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.6);
-  useEffect(() => {
-    scale.value = withTiming(1.15, { duration: 900 });
-    opacity.value = withTiming(1, { duration: 900 });
-    const interval = setInterval(() => {
-      scale.value = withTiming(scale.value > 1.05 ? 1 : 1.15, { duration: 900 });
-      opacity.value = withTiming(opacity.value > 0.8 ? 0.6 : 1, { duration: 900 });
-    }, 900);
-    return () => clearInterval(interval);
-  }, [scale, opacity]);
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-  return (
-    <View style={styles.loadingRoot}>
-      <Animated.View style={[styles.loadingCircle, animStyle]} />
-      <ThemedText variant="bodyMedium" color="textSecondary" style={styles.loadingText}>
-        Analyse en cours…
-      </ThemedText>
-    </View>
-  );
-}
-
-// ─── SVG score circle ─────────────────────────────────────────────────────────
-function ScoreCircle({
-  score,
-  color,
-  onAnimDone,
-}: {
-  score: number;
-  color: string;
-  onAnimDone: () => void;
-}) {
-  const circleOpacity = useSharedValue(0);
-  const strokeProgress = useSharedValue(0); // 0 → 1
-  const scoreOpacity = useSharedValue(0);
-
-  const circleStyle = useAnimatedStyle(() => ({ opacity: circleOpacity.value }));
-
-  const animatedProps = useAnimatedProps(() => ({
-    strokeDashoffset: CIRCUMFERENCE * (1 - strokeProgress.value),
-  }));
-
-  useEffect(() => {
-    // Phase 1: circle appears (0–0.5s)
-    circleOpacity.value = withTiming(1, { duration: 400 });
-
-    // Phase 2: fill (0.5–1.2s)
-    strokeProgress.value = withDelay(
-      500,
-      withTiming(1, { duration: 700 }, (finished) => {
-        if (finished) {
-          scoreOpacity.value = withTiming(1, { duration: 200 }, (f2) => {
-            if (f2) runOnJS(onAnimDone)();
-          });
-        }
-      }),
-    );
-  }, [circleOpacity, strokeProgress, scoreOpacity, onAnimDone]);
-
-  const scoreStyle = useAnimatedStyle(() => ({ opacity: scoreOpacity.value }));
-
-  return (
-    <Animated.View style={[styles.scoreCircleWrapper, circleStyle]}>
-      <Svg width={CIRCLE_RADIUS * 2 + CIRCLE_STROKE * 2} height={CIRCLE_RADIUS * 2 + CIRCLE_STROKE * 2}>
-        {/* Track */}
-        <Circle
-          cx={CIRCLE_RADIUS + CIRCLE_STROKE}
-          cy={CIRCLE_RADIUS + CIRCLE_STROKE}
-          r={CIRCLE_RADIUS}
-          stroke={Colors.borderLight}
-          strokeWidth={CIRCLE_STROKE}
-          fill="none"
-        />
-        {/* Animated fill */}
-        <AnimatedCircle
-          cx={CIRCLE_RADIUS + CIRCLE_STROKE}
-          cy={CIRCLE_RADIUS + CIRCLE_STROKE}
-          r={CIRCLE_RADIUS}
-          stroke={color}
-          strokeWidth={CIRCLE_STROKE}
-          fill="none"
-          strokeDasharray={CIRCUMFERENCE}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${CIRCLE_RADIUS + CIRCLE_STROKE}, ${CIRCLE_RADIUS + CIRCLE_STROKE}`}
-          animatedProps={animatedProps}
-        />
-      </Svg>
-      <Animated.View style={[styles.scoreCenter, scoreStyle]}>
-        <Text style={[styles.scoreNumber, { color }]}>{score}</Text>
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
-// ─── Verdict label (Phase 3) ──────────────────────────────────────────────────
-function VerdictLabel({ label, color, visible }: { label: string; color: string; visible: boolean }) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(10);
-  useEffect(() => {
-    if (visible) {
-      opacity.value = withDelay(0, withTiming(1, { duration: 250 }));
-      translateY.value = withDelay(0, withTiming(0, { duration: 250 }));
-    }
-  }, [visible, opacity, translateY]);
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-  return (
-    <Animated.View style={style}>
-      <Text style={[styles.verdictLabel, { color }]}>{label}</Text>
-    </Animated.View>
-  );
-}
-
-// ─── Ingredient card (expandable) ────────────────────────────────────────────
-function IngredientCard({ match }: { match: MatchResult }) {
-  const [expanded, setExpanded] = useState(false);
-  const dotColor = getRiskColor(match.riskLevel);
-
-  if (match.riskLevel === 'no_signal') return null; // rendered separately
-
-  return (
-    <Card style={styles.ingredientCard} padding={Spacing.lg}>
-      <Pressable onPress={() => setExpanded((v) => !v)}>
-        <View style={styles.ingredientRow}>
-          <View style={[styles.riskDot, { backgroundColor: dotColor }]} />
-          <View style={styles.ingredientMeta}>
-            <ThemedText variant="bodyLarge" style={{ flex: 1 }}>{match.ingredientName}</ThemedText>
-            <Badge variant={getRiskVariant(match.riskLevel)}>
-              {getRiskBadgeLabel(match.riskLevel)}
-            </Badge>
-          </View>
-        </View>
-        {match.ingredient?.description_fr && (
-          <ThemedText
-            variant="bodySmall"
-            color="textSecondary"
-            style={styles.ingredientDesc}
-            numberOfLines={expanded ? undefined : 2}
-          >
-            {match.ingredient.description_fr}
-          </ThemedText>
-        )}
-        {expanded && match.ingredient?.source && (
-          <View style={styles.sourceRow}>
-            <Feather name="book-open" size={12} color={Colors.textTertiary} />
-            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginLeft: 4 }}>
-              {match.ingredient.source}
-            </ThemedText>
-            {match.ingredient.source_url && (
-              <Pressable onPress={() => Linking.openURL(match.ingredient!.source_url!)}>
-                <ThemedText variant="bodySmall" style={{ color: Colors.accent, marginLeft: 8 }}>
-                  Voir →
-                </ThemedText>
-              </Pressable>
-            )}
-          </View>
-        )}
-        {match.ingredient?.description_fr && match.ingredient.description_fr.length > 80 && (
-          <ThemedText variant="bodySmall" style={{ color: Colors.accent, marginTop: 4 }}>
-            {expanded ? 'Moins ▲' : 'Plus ▼'}
-          </ThemedText>
-        )}
-      </Pressable>
-    </Card>
-  );
-}
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function Toast({ visible, message }: { visible: boolean; message: string }) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(-20);
-  useEffect(() => {
-    if (visible) {
-      opacity.value = withTiming(1, { duration: 200 });
-      translateY.value = withTiming(0, { duration: 200 });
-    } else {
-      opacity.value = withTiming(0, { duration: 300 });
-      translateY.value = withTiming(-20, { duration: 300 });
-    }
-  }, [visible, opacity, translateY]);
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-  return (
-    <Animated.View style={[styles.toast, style]} pointerEvents="none">
-      <Feather name="check-circle" size={16} color="#fff" style={{ marginRight: 8 }} />
-      <Text style={styles.toastText}>{message}</Text>
-    </Animated.View>
-  );
-}
-
-// ─── Shelf bottom sheet ───────────────────────────────────────────────────────
-const SHELF_OPTIONS = [
-  { key: 'salle-de-bain', label: 'Salle de bain', icon: 'droplet' as const },
-  { key: 'cuisine',       label: 'Cuisine',       icon: 'coffee'  as const },
-  { key: 'pharmacie',     label: 'Pharmacie',     icon: 'plus-circle' as const },
-];
-
-const BABY_SHELF_OPTIONS = [
-  { key: 'couches',        label: 'Couches',           icon: 'package'     as const },
-  { key: 'lingettes-bebe', label: 'Lingettes bébé',    icon: 'wind'        as const },
-  { key: 'creme-change',   label: 'Crème de change',   icon: 'sun'         as const },
-  { key: 'lait-bebe',      label: 'Lait bébé',         icon: 'thermometer' as const },
-  { key: 'shampoing-bebe', label: 'Shampoing bébé',    icon: 'droplet'     as const },
-];
-
-function ShelfBottomSheet({
-  visible,
-  onSelect,
-  onClose,
-  babyMode,
-}: {
-  visible: boolean;
-  onSelect: (category: string) => void;
-  onClose: () => void;
-  babyMode?: boolean;
-}) {
-  const checkScale = useSharedValue(0);
-  const [chosen, setChosen] = useState<string | null>(null);
-
-  const handleSelect = (cat: string) => {
-    setChosen(cat);
-    checkScale.value = withSpring(1, { damping: 12, stiffness: 200 });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setTimeout(() => {
-      onSelect(cat);
-      setChosen(null);
-      checkScale.value = 0;
-    }, 700);
-  };
-
-  const checkStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: checkScale.value }],
-    opacity: checkScale.value,
-  }));
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.sheetOverlay} onPress={onClose} />
-      <View style={styles.sheetContainer}>
-        <View style={styles.sheetHandle} />
-        <ThemedText variant="headlineMedium" style={styles.sheetTitle}>
-          Ajouter au placard
-        </ThemedText>
-        {chosen ? (
-          <View style={styles.sheetSuccess}>
-            <Animated.View style={checkStyle}>
-              <Feather name="check-circle" size={52} color={Colors.safe} />
-            </Animated.View>
-          </View>
-        ) : (
-          <View style={styles.sheetOptions}>
-            {(babyMode ? BABY_SHELF_OPTIONS : SHELF_OPTIONS).map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                style={styles.sheetOption}
-                onPress={() => handleSelect(opt.key)}
-                activeOpacity={0.75}
-              >
-                <View style={styles.sheetOptionIcon}>
-                  <Feather name={opt.icon} size={22} color={Colors.accent} />
-                </View>
-                <ThemedText variant="bodyLarge">{opt.label}</ThemedText>
-                <Feather name="chevron-right" size={18} color={Colors.textTertiary} style={{ marginLeft: 'auto' }} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-        <TouchableOpacity onPress={onClose} style={styles.sheetCancel}>
-          <ThemedText variant="bodyMedium" color="textSecondary">Annuler</ThemedText>
-        </TouchableOpacity>
-      </View>
-    </Modal>
-  );
-}
-
-// ─── Main screen ─────────────────────────────────────────────────────────────
 export default function VerdictScreen() {
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const barcode = decodeURIComponent(scanId ?? '');
@@ -440,7 +97,6 @@ export default function VerdictScreen() {
     }).catch(() => {});
   }, [userId]);
 
-  // Load phase: check breastfeeding mode first, then trimester from profile
   useEffect(() => {
     getBreastfeedingMode().then((isBF) => {
       if (isBF) {
@@ -463,10 +119,9 @@ export default function VerdictScreen() {
   useEffect(() => {
     if (!barcode) return;
 
-    // OCR mode: load pre-computed result from AsyncStorage
     if (barcode.startsWith('ocr_')) {
       setIsOCRMode(true);
-      const id = barcode.slice(4); // strip 'ocr_'
+      const id = barcode.slice(4);
       AsyncStorage.getItem(`@helo_ocr_${id}`).then((raw) => {
         if (raw) {
           const data = JSON.parse(raw);
@@ -476,7 +131,6 @@ export default function VerdictScreen() {
       return;
     }
 
-    // Photo mode: load pre-computed result from AsyncStorage
     if (barcode === 'photo-scan') {
       setIsPhotoMode(true);
       AsyncStorage.getItem('@helo_photo_scan_result').then((raw) => {
@@ -491,12 +145,10 @@ export default function VerdictScreen() {
     scanBarcode(barcode, phase, isOffline);
   }, [barcode, phase, isOffline]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load baby mode on mount
   useEffect(() => {
     getBabyMode().then(setIsBabyMode).catch(() => {});
   }, []);
 
-  // Compute baby verdict when product is available and baby mode is active
   useEffect(() => {
     if (!isBabyMode || !product || !product.ingredientsList || product.ingredientsList.length === 0) return;
     matchIngredients(product.ingredientsList, 'baby')
@@ -507,7 +159,6 @@ export default function VerdictScreen() {
       .catch(() => {});
   }, [isBabyMode, product]);
 
-  // Check recall for scanned barcode (premium only)
   useEffect(() => {
     if (!barcode || barcode.startsWith('ocr_') || barcode === 'photo-scan' || !isPremium) return;
     fetchRecallForBarcode(barcode)
@@ -515,7 +166,6 @@ export default function VerdictScreen() {
       .catch(() => {});
   }, [barcode, isPremium]);
 
-  // Haptic when verdict arrives
   useEffect(() => {
     if (!verdict) return;
     if (verdict.verdict === 'safe') {
@@ -547,7 +197,6 @@ export default function VerdictScreen() {
         ...(isBabyMode ? { baby_product: true } : {}),
       });
       await AsyncStorage.setItem('@helo_shelf', JSON.stringify(shelf));
-      // Sync widget immediately after shelf write
       try {
         const { score } = calculateGlowScore(
           shelf.map((i: { verdict?: string }, idx: number) => ({
@@ -628,15 +277,18 @@ export default function VerdictScreen() {
   const noSignal = sorted.filter((m) => m.riskLevel === 'no_signal');
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  // ── Loading ──
   if (loading) return <LoadingScreen />;
 
-  // ── Error ──
   if (error) {
     const isNotFound = error.startsWith('Produit non trouvé');
     return (
       <View style={[styles.root, { paddingTop: insets.top + Spacing.lg }]}>
-        <TouchableOpacity style={styles.backRow} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backRow}
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel="Retour"
+        >
           <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
           <ThemedText variant="bodyMedium" style={{ marginLeft: 8 }}>Retour</ThemedText>
         </TouchableOpacity>
@@ -680,10 +332,8 @@ export default function VerdictScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Toast */}
       <Toast visible={toastVisible} message="Ajouté à votre placard ✓" />
 
-      {/* Shelf bottom sheet */}
       <ShelfBottomSheet
         visible={sheetVisible}
         onSelect={handleShelfSelect}
@@ -691,7 +341,6 @@ export default function VerdictScreen() {
         babyMode={isBabyMode}
       />
 
-      {/* Share bottom sheet */}
       {shareVisible && product && verdict && (
         <ShareBottomSheet
           visible={shareVisible}
@@ -721,16 +370,16 @@ export default function VerdictScreen() {
           colors={[verdictBgColor, Colors.background]}
           style={styles.hero}
         >
-          {/* Back button */}
           <TouchableOpacity
             style={[styles.backRow, { marginTop: (Platform.OS === 'web' ? 67 : insets.top) + Spacing.sm }]}
             onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
           >
             <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
             <ThemedText variant="bodyMedium" style={{ marginLeft: 8 }}>Retour</ThemedText>
           </TouchableOpacity>
 
-          {/* Score circle + label */}
           <View style={styles.heroCenter}>
             <ScoreCircle
               score={glowScore}
@@ -744,7 +393,6 @@ export default function VerdictScreen() {
             />
           </View>
 
-          {/* Product info */}
           <View style={styles.productRow}>
             {product.imageUrl ? (
               <Image
@@ -784,6 +432,9 @@ export default function VerdictScreen() {
             <TouchableOpacity
               style={[styles.tabBtn, activeTab === 'pregnancy' && styles.tabBtnActive]}
               onPress={() => setActiveTab('pregnancy')}
+              accessibilityRole="tab"
+              accessibilityLabel="Grossesse"
+              accessibilityState={{ selected: activeTab === 'pregnancy' }}
             >
               <ThemedText
                 variant="labelLarge"
@@ -795,6 +446,9 @@ export default function VerdictScreen() {
             <TouchableOpacity
               style={[styles.tabBtn, activeTab === 'baby' && styles.tabBtnActive]}
               onPress={() => setActiveTab('baby')}
+              accessibilityRole="tab"
+              accessibilityLabel="Bébé"
+              accessibilityState={{ selected: activeTab === 'baby' }}
             >
               <ThemedText
                 variant="labelLarge"
@@ -823,6 +477,8 @@ export default function VerdictScreen() {
           <Pressable
             style={styles.recallBanner}
             onPress={() => Linking.openURL(recallMatch.lien_vers_la_fiche_rappel).catch(() => {})}
+            accessibilityRole="button"
+            accessibilityLabel="Voir le rappel officiel"
           >
             <View style={styles.recallBannerIcon}>
               <Feather name="alert-triangle" size={20} color={Colors.danger} />
@@ -839,10 +495,9 @@ export default function VerdictScreen() {
           </Pressable>
         )}
 
-        {/* ── INGREDIENT DETAILS — PREMIUM GATE ── */}
+        {/* ── INGREDIENT DETAILS ── */}
         {(flagged.length > 0 || noSignal.length > 0) && (
           <View style={{ position: 'relative' }}>
-            {/* Always render at least preview for free users */}
             {flagged.length > 0 && (
               <View style={styles.section}>
                 <ThemedText variant="headlineMedium" style={styles.sectionTitle}>
@@ -874,7 +529,6 @@ export default function VerdictScreen() {
               </View>
             )}
 
-            {/* Premium paywall overlay for free users */}
             {!isPremium && (
               <View style={styles.premiumGate}>
                 <View style={styles.premiumGateCard}>
@@ -888,6 +542,8 @@ export default function VerdictScreen() {
                   <Pressable
                     onPress={() => requirePremium('feature')}
                     style={({ pressed }) => [styles.premiumGateBtn, { opacity: pressed ? 0.88 : 1 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Voir les détails avec Premium"
                   >
                     <ThemedText style={styles.premiumGateBtnText}>Voir les détails — Premium</ThemedText>
                   </Pressable>
@@ -952,7 +608,12 @@ export default function VerdictScreen() {
           <ThemedText variant="bodySmall" color="textTertiary" style={styles.disclaimerText}>
             {SCAN_DISCLAIMER}
           </ThemedText>
-          <TouchableOpacity onPress={() => router.push('/methodology')} style={{ marginTop: Spacing.sm }}>
+          <TouchableOpacity
+            onPress={() => router.push('/methodology')}
+            style={{ marginTop: Spacing.sm }}
+            accessibilityRole="link"
+            accessibilityLabel="Notre méthodologie"
+          >
             <ThemedText variant="bodySmall" style={{ color: Colors.accent }}>
               Notre méthodologie →
             </ThemedText>
@@ -966,7 +627,6 @@ export default function VerdictScreen() {
         style={[
           styles.bottomBar,
           { paddingBottom: bottomPad + Spacing.lg },
-          Shadows.medium,
         ]}
       >
         <View style={styles.bottomActions}>
@@ -1004,7 +664,7 @@ export default function VerdictScreen() {
           )}
         </View>
         <View style={styles.iconRow}>
-          <IconButton onPress={handleShare} size={44}>
+          <IconButton onPress={handleShare} size={44} accessibilityLabel="Partager">
             <Feather name="share-2" size={18} color={Colors.textSecondary} />
           </IconButton>
           <IconButton
@@ -1015,10 +675,11 @@ export default function VerdictScreen() {
               } as never)
             }
             size={44}
+            accessibilityLabel="Comparer"
           >
             <Feather name="git-branch" size={18} color={Colors.textSecondary} />
           </IconButton>
-          <IconButton onPress={() => router.back()} size={44}>
+          <IconButton onPress={() => router.back()} size={44} accessibilityLabel="Scanner un autre produit">
             <Feather name="camera" size={18} color={Colors.textSecondary} />
           </IconButton>
         </View>
@@ -1026,377 +687,3 @@ export default function VerdictScreen() {
     </View>
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-
-  // Loading
-  loadingRoot: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xl,
-  },
-  loadingCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.accentLight,
-  },
-  loadingText: { marginTop: Spacing.md },
-
-  // Error
-  errorCenter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.massive,
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centeredText: { textAlign: 'center' },
-
-  // Scroll
-  scroll: { flex: 1 },
-  scrollContent: {},
-
-  // Hero
-  hero: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.xxl,
-  },
-  backRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    alignSelf: 'flex-start',
-  },
-  heroCenter: {
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-    gap: Spacing.md,
-  },
-
-  // Score circle
-  scoreCircleWrapper: {
-    width: (CIRCLE_RADIUS + CIRCLE_STROKE) * 2,
-    height: (CIRCLE_RADIUS + CIRCLE_STROKE) * 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreCenter: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scoreNumber: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 40,
-    letterSpacing: -1,
-  },
-
-  // Verdict label
-  verdictLabel: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: Typography.displayMedium.fontSize,
-    letterSpacing: Typography.displayMedium.letterSpacing,
-    textAlign: 'center',
-  },
-
-  // Product info
-  productRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  productImage: {
-    width: 48,
-    height: 48,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surface,
-  },
-  productImagePlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  productInfo: { flex: 1, gap: 2 },
-  trimesterBadgeRow: { alignItems: 'flex-start' },
-
-  // Sections
-  section: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.xxl,
-    gap: Spacing.sm,
-  },
-  sectionTitle: { marginBottom: Spacing.sm },
-
-  // Ingredient card
-  ingredientCard: { marginBottom: Spacing.sm },
-  ingredientRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-  },
-  riskDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginTop: 7,
-  },
-  ingredientMeta: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  ingredientDesc: {
-    marginTop: Spacing.sm,
-    lineHeight: 18,
-  },
-  sourceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-
-  // No signal
-  noSignalTitle: { marginBottom: Spacing.sm },
-  noSignalCard: {},
-  noSignalItem: { paddingVertical: Spacing.xs },
-
-  // Baby mode tabs
-  tabRow: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
-    gap: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  tabBtn: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabBtnActive: {
-    borderBottomColor: Colors.accent,
-  },
-
-  // Photo identification banner
-  photoBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
-    backgroundColor: Colors.accentLight,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1.5,
-    borderColor: Colors.accent + '44',
-  },
-  photoBannerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.accent + '22',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.accent + '33',
-    flexShrink: 0,
-  },
-  photoBannerText: {
-    flex: 1,
-    color: Colors.accent,
-    lineHeight: 18,
-  },
-
-  // Recall alert banner
-  recallBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
-    backgroundColor: Colors.dangerLight,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-    borderWidth: 1.5,
-    borderColor: Colors.danger + '44',
-  },
-  recallBannerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.dangerBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.danger + '33',
-  },
-
-  // Premium ingredient gate
-  premiumGate: {
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.xl,
-  },
-  premiumGateCard: {
-    backgroundColor: Colors.accentLight,
-    borderRadius: Radius.xl,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.accent,
-    ...Shadows.soft,
-  },
-  premiumGateEmoji: { fontSize: 32, marginBottom: Spacing.sm },
-  premiumGateTitle: { textAlign: 'center', marginBottom: Spacing.sm },
-  premiumGateBody: { textAlign: 'center', marginBottom: Spacing.xl, lineHeight: 20 },
-  premiumGateBtn: {
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.full,
-    paddingVertical: 12,
-    paddingHorizontal: Spacing.xxl,
-  },
-  premiumGateBtnText: { ...Typography.labelLarge, color: '#fff' },
-
-  // Disclaimer
-  disclaimerSection: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
-  },
-  disclaimerText: { lineHeight: 18 },
-
-  // Bottom bar
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    paddingTop: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-  },
-  bottomActions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  bottomBtn: { flex: 1 },
-  iconRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: Spacing.lg,
-  },
-
-  // Sheet
-  sheetOverlay: {
-    flex: 1,
-    backgroundColor: Colors.overlay,
-  },
-  sheetContainer: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.massive,
-    paddingTop: Spacing.md,
-  },
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.borderLight,
-    alignSelf: 'center',
-    marginBottom: Spacing.xl,
-  },
-  sheetTitle: {
-    textAlign: 'center',
-    marginBottom: Spacing.xl,
-  },
-  sheetOptions: { gap: Spacing.md },
-  sheetOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.lg,
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-  },
-  sheetOptionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.accentLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetSuccess: {
-    height: 100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetCancel: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-  },
-
-  // Toast
-  toast: {
-    position: 'absolute',
-    top: 60,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.safe,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.full,
-    zIndex: 999,
-    ...Shadows.elevated,
-  },
-  toastText: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
-    fontSize: Typography.bodyMedium.fontSize,
-    color: '#fff',
-  },
-
-  circleSectionWrap: {
-    paddingHorizontal: Spacing.xl,
-  },
-  circleShareRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.accentLight,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
-  },
-  circleShareIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

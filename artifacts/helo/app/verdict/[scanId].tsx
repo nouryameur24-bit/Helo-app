@@ -151,15 +151,22 @@ export default function VerdictScreen() {
 
     // Guard: fire only once per barcode — phase change (async profile load) must
     // not launch a second concurrent OFF fetch that could timeout + overwrite success.
+    // activeScanRef is set INSIDE the timer so that a cleanup (phase changed before
+    // the 50 ms elapsed) properly resets the guard and the next fire can schedule
+    // its own timer with the correct phase.
     if (activeScanRef.current === barcode) return;
-    activeScanRef.current = barcode;
 
-    // Short delay so AsyncStorage phase reads (getBreastfeedingMode, user_profile)
-    // can complete before the scan starts — ensures phaseRef.current is correct.
+    let cancelled = false;
     const t = setTimeout(() => {
+      if (cancelled) return;
+      // Mark as scanned only once the timer actually fires
+      activeScanRef.current = barcode;
       scanBarcode(barcode, phaseRef.current, isOffline);
     }, 50);
-    return () => clearTimeout(t);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
     // `scanBarcode` and `setDirectResult` are stable refs from useScan — intentionally omitted
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [barcode, phase, isOffline]);

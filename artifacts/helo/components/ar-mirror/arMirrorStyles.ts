@@ -101,6 +101,11 @@ const styles = StyleSheet.create({
   permText: { fontFamily: 'PlusJakartaSans_500Medium', fontSize: 16, color: 'white', textAlign: 'center', marginBottom: 24, lineHeight: 22 },
   permBtn: { backgroundColor: Colors.accent, borderRadius: Radius.lg, paddingHorizontal: 32, paddingVertical: 14 },
   permBtnText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: '#1A1A1A' },
+  permIcon: { marginBottom: 20 },
+  permBackBtn: { marginTop: 16 },
+  permBackText: { color: '#AAAAAA', fontSize: 14 },
+
+  rootGate: { backgroundColor: '#0D0D0D' },
 });
 
 export default styles;

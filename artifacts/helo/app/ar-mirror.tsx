@@ -148,7 +148,7 @@ export default function ARMirrorScreen() {
 
   if (!isPremium) {
     return (
-      <View style={[styles.root, { backgroundColor: '#0D0D0D' }]}>
+      <View style={[styles.root, styles.rootGate]}>
         <StatusBar style="light" />
         <View style={[styles.gateContainer, { paddingTop: insets.top + 20 }]}>
           <Pressable onPress={() => router.back()} style={[styles.backBtn, { top: insets.top + Spacing.sm }]}>
@@ -182,18 +182,18 @@ export default function ARMirrorScreen() {
     );
   }
 
-  if (!cameraPermission) return <View style={[styles.root, { backgroundColor: '#000' }]} />;
+  if (!cameraPermission) return <View style={styles.root} />;
   if (!cameraPermission.granted) {
     return (
       <View style={[styles.root, styles.permCenter]}>
         <StatusBar style="light" />
-        <Feather name="camera-off" size={48} color="white" style={{ marginBottom: 20 }} />
+        <Feather name="camera-off" size={48} color="white" style={styles.permIcon} />
         <ThemedText style={styles.permText}>Caméra requise pour le Mode Miroir</ThemedText>
         <TouchableOpacity onPress={requestCameraPermission} style={styles.permBtn}>
           <ThemedText style={styles.permBtnText}>Autoriser la caméra</ThemedText>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
-          <ThemedText style={{ color: '#AAAAAA', fontSize: 14 }}>Retour</ThemedText>
+        <TouchableOpacity onPress={() => router.back()} style={styles.permBackBtn}>
+          <ThemedText style={styles.permBackText}>Retour</ThemedText>
         </TouchableOpacity>
       </View>
     );

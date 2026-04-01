@@ -10,7 +10,7 @@ import type { ProductData } from '@/types';
 
 import { Config } from '@/lib/config';
 
-const API_KEY = Config.anthropicKey;
+const API_KEY = (process.env as Record<string, string | undefined>)['EXPO_PUBLIC_ANTHROPIC_API_KEY'] ?? '';
 const API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-opus-4-5';
 const MAX_TOKENS = 1024;

@@ -14,6 +14,7 @@ interface IconButtonProps {
   size?: number;
   backgroundColor?: string;
   disabled?: boolean;
+  accessibilityLabel?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -24,6 +25,7 @@ export function IconButton({
   size = 44,
   backgroundColor = Colors.surfaceElevated,
   disabled = false,
+  accessibilityLabel,
 }: IconButtonProps) {
   const scale = useSharedValue(1);
 
@@ -62,6 +64,7 @@ export function IconButton({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
+      accessibilityLabel={accessibilityLabel}
     >
       {children}
     </AnimatedPressable>

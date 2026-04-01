@@ -23,6 +23,7 @@ interface ButtonProps {
   loading?: boolean;
   fullWidth?: boolean;
   children: React.ReactNode;
+  accessibilityLabel?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -34,6 +35,7 @@ export function Button({
   loading = false,
   fullWidth = false,
   children,
+  accessibilityLabel,
 }: ButtonProps) {
   const scale = useSharedValue(1);
 
@@ -79,6 +81,7 @@ export function Button({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled || loading}
+      accessibilityLabel={accessibilityLabel}
     >
       {loading ? (
         <ActivityIndicator

@@ -54,3 +54,9 @@ id = "3cngCW8RcY8k1vtZsW-ED"
 uri = "file://helo.tar.gz"
 type = "unspecified"
 title = "Hēlo — code source complet (6.9 Mo)"
+
+[[outputs]]
+id = "bRHEx8dzBjkCxtHQPCsuu"
+uri = "file://helo-pipeline.tar.gz"
+type = "unspecified"
+title = "helo-pipeline — 5 000 ingrédients + sources app (476 Ko)"

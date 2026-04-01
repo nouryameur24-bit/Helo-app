@@ -1,0 +1,115 @@
+Create a comprehensive ingredients pipeline that enriches the Hēlo database from 130 to ~5,000 ingredients. Create all files in scripts/ingredients-pipeline/
+
+OVERVIEW:
+The pipeline runs in 5 stages:
+1. SCRAPE sources (CosIng CSV, EFSA additives, CRAT pregnancy fiches, French medication database)
+2. NORMALIZE each entry via Claude Haiku into structured JSON with trimester-specific verdicts
+3. CROSS-REFERENCE multi-source entries, keep strictest verdict, deduplicate by name_inci
+4. INSERT into Supabase via upsert (never overwrite existing 130 ingredients)
+5. PRE-LOAD top 100 popular French products with real barcodes from Open Food Facts
+
+FILE STRUCTURE:
+scripts/ingredients-pipeline/
+├── run.ts              — Main orchestrator, runs stages 1-5 in sequence
+├── scrapers/
+│   ├── cosing.ts       — Download CosIng CSV from EU Commission, parse ~5000 cosmetic ingredients
+│   ├── efsa.ts         — Fetch EFSA food additives open data (~1500 additives with E-numbers)
+│   ├── crat.ts         — Scrape lecrat.fr pregnancy medication fiches (~500 entries)
+│   └── medications.ts  — Fetch from base-donnees-publique.medicaments.gouv.fr API (~400 OTC medications)
+├── normalize.ts        — Send raw text to Claude Haiku, get back structured JSON
+├── crossref.ts         — Merge multi-source entries, deduplicate, pick strictest risk
+├── insert.ts           — Batch upsert into Supabase ingredients table
+├── products.ts         — Fetch top 100 FR products from Open Food Facts by popularity
+└── utils.ts            — Shared helpers (rate limiter, logger, retry logic)
+
+STAGE 1 — SCRAPERS:
+
+cosing.ts:
+- Download CSV from https://data.europa.eu/data/datasets (search "CosIng ingredients")
+- Parse CSV: extract INCI name, CAS number, function, restriction
+- For each ingredient with a restriction or warning → flag for normalization
+- Output: array of { name_inci, cas_number, function, restriction_text, source: 'cosing' }
+
+efsa.ts:
+- Fetch from EFSA open data: food additives with E-numbers
+- Extract: name, E-number, category, ADI (acceptable daily intake), warnings
+- Output: array of { name, e_number, category, adi, warnings_text, source: 'efsa' }
+
+crat.ts:
+- Scrape lecrat.fr substance pages (they have a public index)
+- For each substance: extract name, pregnancy risk level, breastfeeding risk, recommendation text
+- Respect rate limiting: 1 request per 2 seconds
+- Output: array of { name, risk_text_fr, breastfeeding_text, source: 'crat', source_url }
+
+medications.ts:
+- Fetch from https://base-donnees-publique.medicaments.gouv.fr (public API, no key needed)
+- Filter: OTC medications (sans ordonnance)
+- Extract: name, active substance, pregnancy warning from the "conditions de prescription" field
+- Output: array of { name, active_substance, pregnancy_warning, source: 'bdpm' }
+
+STAGE 2 — NORMALIZE (normalize.ts):
+- For each raw entry, call Claude Haiku with this system prompt:
+
+"Tu es un expert en toxicologie de la reproduction. Pour l'ingrédient suivant, détermine le niveau de risque pendant la grossesse.
+Réponds UNIQUEMENT en JSON valide, sans markdown, sans explication:
+{
+  "name": "nom français",
+  "name_inci": "nom INCI si applicable",
+  "category": "cosmetic" | "food" | "medication",
+  "risk_level_t1": "safe" | "caution" | "danger",
+  "risk_level_t2": "safe" | "caution" | "danger",
+  "risk_level_t3": "safe" | "caution" | "danger",
+  "risk_level_breastfeeding": "safe" | "caution" | "danger",
+  "description_fr": "explication rassurante en 2 phrases max",
+  "confidence": "high" | "medium" | "low"
+}
+Règles:
+- En cas de doute, choisis le niveau de risque le plus strict (principe de précaution)
+- Si aucune donnée spécifique grossesse, mets 'caution' et confidence 'low'
+- 'danger' = contre-indiqué formellement (tératogène, foetotoxique)
+- 'caution' = données limitées ou risque dose-dépendant
+- 'safe' = données rassurantes, largement utilisé sans signalement"
+
+- Rate limit: max 10 requests/second to stay within Haiku limits
+- Retry on 429 with exponential backoff
+- Only keep entries with confidence "high" or "medium"
+
+STAGE 3 — CROSS-REFERENCE (crossref.ts):
+- Group all normalized entries by name_inci (case-insensitive, trimmed)
+- If same ingredient from multiple sources: keep the STRICTEST risk level per trimester
+- Example: if CosIng says "safe" but CRAT says "caution" → keep "caution"
+- Deduplicate: one entry per unique name_inci
+- Merge description_fr from the most detailed source
+- Combine source fields: "CosIng, CRAT"
+
+STAGE 4 — INSERT (insert.ts):
+- Use Supabase client with service_role key for batch operations
+- Upsert into ingredients table using name_inci as conflict key
+- CRITICAL: DO NOT overwrite existing 130 ingredients (they were manually curated)
+- Use ON CONFLICT (name_inci) DO UPDATE SET ... WHERE ingredients.source NOT LIKE '%manual%'
+- Batch size: 50 rows per upsert call
+- Log: total inserted, total skipped (already existed), total errors
+
+STAGE 5 — PRODUCTS (products.ts):
+- Fetch top 100 most popular French products from Open Food Facts
+- Use API: https://world.openfoodfacts.org/cgi/search.pl?search_terms=&countries_tags=france&sort_by=unique_scans_n&json=1&page_size=100
+- For each product: barcode, name, brand, ingredients_text_fr, categories
+- Insert into products table with real barcodes
+- These products will load instantly without API call when scanned
+
+ORCHESTRATOR (run.ts):
+- Run stages sequentially with progress logging
+- Log timing for each stage
+- Final summary: "✓ X ingredients inserted, Y products pre-loaded, Z errors"
+- Handle errors gracefully: if one scraper fails, continue with others
+
+DEPENDENCIES:
+- Use existing Supabase client from lib/supabase.ts
+- Use EXPO_PUBLIC_ANTHROPIC_API_KEY for Claude Haiku calls
+- Use csv-parse for CSV parsing (install if needed)
+- Use cheerio for HTML scraping (install if needed)
+
+ENV VARS NEEDED (already in Replit Secrets):
+- EXPO_PUBLIC_SUPABASE_URL
+- EXPO_PUBLIC_SUPABASE_ANON_KEY  
+- EXPO_PUBLIC_ANTHROPIC_API_KEY

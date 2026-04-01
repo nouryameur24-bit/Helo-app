@@ -292,7 +292,12 @@ export default function PaywallScreen() {
               {purchasing ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <ThemedText style={s.ctaText}>
+                <ThemedText
+                  style={s.ctaText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
                   {selectedPlanData.trial
                     ? `Commencer mon essai gratuit (${selectedPlanData.trial})`
                     : `Obtenir Premium — ${selectedPlanData.price}`}
@@ -479,7 +484,7 @@ const fr = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   colHeader: {
-    width: 52, alignItems: 'center',
+    width: 72, alignItems: 'center',
     paddingHorizontal: Spacing.xs,
   },
   colHeaderPremium: {
@@ -495,7 +500,7 @@ const fr = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
   },
-  col: { width: 52, alignItems: 'center' },
+  col: { width: 72, alignItems: 'center' },
   limitText: { ...Typography.labelSmall, color: Colors.textTertiary, fontSize: 11 },
   unlimitedText: { ...Typography.headlineMedium, color: Colors.safe },
 });

@@ -27,7 +27,7 @@ import {
   SW,
   SH,
   VERDICT_COLOR,
-  VERDICT_EMOJI,
+  VERDICT_LABEL_FR,
   normaliseBounds,
   type CachedLookup,
   type RenderItem,
@@ -157,7 +157,11 @@ export default function ARMirrorScreen() {
           <View style={styles.gateDemoRow}>
             {(['safe', 'caution', 'danger'] as VerdictShort[]).map((v) => (
               <View key={v} style={[styles.gateDemo, { borderColor: VERDICT_COLOR[v] + '99', backgroundColor: VERDICT_COLOR[v] + '22' }]}>
-                <ThemedText style={[styles.gateDemoEmoji, { color: VERDICT_COLOR[v] }]}>{VERDICT_EMOJI[v]}</ThemedText>
+                <Feather
+                  name={v === 'safe' ? 'check' : v === 'caution' ? 'alert-triangle' : 'x'}
+                  size={26}
+                  color={VERDICT_COLOR[v]}
+                />
               </View>
             ))}
           </View>
@@ -280,7 +284,7 @@ export default function ARMirrorScreen() {
           {(['safe', 'caution', 'danger'] as VerdictShort[]).map((v) => (
             <View key={v} style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: VERDICT_COLOR[v] }]} />
-              <ThemedText style={styles.legendText}>{VERDICT_EMOJI[v]}</ThemedText>
+              <ThemedText style={styles.legendText}>{VERDICT_LABEL_FR[v]}</ThemedText>
             </View>
           ))}
         </View>

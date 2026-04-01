@@ -12,6 +12,8 @@ export interface ThemedTextProps {
   children: React.ReactNode;
   numberOfLines?: number;
   selectable?: boolean;
+  adjustsFontSizeToFit?: boolean;
+  minimumFontScale?: number;
 }
 
 export function ThemedText({
@@ -21,6 +23,8 @@ export function ThemedText({
   children,
   numberOfLines,
   selectable,
+  adjustsFontSizeToFit,
+  minimumFontScale,
 }: ThemedTextProps) {
   const resolvedColor =
     color in Colors
@@ -36,6 +40,8 @@ export function ThemedText({
       ]}
       numberOfLines={numberOfLines}
       selectable={selectable}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
+      minimumFontScale={minimumFontScale}
     >
       {children}
     </Text>

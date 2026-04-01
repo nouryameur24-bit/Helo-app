@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
   },
   emptyIcon: {
     fontSize: 48,
+    lineHeight: 60,
     marginBottom: Spacing.lg,
   },
   emptyTitle: {

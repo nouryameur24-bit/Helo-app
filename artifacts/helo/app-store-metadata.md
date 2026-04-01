@@ -1,181 +1,99 @@
 # Hēlo — App Store Metadata
 
-## Informations générales
+## App Store Connect
 
-| Champ | Valeur |
-|---|---|
-| **Nom de l'app** | Hēlo |
-| **Sous-titre** | Scanner grossesse & allaitement |
-| **Bundle ID (iOS)** | com.helo.app |
-| **Package (Android)** | com.helo.app |
-| **Version actuelle** | 1.0.0 |
-| **Catégorie principale** | Santé et forme |
-| **Catégorie secondaire** | Grossesse & parentalité |
-| **Âge minimum** | 4+ |
-| **Prix** | Freemium (abonnement premium) |
+**Title:** Hēlo — Scanner Grossesse
+**Subtitle:** Cosmétiques · Alimentation · Médicaments
+**Category:** Health & Fitness
+**Age Rating:** 4+
+**Primary Language:** French
+**Support URL:** https://gethelo.app
+**Privacy Policy URL:** https://gethelo.app/privacy
 
 ---
 
-## App Store Connect (iOS)
+## Description
 
-### Nom (30 car. max)
-```
-Hēlo
-```
+Hēlo vérifie instantanément si vos cosmétiques, aliments et médicaments sont adaptés à votre grossesse.
 
-### Sous-titre (30 car. max)
-```
-Scanner grossesse & allaitement
-```
+▸ SCANNER INTELLIGENT
+Scannez le code-barres, photographiez les ingrédients, ou prenez en photo un menu de restaurant. 7 modes de scan pour chaque situation.
 
-### Description courte (Promotional text, 170 car. max)
-```
-Scannez vos produits en 2 secondes et découvrez s'ils sont compatibles avec votre grossesse. 5 000+ ingrédients analysés par des experts.
-```
+▸ VERDICT PAR TRIMESTRE
+Le même produit peut être safe au 2ème trimestre et à risque au 3ème. Hēlo s'adapte automatiquement à votre avancement.
 
-### Description longue (4 000 car. max)
-```
-Hēlo est votre compagnon de grossesse intelligent. Scannez n'importe quel produit — cosmétique, alimentaire ou médicament — et obtenez instantanément une analyse de sécurité adaptée à votre trimestre.
+▸ 4 962 INGRÉDIENTS VÉRIFIÉS
+Base sourcée médicalement : CRAT, ANSM, ANSES, OMS, EFSA. Chaque verdict affiche sa source.
 
-🔍 SCANNER INTELLIGENT
-• Scannez les codes-barres en 1 seconde
-• Analyse de l'étiquette INCI en temps réel par IA
-• Base de données de 5 000+ ingrédients vérifiés par trimestre
-• Catégories : cosmétiques, alimentation, médicaments
+▸ MODE RESTAURANT — EXCLUSIF
+Photographiez le menu. En 5 secondes, Hēlo analyse chaque plat et génère les questions à poser au serveur.
 
-🌿 BASE DE DONNÉES EXPERTE
-• Cosmétiques : filtres UV, conservateurs, perturbateurs endocriniens
-• Alimentation : contaminants, risques microbiologiques, allergènes
-• Médicaments : génériques, vaccins, anticoagulants, anti-épileptiques
-• Mise à jour continue selon les recommandations CRAT, EFSA, ANSM
+▸ SAGE-FEMME IA
+Posez n'importe quelle question sur votre grossesse. Réponses adaptées à votre trimestre, sourcées, bienveillantes.
 
-📚 MON PLACARD
-• Sauvegardez vos produits favoris
-• Organisez par catégorie (soin, cuisine, médication)
-• Accès hors connexion complet
+▸ MODE PARTENAIRE
+Votre partenaire scanne pour vous au supermarché. Placard partagé en temps réel.
 
-👶 MODE BÉBÉ & ALLAITEMENT
-• Basculez automatiquement après la naissance
-• Analyse spécifique post-partum
-• Compatibilité allaitement de chaque ingrédient
+▸ GLOW SCORE
+Votre score personnel de 0 à 100 basé sur la qualité de vos produits. Suivez vos progrès chaque semaine.
 
-🤝 CERCLE (Co-parentalité)
-• Partagez vos analyses avec votre co-parent
-• Liste commune de produits approuvés
-• Notifications synchronisées
+▸ ET BIEN PLUS
+Journal de grossesse · Timeline 40 semaines · Mode allaitement · Mode bébé 0-3 ans · Scan d'ordonnance · Mon Cercle social · Capsules temporelles
 
-📊 JOURNAL DE GROSSESSE
-• Suivez votre trimestre semaine par semaine
-• Rappels personnalisés
-• Brief hebdomadaire avec conseils nutritionnels
+Hēlo est un outil d'information et ne remplace pas l'avis d'un professionnel de santé.
+
+Gratuit : 5 scans/jour, verdicts, placard, Glow Score
+Premium : scans illimités, Mode Restaurant, Sage-Femme IA, mode hors-ligne
+- 4,99€/mois
+- 29,99€/an (7 jours d'essai gratuit)
+- 59,99€ à vie
 
 ---
-*Hēlo est un outil d'information et ne remplace pas l'avis de votre médecin ou sage-femme. Consultez toujours un professionnel de santé pour toute décision médicale.*
-```
 
-### Mots-clés (100 car. max, séparés par virgules)
-```
-grossesse,enceinte,scanner,ingrédients,cosmétiques,sécurité,bébé,trimestre,INCI,allaitement
-```
+## Keywords
 
-### URL de support
 ```
-https://helo.app/support
-```
-
-### URL de confidentialité
-```
-https://helo.app/privacy
-```
-
-### URL marketing
-```
-https://helo.app
+grossesse,enceinte,scanner,safe,cosmétiques,alimentation,médicaments,bébé,trimestre,scan,produits,ingrédients,yuka,grossesse,santé
 ```
 
 ---
 
-## Google Play Store (Android)
+## Promotional Text (modifiable sans mise à jour)
 
-### Titre (50 car. max)
-```
-Hēlo — Scanner grossesse & allaitement
-```
-
-### Description courte (80 car. max)
-```
-Scannez vos produits et vérifiez leur sécurité pendant la grossesse. 5 000+ ingrédients.
-```
-
-### Description longue (4 000 car. max)
-*(Identique à la description App Store ci-dessus)*
-
-### Étiquettes (tags)
-```
-grossesse, scanner produits, ingrédients, sécurité grossesse, cosmétiques, allaitement
-```
+> Nouveau : 4 962 ingrédients vérifiés. La base la plus complète pour votre grossesse.
 
 ---
 
-## Screenshots requis
+## Review Notes for Apple
 
-### iPhone 6.9" (iPhone 16 Pro Max)
-1. Écran d'accueil — Dashboard trimestre
-2. Scanner en action — code-barre scanné
-3. Résultat d'analyse — fiche ingrédient
-4. Mon Placard — liste produits sauvegardés
-5. Mode Bébé — allaitement
+Hēlo is a product scanning app for pregnant women. It analyzes cosmetics, food, and medication ingredients for pregnancy safety, with trimester-specific verdicts based on medical sources (CRAT, ANSM, WHO, EFSA).
 
-### iPhone 6.5" (iPhone 15 Plus)
-*(Mêmes 5 écrans, résolution adaptée)*
+Test account: No account required. The app works without login.
+To test: Open the app → complete onboarding (any name, future due date) → go to Scan tab → scan any food/cosmetic barcode → view the verdict.
 
-### iPad 13" (iPad Pro)
-*(5 écrans en mode tablette, layout paysage)*
+The AI chatbot provides general pregnancy information only and always ends with a disclaimer to consult a healthcare professional. The restaurant mode uses AI to analyze menu photos — results are labeled as AI-generated.
 
-### Android Phone
-*(5 écrans identiques iOS)*
-
----
-
-## App Review Notes (Apple)
-```
-Test account:
-- Email: reviewer@helo-test.com
-- Password: HeloReview2024!
-
-Notes:
-- L'app nécessite une connexion Supabase pour le scan complet.
-- En mode démo (sans compte), toutes les fonctionnalités sont accessibles via des données mockées.
-- La caméra est utilisée uniquement pour le scan de codes-barres.
-- Aucune donnée médicale n'est partagée avec des tiers.
-```
-
----
-
-## Politique de confidentialité — Résumé RGPD
-
-| Donnée collectée | Usage | Rétention |
-|---|---|---|
-| Date de terme (trimestre) | Personnalisation analyses | Locale uniquement |
-| Historique de scans | Mon Placard | Compte utilisateur |
-| Email (optionnel) | Authentification | Jusqu'à suppression compte |
-| Données caméra | Scan barcode temps réel | Non stocké |
-
-**Partage tiers** : Aucun. Les analyses sont effectuées localement ou via Supabase (hébergement EU).
+This app is an informational tool and does not provide medical diagnosis or treatment.
 
 ---
 
 ## In-App Purchases
 
-| Produit | Type | Prix suggéré |
+| Identifiant | Type | Prix |
 |---|---|---|
-| `helo_premium_monthly` | Abonnement mensuel | 4,99 € / mois |
-| `helo_premium_yearly` | Abonnement annuel | 34,99 € / an |
-| `helo_premium_lifetime` | Achat unique | 89,99 € |
+| `helo_premium_monthly` | Abonnement auto-renouvelable | 4,99 € / mois |
+| `helo_premium_yearly` | Abonnement auto-renouvelable | 29,99 € / an |
+| `helo_premium_lifetime` | Achat unique non-consommable | 59,99 € |
 
-**Fonctionnalités Premium** :
-- Scan illimité (gratuit : 10/jour)
-- Analyse IA des étiquettes photos
-- Cercle co-parent
-- Alertes rappels produits
-- Export PDF du journal
+---
+
+## Screenshots Required
+
+### iPhone 6.9" (1290×2796) — 5 screenshots
+1. Scanner — "Scannez. Vérifiez. Respirez."
+2. Verdict — "Un verdict clair en 2 secondes"
+3. Restaurant — "Le Mode Restaurant"
+4. Glow Score — "Votre Glow Score"
+5. Chatbot — "Votre Sage-Femme IA"
+
+### iPad 13" (2064×2752) — 5 screenshots (same content, adapted layout)

@@ -1,5 +1,16 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "i9g0qVFCQgazURFGCWdul"
+uri = "file://artifacts/helo/assets/images/icon.png"
+type = "image"
+title = "helo app icon gold H"
+
+[[generated]]
+id = "gDMrNEiFNlcYqZvwl8fo1"
+uri = "file://artifacts/helo/assets/images/splash-icon.png"
+type = "image"
+title = "helo splash screen cream gold"
 
 [[outputs]]
 id = "q0JjGmCwnubla7h_0HcBG"
@@ -66,3 +77,9 @@ id = "rfxXpYKIlA0ZPNJhnJnco"
 uri = "file://helo-complete.tar.gz"
 type = "unspecified"
 title = "Hēlo — Projet complet (552 Ko, 296 fichiers)"
+
+[[outputs]]
+id = "BtanjGvYB3cTi0oe6uKUy"
+uri = "file://helo-appstore-ready.tar.gz"
+type = "unspecified"
+title = "Hēlo — App Store Ready (2 MB, 300 fichiers)"

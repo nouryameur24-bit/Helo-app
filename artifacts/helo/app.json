@@ -6,8 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "helo",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -15,64 +14,32 @@
     },
     "ios": {
       "supportsTablet": false,
-      "entitlements": {
-        "com.apple.security.application-groups": [
-          "group.com.helo.widget"
-        ]
-      },
+      "bundleIdentifier": "com.heloapp.helo",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSUserNotificationsUsageDescription": "Hēlo vous envoie des rappels hebdomadaires, des jalons de trimestre et des alertes sur vos produits pour votre grossesse."
+        "NSCameraUsageDescription": "Hēlo utilise la caméra pour scanner les codes-barres et photographier les listes d'ingrédients de vos produits.",
+        "NSPhotoLibraryUsageDescription": "Hēlo accède à vos photos pour analyser les images de produits ou de menus.",
+        "NSMicrophoneUsageDescription": "Hēlo utilise le microphone pour la recherche vocale de produits.",
+        "NSSpeechRecognitionUsageDescription": "Hēlo utilise la reconnaissance vocale pour vous permettre de poser des questions par la voix.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
-      "permissions": [
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.POST_NOTIFICATIONS"
-      ]
-    },
-    "web": {
-      "favicon": "./assets/images/icon.png"
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#FFFAF5"
+      },
+      "package": "com.heloapp.helo"
     },
     "plugins": [
-      [
-        "expo-router",
-        {
-          "origin": "https://replit.com/"
-        }
-      ],
-      "expo-font",
-      "expo-web-browser",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Hēlo a besoin d'accéder à votre caméra pour scanner les codes-barres de vos produits.",
-          "microphonePermission": false
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/images/icon.png",
-          "color": "#C9A96E",
-          "sounds": [],
-          "androidMode": "default",
-          "androidCollapsedTitle": "#{unread_notifications} nouvelles notifications"
-        }
-      ],
-      [
-        "react-native-ios-widget",
-        {
-          "widgetsFolder": "widgets",
-          "groupIdentifier": "group.com.helo.widget",
-          "targetName": "HeloWidgetsExtension",
-          "bundleIdentifier": "com.helo.widgets"
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+      "expo-router",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-notifications",
+      "expo-haptics"
+    ]
   }
 }

@@ -1,0 +1,185 @@
+Final prompt — App Store Prep. Make Hēlo ready for Apple submission.
+
+1. APP ICON (assets/images/icon.png — 1024x1024):
+Generate a premium app icon:
+- Background: subtle gradient from #FFFAF5 (cream) to #FFF5EE (warm cream)
+- Center: stylized golden "H" with a soft halo/arc above it (like a protective shield)
+- The "H" uses color #C9A96E (gold) with a subtle shadow
+- Style: minimal, luxe, skincare brand aesthetic — NOT cartoonish
+- Must look stunning at 60x60 (home screen) and 1024x1024 (App Store)
+- No text other than the H, no gradients that look cheap
+- Export as PNG 1024x1024 with no transparency
+
+2. SPLASH SCREEN (assets/images/splash-icon.png):
+- Same cream background #FFFAF5
+- "Hēlo" in Playfair Display or elegant serif, color #C9A96E
+- Centered, clean, minimal
+- 1284x2778 for iPhone 6.7"
+
+3. APP STORE SCREENSHOTS — Create 5 screenshot components that render as 1290x2796 images:
+Each screenshot = phone mockup on gradient background + headline + subtitle
+
+Screenshot 1 — HERO:
+- Show the scan screen with viewfinder
+- Headline: "Scannez. Vérifiez. Respirez."
+- Subtitle: "Cosmétiques, alimentation, médicaments — vérifiés pour votre grossesse"
+
+Screenshot 2 — VERDICT:
+- Show a verdict screen with a product rated "Compatible" (green)
+- Headline: "Un verdict clair en 2 secondes"
+- Subtitle: "Adapté à votre trimestre. Sources médicales affichées."
+
+Screenshot 3 — RESTAURANT:
+- Show the restaurant results with dishes analyzed
+- Headline: "Le Mode Restaurant"
+- Subtitle: "Photographiez le menu. Commandez sereinement."
+
+Screenshot 4 — GLOW SCORE:
+- Show the home screen with Glow Score 87
+- Headline: "Votre Glow Score"
+- Subtitle: "Suivez la qualité de vos produits semaine après semaine."
+
+Screenshot 5 — CHATBOT:
+- Show the chat screen with a question about doliprane
+- Headline: "Votre Sage-Femme IA"
+- Subtitle: "Posez n'importe quelle question. Réponse sourcée instantanée."
+
+Style for all screenshots:
+- Background: gradient mesh cream/gold subtle
+- Phone frame: minimal dark frame with rounded corners
+- Headline: 48px bold serif (Playfair Display style)
+- Subtitle: 20px regular sans-serif, muted color
+- "Hēlo" logo small in top left corner of each
+- Bottom: "4 962 ingrédients vérifiés · Sources CRAT, ANSM, OMS" in small text
+
+4. APP.JSON — Complete Expo config:
+{
+  "expo": {
+    "name": "Hēlo",
+    "slug": "helo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "helo",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFAF5"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.heloapp.helo",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Hēlo utilise la caméra pour scanner les codes-barres et photographier les listes d'ingrédients de vos produits.",
+        "NSPhotoLibraryUsageDescription": "Hēlo accède à vos photos pour analyser les images de produits ou de menus.",
+        "NSMicrophoneUsageDescription": "Hēlo utilise le microphone pour la recherche vocale de produits.",
+        "NSSpeechRecognitionUsageDescription": "Hēlo utilise la reconnaissance vocale pour vous permettre de poser des questions par la voix.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#FFFAF5"
+      },
+      "package": "com.heloapp.helo"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-notifications",
+      "expo-haptics"
+    ]
+  }
+}
+
+5. EAS.JSON — Build config:
+{
+  "cli": { "version": ">= 5.0.0" },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "ios": { "simulator": true }
+    },
+    "production": {
+      "ios": { "autoIncrement": true },
+      "android": { "autoIncrement": true }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "nouryameur24@gmail.com",
+        "ascAppId": "FILL_AFTER_CREATING_APP",
+        "appleTeamId": "FILL_AFTER_ENROLLMENT"
+      }
+    }
+  }
+}
+
+6. APP STORE METADATA — Create a file app-store-metadata.md:
+
+Title: Hēlo — Scanner Grossesse
+Subtitle: Cosmétiques · Alimentation · Médicaments
+
+Description:
+Hēlo vérifie instantanément si vos cosmétiques, aliments et médicaments sont adaptés à votre grossesse.
+
+▸ SCANNER INTELLIGENT
+Scannez le code-barres, photographiez les ingrédients, ou prenez en photo un menu de restaurant. 7 modes de scan pour chaque situation.
+
+▸ VERDICT PAR TRIMESTRE  
+Le même produit peut être safe au 2ème trimestre et à risque au 3ème. Hēlo s'adapte automatiquement à votre avancement.
+
+▸ 4 962 INGRÉDIENTS VÉRIFIÉS
+Base sourcée médicalement : CRAT, ANSM, ANSES, OMS, EFSA. Chaque verdict affiche sa source.
+
+▸ MODE RESTAURANT — EXCLUSIF
+Photographiez le menu. En 5 secondes, Hēlo analyse chaque plat et génère les questions à poser au serveur.
+
+▸ SAGE-FEMME IA
+Posez n'importe quelle question sur votre grossesse. Réponses adaptées à votre trimestre, sourcées, bienveillantes.
+
+▸ MODE PARTENAIRE
+Votre partenaire scanne pour vous au supermarché. Placard partagé en temps réel.
+
+▸ GLOW SCORE
+Votre score personnel de 0 à 100 basé sur la qualité de vos produits. Suivez vos progrès chaque semaine.
+
+▸ ET BIEN PLUS
+Journal de grossesse · Timeline 40 semaines · Mode allaitement · Mode bébé 0-3 ans · Scan d'ordonnance · Mon Cercle social · Capsules temporelles
+
+Hēlo est un outil d'information et ne remplace pas l'avis d'un professionnel de santé.
+
+Gratuit : 5 scans/jour, verdicts, placard, Glow Score
+Premium : scans illimités, Mode Restaurant, Sage-Femme IA, mode hors-ligne
+- 4,99€/mois
+- 29,99€/an (7 jours d'essai gratuit)
+- 59,99€ à vie
+
+Keywords: grossesse,enceinte,scanner,safe,cosmétiques,alimentation,médicaments,bébé,trimestre,scan,produits,ingrédients,yuka,grossesse,santé
+
+Category: Health & Fitness
+Age Rating: 4+
+Primary Language: French
+Support URL: https://gethelo.app
+Privacy Policy URL: https://gethelo.app/privacy
+
+7. PROMOTIONAL TEXT (changes without app update):
+"Nouveau : 4 962 ingrédients vérifiés. La base la plus complète pour votre grossesse."
+
+8. REVIEW NOTES FOR APPLE:
+"Hēlo is a product scanning app for pregnant women. It analyzes cosmetics, food, and medication ingredients for pregnancy safety, with trimester-specific verdicts based on medical sources (CRAT, ANSM, WHO, EFSA).
+
+Test account: No account required. The app works without login.
+To test: Open the app → complete onboarding (any name, future due date) → go to Scan tab → scan any food/cosmetic barcode → view the verdict.
+
+The AI chatbot provides general pregnancy information only and always ends with a disclaimer to consult a healthcare professional. The restaurant mode uses AI to analyze menu photos — results are labeled as AI-generated.
+
+This app is an informational tool and does not provide medical diagnosis or treatment."

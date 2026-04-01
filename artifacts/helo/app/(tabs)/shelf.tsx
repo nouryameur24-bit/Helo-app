@@ -15,6 +15,7 @@ import { MaListeView } from '@/components/shelf/MaListeView';
 import { MonPlacardView } from '@/components/shelf/MonPlacardView';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { usePremium } from '@/hooks/usePremium';
 
 type Tab = 'placard' | 'liste';
 
@@ -58,6 +59,7 @@ export default function ShelfScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const [activeTab, setActiveTab] = useState<Tab>('placard');
   const { highlight } = useLocalSearchParams<{ highlight?: string }>();
+  const { isPremium } = usePremium();
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
@@ -75,10 +77,12 @@ export default function ShelfScreen() {
         >
           <Feather name="layers" size={16} color={Colors.accentDark} />
           <ThemedText style={styles.shelfScanText}>Scanner une étagère</ThemedText>
-          <View style={styles.premiumBadge}>
-            <Feather name="star" size={9} color={Colors.accentDark} />
-            <ThemedText style={styles.premiumBadgeText}>PREMIUM</ThemedText>
-          </View>
+          {!isPremium && (
+            <View style={styles.premiumBadge}>
+              <Feather name="star" size={9} color={Colors.accentDark} />
+              <ThemedText style={styles.premiumBadgeText}>PREMIUM</ThemedText>
+            </View>
+          )}
         </TouchableOpacity>
       </Animated.View>
 

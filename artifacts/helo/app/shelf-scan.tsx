@@ -202,10 +202,12 @@ export default function ShelfScanScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <ThemedText style={styles.headerTitle}>Scanner une étagère</ThemedText>
-          <View style={styles.premiumBadge}>
-            <Feather name="star" size={10} color={Colors.accentDark} />
-            <ThemedText style={styles.premiumBadgeText}>PREMIUM</ThemedText>
-          </View>
+          {!isPremium && (
+            <View style={styles.premiumBadge}>
+              <Feather name="star" size={10} color={Colors.accentDark} />
+              <ThemedText style={styles.premiumBadgeText}>PREMIUM</ThemedText>
+            </View>
+          )}
         </View>
         <View style={{ width: 44 }} />
       </Animated.View>

@@ -30,6 +30,7 @@ import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
 import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
 import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { usePremium } from '@/hooks/usePremium';
 import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 import { PactWidget } from '@/components/PactWidget';
@@ -138,6 +139,7 @@ export default function HomeScreen() {
 
   const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
   const hasRisk = countDanger > 0 || countCaution > 0;
+  const { isPremium } = usePremium();
 
   const [glowShareVisible, setGlowShareVisible] = useState(false);
 
@@ -417,10 +419,12 @@ export default function HomeScreen() {
                 </ThemedText>
               </View>
             </View>
-            <View style={styles.shelfScanPremium}>
-              <Feather name="star" size={10} color={Colors.accentDark} />
-              <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
-            </View>
+            {!isPremium && (
+              <View style={styles.shelfScanPremium}>
+                <Feather name="star" size={10} color={Colors.accentDark} />
+                <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
+              </View>
+            )}
           </Pressable>
         </Animated.View>
 
@@ -568,25 +572,27 @@ export default function HomeScreen() {
                 Analysez tous vos produits en une photo
               </ThemedText>
             </View>
-            <View style={styles.shelfScanPremium}>
-              <Feather name="star" size={10} color={Colors.accentDark} />
-              <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
-            </View>
+            {!isPremium && (
+              <View style={styles.shelfScanPremium}>
+                <Feather name="star" size={10} color={Colors.accentDark} />
+                <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
+              </View>
+            )}
           </Pressable>
         </Animated.View>
 
         {/* Stats row */}
         <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.statsRow}>
           <Card style={styles.statCard} padding={Spacing.lg}>
-            <ThemedText variant="displayMedium" color="accent">3</ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">Scans aujourd'hui</ThemedText>
+            <ThemedText variant="displayMedium" color="accent">{total}</ThemedText>
+            <ThemedText variant="bodySmall" color="textSecondary">Produits scannés</ThemedText>
           </Card>
           <Card style={styles.statCard} padding={Spacing.lg}>
-            <ThemedText variant="displayMedium" style={{ color: Colors.safe }}>2</ThemedText>
+            <ThemedText variant="displayMedium" style={{ color: Colors.safe }}>{countSafe}</ThemedText>
             <ThemedText variant="bodySmall" color="textSecondary">Produits sûrs</ThemedText>
           </Card>
           <Card style={styles.statCard} padding={Spacing.lg}>
-            <ThemedText variant="displayMedium" style={{ color: Colors.caution }}>1</ThemedText>
+            <ThemedText variant="displayMedium" style={{ color: Colors.caution }}>{countCaution + countDanger}</ThemedText>
             <ThemedText variant="bodySmall" color="textSecondary">À vérifier</ThemedText>
           </Card>
         </Animated.View>

@@ -404,16 +404,16 @@ export default function ProfileScreen() {
       >
         {/* Header Avatar */}
         <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.avatarSection}>
-          <LinearGradient
-            colors={isPartner ? ['#A8C4E0', '#6B9BBF'] : [Colors.accentLight, Colors.accent]}
-            style={styles.avatar}
-            accessibilityRole="image"
-            accessibilityLabel={`Avatar de ${displayName}`}
-          >
-            <ThemedText variant="headlineLarge" style={styles.avatarInitial}>
-              {initial}
-            </ThemedText>
-          </LinearGradient>
+          <Pressable onPress={handleVersionTap} accessibilityRole="button" accessibilityLabel="Avatar">
+            <LinearGradient
+              colors={isPartner ? ['#A8C4E0', '#6B9BBF'] : [Colors.accentLight, Colors.accent]}
+              style={[styles.avatar, devTapCount > 0 && devTapCount < 5 && { opacity: 0.75 }]}
+            >
+              <ThemedText variant="headlineLarge" style={styles.avatarInitial}>
+                {devTapCount > 0 && devTapCount < 5 ? `${devTapCount}/5` : initial}
+              </ThemedText>
+            </LinearGradient>
+          </Pressable>
           <View style={styles.avatarInfo}>
             <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
             {isPartner ? (
@@ -783,13 +783,9 @@ export default function ProfileScreen() {
 
         {/* Footer */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.footer}>
-          <Pressable onPress={handleVersionTap} accessibilityRole="button" accessibilityLabel="Version">
-            <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
-              {devTapCount > 0 && devTapCount < 5
-                ? `Version 1.0.0 · dev (${devTapCount}/5)`
-                : `Version 1.0.0${isPremium ? ' · Premium ✓' : ''}`}
-            </ThemedText>
-          </Pressable>
+          <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
+            {`Version 1.0.0${isPremium ? ' · Premium ✓' : ''}`}
+          </ThemedText>
           <Pressable
             onPress={handleLogout}
             style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}

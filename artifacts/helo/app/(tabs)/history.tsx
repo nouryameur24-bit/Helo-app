@@ -116,10 +116,9 @@ export default function HistoryScreen() {
   const isPartner = role === 'partner';
   const historyUserId = isPartner && linkedUserId ? linkedUserId : userId;
 
-  const [sections, setSections] = useState(HISTORY_DATA);
-  const [totalCount, setTotalCount] = useState(
-    HISTORY_DATA.reduce((acc, s) => acc + s.data.length, 0)
-  );
+  const [sections, setSections] = useState<{ title: string; data: ScanItem[] }[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadHistory = useCallback(async () => {
     if (!historyUserId) return;
@@ -193,6 +192,8 @@ export default function HistoryScreen() {
       setSections(groupByDate(items));
       setTotalCount(items.length);
     } catch {
+    } finally {
+      setIsLoading(false);
     }
   }, [historyUserId]);
 
@@ -221,9 +222,22 @@ export default function HistoryScreen() {
           <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.listHeader}>
             <ThemedText variant="headlineLarge" color="textPrimary">{headerTitle}</ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: 4 }}>
-              {totalCount} produit{totalCount !== 1 ? 's' : ''} scann{totalCount !== 1 ? 'és' : 'é'}
+              {isLoading ? 'Chargement…' : `${totalCount} produit${totalCount !== 1 ? 's' : ''} scann${totalCount !== 1 ? 'és' : 'é'}`}
             </ThemedText>
           </Animated.View>
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <View style={styles.emptyState}>
+              <ThemedText style={styles.emptyIcon}>📋</ThemedText>
+              <ThemedText variant="headlineMedium" color="textPrimary" style={styles.emptyTitle}>
+                Aucun scan pour l'instant
+              </ThemedText>
+              <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
+                Vos scans apparaîtront ici après votre première analyse.
+              </ThemedText>
+            </View>
+          ) : null
         }
         renderSectionHeader={({ section }) => (
           <View style={styles.sectionHeader}>
@@ -269,5 +283,22 @@ const styles = StyleSheet.create({
   rowContent: {
     flex: 1,
     gap: 2,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: {
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  emptyBody: {
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });

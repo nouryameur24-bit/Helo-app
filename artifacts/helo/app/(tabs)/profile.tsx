@@ -20,6 +20,8 @@ import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { JournalEntry } from '@/app/(tabs)/journal';
+import { useShelfData } from '@/hooks/useShelfData';
+import { calculateGlowScore } from '@/lib/glowscore';
 import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import { GlowScoreMini } from '@/components/GlowScoreMini';
 import { NotificationPermissionScreen } from '@/components/NotificationPermissionScreen';
@@ -106,6 +108,8 @@ export default function ProfileScreen() {
   }, [isBreastfeeding, babyMode, enableBabyMode]);
 
   const { isPremium, requirePremium } = usePremium();
+  const { shelf: profileShelf } = useShelfData(userId || undefined);
+  const { score: glowScore } = calculateGlowScore(profileShelf);
 
   const [circleData, setCircleData] = useState<CircleData | null | undefined>(undefined);
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -425,7 +429,7 @@ export default function ProfileScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(500)}>
             <Card style={styles.glowCard} padding={Spacing.xl}>
               <View style={styles.glowCardInner}>
-                <GlowScoreMini score={75} trend="stable" />
+                <GlowScoreMini score={glowScore} trend="stable" />
               </View>
             </Card>
           </Animated.View>

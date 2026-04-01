@@ -23,7 +23,7 @@ import { Divider } from '@/components/ui/Divider';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { GlowScoreCircle } from '@/components/GlowScoreCircle';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import { calculateGlowScore, getGlowLabel } from '@/lib/glowscore';
 import { useTrimester } from '@/hooks/useTrimester';
 import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
@@ -185,6 +185,13 @@ export default function HomeScreen() {
           <View>
             <ThemedText variant="bodySmall" color="textTertiary">Bonjour</ThemedText>
             <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
+            {weekOfPregnancy > 0 && (
+              <View style={styles.weekPill}>
+                <ThemedText variant="labelSmall" style={{ color: Colors.accentDark }}>
+                  Semaine {weekOfPregnancy}
+                </ThemedText>
+              </View>
+            )}
           </View>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
             <IconButton size={44} onPress={() => router.push('/search')} accessibilityLabel="Rechercher">
@@ -332,222 +339,48 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Feature discovery cards */}
+        {/* Feature discovery grid */}
         <Animated.View entering={FadeInDown.delay(155).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/nutrition' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              {
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Votre Nutrition"
-          >
-            <View style={styles.briefLeft}>
-              <View style={[styles.briefIconWrap, { backgroundColor: Colors.cautionLight, borderColor: Colors.caution + '44' }]}>
-                <Feather name="heart" size={22} color={Colors.caution} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Votre Nutrition</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Recettes & besoins de votre trimestre
-                </ThemedText>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(165).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/home-score' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              {
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Mon Environnement"
-          >
-            <View style={styles.briefLeft}>
-              <View style={[styles.briefIconWrap, { backgroundColor: Colors.safeBg, borderColor: Colors.safeLight }]}>
-                <Feather name="home" size={22} color={Colors.safe} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Mon Environnement</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Score de sécurité par pièce
-                </ThemedText>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(168).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/travel' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              {
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Mode Voyage"
-          >
-            <View style={styles.briefLeft}>
-              <View style={[styles.briefIconWrap, { backgroundColor: '#E8F0FF', borderColor: '#C5D5FF' }]}>
-                <Feather name="map" size={22} color="#6B8FDB" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Mode Voyage ✈️</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Briefing santé par destination
-                </ThemedText>
-              </View>
-            </View>
-            {!isPremium && (
-              <View style={styles.shelfScanPremium}>
-                <Feather name="star" size={10} color={Colors.accentDark} />
-                <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
-              </View>
-            )}
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(172).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/voice' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              {
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Mode Vocal"
-          >
-            <View style={styles.briefLeft}>
-              <View style={[styles.briefIconWrap, { backgroundColor: '#F0E8FF', borderColor: '#D5C5FF' }]}>
-                <Feather name="mic" size={22} color="#8B6BDB" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Mode Vocal 🎙️</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Posez vos questions à voix haute
-                </ThemedText>
-              </View>
-            </View>
-            <View style={[styles.shelfScanPremium, { backgroundColor: '#F0E8FF', borderColor: '#D5C5FF' }]}>
-              <ThemedText style={[styles.shelfScanPremiumText, { color: '#8B6BDB' }]}>3/j gratuit</ThemedText>
-            </View>
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(175).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/timeline' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              {
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Ma Timeline"
-          >
-            <View style={styles.briefLeft}>
-              <View style={[styles.briefIconWrap, { backgroundColor: '#E8F5EE', borderColor: '#C5E8D5' }]}>
-                <Feather name="calendar" size={22} color={Colors.safe} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Ma Timeline 🗓️</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Fresque de vos 40 semaines
-                </ThemedText>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(176).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/widget-preview' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              {
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Widget et Apple Watch"
-          >
-            <View style={styles.briefLeft}>
-              <View style={[styles.briefIconWrap, { backgroundColor: '#F5F0FF', borderColor: '#DDD0FF' }]}>
-                <ThemedText style={{ fontSize: 20 }}>📱</ThemedText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Widget & Apple Watch ⌚</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Glow Score sur votre écran d'accueil
-                </ThemedText>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={16} color={Colors.textTertiary} />
-          </Pressable>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(185).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/ar-mirror' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              {
-                backgroundColor: Colors.surface,
-                borderColor: Colors.border,
-                opacity: pressed ? 0.88 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Mode Miroir AR"
-          >
-            <View style={styles.briefLeft}>
-              <View style={[styles.briefIconWrap, { backgroundColor: '#F0F8F4', borderColor: '#C0E4D0' }]}>
-                <ThemedText style={{ fontSize: 20 }}>🪞</ThemedText>
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Mode Miroir AR ✨</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Halos colorés sur vos produits en temps réel
-                </ThemedText>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={16} color={Colors.textTertiary} />
-          </Pressable>
+          <View style={styles.featureSectionHeader}>
+            <ThemedText variant="headlineMedium" color="textPrimary">Explorer</ThemedText>
+          </View>
+          <View style={styles.featureGrid}>
+            {([
+              { label: 'Nutrition', icon: 'heart', iconBg: Colors.cautionLight, iconColor: Colors.caution, route: '/nutrition' },
+              { label: 'Maison', icon: 'home', iconBg: Colors.safeBg, iconColor: Colors.safe, route: '/home-score' },
+              { label: 'Voyage', icon: 'map', iconBg: '#E8F0FF', iconColor: '#6B8FDB', route: '/travel', premium: true },
+              { label: 'Vocal', icon: 'mic', iconBg: '#F0E8FF', iconColor: '#8B6BDB', route: '/voice', badge: '3/j' },
+              { label: 'Timeline', icon: 'calendar', iconBg: '#E8F5EE', iconColor: Colors.safe, route: '/timeline' },
+              { label: 'Widget', icon: 'watch', iconBg: '#F5F0FF', iconColor: '#8B6BDB', route: '/widget-preview' },
+              { label: 'Miroir AR', icon: 'aperture', iconBg: '#F0F8F4', iconColor: Colors.safe, route: '/ar-mirror' },
+            ] as const).map((f) => (
+              <Pressable
+                key={f.label}
+                style={({ pressed }) => [
+                  styles.featureCell,
+                  { opacity: pressed ? 0.82 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
+                ]}
+                onPress={() => router.push(f.route as never)}
+                accessibilityRole="button"
+                accessibilityLabel={f.label}
+              >
+                <View style={[styles.featureCellIcon, { backgroundColor: f.iconBg }]}>
+                  <Feather name={f.icon} size={20} color={f.iconColor} />
+                </View>
+                <ThemedText variant="labelLarge" color="textPrimary">{f.label}</ThemedText>
+                {'badge' in f && f.badge && (
+                  <View style={styles.featureCellBadge}>
+                    <ThemedText style={styles.featureCellBadgeText}>{f.badge}</ThemedText>
+                  </View>
+                )}
+                {'premium' in f && f.premium && !isPremium && (
+                  <View style={styles.featureCellPremiumDot}>
+                    <Feather name="star" size={9} color={Colors.accentDark} />
+                  </View>
+                )}
+              </Pressable>
+            ))}
+          </View>
         </Animated.View>
 
         {/* Shelf scan CTA */}
@@ -581,21 +414,40 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Stats row */}
-        <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.statsRow}>
-          <Card style={styles.statCard} padding={Spacing.lg}>
-            <ThemedText variant="displayMedium" color="accent">{total}</ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">Produits scannés</ThemedText>
-          </Card>
-          <Card style={styles.statCard} padding={Spacing.lg}>
-            <ThemedText variant="displayMedium" style={{ color: Colors.safe }}>{countSafe}</ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">Produits sûrs</ThemedText>
-          </Card>
-          <Card style={styles.statCard} padding={Spacing.lg}>
-            <ThemedText variant="displayMedium" style={{ color: Colors.caution }}>{countCaution + countDanger}</ThemedText>
-            <ThemedText variant="bodySmall" color="textSecondary">À vérifier</ThemedText>
-          </Card>
-        </Animated.View>
+        {/* Stats row — empty state when no products yet */}
+        {total === 0 ? (
+          <Animated.View entering={FadeInDown.delay(180).duration(500)}>
+            <Card padding={Spacing.lg}>
+              <View style={styles.scanNudgeRow}>
+                <View style={styles.scanNudgeIcon}>
+                  <Feather name="zap" size={20} color={Colors.accentDark} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText variant="labelLarge" color="textPrimary">Scannez votre premier produit</ThemedText>
+                  <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
+                    Votre Glow Score se construit à chaque analyse
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+              </View>
+            </Card>
+          </Animated.View>
+        ) : (
+          <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.statsRow}>
+            <Card style={styles.statCard} padding={Spacing.lg}>
+              <ThemedText variant="displayMedium" color="accent">{total}</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">Scannés</ThemedText>
+            </Card>
+            <Card style={styles.statCard} padding={Spacing.lg}>
+              <ThemedText variant="displayMedium" style={{ color: Colors.safe }}>{countSafe}</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">Sûrs</ThemedText>
+            </Card>
+            <Card style={styles.statCard} padding={Spacing.lg}>
+              <ThemedText variant="displayMedium" style={{ color: Colors.caution }}>{countCaution + countDanger}</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">À vérifier</ThemedText>
+            </Card>
+          </Animated.View>
+        )}
 
         {/* Weekly brief */}
         <Animated.View entering={FadeInDown.delay(220).duration(500)}>

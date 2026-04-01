@@ -1,10 +1,11 @@
 /**
- * insert.ts — Batch upsert ingredients into Supabase.
+ * insert.ts — Insertion en lot des ingrédients dans Supabase.
  *
- * CRITICAL: Never overwrite manually curated ingredients.
- * Uses ON CONFLICT (name_inci) DO UPDATE only for non-manual entries.
- *
- * Batch size: 50 rows per upsert call.
+ * Garanties:
+ *   - Ne jamais écraser les entrées manuellement curées (source='manual').
+ *   - Upsert par name_inci (clé unique).
+ *   - Taille des lots: 50 lignes par appel Supabase.
+ *   - Retry avec backoff exponentiel (3 tentatives).
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
@@ -21,13 +22,11 @@ export interface InsertStats {
 
 function buildSupabaseClient(): SupabaseClient {
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
     throw new Error(
-      'Missing EXPO_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY / EXPO_PUBLIC_SUPABASE_ANON_KEY',
+      'Variables manquantes: EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY (ou SUPABASE_SERVICE_ROLE_KEY)',
     );
   }
 
@@ -36,6 +35,8 @@ function buildSupabaseClient(): SupabaseClient {
   });
 }
 
+// Colonnes réellement présentes dans la table Supabase `ingredients`
+// NOTE: `confidence` est omis car la colonne peut ne pas exister dans le schéma.
 interface IngredientRow {
   name: string;
   name_inci: string;
@@ -46,7 +47,6 @@ interface IngredientRow {
   risk_level_breastfeeding: string;
   description_fr: string;
   source: string;
-  confidence: string;
 }
 
 function toRow(entry: CrossRefResult): IngredientRow {
@@ -60,48 +60,46 @@ function toRow(entry: CrossRefResult): IngredientRow {
     risk_level_breastfeeding: entry.risk_level_breastfeeding,
     description_fr: entry.description_fr,
     source: entry.source_raw,
-    confidence: entry.confidence,
   };
 }
 
 /**
- * Upsert a batch of ingredients into Supabase.
- * Skips entries where source includes 'manual' (manually curated).
+ * Upsert des ingrédients dans Supabase.
+ * Protège les entrées dont la source contient 'manual'.
  */
 export async function insertIngredients(
   entries: CrossRefResult[],
 ): Promise<InsertStats> {
-  log.info(`Insert — preparing ${entries.length} ingredients for upsert…`);
+  log.info(`Insert — préparation de ${entries.length} ingrédients…`);
   const client = buildSupabaseClient();
-
   const stats: InsertStats = { inserted: 0, skipped: 0, errors: 0 };
 
-  // First: get the list of existing manual ingredient INCI names to protect them
+  // Récupérer les entrées manuelles à protéger
   const { data: existingManual, error: fetchError } = await client
     .from('ingredients')
-    .select('name_inci, source')
+    .select('name_inci')
     .like('source', '%manual%');
 
   if (fetchError) {
-    log.warn(`Insert — could not fetch manual ingredients: ${fetchError.message}`);
+    log.warn(`Insert — impossible de récupérer les entrées manuelles: ${fetchError.message}`);
   }
 
-  const manualINCINames = new Set<string>(
+  const manualKeys = new Set<string>(
     (existingManual ?? []).map((r: { name_inci: string }) => r.name_inci.toUpperCase().trim()),
   );
-  log.info(`Insert — protecting ${manualINCINames.size} manually curated ingredients`);
+  log.info(`Insert — ${manualKeys.size} entrées manuelles protégées`);
 
-  // Filter out entries that would overwrite manual entries
+  // Filtrer les doublons avec les entrées manuelles
   const toInsert: CrossRefResult[] = [];
   for (const entry of entries) {
-    if (manualINCINames.has(entry.name_inci.toUpperCase().trim())) {
+    if (manualKeys.has(entry.name_inci.toUpperCase().trim())) {
       stats.skipped++;
     } else {
       toInsert.push(entry);
     }
   }
 
-  log.info(`Insert — ${toInsert.length} entries to upsert, ${stats.skipped} protected`);
+  log.info(`Insert — ${toInsert.length} à insérer, ${stats.skipped} protégés`);
 
   const batches = chunk(toInsert, BATCH_SIZE);
 
@@ -112,32 +110,34 @@ export async function insertIngredients(
     try {
       await withRetry(
         async () => {
-          const result = await client
+          const { error } = await client
             .from('ingredients')
             .upsert(rows, {
               onConflict: 'name_inci',
               ignoreDuplicates: false,
             });
-          if (result.error) throw new Error(result.error.message);
+          if (error) throw new Error(error.message);
         },
-        { maxAttempts: 3, label: `batch ${i + 1}/${batches.length}` },
+        { maxAttempts: 3, baseDelayMs: 500, label: `lot ${i + 1}/${batches.length}` },
       );
       stats.inserted += batch.length;
-      log.info(`Insert — batch ${i + 1}/${batches.length} done (${batch.length} rows)`);
+      if ((i + 1) % 10 === 0 || i + 1 === batches.length) {
+        log.info(`Insert — lot ${i + 1}/${batches.length} (${stats.inserted} insérés jusqu'ici)`);
+      }
     } catch (err) {
       stats.errors += batch.length;
-      log.error(`Insert — batch ${i + 1} failed: ${String(err)}`);
+      log.error(`Insert — lot ${i + 1} échoué: ${String(err)}`);
     }
   }
 
   log.ok(
-    `Insert — complete: ${stats.inserted} inserted, ${stats.skipped} skipped (manual), ${stats.errors} errors`,
+    `Insert — terminé: ${stats.inserted} insérés, ${stats.skipped} protégés, ${stats.errors} erreurs`,
   );
   return stats;
 }
 
 /**
- * Insert pre-loaded product data into the products table.
+ * Insérer des données produits dans la table `products`.
  */
 export async function insertProducts(
   products: Array<{
@@ -148,10 +148,9 @@ export async function insertProducts(
     categories: string;
   }>,
 ): Promise<InsertStats> {
-  log.info(`Insert — pre-loading ${products.length} popular products…`);
+  log.info(`Insert — pré-chargement de ${products.length} produits…`);
   const client = buildSupabaseClient();
   const stats: InsertStats = { inserted: 0, skipped: 0, errors: 0 };
-
   const batches = chunk(products, BATCH_SIZE);
 
   for (let i = 0; i < batches.length; i++) {
@@ -163,16 +162,16 @@ export async function insertProducts(
 
       if (error) {
         stats.errors += batch.length;
-        log.warn(`Insert products — batch ${i + 1} error: ${error.message}`);
+        log.warn(`Insert produits — lot ${i + 1} erreur: ${error.message}`);
       } else {
         stats.inserted += batch.length;
       }
     } catch (err) {
       stats.errors += batch.length;
-      log.error(`Insert products — batch ${i + 1} failed: ${String(err)}`);
+      log.error(`Insert produits — lot ${i + 1} échoué: ${String(err)}`);
     }
   }
 
-  log.ok(`Insert products — ${stats.inserted} inserted, ${stats.errors} errors`);
+  log.ok(`Insert produits — ${stats.inserted} insérés, ${stats.errors} erreurs`);
   return stats;
 }

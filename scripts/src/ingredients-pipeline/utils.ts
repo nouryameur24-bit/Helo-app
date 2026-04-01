@@ -1,6 +1,54 @@
 /**
- * utils.ts — Shared helpers: rate limiter, logger, retry logic.
+ * utils.ts — Shared helpers: rate limiter, logger, retry logic, shared types.
  */
+
+// ─── Core types ───────────────────────────────────────────────────────────────
+export type RiskLevel = 'safe' | 'caution' | 'danger';
+export type Confidence = 'high' | 'medium' | 'low';
+export type Category = 'cosmetic' | 'food' | 'medication';
+
+/**
+ * A fully pre-computed ingredient ready for direct insertion into Supabase.
+ * No normalization step required.
+ */
+export interface PreComputedIngredient {
+  name: string;
+  name_inci: string;
+  category: Category;
+  risk_level_t1: RiskLevel;
+  risk_level_t2: RiskLevel;
+  risk_level_t3: RiskLevel;
+  risk_level_breastfeeding: RiskLevel;
+  description_fr: string;
+  confidence: Confidence;
+  source_raw: string;
+}
+
+// Shorthand builder helpers for dense data entry
+export type RiskTuple = [RiskLevel, RiskLevel, RiskLevel, RiskLevel]; // [t1, t2, t3, bf]
+
+export function ing(
+  name_inci: string,
+  name: string,
+  category: Category,
+  risks: RiskTuple,
+  description_fr: string,
+  source_raw: string,
+  confidence: Confidence = 'high',
+): PreComputedIngredient {
+  return {
+    name_inci,
+    name,
+    category,
+    risk_level_t1: risks[0],
+    risk_level_t2: risks[1],
+    risk_level_t3: risks[2],
+    risk_level_breastfeeding: risks[3],
+    description_fr,
+    confidence,
+    source_raw,
+  };
+}
 
 // ─── Logger ───────────────────────────────────────────────────────────────────
 export const log = {
@@ -32,10 +80,7 @@ export class RateLimiter {
           const delay = this.minDelayMs > 0 ? this.minDelayMs : 1000 / this.maxPerSecond;
           setTimeout(() => {
             this.running--;
-            if (this.queue.length > 0) {
-              const next = this.queue.shift()!;
-              next();
-            }
+            if (this.queue.length > 0) this.queue.shift()!();
           }, delay);
           resolve();
         } else {
@@ -80,9 +125,7 @@ export function sleep(ms: number): Promise<void> {
 
 export function chunk<T>(arr: T[], size: number): T[][] {
   const result: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    result.push(arr.slice(i, i + size));
-  }
+  for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
   return result;
 }
 
@@ -90,7 +133,6 @@ export function normalizeINCIName(name: string): string {
   return name.trim().toUpperCase().replace(/\s+/g, ' ');
 }
 
-// ─── Fetch with timeout ───────────────────────────────────────────────────────
 export async function fetchWithTimeout(
   url: string,
   options: RequestInit & { timeoutMs?: number } = {},
@@ -99,8 +141,7 @@ export async function fetchWithTimeout(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { ...fetchOptions, signal: controller.signal });
-    return res;
+    return await fetch(url, { ...fetchOptions, signal: controller.signal });
   } finally {
     clearTimeout(timer);
   }

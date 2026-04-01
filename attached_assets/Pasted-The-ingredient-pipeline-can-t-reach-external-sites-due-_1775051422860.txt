@@ -1,0 +1,86 @@
+The ingredient pipeline can't reach external sites due to network restrictions. 
+We need 5000 ingredients total. Expand the fallback datasets MASSIVELY:
+
+IMPORTANT: Make each fallback dataset SELF-CONTAINED with real, accurate 
+medical data. No network calls needed. Each entry must have pre-computed 
+risk levels so we can SKIP the Claude Haiku normalization step entirely 
+and insert directly into Supabase.
+
+1. scrapers/cosing.ts — EXPAND to 1500 cosmetic ingredients:
+Include ALL common INCI ingredients found in French cosmetics:
+- All parabens (methyl, ethyl, propyl, butyl + sodium salts)
+- All silicones (dimethicone, cyclomethicone, cyclopentasiloxane, etc.)
+- All PEGs (PEG-4 through PEG-200)
+- All sulfates (SLS, SLES, ALS)
+- All UV filters (oxybenzone, avobenzone, octinoxate, octocrylene, etc.)
+- All retinoids (retinol, retinal, retinyl palmitate, adapalene, tretinoin)
+- All AHAs/BHAs (glycolic, lactic, salicylic, mandelic, etc.)
+- All essential oils (lavender, tea tree, rosemary, eucalyptus, peppermint, etc. — 50+)
+- All fragrances and allergens (limonene, linalool, citronellol, geraniol, etc.)
+- All preservatives (phenoxyethanol, MIT, BHT, BHA, DMDM hydantoin, etc.)
+- All colorants (CI numbers)
+- All emollients (mineral oil, petrolatum, lanolin, etc.)
+- All humectants (glycerin, hyaluronic acid, urea, etc.)
+- All surfactants, emulsifiers, chelating agents, antioxidants
+- Aluminum salts, phthalates, formaldehyde releasers, triclosan
+Each with accurate risk_level_t1/t2/t3/breastfeeding based on SCCS/CosIng safety data
+
+2. scrapers/efsa.ts — EXPAND to 1000 food ingredients:
+- All E-number additives E100-E999 (colorants, preservatives, antioxidants, emulsifiers, sweeteners, flavor enhancers, glazing agents)
+- Common food allergens (gluten, lactose, casein, soy, nuts, etc.)
+- All artificial sweeteners (aspartame, sucralose, saccharin, acesulfame-K, stevia, etc.)
+- Mercury-risk fish (tuna, swordfish, shark, marlin, pike)
+- Listeria-risk foods (raw milk cheese, smoked salmon, pate, raw meat, raw eggs)
+- Toxoplasmosis-risk foods (raw/rare meat, unwashed vegetables)
+- Caffeine sources (coffee, tea, cola, chocolate, energy drinks)
+- Alcohol in all forms
+- All common vitamins and minerals with pregnancy-specific dosing concerns
+- Nitrates, nitrites, MSG, trans fats
+Each with accurate pregnancy risk data from EFSA/ANSES
+
+3. scrapers/crat.ts — EXPAND to 1500 medications:
+- All common OTC: paracetamol, ibuprofen, aspirin, naproxen
+- All NSAIDs with trimester-specific risks
+- All antibiotics (amoxicillin, azithromycin, metronidazole, ciprofloxacin, etc.)
+- All antihistamines (cetirizine, loratadine, diphenhydramine, etc.)
+- All antacids (omeprazole, ranitidine, gaviscon, etc.)
+- All laxatives (lactulose, macrogol, bisacodyl)
+- All antidepressants (sertraline, fluoxetine, paroxetine, etc.)
+- All anti-nausea (metoclopramide, ondansetron, doxylamine)
+- All antihypertensives (methyldopa, labetalol, nifedipine)
+- All thyroid medications
+- All insulin and diabetes medications
+- All asthma medications (salbutamol, budesonide, etc.)
+- All topical treatments (corticosteroids, antifungals, antibiotics)
+- All vitamins and supplements (folic acid, iron, vitamin D, omega-3, etc.)
+- All vaccines with pregnancy safety data
+- All herbal remedies (ginger, chamomile, raspberry leaf, etc.)
+Each with CRAT-accurate risk_level per trimester
+
+4. scrapers/medications.ts — EXPAND to 1000 French brand-name medications:
+- Doliprane, Efferalgan, Dafalgan (paracetamol brands)
+- Nurofen, Advil, Spedifen (ibuprofen brands)
+- Spasfon, Gaviscon, Smecta, Imodium
+- Augmentin, Amoxicilline, Clamoxyl
+- Zyrtec, Aerius, Xyzall, Polaramine
+- Mopral, Inexium, Inipomp
+- Duphalac, Forlax, Movicol
+- Seroplex, Deroxat, Prozac, Zoloft
+- Ventoline, Seretide, Symbicort
+- Levothyrox, Euthyrox
+- Tardyferon, Fero-Grad, Timoferol
+- Acide folique, Gynefam, Gestarelle, Oligobs
+- All with real CIS codes when possible
+Each with accurate pregnancy risk from CRAT/ANSM
+
+5. UPDATE run.ts:
+- Since all entries are pre-computed with risk levels, SKIP Stage 2 (Claude normalization)
+- Go directly from Stage 1 (fallback data) to Stage 3 (crossref/dedup) to Stage 4 (insert)
+- This makes the pipeline instant — no API calls needed
+- Keep the normalization code for future use when network is available
+
+6. UPDATE insert.ts:
+- Remove the 'confidence' field from the upsert OR add it to the Supabase schema
+- Make sure the upsert matches the exact columns in the ingredients table
+
+TARGET: 5000 unique ingredients after deduplication, inserted in under 60 seconds.

@@ -231,7 +231,11 @@ export default function RestaurantResultsScreen() {
       text += `❓ Questions pour le serveur :\n${questions.map((q) => `• ${q}`).join('\n')}\n\n`;
     }
     text += 'Analysé avec Hēlo — l\'appli grossesse & sécurité produits';
-    await Share.share({ message: text });
+    try {
+      await Share.share({ message: text });
+    } catch {
+      // Share not supported in web renderer — no-op for native mobile app
+    }
   }, [analysis]);
 
   // ── Filtered dishes by tab ────────────────────────────────────────────────

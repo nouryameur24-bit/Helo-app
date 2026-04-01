@@ -166,12 +166,22 @@ export default function ProfileScreen() {
   const [localPartnerCode, setLocalPartnerCode] = useState<string | null>(partnerCode);
   useEffect(() => { setLocalPartnerCode(partnerCode); }, [partnerCode]);
 
-  const handleShareCode = () => {
+  const handleShareCode = async () => {
     const code = localPartnerCode ?? partnerCode;
     if (!code) return;
-    Share.share({
-      message: `Rejoins-moi sur Hēlo ! Entre mon code partenaire : ${code}`,
-    });
+    try {
+      await Share.share({
+        message: `Rejoins-moi sur Hēlo ! Entre mon code partenaire : ${code}`,
+      });
+    } catch {
+      // Share not supported (web) — fallback to clipboard
+      try {
+        await Clipboard.setStringAsync(code);
+        Alert.alert('Code copié', `Le code ${code} a été copié dans le presse-papiers.`);
+      } catch {
+        Alert.alert('Code partenaire', code);
+      }
+    }
   };
 
   const handleRegenerateCode = () => {

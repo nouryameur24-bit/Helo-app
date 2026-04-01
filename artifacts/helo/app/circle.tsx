@@ -89,9 +89,13 @@ export default function CircleScreen() {
     );
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!circle?.invite_code) return;
-    Share.share({ message: `Rejoins mon cercle sur Hēlo ! Entre le code : ${circle.invite_code}` });
+    try {
+      await Share.share({ message: `Rejoins mon cercle sur Hēlo ! Entre le code : ${circle.invite_code}` });
+    } catch {
+      Alert.alert('Code cercle', circle.invite_code);
+    }
   };
 
   const handleSend = async () => {

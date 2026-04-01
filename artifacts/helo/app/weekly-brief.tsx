@@ -362,10 +362,14 @@ function SlideAlertes({ riskProducts }: { riskProducts: ShelfProduct[] }) {
 // ─── Slide 5 — Partager ──────────────────────────────────────────────────────
 
 function SlidePartager({ glowScore, week }: { glowScore: number; week: number }) {
-  const handleShare = useCallback(() => {
-    Share.share({
-      message: `Semaine ${week} de grossesse — mon Glow Score Hēlo est de ${glowScore}/100 ! Analysez vos produits en toute sécurité avec Hēlo.`,
-    });
+  const handleShare = useCallback(async () => {
+    try {
+      await Share.share({
+        message: `Semaine ${week} de grossesse — mon Glow Score Hēlo est de ${glowScore}/100 ! Analysez vos produits en toute sécurité avec Hēlo.`,
+      });
+    } catch {
+      // Share not supported in web renderer — no-op for native mobile app
+    }
   }, [glowScore, week]);
 
   return (

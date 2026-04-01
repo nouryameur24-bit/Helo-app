@@ -190,7 +190,11 @@ export default function BasketResultsScreen() {
       text += `❌ Déconseillés :\n${items.filter(i => i.verdict === 'danger').map(i => `• ${i.name}`).join('\n')}\n\n`;
     }
     text += `Analysé avec Hēlo — l'app grossesse & sécurité produits`;
-    await Share.share({ message: text });
+    try {
+      await Share.share({ message: text });
+    } catch {
+      // Share not supported in web renderer — no-op for native mobile app
+    }
   }, [items, safeCount, cautionCount, dangerCount]);
 
   if (loading) return <View style={[styles.root, { backgroundColor: Colors.background }]} />;

@@ -41,8 +41,26 @@ export interface OfflineQueueEntry {
 
 // ─── 1. downloadIngredientsDB ─────────────────────────────────────────────────
 
-export async function downloadIngredientsDB(): Promise<boolean> {
+const DB_REFRESH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export async function downloadIngredientsDB(forceRefresh = false): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
+
+  // Skip if a fresh local copy already exists (avoids hammering Supabase on every launch)
+  if (!forceRefresh) {
+    try {
+      const raw = await AsyncStorage.getItem(INGREDIENTS_DB_KEY);
+      if (raw) {
+        const store: IngredientsStore = JSON.parse(raw);
+        if (store.ingredients?.length > 0 && Date.now() - store.downloadedAt < DB_REFRESH_INTERVAL_MS) {
+          return true;
+        }
+      }
+    } catch {
+      // Fall through to re-download
+    }
+  }
+
   try {
     const { data, error } = await supabase.from('ingredients').select('*');
     if (error || !data) {

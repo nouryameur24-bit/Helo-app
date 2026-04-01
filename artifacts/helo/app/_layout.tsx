@@ -64,11 +64,9 @@ function RootLayoutNav() {
   useEffect(() => {
     initAndroidNotificationChannels().catch(() => {});
     configurePurchases().catch(() => {});
-    AsyncStorage.getItem(PREMIUM_KEY).then((val) => {
-      if (val === 'true') {
-        downloadIngredientsDB().catch(() => {});
-      }
-    }).catch(() => {});
+    // Download ingredients DB for all users (free + premium) so scans never
+    // require a live Supabase round-trip. Only runs when local copy is absent.
+    downloadIngredientsDB().catch(() => {});
   }, []);
 
   return (

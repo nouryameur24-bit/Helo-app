@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { getLocalIngredients, matchIngredientsLocal } from '@/lib/offline';
 import type {
   IngredientData,
   MatchResult,
@@ -113,7 +115,7 @@ export function parseIngredients(ingredientsText: string): string[] {
   return cleaned;
 }
 
-// ─── 4. Match ingredients against Supabase DB ────────────────────────────────
+// ─── 4. Match ingredients — local DB first, Supabase live as fallback ────────
 
 function getRiskForPhase(ingredient: IngredientData, phase: Phase): RiskLevel {
   switch (phase) {
@@ -129,7 +131,16 @@ export async function matchIngredients(
   ingredientsList: string[],
   phase: Phase,
 ): Promise<MatchResult[]> {
-  if (!isSupabaseConfigured || ingredientsList.length === 0) {
+  if (ingredientsList.length === 0) return [];
+
+  // ── 1. Prefer local DB (AsyncStorage) — no network, no Supabase bandwidth ──
+  const localIngredients = await getLocalIngredients();
+  if (localIngredients.length > 0) {
+    return matchIngredientsLocal(ingredientsList, phase);
+  }
+
+  // ── 2. Fall back to Supabase live query when local DB not yet populated ─────
+  if (!isSupabaseConfigured) {
     return ingredientsList.map((ingredientName) => ({
       ingredientName,
       matched: false,
@@ -149,6 +160,12 @@ export async function matchIngredients(
       riskLevel: 'no_signal' as RiskLevel,
     }));
   }
+
+  // Once fetched from Supabase, persist locally so future scans skip this query
+  AsyncStorage.setItem(
+    '@helo_ingredients_db',
+    JSON.stringify({ ingredients: dbIngredients, downloadedAt: Date.now() }),
+  ).catch(() => {});
 
   return ingredientsList.map((ingredientName): MatchResult => {
     const nameLower = ingredientName.toLowerCase();

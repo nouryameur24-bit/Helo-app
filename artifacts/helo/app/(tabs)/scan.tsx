@@ -391,21 +391,43 @@ export default function ScanScreen() {
 
       {/* ── Free scan counter ── */}
       {!isPremium && (
-        <View style={[styles.scanCounter, { bottom: bottomInset + 128 }]}>
-          <Feather
-            name="zap"
-            size={11}
-            color={scansRemaining > 0 ? Colors.accent : Colors.danger}
-          />
-          <ThemedText
-            style={scansRemaining === 0
-              ? [styles.scanCounterText, { color: Colors.danger } as TextStyle]
-              : styles.scanCounterText}
+        <View style={[styles.scanCounterWrap, { bottom: bottomInset + 132 }]} pointerEvents="none">
+          <View
+            style={[
+              styles.scanCounterPill,
+              scansRemaining === 0 && styles.scanCounterPillDanger,
+            ]}
           >
-            {scansRemaining > 0
-              ? `${scansRemaining} scan${scansRemaining > 1 ? 's' : ''} gratuit${scansRemaining > 1 ? 's' : ''} restant${scansRemaining > 1 ? 's' : ''}`
-              : 'Limite atteinte · Passez à Premium'}
-          </ThemedText>
+            {/* Dot indicators */}
+            {scansRemaining > 0 && (
+              <View style={styles.scanDots}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.scanDot,
+                      i < scansRemaining ? styles.scanDotFilled : styles.scanDotEmpty,
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+            {scansRemaining === 0 ? (
+              <Feather name="lock" size={10} color="rgba(255,120,100,0.9)" />
+            ) : (
+              <Feather name="zap" size={10} color={Colors.accent} />
+            )}
+            <ThemedText
+              style={[
+                styles.scanCounterText,
+                scansRemaining === 0 && { color: 'rgba(255,130,110,0.95)' } as TextStyle,
+              ]}
+            >
+              {scansRemaining > 0
+                ? `${scansRemaining} scan${scansRemaining > 1 ? 's' : ''} restant${scansRemaining > 1 ? 's' : ''}`
+                : 'Limite atteinte · Passer à Premium'}
+            </ThemedText>
+          </View>
         </View>
       )}
 
@@ -479,21 +501,50 @@ const styles = StyleSheet.create({
     alignItems: 'center', gap: Spacing.sm, paddingTop: Spacing.lg, zIndex: 10,
   },
   chipsRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
-  scanCounter: {
+  scanCounterWrap: {
     position: 'absolute',
     alignSelf: 'center',
     left: 0,
     right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  scanCounterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    zIndex: 20,
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,110,0.35)',
+  },
+  scanCounterPillDanger: {
+    borderColor: 'rgba(255,100,80,0.4)',
+    backgroundColor: 'rgba(40,0,0,0.55)',
+  },
+  scanDots: {
+    flexDirection: 'row',
+    gap: 3,
+    alignItems: 'center',
+  },
+  scanDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  scanDotFilled: {
+    backgroundColor: Colors.accent,
+  },
+  scanDotEmpty: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
   scanCounterText: {
     ...Typography.labelSmall,
-    color: '#ffffffcc',
+    color: 'rgba(255,255,255,0.92)',
     fontSize: 11,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   comingSoon: {
     fontFamily: 'PlusJakartaSans_400Regular',

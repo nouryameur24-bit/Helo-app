@@ -47,13 +47,13 @@ async function uploadImageToSupabase(
 ): Promise<string | null> {
   if (!isSupabaseConfigured) return uri;
 
+  // React Native (Hermes): Blob.arrayBuffer() is undefined — use Response.arrayBuffer() directly
   const response = await fetch(uri);
-  const blob = await response.blob();
-  const arrayBuffer = await blob.arrayBuffer();
+  const arrayBuffer = await response.arrayBuffer();
   const uint8 = new Uint8Array(arrayBuffer);
 
   const { error } = await supabase.storage.from(bucket).upload(path, uint8, {
-    contentType: blob.type || 'image/jpeg',
+    contentType: 'image/jpeg',
     upsert: true,
   });
 

@@ -36,6 +36,7 @@ import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeedin
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile, setUserRole } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
+import { PREMIUM_KEY } from '@/lib/purchases';
 import {
   checkAndSendWeekMilestoneNotification,
   createCircle,
@@ -107,7 +108,7 @@ export default function ProfileScreen() {
     if (isBreastfeeding && !babyMode) enableBabyMode();
   }, [isBreastfeeding, babyMode, enableBabyMode]);
 
-  const { isPremium, requirePremium } = usePremium();
+  const { isPremium, requirePremium, refresh: refreshPremium } = usePremium();
   const { shelf: profileShelf } = useShelfData(userId || undefined);
   const { score: glowScore } = calculateGlowScore(profileShelf);
 
@@ -116,6 +117,29 @@ export default function ProfileScreen() {
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [isCreatingCircle, setIsCreatingCircle] = useState(false);
+
+  // Hidden dev shortcut: 5 taps on version number toggles premium (testing only)
+  const [devTapCount, setDevTapCount] = useState(0);
+  const devTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleVersionTap = React.useCallback(async () => {
+    if (devTapTimer.current) clearTimeout(devTapTimer.current);
+    const next = devTapCount + 1;
+    setDevTapCount(next);
+    devTapTimer.current = setTimeout(() => setDevTapCount(0), 2000);
+    if (next >= 5) {
+      setDevTapCount(0);
+      if (devTapTimer.current) clearTimeout(devTapTimer.current);
+      const next_premium = !isPremium;
+      await AsyncStorage.setItem(PREMIUM_KEY, next_premium ? 'true' : 'false');
+      await refreshPremium();
+      Alert.alert(
+        '🛠 Dev Mode',
+        next_premium ? 'Premium activé ✓' : 'Premium désactivé',
+        [{ text: 'OK' }],
+      );
+    }
+  }, [devTapCount, isPremium, refreshPremium]);
 
   useEffect(() => {
     if (!userId || isPartner) return;
@@ -759,9 +783,13 @@ export default function ProfileScreen() {
 
         {/* Footer */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.footer}>
-          <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
-            Version 1.0.0
-          </ThemedText>
+          <Pressable onPress={handleVersionTap} accessibilityRole="button" accessibilityLabel="Version">
+            <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
+              {devTapCount > 0 && devTapCount < 5
+                ? `Version 1.0.0 · dev (${devTapCount}/5)`
+                : `Version 1.0.0${isPremium ? ' · Premium ✓' : ''}`}
+            </ThemedText>
+          </Pressable>
           <Pressable
             onPress={handleLogout}
             style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}

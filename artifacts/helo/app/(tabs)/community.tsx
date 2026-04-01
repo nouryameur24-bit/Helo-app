@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { useOffline } from '@/hooks/useOffline';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,21 @@ const CATEGORY_LABELS: Record<string, string> = {
 function formatDate(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+}
+
+// ─── Supabase unavailable banner ──────────────────────────────────────────────
+
+function SupabaseUnavailableBanner({ isOffline }: { isOffline: boolean }) {
+  return (
+    <View style={styles.supabaseBanner}>
+      <Feather name={isOffline ? 'wifi-off' : 'cloud-off'} size={15} color={Colors.textSecondary} />
+      <ThemedText variant="bodySmall" color="textSecondary" style={styles.supabaseBannerText}>
+        {isOffline
+          ? 'Vous êtes hors-ligne — les produits vérifiés ne sont pas disponibles.'
+          : 'Fonctionnalités communautaires désactivées dans cet environnement.'}
+      </ThemedText>
+    </View>
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -89,7 +105,7 @@ const SubmissionCard = React.memo(function SubmissionCard({
             variant="labelLarge"
             color="textPrimary"
             numberOfLines={1}
-            style={{ marginTop: 3 }}
+            style={styles.submissionCardName}
           >
             {item.name}
           </ThemedText>
@@ -135,7 +151,7 @@ function CircleCard() {
             <View style={styles.circleIconWrap}>
               <Feather name="users" size={22} color={Colors.accent} />
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={styles.circleCardBody}>
               <ThemedText style={styles.circleCardTitle}>Mon Cercle</ThemedText>
               <ThemedText style={styles.circleCardSub}>
                 Partagez vos scans avec vos proches en temps réel
@@ -177,11 +193,11 @@ function ContributeCard() {
         <View style={styles.contributeIcon}>
           <Feather name="plus-circle" size={20} color={Colors.accentDark} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={styles.contributeBody}>
           <ThemedText variant="labelLarge" color="textPrimary">
             Ajouter un produit
           </ThemedText>
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
+          <ThemedText variant="bodySmall" color="textSecondary" style={styles.contributeSubtext}>
             Soumettez un produit inconnu pour enrichir la base
           </ThemedText>
         </View>
@@ -203,7 +219,7 @@ function EmptySubmissions() {
       <ThemedText
         variant="labelLarge"
         color="textSecondary"
-        style={{ marginBottom: Spacing.lg, textAlign: 'center' }}
+        style={styles.howItWorksTitle}
       >
         Comment ça marche ?
       </ThemedText>
@@ -219,7 +235,7 @@ function EmptySubmissions() {
           <View style={styles.stepBubble}>
             <Feather name={icon} size={16} color={Colors.accent} />
           </View>
-          <ThemedText variant="bodyMedium" color="textSecondary" style={{ flex: 1, lineHeight: 20 }}>
+          <ThemedText variant="bodyMedium" color="textSecondary" style={styles.stepText}>
             {text}
           </ThemedText>
         </View>
@@ -230,7 +246,12 @@ function EmptySubmissions() {
 
 // ─── Header component ─────────────────────────────────────────────────────────
 
-function ListHeader() {
+interface ListHeaderProps {
+  showUnavailableBanner: boolean;
+  isOffline: boolean;
+}
+
+function ListHeader({ showUnavailableBanner, isOffline }: ListHeaderProps) {
   return (
     <View style={styles.header}>
       {/* Title */}
@@ -239,6 +260,9 @@ function ListHeader() {
           Communauté
         </ThemedText>
       </Animated.View>
+
+      {/* Supabase / offline indicator */}
+      {showUnavailableBanner && <SupabaseUnavailableBanner isOffline={isOffline} />}
 
       {/* Circle card */}
       <CircleCard />
@@ -268,12 +292,15 @@ function ListHeader() {
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const { isOffline } = useOffline();
 
   const [submissions, setSubmissions] = useState<CommunitySubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const showUnavailableBanner = !isSupabaseConfigured || isOffline;
+
   const loadSubmissions = useCallback(async () => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || isOffline) {
       setLoading(false);
       return;
     }
@@ -288,17 +315,22 @@ export default function CommunityScreen() {
         setSubmissions(data as CommunitySubmission[]);
       }
     } catch {
+      // Supabase fetch failure — community list shows empty state
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isOffline]);
 
   useEffect(() => {
     loadSubmissions();
   }, [loadSubmissions]);
 
+  const listHeader = (
+    <ListHeader showUnavailableBanner={showUnavailableBanner} isOffline={isOffline} />
+  );
+
   return (
-    <View style={[styles.root, { backgroundColor: Colors.background }]}>
+    <View style={styles.root}>
       <FlatList
         data={submissions}
         keyExtractor={(item) => item.id}
@@ -310,15 +342,13 @@ export default function CommunityScreen() {
         maxToRenderPerBatch={10}
         initialNumToRender={6}
         removeClippedSubviews
-        contentContainerStyle={{
-          paddingTop: topPadding + Spacing.lg,
-          paddingBottom: 120,
-          paddingHorizontal: Spacing.xl,
-          gap: Spacing.md,
-        }}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingTop: topPadding + Spacing.lg },
+        ]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
-        ListHeaderComponent={<ListHeader />}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={loading ? null : <EmptySubmissions />}
       />
     </View>
@@ -328,7 +358,29 @@ export default function CommunityScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: Colors.background },
+
+  listContent: {
+    paddingBottom: 120,
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.md,
+  },
+
+  // ── Supabase unavailable banner ───────────────────────────────────────────────
+  supabaseBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  supabaseBannerText: {
+    flex: 1,
+    lineHeight: 18,
+  },
 
   header: {
     gap: Spacing.lg,
@@ -379,6 +431,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  circleCardBody: { flex: 1 },
   circleCardTitle: {
     fontSize: 17,
     fontWeight: '700',
@@ -437,6 +490,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  contributeBody: { flex: 1 },
+  contributeSubtext: { marginTop: 2 },
 
   // ── Section header ────────────────────────────────────────────────────────────
   sectionRow: {
@@ -484,6 +539,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  submissionCardName: { marginTop: 3 },
   productCardInfo: {
     flex: 1,
     gap: 2,
@@ -521,6 +577,8 @@ const styles = StyleSheet.create({
   },
 
   // ── Empty state ────────────────────────────────────────────────────────────
+  howItWorksTitle: { marginBottom: Spacing.lg, textAlign: 'center' },
+  stepText: { flex: 1, lineHeight: 20 },
   emptyWrap: {
     paddingTop: Spacing.xl,
     paddingHorizontal: Spacing.lg,

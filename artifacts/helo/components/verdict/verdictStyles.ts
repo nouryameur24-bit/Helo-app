@@ -35,6 +35,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   centeredText: { textAlign: 'center' },
+  errorSubtitle: { marginTop: Spacing.sm },
+  errorActions: { marginTop: Spacing.xl, width: '100%', gap: Spacing.md },
+  backRowText: { marginLeft: 8 },
 
   scroll: { flex: 1 },
   scrollContent: {},
@@ -140,6 +143,8 @@ const styles = StyleSheet.create({
   noSignalTitle: { marginBottom: Spacing.sm },
   noSignalCard: {},
   noSignalItem: { paddingVertical: Spacing.xs },
+  noSignalDivider: { marginVertical: Spacing.xs },
+  ingredientsWrap: { position: 'relative' },
 
   tabRow: {
     flexDirection: 'row',
@@ -159,6 +164,8 @@ const styles = StyleSheet.create({
   tabBtnActive: {
     borderBottomColor: Colors.accent,
   },
+  tabBtnText: { color: Colors.textSecondary },
+  tabBtnTextActive: { color: Colors.accent },
 
   photoBanner: {
     flexDirection: 'row',
@@ -201,6 +208,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.danger + '44',
   },
+  recallContent: { flex: 1 },
+  recallTitle: { color: Colors.danger },
+  recallSubtitle: { marginTop: 2 },
   recallBannerIcon: {
     width: 40,
     height: 40,
@@ -242,6 +252,8 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   disclaimerText: { lineHeight: 18 },
+  methodologyLink: { marginTop: Spacing.sm },
+  methodologyLinkText: { color: Colors.accent },
 
   bottomBar: {
     position: 'absolute',
@@ -336,9 +348,11 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
+  sectionDivider: { marginVertical: Spacing.lg },
   circleSectionWrap: {
     paddingHorizontal: Spacing.xl,
   },
+  circleShareContent: { flex: 1 },
   circleShareRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -8,11 +8,8 @@ import { calculateGlowScore } from '@/lib/glowscore';
 import { calculateTrimester } from '@/lib/trimester';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Linking,
   Platform,
-  Pressable,
   ScrollView,
-  Switch,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -23,15 +20,16 @@ import { ScanDisclaimerBanner } from '@/components/ScanDisclaimerBanner';
 import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
 import { VerdictShareCard } from '@/components/share/VerdictShareCard';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
-import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 
 import { LoadingScreen, ScoreCircle, VerdictLabel, Toast } from '@/components/verdict/VerdictAnimations';
-import { IngredientCard } from '@/components/verdict/IngredientCard';
+import { CircleShareRow } from '@/components/verdict/CircleShareRow';
+import { IngredientsSection } from '@/components/verdict/IngredientsSection';
+import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
 import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
+import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
+import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
 import {
   getVerdictColor,
   getVerdictBg,
@@ -51,9 +49,9 @@ import { usePremium } from '@/hooks/usePremium';
 import { useScan } from '@/hooks/useScan';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import { getBabyMode } from '@/hooks/useBabyMode';
-import { sendShelfAddNotification, sendCircleScanNotification } from '@/lib/notifications';
+import { sendShelfAddNotification } from '@/lib/notifications';
 import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
-import { getCircle, postScanToCircle } from '@/lib/circleUtils';
+import { getCircle } from '@/lib/circleUtils';
 import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -286,51 +284,12 @@ export default function VerdictScreen() {
   if (loading) return <LoadingScreen />;
 
   if (error) {
-    const isNotFound = error.startsWith('Produit non trouvé');
     return (
-      <View style={[styles.root, { paddingTop: insets.top + Spacing.lg }]}>
-        <TouchableOpacity
-          style={styles.backRow}
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-        >
-          <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
-          <ThemedText variant="bodyMedium" style={{ marginLeft: 8 }}>Retour</ThemedText>
-        </TouchableOpacity>
-        <View style={styles.errorCenter}>
-          <View style={[styles.iconCircle, { backgroundColor: isNotFound ? Colors.cautionBg : Colors.dangerLight }]}>
-            <Feather name={isNotFound ? 'search' : 'wifi-off'} size={32} color={isNotFound ? Colors.caution : Colors.danger} />
-          </View>
-          <ThemedText variant="headlineMedium" style={styles.centeredText}>
-            {isNotFound ? 'Produit non trouvé' : 'Erreur de chargement'}
-          </ThemedText>
-          <ThemedText variant="bodyMedium" color="textSecondary" style={[styles.centeredText, { marginTop: Spacing.sm }]}>
-            {isNotFound
-              ? 'Ce produit n\'est pas encore dans notre base de données.'
-              : error}
-          </ThemedText>
-          <View style={{ marginTop: Spacing.xl, width: '100%', gap: Spacing.md }}>
-            {isNotFound && (
-              <Button
-                variant="primary"
-                fullWidth
-                onPress={() => {
-                  router.push({
-                    pathname: '/submit-product',
-                    params: { barcode },
-                  } as never);
-                }}
-              >
-                Contribuer — ajouter ce produit ✦
-              </Button>
-            )}
-            <Button variant={isNotFound ? 'secondary' : 'primary'} fullWidth onPress={() => router.back()}>
-              Scanner un autre produit
-            </Button>
-          </View>
-        </View>
-      </View>
+      <VerdictErrorScreen
+        error={error}
+        barcode={barcode}
+        topInset={Platform.OS === 'web' ? 67 : insets.top}
+      />
     );
   }
 
@@ -383,7 +342,7 @@ export default function VerdictScreen() {
             accessibilityLabel="Retour"
           >
             <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
-            <ThemedText variant="bodyMedium" style={{ marginLeft: 8 }}>Retour</ThemedText>
+            <ThemedText variant="bodyMedium" style={styles.backRowText}>Retour</ThemedText>
           </TouchableOpacity>
 
           <View style={styles.heroCenter}>
@@ -444,7 +403,7 @@ export default function VerdictScreen() {
             >
               <ThemedText
                 variant="labelLarge"
-                style={{ color: activeTab === 'pregnancy' ? Colors.accent : Colors.textSecondary }}
+                style={activeTab === 'pregnancy' ? styles.tabBtnTextActive : styles.tabBtnText}
               >
                 🤰 Ma grossesse
               </ThemedText>
@@ -458,7 +417,7 @@ export default function VerdictScreen() {
             >
               <ThemedText
                 variant="labelLarge"
-                style={{ color: activeTab === 'baby' ? Colors.accent : Colors.textSecondary }}
+                style={activeTab === 'baby' ? styles.tabBtnTextActive : styles.tabBtnText}
               >
                 👶 Mon bébé
               </ThemedText>
@@ -479,148 +438,43 @@ export default function VerdictScreen() {
         )}
 
         {/* ── RECALL ALERT BANNER ── */}
-        {recallMatch && (
-          <Pressable
-            style={styles.recallBanner}
-            onPress={() => Linking.openURL(recallMatch.lien_vers_la_fiche_rappel).catch(() => {})}
-            accessibilityRole="button"
-            accessibilityLabel="Voir le rappel officiel"
-          >
-            <View style={styles.recallBannerIcon}>
-              <Feather name="alert-triangle" size={20} color={Colors.danger} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <ThemedText variant="labelLarge" style={{ color: Colors.danger }}>
-                RAPPEL OFFICIEL EN COURS
-              </ThemedText>
-              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }} numberOfLines={2}>
-                {recallMatch.motif_rappel}
-              </ThemedText>
-            </View>
-            <Feather name="external-link" size={16} color={Colors.danger + '88'} />
-          </Pressable>
-        )}
+        {recallMatch && <RecallAlertBanner recallMatch={recallMatch} />}
 
         {/* ── INGREDIENT DETAILS ── */}
-        {(flagged.length > 0 || noSignal.length > 0) && (
-          <View style={{ position: 'relative' }}>
-            {flagged.length > 0 && (
-              <View style={styles.section}>
-                <ThemedText variant="headlineMedium" style={styles.sectionTitle}>
-                  Ingrédients analysés
-                </ThemedText>
-                {(isPremium ? flagged : flagged.slice(0, 2)).map((m) => (
-                  <IngredientCard key={m.ingredientName} match={m} />
-                ))}
-              </View>
-            )}
-
-            {isPremium && noSignal.length > 0 && (
-              <View style={styles.section}>
-                <ThemedText variant="labelSmall" color="textTertiary" style={styles.noSignalTitle}>
-                  AUCUN SIGNALEMENT CONNU ({noSignal.length})
-                </ThemedText>
-                <Card style={styles.noSignalCard} padding={Spacing.lg}>
-                  {noSignal.map((m, i) => (
-                    <View key={m.ingredientName}>
-                      <ThemedText variant="bodySmall" color="textSecondary" style={styles.noSignalItem}>
-                        {m.ingredientName}
-                      </ThemedText>
-                      {i < noSignal.length - 1 && (
-                        <Divider style={{ marginVertical: Spacing.xs }} />
-                      )}
-                    </View>
-                  ))}
-                </Card>
-              </View>
-            )}
-
-            {!isPremium && (
-              <View style={styles.premiumGate}>
-                <View style={styles.premiumGateCard}>
-                  <ThemedText style={styles.premiumGateEmoji}>🔍</ThemedText>
-                  <ThemedText variant="headlineMedium" color="textPrimary" style={styles.premiumGateTitle}>
-                    Détails ingrédients
-                  </ThemedText>
-                  <ThemedText variant="bodyMedium" color="textSecondary" style={styles.premiumGateBody}>
-                    Accédez à l'analyse complète de tous les ingrédients, leurs risques par trimestre et les sources scientifiques.
-                  </ThemedText>
-                  <Pressable
-                    onPress={() => requirePremium('feature')}
-                    style={({ pressed }) => [styles.premiumGateBtn, { opacity: pressed ? 0.88 : 1 }]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Voir les détails avec Premium"
-                  >
-                    <ThemedText style={styles.premiumGateBtnText}>Voir les détails — Premium</ThemedText>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-          </View>
-        )}
+        <IngredientsSection
+          flagged={flagged}
+          noSignal={noSignal}
+          isPremium={isPremium}
+          requirePremium={requirePremium}
+        />
 
         {/* ── PARTAGER DANS MON CERCLE ── */}
-        {circleId && !isPartner && verdict && product && (
-          <View style={styles.circleSectionWrap}>
-            <Divider style={{ marginVertical: Spacing.lg }} />
-            <View style={styles.circleShareRow}>
-              <View style={styles.circleShareIcon}>
-                <Feather name="users" size={18} color={Colors.accentDark} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="bodyLarge" color="textPrimary">Partager dans mon cercle</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary">
-                  {sharedToCircle ? 'Partagé ! Vos proches ont été notifiées.' : 'Notifie vos proches de ce scan'}
-                </ThemedText>
-              </View>
-              <Switch
-                value={sharedToCircle}
-                onValueChange={async (val) => {
-                  if (val && !sharedToCircle) {
-                    const scanVerdict = (verdict.verdict ?? 'safe') as 'safe' | 'caution' | 'danger';
-                    const senderName = firstName || 'Anonyme';
-                    try {
-                      await postScanToCircle({
-                        circleId: circleId,
-                        userId,
-                        firstName: senderName,
-                        productName: product.name,
-                        verdict: scanVerdict,
-                      });
-                      setSharedToCircle(true);
-                      sendCircleScanNotification({
-                        senderFirstName: senderName,
-                        productName: product.name,
-                        verdict: scanVerdict,
-                        circleId: circleId,
-                        senderUserId: userId,
-                      }).catch(() => {});
-                    } catch {
-                      setSharedToCircle(false);
-                    }
-                  }
-                }}
-                trackColor={{ false: Colors.borderLight, true: Colors.accent }}
-                thumbColor={sharedToCircle ? Colors.accentDark : '#f4f3f4'}
-                disabled={sharedToCircle}
-              />
-            </View>
-          </View>
+        {circleId && verdict && product && (
+          <CircleShareRow
+            circleId={circleId}
+            isPartner={isPartner}
+            verdict={verdict}
+            product={product}
+            firstName={firstName ?? ''}
+            userId={userId}
+            sharedToCircle={sharedToCircle}
+            setSharedToCircle={setSharedToCircle}
+          />
         )}
 
         {/* ── DISCLAIMER ── */}
         <View style={styles.disclaimerSection}>
-          <Divider style={{ marginVertical: Spacing.lg }} />
+          <Divider style={styles.sectionDivider} />
           <ThemedText variant="bodySmall" color="textTertiary" style={styles.disclaimerText}>
             {SCAN_DISCLAIMER}
           </ThemedText>
           <TouchableOpacity
             onPress={() => router.push('/methodology')}
-            style={{ marginTop: Spacing.sm }}
+            style={styles.methodologyLink}
             accessibilityRole="link"
             accessibilityLabel="Notre méthodologie"
           >
-            <ThemedText variant="bodySmall" style={{ color: Colors.accent }}>
+            <ThemedText variant="bodySmall" style={styles.methodologyLinkText}>
               Notre méthodologie →
             </ThemedText>
           </TouchableOpacity>
@@ -629,67 +483,14 @@ export default function VerdictScreen() {
       </ScrollView>
 
       {/* ── BOTTOM ACTION BAR ── */}
-      <View
-        style={[
-          styles.bottomBar,
-          { paddingBottom: bottomPad + Spacing.lg },
-        ]}
-      >
-        <View style={styles.bottomActions}>
-          {verdict.verdict !== 'safe' ? (
-            <>
-              <View style={styles.bottomBtn}>
-                <Button variant="primary" fullWidth onPress={() => {
-                  router.push({
-                    pathname: '/alternatives',
-                    params: {
-                      barcode,
-                      category: 'cosmetic',
-                      productName: product.name,
-                      productBrand: product.brand ?? '',
-                    },
-                  });
-                }}>
-                  Voir les alternatives →
-                </Button>
-              </View>
-              <View style={styles.bottomBtn}>
-                <Button variant="secondary" fullWidth onPress={() => setSheetVisible(true)}>
-                  Ajouter au placard
-                </Button>
-              </View>
-            </>
-          ) : (
-            <Button
-              variant="primary"
-              fullWidth
-              onPress={() => setSheetVisible(true)}
-            >
-              Ajouter au placard
-            </Button>
-          )}
-        </View>
-        <View style={styles.iconRow}>
-          <IconButton onPress={handleShare} size={44} accessibilityLabel="Partager">
-            <Feather name="share-2" size={18} color={Colors.textSecondary} />
-          </IconButton>
-          <IconButton
-            onPress={() =>
-              router.push({
-                pathname: '/compare',
-                params: { barcode, slot: 'A' },
-              } as never)
-            }
-            size={44}
-            accessibilityLabel="Comparer"
-          >
-            <Feather name="git-branch" size={18} color={Colors.textSecondary} />
-          </IconButton>
-          <IconButton onPress={() => router.back()} size={44} accessibilityLabel="Scanner un autre produit">
-            <Feather name="camera" size={18} color={Colors.textSecondary} />
-          </IconButton>
-        </View>
-      </View>
+      <VerdictBottomBar
+        verdict={verdict}
+        product={product}
+        barcode={barcode}
+        onShelf={() => setSheetVisible(true)}
+        onShare={handleShare}
+        bottomPad={bottomPad}
+      />
     </View>
   );
 }

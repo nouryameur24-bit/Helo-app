@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -13,7 +14,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
@@ -177,8 +178,26 @@ export default function ProfileSetupScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Step indicator */}
+        <Animated.View entering={FadeIn.delay(0).duration(400)} style={styles.stepRow}>
+          <View style={[styles.stepDot, styles.stepDotDone]}>
+            <Feather name="check" size={10} color="#fff" />
+          </View>
+          <LinearGradient
+            colors={[Colors.accent, Colors.accentDark]}
+            style={styles.stepLine}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+          />
+          <View style={[styles.stepDot, styles.stepDotActive]}>
+            <Feather name="user" size={10} color="#fff" />
+          </View>
+          <View style={styles.stepLineEmpty} />
+          <View style={styles.stepDot} />
+        </Animated.View>
+
         {/* Header */}
-        <Animated.View entering={FadeInDown.delay(0).duration(350)} style={styles.header}>
+        <Animated.View entering={FadeInDown.delay(60).duration(350)} style={styles.header}>
           <ThemedText variant="displayMedium" color="textPrimary">
             Parlons de vous
           </ThemedText>
@@ -323,6 +342,40 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Spacing.xl,
     gap: Spacing.xxl,
+  },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: Spacing.sm,
+  },
+  stepDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.borderLight,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  stepDotDone: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  stepDotActive: {
+    backgroundColor: Colors.accentDark,
+    borderColor: Colors.accentDark,
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    marginHorizontal: 4,
+  },
+  stepLineEmpty: {
+    flex: 1,
+    height: 2,
+    backgroundColor: Colors.borderLight,
+    marginHorizontal: 4,
   },
   header: {
     gap: Spacing.xs,

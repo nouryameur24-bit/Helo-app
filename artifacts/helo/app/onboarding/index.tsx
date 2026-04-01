@@ -1,5 +1,6 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -12,8 +13,15 @@ import {
 import Animated, {
   Easing,
   FadeIn,
+  FadeInDown,
+  FadeOut,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +30,6 @@ import { IllustrationCommunity } from "@/components/illustrations/IllustrationCo
 import { IllustrationGlowScore } from "@/components/illustrations/IllustrationGlowScore";
 import { IllustrationScan } from "@/components/illustrations/IllustrationScan";
 import { IllustrationTrimester } from "@/components/illustrations/IllustrationTrimester";
-import { Button } from "@/components/ui/Button";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { Colors, Radius, Spacing } from "@/constants/theme";
 
@@ -33,6 +40,9 @@ interface Slide {
   title: string;
   subtitle: string;
   Illustration: React.ComponentType<{ size?: number }>;
+  gradientFrom: string;
+  gradientTo: string;
+  accentColor: string;
 }
 
 const SLIDES: Slide[] = [
@@ -42,6 +52,9 @@ const SLIDES: Slide[] = [
     subtitle:
       "Cosmétiques, alimentation, médicaments — vérifiez instantanément ce qui est adapté à votre grossesse.",
     Illustration: IllustrationScan,
+    gradientFrom: "#FFFAF5",
+    gradientTo: "#FFF0DC",
+    accentColor: Colors.accent,
   },
   {
     key: "trimester",
@@ -49,6 +62,9 @@ const SLIDES: Slide[] = [
     subtitle:
       "Les recommandations évoluent avec vous. Hēlo ajuste automatiquement chaque évaluation.",
     Illustration: IllustrationTrimester,
+    gradientFrom: "#FFFAF5",
+    gradientTo: "#EDF7F0",
+    accentColor: "#5BB97C",
   },
   {
     key: "glow",
@@ -56,6 +72,9 @@ const SLIDES: Slide[] = [
     subtitle:
       "Découvrez votre score global de sérénité et partagez-le avec vos proches.",
     Illustration: IllustrationGlowScore,
+    gradientFrom: "#FFFAF5",
+    gradientTo: "#FFF3E8",
+    accentColor: Colors.accentDark,
   },
   {
     key: "community",
@@ -63,48 +82,250 @@ const SLIDES: Slide[] = [
     subtitle:
       "Rejoignez des milliers de futures mamans qui font les meilleurs choix pour leur bébé.",
     Illustration: IllustrationCommunity,
+    gradientFrom: "#FFFAF5",
+    gradientTo: "#F3EEF9",
+    accentColor: "#9B77C8",
   },
 ];
 
-// Animated slide card — each slide has its own enter animation
-function SlideCard({ item }: { item: Slide }) {
-  const { Illustration } = item;
+// ─── Breathing illustration wrapper ───────────────────────────────────────────
+function AnimatedIllustration({
+  Illustration,
+  isActive,
+}: {
+  Illustration: React.ComponentType<{ size?: number }>;
+  isActive: boolean;
+}) {
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (isActive) {
+      scale.value = withRepeat(
+        withSequence(
+          withTiming(1.06, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+          withTiming(1.0, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      scale.value = withTiming(1.0, { duration: 400 });
+    }
+  }, [isActive, scale]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   return (
-    <Animated.View
-      entering={FadeIn.duration(300).easing(Easing.out(Easing.cubic))}
-      style={[styles.slide, { width: SCREEN_WIDTH }]}
-    >
-      <Animated.View
-        entering={FadeIn.delay(60).duration(300).easing(Easing.out(Easing.cubic))}
-        style={styles.illustrationWrap}
-      >
-        <Illustration size={230} />
-      </Animated.View>
-
-      <Animated.View
-        entering={FadeIn.delay(110).duration(300).easing(Easing.out(Easing.cubic))}
-        style={styles.textBlock}
-      >
-        <ThemedText variant="headlineLarge" color="textPrimary" style={styles.slideTitle}>
-          {item.title}
-        </ThemedText>
-        <ThemedText variant="bodyLarge" color="textSecondary" style={styles.slideSubtitle}>
-          {item.subtitle}
-        </ThemedText>
-      </Animated.View>
+    <Animated.View style={animStyle}>
+      <Illustration size={230} />
     </Animated.View>
   );
 }
 
+// ─── Animated dot ─────────────────────────────────────────────────────────────
+function AnimatedDot({ isActive }: { isActive: boolean }) {
+  const width = useSharedValue(isActive ? 28 : 8);
+  const opacity = useSharedValue(isActive ? 1 : 0.35);
+
+  useEffect(() => {
+    width.value = withSpring(isActive ? 28 : 8, { stiffness: 200, damping: 18 });
+    opacity.value = withTiming(isActive ? 1 : 0.35, { duration: 250 });
+  }, [isActive, width, opacity]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    width: width.value,
+    opacity: opacity.value,
+  }));
+
+  return <Animated.View style={[styles.dot, animStyle]} />;
+}
+
+// ─── Single slide ─────────────────────────────────────────────────────────────
+function SlideCard({
+  item,
+  isActive,
+}: {
+  item: Slide;
+  isActive: boolean;
+}) {
+  const { Illustration } = item;
+
+  return (
+    <LinearGradient
+      colors={[item.gradientFrom, item.gradientTo]}
+      style={[styles.slide, { width: SCREEN_WIDTH }]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+    >
+      <Animated.View
+        entering={FadeIn.delay(40).duration(400).easing(Easing.out(Easing.cubic))}
+        style={styles.illustrationWrap}
+      >
+        <AnimatedIllustration Illustration={Illustration} isActive={isActive} />
+      </Animated.View>
+
+      <Animated.View
+        entering={FadeInDown.delay(120).duration(380).easing(Easing.out(Easing.cubic))}
+        style={styles.textBlock}
+      >
+        <View
+          style={[styles.accentLine, { backgroundColor: item.accentColor }]}
+        />
+        <ThemedText
+          variant="headlineLarge"
+          color="textPrimary"
+          style={styles.slideTitle}
+        >
+          {item.title}
+        </ThemedText>
+        <ThemedText
+          variant="bodyLarge"
+          color="textSecondary"
+          style={styles.slideSubtitle}
+        >
+          {item.subtitle}
+        </ThemedText>
+      </Animated.View>
+    </LinearGradient>
+  );
+}
+
+// ─── Splash screen ────────────────────────────────────────────────────────────
+function SplashScreen({ onDone }: { onDone: () => void }) {
+  const logoScale = useSharedValue(0.7);
+  const logoOpacity = useSharedValue(0);
+  const glowScale = useSharedValue(0.6);
+  const glowOpacity = useSharedValue(0);
+  const ring1 = useSharedValue(0.5);
+  const ring2 = useSharedValue(0.5);
+
+  useEffect(() => {
+    // Logo reveal
+    logoScale.value = withSpring(1, { stiffness: 120, damping: 14 });
+    logoOpacity.value = withTiming(1, { duration: 600 });
+
+    // Glow pulse
+    glowOpacity.value = withDelay(200, withTiming(1, { duration: 600 }));
+    glowScale.value = withDelay(200, withSpring(1, { stiffness: 80, damping: 12 }));
+
+    // Outer rings — breathing
+    ring1.value = withDelay(
+      400,
+      withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.95, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        false,
+      ),
+    );
+    ring2.value = withDelay(
+      700,
+      withRepeat(
+        withSequence(
+          withTiming(1.12, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0.92, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+        ),
+        -1,
+        false,
+      ),
+    );
+
+    // Auto-advance
+    const timer = setTimeout(onDone, 2800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoScale.value }],
+    opacity: logoOpacity.value,
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glowScale.value }],
+    opacity: glowOpacity.value,
+  }));
+
+  const ring1Style = useAnimatedStyle(() => ({
+    transform: [{ scale: ring1.value }],
+  }));
+
+  const ring2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: ring2.value }],
+  }));
+
+  return (
+    <Animated.View
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(400)}
+      style={styles.splash}
+    >
+      <LinearGradient
+        colors={["#FFFAF5", "#FFF3E0"]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+
+      {/* Animated background rings */}
+      <Animated.View style={[styles.ring, styles.ring2, ring2Style]} />
+      <Animated.View style={[styles.ring, styles.ring1, ring1Style]} />
+
+      {/* Center glow */}
+      <Animated.View style={[styles.glow, glowStyle]}>
+        <LinearGradient
+          colors={[Colors.accentLight, Colors.accent + "33"]}
+          style={styles.glowGradient}
+          start={{ x: 0.5, y: 0.5 }}
+          end={{ x: 1, y: 1 }}
+        />
+      </Animated.View>
+
+      {/* Logo */}
+      <Animated.View style={[styles.logoWrap, logoStyle]}>
+        <ThemedText style={styles.logoText}>Hēlo</ThemedText>
+        <Animated.View
+          entering={FadeInDown.delay(500).duration(400)}
+        >
+          <ThemedText style={styles.logoTagline}>
+            Pour les mamans qui ne font pas de compromis
+          </ThemedText>
+        </Animated.View>
+      </Animated.View>
+
+      {/* Tap to skip */}
+      <Pressable
+        onPress={onDone}
+        style={styles.splashSkip}
+        hitSlop={20}
+        accessibilityRole="button"
+        accessibilityLabel="Passer le splash"
+      >
+        <Animated.View entering={FadeIn.delay(1200).duration(400)}>
+          <ThemedText variant="bodySmall" color="textTertiary">
+            Appuyez pour continuer
+          </ThemedText>
+        </Animated.View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const [phase, setPhase] = useState<"splash" | "slides">("splash");
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const isLast = activeIndex === SLIDES.length - 1;
+
+  const buttonScale = useSharedValue(1);
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -112,16 +333,26 @@ export default function OnboardingScreen() {
         setActiveIndex(viewableItems[0].index);
       }
     },
-    []
+    [],
   );
 
-  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+  const viewabilityConfig = useRef({
+    viewAreaCoveragePercentThreshold: 50,
+  }).current;
 
   const handleNext = () => {
+    buttonScale.value = withSequence(
+      withTiming(0.94, { duration: 80 }),
+      withSpring(1, { stiffness: 300, damping: 14 }),
+    );
+
     if (isLast) {
       router.replace("/onboarding/role");
     } else {
-      flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
+      flatListRef.current?.scrollToIndex({
+        index: activeIndex + 1,
+        animated: true,
+      });
     }
   };
 
@@ -129,9 +360,20 @@ export default function OnboardingScreen() {
     router.replace("/onboarding/role");
   };
 
+  const buttonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+  }));
+
+  if (phase === "splash") {
+    return <SplashScreen onDone={() => setPhase("slides")} />;
+  }
+
   return (
-    <View style={[styles.root, { backgroundColor: Colors.background }]}>
-      {/* Skip button */}
+    <Animated.View
+      entering={FadeIn.duration(500)}
+      style={[styles.root, { backgroundColor: Colors.background }]}
+    >
+      {/* Skip */}
       <View style={[styles.skipRow, { paddingTop: topPadding + Spacing.sm }]}>
         <View style={{ flex: 1 }} />
         {!isLast && (
@@ -154,37 +396,51 @@ export default function OnboardingScreen() {
         bounces={false}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
-        renderItem={({ item }) => <SlideCard item={item} />}
+        renderItem={({ item, index }) => (
+          <SlideCard item={item} isActive={index === activeIndex} />
+        )}
         style={styles.flatList}
       />
 
-      {/* Bottom: dots + button */}
+      {/* Bottom bar */}
       <View
         style={[
           styles.bottomBar,
           { paddingBottom: bottomPadding + Spacing.xl },
         ]}
       >
-        {/* Pagination dots */}
+        {/* Animated dots */}
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                i === activeIndex ? styles.dotActive : styles.dotInactive,
-              ]}
-            />
+            <AnimatedDot key={i} isActive={i === activeIndex} />
           ))}
         </View>
 
-        <View style={styles.buttonWrap}>
-          <Button variant="primary" fullWidth onPress={handleNext}>
-            {isLast ? "Commencer" : "Suivant"}
-          </Button>
-        </View>
+        {/* Button */}
+        <Animated.View style={[styles.buttonWrap, buttonStyle]}>
+          <Pressable
+            onPress={handleNext}
+            style={({ pressed }) => [
+              styles.primaryBtn,
+              { opacity: pressed ? 0.92 : 1 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={isLast ? "Commencer" : "Suivant"}
+          >
+            <LinearGradient
+              colors={[Colors.accent, Colors.accentDark]}
+              style={styles.primaryBtnGrad}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <ThemedText style={styles.primaryBtnText}>
+                {isLast ? "Commencer ✨" : "Suivant"}
+              </ThemedText>
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -192,6 +448,64 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+
+  // ── Splash ──────────────────────────────────────────────────────────────────
+  splash: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  ring: {
+    position: "absolute",
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+  },
+  ring1: {
+    width: 260,
+    height: 260,
+    opacity: 0.18,
+  },
+  ring2: {
+    width: 360,
+    height: 360,
+    opacity: 0.1,
+  },
+  glow: {
+    position: "absolute",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    overflow: "hidden",
+  },
+  glowGradient: {
+    flex: 1,
+  },
+  logoWrap: {
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  logoText: {
+    fontSize: 64,
+    fontWeight: "700",
+    color: Colors.accentDark,
+    letterSpacing: -1.5,
+  },
+  logoTagline: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 22,
+    maxWidth: 260,
+    marginTop: Spacing.sm,
+  },
+  splashSkip: {
+    position: "absolute",
+    bottom: 60,
+  },
+
+  // ── Slides ──────────────────────────────────────────────────────────────────
   skipRow: {
     flexDirection: "row",
     paddingHorizontal: Spacing.xl,
@@ -209,13 +523,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.xxxl,
+    gap: Spacing.xxl,
   },
   illustrationWrap: {
-    marginBottom: Spacing.xxxl,
+    alignItems: "center",
+    justifyContent: "center",
   },
   textBlock: {
     alignItems: "center",
     gap: Spacing.md,
+  },
+  accentLine: {
+    width: 36,
+    height: 3,
+    borderRadius: 2,
+    marginBottom: Spacing.xs,
   },
   slideTitle: {
     textAlign: "center",
@@ -224,32 +546,42 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 26,
   },
+
+  // ── Bottom bar ──────────────────────────────────────────────────────────────
   bottomBar: {
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.xl,
     gap: Spacing.xxl,
-    backgroundColor: Colors.background,
+    backgroundColor: "transparent",
   },
   dotsRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: Spacing.sm,
+    alignItems: "center",
+    gap: 6,
   },
   dot: {
     height: 6,
     borderRadius: 3,
-  },
-  dotActive: {
-    width: 24,
     backgroundColor: Colors.accent,
-  },
-  dotInactive: {
-    width: 6,
-    backgroundColor: Colors.borderLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   buttonWrap: {
     width: "100%",
+  },
+  primaryBtn: {
+    borderRadius: Radius.full,
+    overflow: "hidden",
+    width: "100%",
+  },
+  primaryBtnGrad: {
+    paddingVertical: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryBtnText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
   },
 });

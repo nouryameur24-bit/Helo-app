@@ -1,3 +1,16 @@
+/**
+ * useShelfData — Gestion du placard produits avec fallback local.
+ *
+ * Stratégie de lecture (cascade) :
+ *  1. Supabase `scan_history` (si configuré et connecté) — source de vérité distante
+ *  2. AsyncStorage `@helo_shelf` — fallback hors-ligne / dev
+ *
+ * Après chaque chargement, synchronise automatiquement le widget iOS via syncWidgetData()
+ * afin que le Glow Score sur l'écran d'accueil reste à jour sans action utilisateur.
+ *
+ * @param userId - ID utilisateur (null = placard vide, pas d'erreur)
+ * @returns {{ shelf, loading, reload }}
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 

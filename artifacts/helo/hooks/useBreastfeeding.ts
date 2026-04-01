@@ -1,3 +1,13 @@
+/**
+ * useBreastfeeding — Mode allaitement avec recalcul des verdicts du placard.
+ *
+ * Lorsque le mode allaitement est activé, recalcule tous les verdicts du placard
+ * avec la phase 4 (allaitement) pour alerter sur les produits incompatibles
+ * avec l'allaitement qui étaient sûrs pendant la grossesse.
+ *
+ * Persistance : AsyncStorage `@helo_breastfeeding_mode` ('true' / 'false').
+ * Initialisation unique via useRef pour éviter les doubles-lectures au montage.
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

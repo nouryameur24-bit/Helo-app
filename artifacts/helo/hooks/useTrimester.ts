@@ -1,3 +1,18 @@
+/**
+ * useTrimester — Calcul automatique du trimestre et gestion des transitions.
+ *
+ * Lit la date terme (dueDate) depuis AsyncStorage et calcule le trimestre courant
+ * via calculateTrimester(). Détecte automatiquement les changements de trimestre
+ * au lancement de l'app et recalcule les verdicts du placard (recalculateShelfVerdicts).
+ *
+ * Fonctionnalités :
+ *  - Transition de trimestre : showTrimesterTransition + changedProductsCount
+ *  - Post-partum : détecte automatiquement et propose le mode allaitement
+ *  - Palette de couleurs adaptée à chaque trimestre (trimesterPalette)
+ *
+ * recalculateShelfVerdicts() est une fonction privée qui itère sur le placard local,
+ * re-matche les ingrédients pour le nouveau trimestre et met à jour le cache.
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 

@@ -1,3 +1,14 @@
+/**
+ * useBabyMode — Mode bébé pour scanner les produits de puériculture.
+ *
+ * Lorsqu'activé, l'app passe en mode "analyse produit bébé" :
+ *  - Filtre les catégories du placard sur BABY_CATEGORIES
+ *  - Adapte les seuils de risque aux besoins du nouveau-né (plus stricts)
+ *  - Change l'iconographie et les libellés dans l'interface
+ *
+ * Persistance : AsyncStorage `@helo_baby_mode` ('true' / 'false').
+ * BABY_CATEGORIES et BABY_MODE_KEY sont exportés pour usage dans d'autres hooks.
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

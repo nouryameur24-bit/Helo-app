@@ -1,7 +1,27 @@
 /**
- * cosing.ts — 1 500 ingrédients cosmétiques avec niveaux de risque grossesse pré-calculés.
- * Sources: SCCS, CosIng EU Commission, ANSM, CRAT.
- * Aucun appel réseau — données entièrement embarquées.
+ * cosing.ts — Ingrédients cosmétiques pré-calculés pour l'analyse grossesse.
+ *
+ * Architecture : ce fichier contient des données statiques pré-calculées, groupées par
+ * famille fonctionnelle (émollients, conservateurs, filtres UV, actifs anti-âge, etc.).
+ * Ce choix est intentionnel — il permet un bundle 100 % hors-ligne sans dépendance réseau
+ * et une recherche en O(1) via la table Supabase `ingredients`.
+ *
+ * Sources médicales : SCCS (Scientific Committee on Consumer Safety), CosIng EU Commission,
+ * ANSM, CRAT, ECHA (Agence européenne des produits chimiques).
+ *
+ * Convention de nommage des groupes :
+ *   - Nom descriptif de la famille fonctionnelle (ex. EMOLLIENT_ESTERS, UV_FILTERS_MINERAL)
+ *   - Pas de suffixe numérique — chaque groupe a un nom sémantique unique
+ *
+ * Structure d'une entrée :  c(name_inci, label_fr, [risk×4], note, confidence?)
+ *   - name_inci   : identifiant INCI normalisé (clé unique)
+ *   - label_fr    : nom complet en français pour l'affichage
+ *   - [risk×4]    : niveaux de risque [T1, T2, T3, allaitement]
+ *   - note        : explication médicale courte
+ *   - confidence  : 'high' | 'medium' | 'low' (défaut: 'high')
+ *
+ * Pour ajouter des entrées : créer un nouveau groupe const nommé sémantiquement,
+ * l'ajouter dans le spread du return de getCosIngIngredients().
  */
 
 import { type PreComputedIngredient, type RiskTuple, ing } from '../utils.js';
@@ -590,7 +610,7 @@ const OTHER_ACTIVES: PreComputedIngredient[] = [
 ];
 
 // ─── ACIDES AMINÉS & PEPTIDES ÉTENDUS ───────────────────────────────────────
-const AMINO_ACIDS_2: PreComputedIngredient[] = [
+const AMINO_ACIDS_PEPTIDES: PreComputedIngredient[] = [
   c('GLYCINE','Glycine',S,'Acide aminé naturel — humectant et tampon pH. Sûr en grossesse.'),
   c('ALANINE','Alanine',S,'Acide aminé hydratant — naturellement présent dans la kératine. Sûr.'),
   c('VALINE','Valine',S,'Acide aminé essentiel — conditionneur capillaire. Sûr.'),
@@ -731,7 +751,7 @@ const POLYQUATERNIUMS: PreComputedIngredient[] = [
 ];
 
 // ─── POLYMÈRES & ÉPAISSISSANTS ─────────────────────────────────────────────
-const POLYMERS_2: PreComputedIngredient[] = [
+const POLYMERS_BIOPOLYMERS: PreComputedIngredient[] = [
   c('CARBOMER 940','Carbomère 940',S,'Polymère acrylique — gélifiant universel. Sûr.'),
   c('CARBOMER 980','Carbomère 980',S,'Carbomère haute viscosité. Sûr.'),
   c('CARBOMER 934','Carbomère 934',S,'Gélifiant acrylique. Sûr.'),
@@ -963,7 +983,7 @@ const NAIL_INGREDIENTS: PreComputedIngredient[] = [
 ];
 
 // ─── EXTRAITS BOTANIQUES ÉTENDUS (200+) ──────────────────────────────────
-const BOTANICAL_EXTRACTS_2: PreComputedIngredient[] = [
+const BOTANICAL_ADAPTOGENS: PreComputedIngredient[] = [
   c('ALOE BARBADENSIS LEAF JUICE','Aloe vera (gel de feuille)',S,'Hydratant et cicatrisant naturel. Sûr et recommandé en grossesse.'),
   c('ALOE BARBADENSIS LEAF EXTRACT','Extrait de feuille d\'aloe vera',S,'Calmant et hydratant. Sûr.'),
   c('ARGANIA SPINOSA KERNEL OIL','Huile d\'argan',S,'Huile berbère riche en vitamine E — réparatrice. Sûr.'),
@@ -1189,7 +1209,7 @@ const BOTANICAL_EXTRACTS_2: PreComputedIngredient[] = [
 ];
 
 // ─── TENSIOACTIFS SUPPLÉMENTAIRES ──────────────────────────────────────────
-const SURFACTANTS_2: PreComputedIngredient[] = [
+const SURFACTANTS_MILD_CLEANSERS: PreComputedIngredient[] = [
   c('SODIUM LAUROYL METHYL ISETHIONATE','Sodium lauroyl méthyl isethionate',S,'Tensioactif doux — nettoyants solides. Sûr.'),
   c('SODIUM LAUROYL GLUTAMATE','Glutamate de sodium et lauroyle',S,'Tensioactif amino-acide — très doux. Sûr.'),
   c('SODIUM COCOYL GLUTAMATE','Glutamate de sodium et cocoyle',S,'Tensioactif issu coco — doux et biodégradable. Sûr.'),
@@ -1245,7 +1265,7 @@ const SURFACTANTS_2: PreComputedIngredient[] = [
 ];
 
 // ─── SOLVANTS, VECTEURS & HUMECTANTS SUPPLÉMENTAIRES ───────────────────────
-const CARRIERS_SOLVENTS_2: PreComputedIngredient[] = [
+const CARRIERS_GLYCOLS: PreComputedIngredient[] = [
   c('DIPROPYLENE GLYCOL','Dipropylène glycol',S,'Humectant et solvant. Sûr.'),
   c('HEXYLENE GLYCOL','Hexylène glycol',C,'Solvant et humectant — irritant à haute concentration. Précaution.','medium'),
   c('CAPRYLYL GLYCOL','Glycol caprylyle',S,'Humectant antimicrobien — conservateur alternatif. Sûr.'),
@@ -1468,7 +1488,7 @@ const HAIR_CARE_INCI: PreComputedIngredient[] = [
 ];
 
 // ─── Filtres UV / Actifs solaires ────────────────────────────────────────────
-const SUNSCREEN_ACTIVES_2: PreComputedIngredient[] = [
+const SUNSCREEN_ORGANIC_FILTERS: PreComputedIngredient[] = [
   c('TINOSORB S','Bis-éthylhexyloxyphénol méthoxyphényl triazine (Tinosorb S)',S,'Filtre UV organique large spectre. Non absorbé. Sûr grossesse.'),
   c('TINOSORB M','Méthylène bis-benzotriazolyl tétraméthylbutylphénol (Tinosorb M)',S,'Filtre UV — particules micronisées. Non absorbé. Sûr.'),
   c('UVINUL A PLUS','Diéthylamino hydroxybenzoyl hexyl benzoate (DHHB/Uvinul A+)',S,'Filtre UVA — non absorbé. Sûr.','medium'),
@@ -1507,7 +1527,7 @@ const SUNSCREEN_ACTIVES_2: PreComputedIngredient[] = [
 ];
 
 // ─── AHA/BHA/PHA variants ────────────────────────────────────────────────────
-const AHA_BHA_PHA_2: PreComputedIngredient[] = [
+const EXFOLIATING_ACIDS_ADVANCED: PreComputedIngredient[] = [
   c('GLUCONOLACTONE','Gluconolactone (PHA)',S,'PHA — exfoliant doux. Bien toléré. Sûr grossesse.'),
   c('LACTOBIONIC ACID','Acide lactobionique (PHA)',S,'PHA — exfoliant très doux. Sûr.'),
   c('GALACTOSE','Galactose (PHA cosmétique)',S,'PHA naturel — doux. Sûr.','medium'),
@@ -1669,7 +1689,7 @@ const BOTANICAL_OILS: PreComputedIngredient[] = [
 ];
 
 // ─── Argiles et boues ─────────────────────────────────────────────────────────
-const CLAYS_MUDS_2: PreComputedIngredient[] = [
+const MINERAL_ABSORBENT_CLAYS: PreComputedIngredient[] = [
   c('RHASSOUL','Rhassoul (ghassoul)',S,'Argile volcanique — nettoyante. Sûr.'),
   c('FRENCH GREEN CLAY','Argile verte française (illite)',S,'Argile — purifiante. Sûr.'),
   c('WHITE KAOLIN','Kaolin blanc',S,'Argile douce — purifiante. Sûr.'),
@@ -1904,15 +1924,15 @@ export async function scrapeCosIng(): Promise<PreComputedIngredient[]> {
     ...ALCOHOLS, ...CHELATING, ...EMULSIFIERS, ...PLANT_EXTRACTS,
     ...HEAVY_METALS, ...PEPTIDES, ...ENDOCRINE_DISRUPTORS, ...OTHER_ACTIVES,
     // Nouvelles sections (session 2)
-    ...AMINO_ACIDS_2, ...FATTY_ACIDS_ESTERS, ...POLYQUATERNIUMS,
-    ...POLYMERS_2, ...MINERALS_CLAYS, ...VITAMINS_COSM, ...WAXES_LIPIDS,
-    ...HAIR_COLOR_AGENTS, ...NAIL_INGREDIENTS, ...BOTANICAL_EXTRACTS_2,
-    ...SURFACTANTS_2, ...CARRIERS_SOLVENTS_2, ...ADVANCED_ACTIVES,
+    ...AMINO_ACIDS_PEPTIDES, ...FATTY_ACIDS_ESTERS, ...POLYQUATERNIUMS,
+    ...POLYMERS_BIOPOLYMERS, ...MINERALS_CLAYS, ...VITAMINS_COSM, ...WAXES_LIPIDS,
+    ...HAIR_COLOR_AGENTS, ...NAIL_INGREDIENTS, ...BOTANICAL_ADAPTOGENS,
+    ...SURFACTANTS_MILD_CLEANSERS, ...CARRIERS_GLYCOLS, ...ADVANCED_ACTIVES,
     ...HAIR_ACTIVES,
     // Nouvelles sections (session 3)
-    ...HAIR_CARE_INCI, ...SUNSCREEN_ACTIVES_2, ...AHA_BHA_PHA_2,
+    ...HAIR_CARE_INCI, ...SUNSCREEN_ORGANIC_FILTERS, ...EXFOLIATING_ACIDS_ADVANCED,
     ...CERAMIDES_SPHINGOLIPIDS, ...PEPTIDES_ADV, ...BOTANICAL_OILS,
-    ...CLAYS_MUDS_2, ...FERMENTED_INGR, ...PRESERVATIVE_SYSTEMS,
+    ...MINERAL_ABSORBENT_CLAYS, ...FERMENTED_INGR, ...PRESERVATIVE_SYSTEMS,
     // Nouvelles sections (session 4)
     ...MAKEUP_PIGMENTS, ...ANTI_AGE_ADVANCED, ...BABY_MATERNITY_INGR,
     ...MICROBIOME_ACTIVES,

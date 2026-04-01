@@ -1,7 +1,26 @@
 /**
- * medications.ts — ~1 000 médicaments de marque français avec risques grossesse pré-calculés.
- * Sources: CRAT, ANSM, VIDAL, BDPM — noms de marque courants en France.
- * Données pré-calculées — aucun appel réseau.
+ * medications.ts — Médicaments de marque français pré-calculés pour l'analyse grossesse.
+ *
+ * Architecture : données statiques groupées par laboratoire pharmaceutique et par
+ * spécialité clinique (gynécologie, neurologie, cardiologie, vaccins, hématologie, etc.).
+ * Ce fichier couvre les noms de marque courants en France — la DCI générique est dans crat.ts.
+ * Bundle 100 % hors-ligne.
+ *
+ * Sources médicales : CRAT (lecrat.fr), ANSM, VIDAL, BDPM (Base de Données Publique des
+ * Médicaments), notices officielles, RCP (Résumés des Caractéristiques du Produit).
+ *
+ * Convention de nommage des groupes :
+ *   - Par laboratoire : SANOFI_BRANDS, PFIZER_BRANDS, NOVARTIS_BRANDS...
+ *   - Par spécialité clinique : VACCINE_BRANDS, HEMATOLOGY_MEDS, CARDIO_FINAL...
+ *   - Par classe OTC : OTC_PHARMACY_BRANDS, PARAPHARMACY_MICRONUTRIENTS...
+ *   - Pas de suffixe numérique — chaque groupe a un nom sémantique unique
+ *
+ * Structure d'une entrée :  b(name_inci, label_fr, [risk×4], note, confidence?)
+ *   - name_inci   : nom de marque normalisé en majuscules (clé unique)
+ *   - label_fr    : nom commercial + DCI entre parenthèses
+ *   - [risk×4]    : niveaux de risque [T1, T2, T3, allaitement]
+ *   - note        : recommandation clinique et source
+ *   - confidence  : 'high' | 'medium' | 'low' (défaut: 'high')
  */
 
 import { type PreComputedIngredient, type RiskTuple, ing } from '../utils.js';
@@ -467,7 +486,7 @@ const HOMEOPATHIC: PreComputedIngredient[] = [
 ];
 
 // ─── SUPPLÉMENTS PARAPHARMACEUTIQUES ──────────────────────────────────────
-const SUPPLEMENTS_2: PreComputedIngredient[] = [
+const MINERAL_SUPPLEMENTS: PreComputedIngredient[] = [
   b('BION3 GROSSESSE','Bion 3 Grossesse',S,'Multivitamines grossesse — sûr.'),
   b('BEROCCA','Bérocca',C,'Vitamines B+C — caféine présente dans certaines versions. Vérifier.','medium'),
   b('SUPRADYN','Supradyn',S,'Multivitamines — vérifier doses vitamine A.','medium'),
@@ -535,7 +554,7 @@ const PEDIATRIC_BRANDS: PreComputedIngredient[] = [
 ];
 
 // ─── MARQUES DERMATOLOGIQUES ──────────────────────────────────────────────
-const DERM_BRANDS_2: PreComputedIngredient[] = [
+const DERM_PRESCRIPTION_BRANDS: PreComputedIngredient[] = [
   b('CERAVE CREME HYDRATANTE','CeraVe Crème hydratante',S,'Céramides + acide hyaluronique — sûr et recommandé grossesse.'),
   b('CERAVE MOUSSE NETTOYANTE','CeraVe Mousse nettoyante',S,'Tensioactifs doux — sûr.'),
   b('LA ROCHE POSAY ANTHELIOS','Anthelios (La Roche-Posay SPF)',S,'Filtres UV minéraux — sûr.'),
@@ -569,7 +588,7 @@ const DERM_BRANDS_2: PreComputedIngredient[] = [
 ];
 
 // ─── ORL ÉTENDUS MARQUES ──────────────────────────────────────────────────
-const ORL_BRANDS_2: PreComputedIngredient[] = [
+const ORL_PRESCRIPTION_BRANDS: PreComputedIngredient[] = [
   b('HUMEX RHUME','Humex rhume (pseudoéphédrine)',D,'Vasoconstricteur systémique — CONTRE-INDIQUÉ en grossesse.'),
   b('ACTIFED RHUME','Actifed rhume (pseudoéphédrine)',D,'Vasoconstricteur — CONTRE-INDIQUÉ.'),
   b('RHINADVIL','Rhinadvil (ibuprofène + pseudoéphédrine)',D,'AINS + vasoconstricteur — DOUBLEMENT CONTRE-INDIQUÉ grossesse.'),
@@ -604,7 +623,7 @@ const ORL_BRANDS_2: PreComputedIngredient[] = [
 ];
 
 // ─── CARDIOLOGIE MARQUES ──────────────────────────────────────────────────
-const CARDIO_BRANDS_2: PreComputedIngredient[] = [
+const CARDIO_ARRHYTHMIA_BRANDS: PreComputedIngredient[] = [
   b('KARDEGIC 75','Kardégic 75mg (aspirine antiagrégant)',C,'Faible dose — prévention prééclampsie. Sûr T1-T2. Précaution T3.','medium'),
   b('ASPEGIC 100','Aspégic 100mg',C,'Aspirine antiagrégante — même que Kardégic. Précaution.','medium'),
   b('PLAVIX','Plavix (clopidogrel)',C,'Antiagrégant — données limitées. Précaution.','medium'),
@@ -631,7 +650,7 @@ const CARDIO_BRANDS_2: PreComputedIngredient[] = [
 ];
 
 // ─── MARQUES GASTRO ÉTENDUES ──────────────────────────────────────────────
-const GASTRO_BRANDS_2: PreComputedIngredient[] = [
+const GASTRO_IBD_BRANDS: PreComputedIngredient[] = [
   b('MOPRAL','Mopral (oméprazole)',S,'IPP — sûr grossesse.'),
   b('LANZOR','Lanzor (lansoprazole)',S,'IPP — sûr.'),
   b('NEXIUM CONTROL','Nexium Control (ésoméprazole)',S,'IPP — sûr.'),
@@ -826,16 +845,16 @@ export async function scrapeMedications(): Promise<PreComputedIngredient[]> {
     ...DERM_BRANDS, ...ORL_BRANDS,
     // Nouvelles sections (session 2)
     ...BIOGARAN_GENERICS, ...TEVA_MYLAN_GENERICS, ...HOMEOPATHIC,
-    ...SUPPLEMENTS_2, ...PEDIATRIC_BRANDS, ...DERM_BRANDS_2,
-    ...ORL_BRANDS_2, ...CARDIO_BRANDS_2, ...GASTRO_BRANDS_2,
+    ...MINERAL_SUPPLEMENTS, ...PEDIATRIC_BRANDS, ...DERM_PRESCRIPTION_BRANDS,
+    ...ORL_PRESCRIPTION_BRANDS, ...CARDIO_ARRHYTHMIA_BRANDS, ...GASTRO_IBD_BRANDS,
     // Nouvelles sections (session 3)
     ...SANOFI_BRANDS, ...PFIZER_BRANDS, ...SERVIER_BRANDS,
     ...PIERRE_FABRE_BRANDS, ...PROBIOTICS_BRANDS, ...PREGNANCY_SUPPLEMENTS,
     // Nouvelles sections (session 4)
     ...NOVARTIS_BRANDS, ...AZ_GSK_BRANDS, ...OTC_PHARMACY_BRANDS,
-    ...HOMEOPATHIC_2, ...HERBAL_BRANDS,
+    ...HOMEOPATHIC_DILUTIONS, ...HERBAL_BRANDS,
     // Nouvelles sections (session 5)
-    ...ROCHE_MSD_BRANDS, ...GYNECOLOGY_BRANDS, ...PARAPHARMACY_2,
+    ...ROCHE_MSD_BRANDS, ...GYNECOLOGY_BRANDS, ...PARAPHARMACY_MICRONUTRIENTS,
     // Nouvelles sections (session 6)
     ...ENDOCRINE_MEDS, ...NEURO_BRANDS, ...VACCINE_BRANDS,
     // Nouvelles sections (session 7)
@@ -1056,7 +1075,7 @@ const GYNECOLOGY_BRANDS: PreComputedIngredient[] = [
 ];
 
 // ─── Parapharmacie 2 ─────────────────────────────────────────────────────────
-const PARAPHARMACY_2: PreComputedIngredient[] = [
+const PARAPHARMACY_MICRONUTRIENTS: PreComputedIngredient[] = [
   b('CAUDALIE VINOPERFECT','Caudalie Vinoperfect (Vin actif)',C,'Polyphénols raisin — précaution resvératrol.','medium'),
   b('CAUDALIE DIVINE OIL','Caudalie Divine Oil (huiles)',S,'Huiles végétales mélangées. Sûr.','medium'),
   b('LIERAC HYDRAGENIST','Lierac Hydragenist',S,'Hydratant — sûr.','medium'),
@@ -1184,7 +1203,7 @@ const OTC_PHARMACY_BRANDS: PreComputedIngredient[] = [
 ];
 
 // ─── Homéopathie supplémentaire ───────────────────────────────────────────────
-const HOMEOPATHIC_2: PreComputedIngredient[] = [
+const HOMEOPATHIC_DILUTIONS: PreComputedIngredient[] = [
   b('CAULOPHYLLUM THALICTROIDES','Caulophyllum thalictroides (homéo)',D,'CONTRE-INDIQUÉ grossesse — utérotonique (même dilutions homéo).'),
   b('ACTEA RACEMOSA HOMEO','Actaea racemosa (homéo)',C,'Utérotonique potentiel — précaution T1.','medium'),
   b('GELSEMIUM HOMEO','Gelsemium sempervirens (homéo)',S,'Homéopathique — sûr dilutions usuelles.','medium'),

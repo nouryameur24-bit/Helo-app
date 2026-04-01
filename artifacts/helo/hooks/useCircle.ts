@@ -1,3 +1,19 @@
+/**
+ * useCircle — Cercle social privé (famille proche) avec feed temps réel.
+ *
+ * Charge le cercle, le feed d'activité et le Glow Score collectif depuis Supabase.
+ * En cas d'échec réseau, repli sur le cache local (AsyncStorage) pour éviter
+ * un écran vide — les données peuvent avoir quelques minutes de retard.
+ *
+ * Fonctionnalités :
+ *  - sendMessage() : envoie un message textuel dans le feed
+ *  - shareScan()   : partage un résultat de scan (produit + verdict) avec le cercle
+ *  - react()       : ajoute/retire un emoji-réaction sur une entrée du feed
+ *  - Défi hebdomadaire : calcule le WeeklyChallenge du cercle (glowScore collectif)
+ *
+ * Cache : clés `@helo_circle_cache` et `@helo_circle_feed_cache`.
+ * Optimistic UI : les réactions sont appliquées localement avant la confirmation serveur.
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';

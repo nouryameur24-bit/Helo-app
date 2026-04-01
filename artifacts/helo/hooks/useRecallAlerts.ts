@@ -1,3 +1,15 @@
+/**
+ * useRecallAlerts — Surveillance des rappels de produits DGCCRF/ANSM.
+ *
+ * Vérifie si des produits du placard utilisateur font l'objet d'un rappel officiel.
+ * En cas d'alerte : envoie une notification push et met à jour le Glow Score.
+ * Synchronise également les données du widget iOS après chaque vérification.
+ *
+ * Stratégie de polling : vérification au montage uniquement (pas d'interval en arrière-plan)
+ * pour préserver la batterie. L'utilisateur peut forcer un refresh via `checkNow()`.
+ *
+ * @returns {{ alerts, isChecking, lastChecked, checkNow, dismissAlert }}
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 

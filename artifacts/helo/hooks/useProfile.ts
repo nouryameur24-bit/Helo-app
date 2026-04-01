@@ -1,3 +1,16 @@
+/**
+ * useProfile — Profil utilisateur avec synchronisation Supabase.
+ *
+ * Source de vérité : AsyncStorage (local) réconcilié avec la table `profiles` Supabase.
+ * En l'absence de Supabase (mode dev / hors-ligne), fonctionne entièrement en local.
+ *
+ * Gère deux rôles : 'pregnant' (enceinte) et 'partner' (co-parent).
+ * Pour le rôle 'partner', résout automatiquement le profil de la mère liée
+ * via la table `partner_links` afin d'afficher son trimestre correct.
+ *
+ * Exports nommés complémentaires : getOrCreateUserId, setUserRole, getUserId, getLinkedUserId
+ * — utilisables hors contexte React (ex. dans les workers ou les Edge Functions).
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

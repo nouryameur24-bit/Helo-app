@@ -1,3 +1,17 @@
+/**
+ * useNotifications — Gestion complète des notifications push Expo.
+ *
+ * Responsabilités :
+ *  - Demande de permission (iOS uniquement, Android granted par défaut)
+ *  - Planification des rappels hebdomadaires et jalons trimestre
+ *  - Deep linking : routing vers l'écran approprié au tap sur notification
+ *  - Persistance des préférences utilisateur (préférences par type de notification)
+ *
+ * Pattern d'initialisation : useRef `initialized` pour éviter les doubles-souscriptions
+ * aux listeners Expo Notifications lors des re-renders.
+ *
+ * @returns {{ hasPermission, isLoading, schedule, cancel, requestPermission }}
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';

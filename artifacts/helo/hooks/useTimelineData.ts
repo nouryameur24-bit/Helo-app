@@ -1,3 +1,15 @@
+/**
+ * useTimelineData — Données de la timeline grossesse semaine par semaine.
+ *
+ * Agrège pour chaque semaine :
+ *  - Le nombre de scans effectués (depuis l'historique local)
+ *  - Le Glow Score calculé sur les produits du placard à cette semaine
+ *  - Les événements médicaux/développementaux (getEventsForWeek)
+ *
+ * Utilisé par l'écran timeline pour afficher la progression de la grossesse
+ * sous forme de graphique et de jalons. Les données sont recalculées à la demande
+ * via `refresh()` sans re-fetch réseau (entièrement local).
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 

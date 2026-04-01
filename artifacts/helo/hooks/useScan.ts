@@ -1,3 +1,14 @@
+/**
+ * useScan — Hook principal du pipeline de scan de produits.
+ *
+ * Gère les deux modes de scan (en ligne / hors-ligne) avec une couche de cache
+ * à deux niveaux : cache TTL 7 jours (scan récents) + LRU offline (produits déjà vus).
+ *
+ * Flux en ligne  : barcode → Open Food Facts → matchIngredients() → verdict → cache
+ * Flux hors-ligne: barcode → cache TTL → cache LRU → erreur explicite (pas de fallback silencieux)
+ *
+ * @returns {UseScanReturn} État du scan + actions (scanBarcode, clearResult, setDirectResult)
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useState } from 'react';
 

@@ -1,3 +1,15 @@
+/**
+ * useOffline — Détection de la connectivité et synchronisation hors-ligne.
+ *
+ * Surveille l'état réseau via NetInfo et déclenche automatiquement :
+ *  - downloadIngredientsDB() au premier lancement premium (téléchargement de la DB locale)
+ *  - syncOfflineScans() à la reconnexion (envoi des scans en file d'attente)
+ *
+ * Réserve le mode hors-ligne aux utilisateurs Premium.
+ * La date de dernière synchronisation est affichée dans l'UI pour transparence.
+ *
+ * @returns {UseOfflineReturn} isOffline, lastSync, isSyncing, syncNow, downloadProgress
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useRef, useState } from 'react';

@@ -1,7 +1,24 @@
 /**
- * efsa.ts — ~1000 additifs alimentaires et aliments à risque grossesse.
- * Sources: EFSA, ANSES, OMS, CRAT (risques alimentaires).
- * Données pré-calculées — aucun appel réseau.
+ * efsa.ts — Aliments, additifs et contaminants pré-calculés pour l'analyse grossesse.
+ *
+ * Architecture : données statiques groupées par catégorie alimentaire (viandes, poissons,
+ * produits laitiers, épices, cuisines du monde, etc.) et par type de risque (contaminants,
+ * agents microbiologiques, modes de cuisson). Bundle 100 % hors-ligne.
+ *
+ * Sources médicales : EFSA (European Food Safety Authority), ANSES, OMS/WHO,
+ * CRAT (risques alimentaires grossesse), INRAE.
+ *
+ * Convention de nommage des groupes :
+ *   - Catégorie alimentaire descriptive (ex. DAIRY_FERMENTED_PRODUCTS, FRESHWATER_EXOTIC_FISH)
+ *   - Risques transversaux : COOKING_METHODS, FOOD_CONTAMINANTS
+ *   - Pas de suffixe numérique — chaque groupe a un nom sémantique unique
+ *
+ * Structure d'une entrée :  f(name_inci, label_fr, [risk×4], note, confidence?)
+ *   - name_inci   : identifiant normalisé (clé unique)
+ *   - label_fr    : dénomination complète pour l'affichage
+ *   - [risk×4]    : niveaux de risque [T1, T2, T3, allaitement]
+ *   - note        : explication médicale / raison du risque
+ *   - confidence  : 'high' | 'medium' | 'low' (défaut: 'high')
  */
 
 import { type PreComputedIngredient, type RiskTuple, ing } from '../utils.js';
@@ -524,7 +541,7 @@ const MEAT_TYPES: PreComputedIngredient[] = [
 ];
 
 // ─── HERBES, ÉPICES & ASSAISONNEMENTS ────────────────────────────────────
-const HERBS_SPICES_2: PreComputedIngredient[] = [
+const CULINARY_HERBS_SEEDS: PreComputedIngredient[] = [
   f('SAFRAN GRANDE QUANTITE','Safran (grande quantité)',D,'Utérotonique à hautes doses — culinaire OK. Supplements CONTRE-INDIQUÉS.','medium'),
   f('SAFRAN CULINAIRE','Safran (usage culinaire)',S,'Dose alimentaire — sûr.'),
   f('CANNELLE CULINAIRE','Cannelle (usage culinaire)',S,'Épice — sûr aux doses culinaires.'),
@@ -1123,7 +1140,7 @@ const FERMENTED_FOODS: PreComputedIngredient[] = [
 ];
 
 // ─── Fruits tropicaux ─────────────────────────────────────────────────────────
-const TROPICAL_FRUITS_2: PreComputedIngredient[] = [
+const EXOTIC_TROPICAL_FRUITS: PreComputedIngredient[] = [
   f('JACKFRUIT','Jacquier / Jackfruit (Artocarpus heterophyllus)',S,'Fruit — riche potassium. Sûr.','medium'),
   f('DRAGONFRUIT','Fruit du dragon (Hylocereus spp.)',S,'Riche antioxydants. Sûr.','medium'),
   f('GUAVA','Goyave (Psidium guajava)',S,'Très riche vitamine C. Sûr.','medium'),
@@ -1199,19 +1216,19 @@ export async function scrapeEFSA(): Promise<PreComputedIngredient[]> {
     ...INFECTION_RISKS, ...MERCURY_FISH, ...CAFFEINE_SOURCES,
     ...ALCOHOL, ...VITAMINS_MINERALS, ...HERBS_FOOD, ...FATS, ...POLLUTANTS,
     // Nouvelles sections (session 2)
-    ...CHEESES, ...FISH_SPECIES, ...MEAT_TYPES, ...HERBS_SPICES_2,
+    ...CHEESES, ...FISH_SPECIES, ...MEAT_TYPES, ...CULINARY_HERBS_SEEDS,
     ...TEAS_INFUSIONS, ...NUTS_SEEDS, ...DAIRY_PRODUCTS, ...GRAINS_LEGUMES,
     ...COOKING_OILS, ...CONDIMENTS, ...FRUITS_SPECIAL, ...MORE_ADDITIVES,
     // Nouvelles sections (session 3)
     ...E400_E499, ...E500_E599, ...E600_E699, ...E900_E999,
     ...MUSHROOMS, ...SEAWEED_ALGAE, ...FERMENTED_FOODS,
-    ...TROPICAL_FRUITS_2, ...SEED_OILS_FOOD, ...PROTEIN_SUPPLEMENTS,
+    ...EXOTIC_TROPICAL_FRUITS, ...SEED_OILS_FOOD, ...PROTEIN_SUPPLEMENTS,
     // Nouvelles sections (session 4)
-    ...VEGETABLES_ROOTS, ...BERRIES_FRUITS_3, ...LEGUMES_BEANS,
-    ...BEVERAGES_DRINKS, ...SEAFOOD_SHELLFISH, ...GRAINS_SEEDS_2,
+    ...VEGETABLES_ROOTS, ...STONE_TROPICAL_FRUITS, ...LEGUMES_BEANS,
+    ...BEVERAGES_DRINKS, ...SEAFOOD_SHELLFISH, ...PSEUDOCEREALS_ANCIENT_GRAINS,
     // Nouvelles sections (session 5)
-    ...DAIRY_FOODS_2, ...PROCESSED_MEATS_2, ...BAKERY_GRAINS,
-    ...SPICES_HERBS_3, ...SWEET_PRODUCTS, ...FISH_TYPES_2,
+    ...DAIRY_FERMENTED_PRODUCTS, ...CHARCUTERIE_CURED_MEATS, ...BAKERY_GRAINS,
+    ...AROMATIC_SPICE_BLENDS, ...SWEET_PRODUCTS, ...FRESHWATER_EXOTIC_FISH,
     ...MEAL_COMPONENTS, ...FUNCTIONAL_FOODS,
     // Nouvelles sections (session 6)
     ...INTERNATIONAL_FOODS, ...SNACKS_PROCESSED, ...COOKING_METHODS,
@@ -1316,7 +1333,7 @@ const COOKING_METHODS: PreComputedIngredient[] = [
 ];
 
 // ─── Produits laitiers 2 ──────────────────────────────────────────────────────
-const DAIRY_FOODS_2: PreComputedIngredient[] = [
+const DAIRY_FERMENTED_PRODUCTS: PreComputedIngredient[] = [
   f('YAOURT NATURE','Yaourt nature (lait fermenté)',S,'Probiotiques naturels. Sûr. Bénéfique grossesse.'),
   f('YAOURT GREC','Yaourt grec',S,'Riche protéines, calcium. Sûr.'),
   f('SKYR','Skyr (laitage islandais)',S,'Très riche protéines. Sûr.','medium'),
@@ -1344,7 +1361,7 @@ const DAIRY_FOODS_2: PreComputedIngredient[] = [
 ];
 
 // ─── Charcuteries et viandes transformées 2 ───────────────────────────────────
-const PROCESSED_MEATS_2: PreComputedIngredient[] = [
+const CHARCUTERIE_CURED_MEATS: PreComputedIngredient[] = [
   f('JAMBON CUIT STANDARD','Jambon cuit (Paris)',S,'Bien cuit — sûr. Sodium modéré.','medium'),
   f('JAMBON DE DINDE CUIT','Jambon de dinde (cuit)',S,'Sûr.','medium'),
   f('MORTADELLE','Mortadelle (cuite)',S,'Viande cuite émulsionnée. Sûr.','medium'),
@@ -1412,7 +1429,7 @@ const BAKERY_GRAINS: PreComputedIngredient[] = [
 ];
 
 // ─── Épices et herbes 3 ──────────────────────────────────────────────────────
-const SPICES_HERBS_3: PreComputedIngredient[] = [
+const AROMATIC_SPICE_BLENDS: PreComputedIngredient[] = [
   f('CURCUMA CUISINE','Curcuma (cuisine)',C,'Curcumine — précaution fortes doses T1. Usage culinaire: sûr.','medium'),
   f('GINGEMBRE FRAIS','Gingembre frais (cuisine)',C,'Antiémétique — sûr doses culinaires. >2g/j: précaution.','medium'),
   f('CANNELLE CEYLAN','Cannelle de Ceylan (cuisine)',C,'Coumarine faible Ceylan. Sûr usage normal.','medium'),
@@ -1490,7 +1507,7 @@ const SWEET_PRODUCTS: PreComputedIngredient[] = [
 ];
 
 // ─── Poissons 2 ──────────────────────────────────────────────────────────────
-const FISH_TYPES_2: PreComputedIngredient[] = [
+const FRESHWATER_EXOTIC_FISH: PreComputedIngredient[] = [
   f('CABILLAUD CUIT','Cabillaud / Morue fraîche (cuit)',S,'Poisson blanc pauvre mercure. Riche protéines. Sûr.'),
   f('LIEU NOIR CUIT','Lieu noir (cuit)',S,'Poisson blanc. Sûr.'),
   f('MERLU CUIT','Merlu (cuit)',S,'Faible mercure. Sûr.'),
@@ -1642,7 +1659,7 @@ const VEGETABLES_ROOTS: PreComputedIngredient[] = [
 ];
 
 // ─── Baies et fruits 3 ───────────────────────────────────────────────────────
-const BERRIES_FRUITS_3: PreComputedIngredient[] = [
+const STONE_TROPICAL_FRUITS: PreComputedIngredient[] = [
   f('FRAISE','Fraise (Fragaria × ananassa)',S,'Riche vitamine C. Sûr.'),
   f('FRAMBOISE','Framboise (Rubus idaeus)',C,'Feuilles: utérotoniques. Fruits: sûr.','medium'),
   f('MYRTILLE ALIM','Myrtille (Vaccinium myrtillus)',S,'Riche antioxydants. Sûr.'),
@@ -1774,7 +1791,7 @@ const SEAFOOD_SHELLFISH: PreComputedIngredient[] = [
 ];
 
 // ─── Graines et céréales 2 ────────────────────────────────────────────────────
-const GRAINS_SEEDS_2: PreComputedIngredient[] = [
+const PSEUDOCEREALS_ANCIENT_GRAINS: PreComputedIngredient[] = [
   f('AMARANTE','Amarante (Amaranthus cruentus)',S,'Pseudocéréale — riche protéines, sans gluten. Sûr.'),
   f('SORGHO','Sorgho (Sorghum bicolor)',S,'Céréale — sans gluten. Sûr.','medium'),
   f('TEFF','Teff (Eragrostis tef)',S,'Céréale éthiopienne — riche calcium, fer. Sûr.'),

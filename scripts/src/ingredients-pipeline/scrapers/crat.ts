@@ -1,7 +1,24 @@
 /**
- * crat.ts — ~1 500 substances avec risques grossesse pré-calculés (CRAT/ANSM).
- * Sources: CRAT lecrat.fr, ANSM, Vidal, CNGOF recommandations.
- * Données pré-calculées — aucun appel réseau.
+ * crat.ts — Médicaments génériques pré-calculés pour l'analyse grossesse (CRAT/ANSM).
+ *
+ * Architecture : données statiques groupées par spécialité médicale (cardiologie,
+ * neurologie, psychiatrie, rhumatologie, infectiologie, etc.). Chaque groupe correspond
+ * à une classe thérapeutique cohérente. Bundle 100 % hors-ligne.
+ *
+ * Sources médicales : CRAT (lecrat.fr), ANSM, Vidal, BDPM, EMA,
+ * CNGOF (recommandations obstétricales), Reprotox.
+ *
+ * Convention de nommage des groupes :
+ *   - Spécialité médicale + classe thérapeutique (ex. RHEUMATOLOGY_BIOLOGICS,
+ *     CARDIAC_ANTIHYPERTENSIVES, PSYCHIATRY_ANTIPSYCHOTICS)
+ *   - Pas de suffixe numérique — chaque groupe a un nom sémantique unique
+ *
+ * Structure d'une entrée :  m(name_inci, label_fr, [risk×4], note, confidence?)
+ *   - name_inci   : DCI normalisée (clé unique, majuscules)
+ *   - label_fr    : dénomination commune internationale + contexte clinique
+ *   - [risk×4]    : niveaux de risque [T1, T2, T3, allaitement]
+ *   - note        : mécanisme de risque et recommandation clinique
+ *   - confidence  : 'high' | 'medium' | 'low' (défaut: 'high')
  */
 
 import { type PreComputedIngredient, type RiskTuple, ing } from '../utils.js';
@@ -509,7 +526,7 @@ const CONTRAST_AGENTS: PreComputedIngredient[] = [
 ];
 
 // ─── OPHTALMOLOGIE ÉTENDUE ────────────────────────────────────────────────
-const OPHTALMOLOGY_2: PreComputedIngredient[] = [
+const OPHTHALMOLOGY_DROPS: PreComputedIngredient[] = [
   m('PILOCARPINE OEIL','Pilocarpine (collyre)',C,'Cholinergique — absorption systémique faible. Précaution grossesse.','medium'),
   m('TIMOLOL OEIL','Timolol (collyre — glaucome)',C,'Bêtabloquant topique — absorption systémique possible. Précaution.','medium'),
   m('DORZOLAMIDE','Dorzolamide (Trusopt)',C,'Inhibiteur anhydrase carbonique — données limitées. Précaution.','medium'),
@@ -539,7 +556,7 @@ const OPHTALMOLOGY_2: PreComputedIngredient[] = [
 ];
 
 // ─── ORL ÉTENDU ──────────────────────────────────────────────────────────
-const ENT_2: PreComputedIngredient[] = [
+const ENT_ANTIINFECTIVES: PreComputedIngredient[] = [
   m('XYLOMETAZOLINE NASAL','Xylométazoline (Otrivine)',C,'Vasoconstricteur nasal — usage court < 3j. Précaution grossesse (effet systémique).','medium'),
   m('OXYMETAZOLINE NASAL','Oxymétazoline (Aturgyl)',C,'Vasoconstricteur nasal — même précaution.','medium'),
   m('NAPHAZOLINE NASAL','Naphazoline (Derinox)',C,'Vasoconstricteur — précaution grossesse.','medium'),
@@ -567,7 +584,7 @@ const ENT_2: PreComputedIngredient[] = [
 ];
 
 // ─── DERMATOLOGIE PRESCRIPTIONS ÉTENDUES ─────────────────────────────────
-const DERMATOLOGY_2: PreComputedIngredient[] = [
+const DERMATOLOGY_TOPICALS: PreComputedIngredient[] = [
   m('ISOTRETINOIN ORALE','Isotrétinoïne orale (Roaccutane)',D,'Rétinoïde systémique — tératogène majeur. PROGRAMME DE PRÉVENTION GROSSESSE OBLIGATOIRE.'),
   m('ACITRETINE','Acitrétine (Soriatane)',D,'Rétinoïde — tératogène. Arrêt 3 ans avant conception.'),
   m('TAZAROTENE SYSTEMIQUE','Tazarotène systémique',D,'Rétinoïde — CONTRE-INDIQUÉ.'),
@@ -653,7 +670,7 @@ const UROLOGY: PreComputedIngredient[] = [
 ];
 
 // ─── NEUROLOGIE ÉTENDUE ──────────────────────────────────────────────────
-const NEUROLOGY_2: PreComputedIngredient[] = [
+const NEUROLOGY_ANTICONVULSANTS: PreComputedIngredient[] = [
   m('VALPROATE DE SODIUM','Valproate de sodium (Dépakine)',D,'Antiépileptique — tératogène majeur (spina bifida, malformations cognitives). PROGRAMME VALPROATE OBLIGATOIRE.'),
   m('VALPROATE SEMISODIQUE','Valpromide/valproate sémi-sodique (Depamide)',D,'Tératogène — même que valproate. CONTRE-INDIQUÉ.'),
   m('CARBAMAZEPINE','Carbamazépine (Tegretol)',D,'Antiépileptique — risque NTD, hypovitaminose K. Supplémentation folate obligatoire. Éviter si possible.'),
@@ -687,7 +704,7 @@ const NEUROLOGY_2: PreComputedIngredient[] = [
 ];
 
 // ─── PSYCHIATRIE ÉTENDUE ─────────────────────────────────────────────────
-const PSYCHIATRY_2: PreComputedIngredient[] = [
+const PSYCHIATRY_ANXIOLYTICS: PreComputedIngredient[] = [
   m('LITHIUM','Lithium (Téralithe)',C,'Thymorégulateur — risque anomalie d\'Ebstein (petit). Surveillance échocardiographie fœtale. Précaution.','medium'),
   m('CARBAMAZEPINE THYMO','Carbamazépine (bipolaire)',D,'Antiépileptique — tératogène. Éviter si possible.'),
   m('LAMOTRIGINE THYMO','Lamotrigine (bipolaire)',C,'Thymorégulateur — le mieux documenté en grossesse. Précaution dose.','medium'),
@@ -716,7 +733,7 @@ const PSYCHIATRY_2: PreComputedIngredient[] = [
 ];
 
 // ─── CARDIOVASCULAIRE ÉTENDU ─────────────────────────────────────────────
-const CARDIOLOGY_2: PreComputedIngredient[] = [
+const CARDIOLOGY_VASODILATORS: PreComputedIngredient[] = [
   m('METOPROLOL','Métoprolol (Lopressor)',C,'Bêtabloquant cardiosélectif — RCIU possible. Précaution.','medium'),
   m('BISOPROLOL','Bisoprolol (Cardensiel)',C,'Bêtabloquant — RCIU. Précaution.','medium'),
   m('ATENOLOL','Aténolol',D,'Bêtabloquant — RCIU documenté. ÉVITER en grossesse.'),
@@ -751,7 +768,7 @@ const CARDIOLOGY_2: PreComputedIngredient[] = [
 ];
 
 // ─── GASTRO-ENTÉROLOGIE ÉTENDUE ──────────────────────────────────────────
-const GASTRO_2: PreComputedIngredient[] = [
+const GASTRO_ANTIEMETICS: PreComputedIngredient[] = [
   m('OMEPRAZOLE','Oméprazole (Mopral)',S,'IPP — sûr en grossesse (CRAT). Traitement RGO référence.'),
   m('ESOMEPRAZOLE','Ésoméprazole (Nexium)',S,'IPP — sûr en grossesse.'),
   m('LANSOPRAZOLE','Lansoprazole (Ogastoro)',S,'IPP — sûr.'),
@@ -780,7 +797,7 @@ const GASTRO_2: PreComputedIngredient[] = [
 ];
 
 // ─── ENDOCRINOLOGIE ÉTENDUE ──────────────────────────────────────────────
-const ENDOCRINE_2: PreComputedIngredient[] = [
+const ENDOCRINE_THYROID: PreComputedIngredient[] = [
   m('INSULINE HUMAINE','Insuline humaine (Humulin, Umuline)',S,'Hormone — traitement référence diabète grossesse. Très sûr.'),
   m('INSULINE GLARGINE','Insuline glargine (Lantus)',C,'Analogue lent — données rassurantes. CRAT: utilisable.','medium'),
   m('INSULINE DETEMIR','Insuline détémir (Levemir)',S,'Analogue lent — données favorables grossesse. Sûr.'),
@@ -810,7 +827,7 @@ const ENDOCRINE_2: PreComputedIngredient[] = [
 ];
 
 // ─── Antiépileptiques ─────────────────────────────────────────────────────────
-const ANTIEPILEPTICS_2: PreComputedIngredient[] = [
+const ANTIEPILEPTICS_EXTENDED: PreComputedIngredient[] = [
   m('LEVETIRACETAM','Lévétiracétam (Keppra)',C,'Antiépileptique — données rassurantes. Préférer si possible. Précaution T1.','medium'),
   m('TOPIRAMATE','Topiramate (Epitomax)',D,'CONTRE-INDIQUÉ grossesse — fente labiale, retard cognitif. Contraception efficace requise.'),
   m('PREGABALIN','Prégabaline (Lyrica)',D,'DÉCONSEILLÉ grossesse — données malformatives. Éviter.'),
@@ -887,7 +904,7 @@ const BIOLOGICS: PreComputedIngredient[] = [
 ];
 
 // ─── Antiviraux ───────────────────────────────────────────────────────────────
-const ANTIVIRALS_2: PreComputedIngredient[] = [
+const ANTIVIRALS_EXTENDED: PreComputedIngredient[] = [
   m('ACYCLOVIR SYST','Acyclovir / aciclovir systémique (Zovirax)',C,'Antiviral herpès — registre favorables. Sûr si indication.','medium'),
   m('VALACYCLOVIR','Valacyclovir (Zelitrex)',C,'Prodrogue aciclovir — données rassurantes. Précaution.','medium'),
   m('FAMCICLOVIR','Famciclovir (Oravir)',C,'Antiviral herpès — données limitées. Précaution.','medium'),
@@ -911,7 +928,7 @@ const ANTIVIRALS_2: PreComputedIngredient[] = [
 ];
 
 // ─── Antifongiques ────────────────────────────────────────────────────────────
-const ANTIFUNGALS_2: PreComputedIngredient[] = [
+const ANTIFUNGALS_EXTENDED: PreComputedIngredient[] = [
   m('FLUCONAZOLE SYST','Fluconazole systémique (Triflucan)',D,'CONTRE-INDIQUÉ grossesse (>150mg dose unique) — malformations cardiaques/squelettiques. Dose unique vaginale: précaution.'),
   m('ITRACONAZOLE','Itraconazole (Sporanox)',D,'DÉCONSEILLÉ — malformations rapportées. Éviter.'),
   m('VORICONAZOLE','Voriconazole (Vfend)',D,'Azolé — tératogène animaux. CONTRE-INDIQUÉ.'),
@@ -1000,24 +1017,24 @@ export async function scrapeCRAT(): Promise<PreComputedIngredient[]> {
     ...OPHTALMOLOGY, ...NEUROLOGY, ...ENT,
     // Nouvelles sections (session 2)
     ...RHEUMATOLOGY, ...ANESTHETICS, ...CONTRAST_AGENTS,
-    ...OPHTALMOLOGY_2, ...ENT_2, ...DERMATOLOGY_2,
-    ...HEMATOLOGY, ...UROLOGY, ...NEUROLOGY_2, ...PSYCHIATRY_2,
-    ...CARDIOLOGY_2, ...GASTRO_2, ...ENDOCRINE_2,
+    ...OPHTHALMOLOGY_DROPS, ...ENT_ANTIINFECTIVES, ...DERMATOLOGY_TOPICALS,
+    ...HEMATOLOGY, ...UROLOGY, ...NEUROLOGY_ANTICONVULSANTS, ...PSYCHIATRY_ANXIOLYTICS,
+    ...CARDIOLOGY_VASODILATORS, ...GASTRO_ANTIEMETICS, ...ENDOCRINE_THYROID,
     // Nouvelles sections (session 3)
-    ...ANTIEPILEPTICS_2, ...IMMUNOSUPPRESSANTS, ...BIOLOGICS,
-    ...ANTIVIRALS_2, ...ANTIFUNGALS_2, ...ANTIMALARIALS_ANTIPARASITIC,
+    ...ANTIEPILEPTICS_EXTENDED, ...IMMUNOSUPPRESSANTS, ...BIOLOGICS,
+    ...ANTIVIRALS_EXTENDED, ...ANTIFUNGALS_EXTENDED, ...ANTIMALARIALS_ANTIPARASITIC,
     ...MUSCLE_RELAXANTS, ...MIGRAINE_MEDS,
     // Nouvelles sections (session 4)
-    ...ANTIBIOTICS_2, ...CARDIAC_3, ...RESPIRATORY_3, ...PSYCHIATRY_3,
+    ...ANTIBIOTICS_SPECIALISED, ...CARDIAC_ANTIHYPERTENSIVES, ...RESPIRATORY_INHALED_STEROIDS, ...PSYCHIATRY_ANTIPSYCHOTICS,
     // Nouvelles sections (session 5)
-    ...ONCOLOGY_DRUGS, ...GI_DRUGS_2, ...DERMATOLOGY_MED, ...PAIN_MEDS,
+    ...ONCOLOGY_DRUGS, ...GI_PROKINETICS_ANTACIDS, ...DERMATOLOGY_MED, ...PAIN_MEDS,
     // Nouvelles sections (session 6)
-    ...RHEUMATOLOGY_2, ...UROLOGY_2, ...OPHTHALMOLOGY_3, ...ENT_3,
+    ...RHEUMATOLOGY_BIOLOGICS, ...UROLOGY_BLADDER_AGENTS, ...OPHTHALMOLOGY_ANTIGLAUCOMA, ...ENT_NASAL_TOPICALS,
   ];
 }
 
 // ─── Rhumatologie supplémentaire ─────────────────────────────────────────────
-const RHEUMATOLOGY_2: PreComputedIngredient[] = [
+const RHEUMATOLOGY_BIOLOGICS: PreComputedIngredient[] = [
   m('METHOTREXATE RHUM','Méthotrexate (rhumatologie)',D,'CONTRE-INDIQUÉ — avortant + tératogène.'),
   m('LEFLUNOMIDE RHUM','Léflunomide (Arava)',D,'Tératogène — CONTRE-INDIQUÉ. Wash-out 2 ans ou procédure accélérée.'),
   m('HYDROXYCHLOROQUINE RHUM','Hydroxychloroquine (Plaquenil)',S,'Lupus/PR — données rassurantes. Continuer grossesse.'),
@@ -1046,7 +1063,7 @@ const RHEUMATOLOGY_2: PreComputedIngredient[] = [
 ];
 
 // ─── Urologie supplémentaire ──────────────────────────────────────────────────
-const UROLOGY_2: PreComputedIngredient[] = [
+const UROLOGY_BLADDER_AGENTS: PreComputedIngredient[] = [
   m('SOLIFENACIN','Solifénacine (Vesicare)',D,'Anticholinergique — données insuffisantes. ÉVITER.'),
   m('OXYBUTYNIN','Oxybutynine (Ditropan)',D,'Anticholinergique — données insuffisantes. ÉVITER.'),
   m('TOLTERODINE','Toltérodine (Detrunorm)',D,'Anticholinergique — données insuffisantes. ÉVITER.'),
@@ -1061,7 +1078,7 @@ const UROLOGY_2: PreComputedIngredient[] = [
 ];
 
 // ─── Ophtalmologie supplémentaire ────────────────────────────────────────────
-const OPHTHALMOLOGY_3: PreComputedIngredient[] = [
+const OPHTHALMOLOGY_ANTIGLAUCOMA: PreComputedIngredient[] = [
   m('TIMOLOL OPHTA','Timolol (collyre bêta-bloquant)',C,'Absorption systémique possible — précaution.','medium'),
   m('BRIMONIDINE OPHTA','Brimonidine (collyre alpha-2 agoniste)',C,'Absorption systémique — précaution.','medium'),
   m('DORZOLAMIDE OPHTA','Dorzolamide (collyre inhibiteur AC)',C,'Absorption systémique — précaution.','medium'),
@@ -1077,7 +1094,7 @@ const OPHTHALMOLOGY_3: PreComputedIngredient[] = [
 ];
 
 // ─── ORL supplémentaire ───────────────────────────────────────────────────────
-const ENT_3: PreComputedIngredient[] = [
+const ENT_NASAL_TOPICALS: PreComputedIngredient[] = [
   m('XYLOMETAZOLINE NASAL','Xylométazoline (Derinox, Otrivine)',C,'Vasoconstricteur nasal — absorption systémique. Éviter >5j. Précaution.','medium'),
   m('OXYMETAZOLINE NASAL','Oxymétazoline (Vicks Sinex)',C,'Vasoconstricteur nasal — précaution.','medium'),
   m('NAPHAZOLINE NASAL','Naphazoline (nasal)',C,'Vasoconstricteur — précaution.','medium'),
@@ -1131,7 +1148,7 @@ const ONCOLOGY_DRUGS: PreComputedIngredient[] = [
 ];
 
 // ─── Gastro-entérologie supplémentaire ────────────────────────────────────────
-const GI_DRUGS_2: PreComputedIngredient[] = [
+const GI_PROKINETICS_ANTACIDS: PreComputedIngredient[] = [
   m('OMEPRAZOLE','Oméprazole (Mopral)',C,'IPP — données rassurantes. Précaution T1 usage chronique.','medium'),
   m('PANTOPRAZOLE','Pantoprazole (Eupantol)',C,'IPP — données rassurantes. Précaution.','medium'),
   m('LANSOPRAZOLE','Lansoprazole (Ogast)',C,'IPP. Précaution.','medium'),
@@ -1219,7 +1236,7 @@ const PAIN_MEDS: PreComputedIngredient[] = [
 ];
 
 // ─── Antibiotiques supplémentaires ────────────────────────────────────────────
-const ANTIBIOTICS_2: PreComputedIngredient[] = [
+const ANTIBIOTICS_SPECIALISED: PreComputedIngredient[] = [
   m('AMOXICILLIN','Amoxicilline (Clamoxyl, Amoxil)',S,'Pénicilline de référence — sûre grossesse.'),
   m('AMOXICILLIN CLAVULANATE','Amoxicilline + acide clavulanique (Augmentin)',C,'Bêtalactamine — données rassurantes. Précaution MICI/ECN prématuré.','medium'),
   m('AMPICILLIN','Ampicilline',S,'Pénicilline — sûre.','medium'),
@@ -1256,7 +1273,7 @@ const ANTIBIOTICS_2: PreComputedIngredient[] = [
 ];
 
 // ─── Cardiologie supplémentaire ───────────────────────────────────────────────
-const CARDIAC_3: PreComputedIngredient[] = [
+const CARDIAC_ANTIHYPERTENSIVES: PreComputedIngredient[] = [
   m('DILTIAZEM','Diltiazem (Tildiem)',C,'Inhibiteur calcique — données limitées. Précaution.','medium'),
   m('VERAPAMIL','Vérapamil (Isoptine)',C,'Inhibiteur calcique — peut ralentir rythme fœtal. Précaution.','medium'),
   m('NIFEDIPINE','Nifédipine (Adalate)',C,'Inhibiteur calcique — utilisé tocolyse. Précaution.','medium'),
@@ -1285,7 +1302,7 @@ const CARDIAC_3: PreComputedIngredient[] = [
 ];
 
 // ─── Pneumologie supplémentaire ───────────────────────────────────────────────
-const RESPIRATORY_3: PreComputedIngredient[] = [
+const RESPIRATORY_INHALED_STEROIDS: PreComputedIngredient[] = [
   m('SALBUTAMOL','Salbutamol (Ventoline)',S,'Bêta-2-mimétique inhalé — de référence grossesse. Sûr.'),
   m('TERBUTALINE','Terbutaline (Bricanyl)',C,'Bêta-2 — peut inhiber contractions T3. Précaution.','medium'),
   m('SALMETEROL','Salmétérol (Serevent)',C,'BALA — données limitées. Continuer si asthme contrôlé.','medium'),
@@ -1315,7 +1332,7 @@ const RESPIRATORY_3: PreComputedIngredient[] = [
 ];
 
 // ─── Psychiatrie supplémentaire ───────────────────────────────────────────────
-const PSYCHIATRY_3: PreComputedIngredient[] = [
+const PSYCHIATRY_ANTIPSYCHOTICS: PreComputedIngredient[] = [
   m('SERTRALINE','Sertraline (Zoloft)',C,'ISRS — précaution T3 (hypertension pulm néonatale). Continuer si dépression sévère.','medium'),
   m('FLUOXETINE','Fluoxétine (Prozac)',C,'ISRS — demi-vie longue. Précaution T3.','medium'),
   m('PAROXETINE','Paroxétine (Deroxat)',D,'ISRS — cardiopathies fœtales débattues T1. ÉVITER.'),

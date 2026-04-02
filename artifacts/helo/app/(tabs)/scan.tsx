@@ -86,7 +86,7 @@ export default function ScanScreen() {
   const isPartner = role === 'partner';
   const partnerName = linkedFirstName;
 
-  const { isPremium, checkScanLimit, scansRemaining } = usePremium();
+  const { isPremium, checkScanLimit, scansRemaining, requirePremium } = usePremium();
   const { isOffline, syncComplete } = useOffline();
 
   useEffect(() => {
@@ -438,7 +438,14 @@ export default function ScanScreen() {
           <ModeChip label="Ingrédients" active={scanMode === 'ingredients'} onPress={() => setScanMode('ingredients')} />
           <ModeChip label="Menu" active={scanMode === 'menu'} onPress={() => setScanMode('menu')} />
           <ModeChip label="💊 Ordonnance" active={false} onPress={() => router.push('/prescription-scan' as never)} />
-          <ModeChip label="📷 Photo" active={scanMode === 'photo'} onPress={() => setScanMode('photo')} />
+          <ModeChip
+            label="📷 Photo"
+            active={scanMode === 'photo'}
+            onPress={() => {
+              if (requirePremium('photo_scan')) return;
+              setScanMode('photo');
+            }}
+          />
         </View>
         {isMenuMode && menuPhotos.length > 0 && (
           <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75}>

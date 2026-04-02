@@ -66,7 +66,70 @@ function parseOFFResponse(
   return { name, brand, imageUrl, ingredientsRaw, ingredientsList, source };
 }
 
-// ─── 2. Fetch product by barcode — cascades OFF → OBF ───────────────────────
+// ─── 2. Community submissions fallback ───────────────────────────────────────
+
+async function checkCommunitySubmissions(barcode: string): Promise<ProductData | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase
+      .from('community_submissions')
+      .select('product_name, category, metadata')
+      .eq('barcode', barcode)
+      .eq('status', 'auto_captured')
+      .not('metadata->ingredients_raw', 'is', null)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    const meta = data.metadata as { ingredients_raw?: string; [k: string]: unknown };
+    if (!meta?.ingredients_raw) return null;
+
+    const ingredientsList = parseIngredients(meta.ingredients_raw);
+    if (ingredientsList.length === 0) return null;
+
+    return {
+      name: data.product_name ?? 'Produit communautaire',
+      brand: undefined,
+      imageUrl: null,
+      ingredientsList,
+      ingredientsRaw: meta.ingredients_raw,
+      source: 'community' as ProductData['source'],
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function ghostCaptureSave(params: {
+  barcode: string;
+  productName: string;
+  category: string;
+  ocrText: string;
+  verdict: VerdictResult;
+  trimester: Phase;
+}): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    await supabase.from('community_submissions').upsert(
+      {
+        barcode: params.barcode,
+        product_name: params.productName,
+        category: params.category,
+        ingredients_photo_url: null,
+        status: 'auto_captured',
+        metadata: {
+          ingredients_raw: params.ocrText,
+          ai_verdict: params.verdict,
+          trimester: params.trimester,
+        },
+      },
+      { onConflict: 'barcode', ignoreDuplicates: false },
+    );
+  } catch {
+    // fire-and-forget — silent failure
+  }
+}
+
+// ─── 3. Fetch product by barcode — cascades OFF → OBF → community ────────────
 
 export async function fetchProductByBarcode(barcode: string): Promise<ProductData | null> {
   // 1st attempt: Open Food Facts (food products)
@@ -82,6 +145,10 @@ export async function fetchProductByBarcode(barcode: string): Promise<ProductDat
     const product = parseOFFResponse(obfData, 'openbeautyfacts');
     if (product) return product;
   }
+
+  // 3rd attempt: community auto-captured submissions
+  const community = await checkCommunitySubmissions(barcode);
+  if (community) return community;
 
   return null;
 }

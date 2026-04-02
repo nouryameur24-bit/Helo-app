@@ -29,6 +29,7 @@ import { IngredientsSection } from '@/components/verdict/IngredientsSection';
 import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
 import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
 import { ReportBottomSheet } from '@/components/verdict/ReportBottomSheet';
+import { GhostCaptureModal } from '@/components/verdict/GhostCaptureModal';
 import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
 import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
 import {
@@ -62,7 +63,7 @@ export default function VerdictScreen() {
   const { scanId } = useLocalSearchParams<{ scanId: string }>();
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();
-  const { loading, product, matches, verdict, error, scanBarcode, setDirectResult } = useScan();
+  const { loading, product, matches, verdict, error, notFound, scanBarcode, setDirectResult } = useScan();
   const { isPremium, requirePremium } = usePremium();
   const { isOffline } = useOffline();
 
@@ -93,6 +94,8 @@ export default function VerdictScreen() {
   const [circleId, setCircleId] = useState<string | null>(null);
   const [sharedToCircle, setSharedToCircle] = useState(false);
   const [reportVisible, setReportVisible] = useState(false);
+  const [ghostVisible, setGhostVisible] = useState(false);
+  const lastFailedBarcode = useRef<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -312,6 +315,26 @@ export default function VerdictScreen() {
   if (loading) return <LoadingScreen />;
 
   if (error) {
+    if (notFound) {
+      return (
+        <View style={styles.root}>
+          <GhostCaptureModal
+            visible
+            barcode={barcode}
+            onPhotograph={() => {
+              lastFailedBarcode.current = barcode;
+              router.replace({
+                pathname: '/(tabs)/scan',
+                params: { ghostBarcode: barcode, forceOCR: '1' },
+              } as never);
+            }}
+            onDismiss={() => {
+              router.back();
+            }}
+          />
+        </View>
+      );
+    }
     return (
       <VerdictErrorScreen
         error={error}

@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
-import { matchIngredients, getVerdict } from '@/lib/productLookup';
+import { matchIngredients, getVerdict, ghostCaptureSave } from '@/lib/productLookup';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
 import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
@@ -95,7 +95,7 @@ const warnStyles = StyleSheet.create({
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function OcrReviewScreen() {
-  const { imageUri, base64 } = useLocalSearchParams<{ imageUri: string; base64?: string }>();
+  const { imageUri, base64, ghostBarcode } = useLocalSearchParams<{ imageUri: string; base64?: string; ghostBarcode?: string }>();
   const insets = useSafeAreaInsets();
 
   const [ocrText, setOcrText] = useState('');
@@ -202,6 +202,18 @@ export default function OcrReviewScreen() {
 
       // Navigate to verdict with ocr_ prefix
       router.replace(`/verdict/${encodeURIComponent(`ocr_${id}`)}`);
+
+      // ── Ghost Capture: background save (fire-and-forget) ──────────────────
+      if (ghostBarcode) {
+        ghostCaptureSave({
+          barcode: ghostBarcode,
+          productName: product.name,
+          category,
+          ocrText: cleaned,
+          verdict: verdictResult,
+          trimester: phase,
+        }).catch(() => {});
+      }
     } catch {
       setAnalysing(false);
     }

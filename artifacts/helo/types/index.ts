@@ -62,7 +62,7 @@ export interface ProductData {
   categories?: string[];
   nutriscore?: string | null;
   ecoscore?: string | null;
-  source?: 'openfoodfacts' | 'openbeautyfacts' | 'manual';
+  source?: 'openfoodfacts' | 'openbeautyfacts' | 'manual' | 'community';
   isPhotoIdentified?: boolean;
 }
 

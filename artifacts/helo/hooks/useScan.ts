@@ -43,6 +43,7 @@ interface ScanState {
   matches: MatchResult[];
   verdict: VerdictResult | null;
   error: string | null;
+  notFound: boolean;
   fromCache: boolean;
 }
 
@@ -83,6 +84,7 @@ export function useScan(): UseScanReturn {
     matches: [],
     verdict: null,
     error: null,
+    notFound: false,
     fromCache: false,
   });
 
@@ -128,6 +130,7 @@ export function useScan(): UseScanReturn {
             matches,
             verdict,
             error: null,
+            notFound: false,
             fromCache: true,
           });
           return;
@@ -160,6 +163,7 @@ export function useScan(): UseScanReturn {
             matches,
             verdict,
             error: null,
+            notFound: false,
             fromCache: true,
           });
           return;
@@ -185,17 +189,19 @@ export function useScan(): UseScanReturn {
           matches: cached.matches,
           verdict: cached.verdict,
           error: null,
+          notFound: false,
           fromCache: true,
         });
         return;
       }
 
-      // 2. Fetch from Open Food Facts
+      // 2. Fetch from Open Food Facts / OBF / community submissions
       const product = await fetchProductByBarcode(barcode);
       if (!product) {
         setState((s) => ({
           ...s,
           loading: false,
+          notFound: true,
           error: 'Produit non trouvé dans la base Open Food Facts. Vous pouvez le soumettre à la communauté.',
         }));
         return;
@@ -219,6 +225,7 @@ export function useScan(): UseScanReturn {
         matches,
         verdict,
         error: null,
+        notFound: false,
         fromCache: false,
       });
     } catch (err: unknown) {
@@ -237,6 +244,7 @@ export function useScan(): UseScanReturn {
       matches: [],
       verdict: null,
       error: null,
+      notFound: false,
       fromCache: false,
     });
   }, []);
@@ -249,6 +257,7 @@ export function useScan(): UseScanReturn {
         matches,
         verdict,
         error: null,
+        notFound: false,
         fromCache: false,
       });
     },

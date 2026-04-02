@@ -28,6 +28,7 @@ import { CircleShareRow } from '@/components/verdict/CircleShareRow';
 import { IngredientsSection } from '@/components/verdict/IngredientsSection';
 import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
 import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
+import { ReportBottomSheet } from '@/components/verdict/ReportBottomSheet';
 import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
 import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
 import {
@@ -91,6 +92,7 @@ export default function VerdictScreen() {
 
   const [circleId, setCircleId] = useState<string | null>(null);
   const [sharedToCircle, setSharedToCircle] = useState(false);
+  const [reportVisible, setReportVisible] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -505,6 +507,16 @@ export default function VerdictScreen() {
             </ThemedText>
           </TouchableOpacity>
           <ScanDisclaimerBanner />
+          <TouchableOpacity
+            onPress={() => setReportVisible(true)}
+            style={styles.methodologyLink}
+            accessibilityRole="button"
+            accessibilityLabel="Signaler une erreur"
+          >
+            <ThemedText variant="bodySmall" style={{ color: Colors.textTertiary, textAlign: 'center' }}>
+              Signaler une erreur
+            </ThemedText>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -516,6 +528,14 @@ export default function VerdictScreen() {
         onShelf={() => setSheetVisible(true)}
         onShare={handleShare}
         bottomPad={bottomPad}
+      />
+
+      <ReportBottomSheet
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        userId={userId ?? null}
+        scanId={barcode}
+        productName={product?.name ?? ''}
       />
     </View>
   );

@@ -83,3 +83,9 @@ id = "BtanjGvYB3cTi0oe6uKUy"
 uri = "file://helo-appstore-ready.tar.gz"
 type = "unspecified"
 title = "Hēlo — App Store Ready (2 MB, 300 fichiers)"
+
+[[outputs]]
+id = "E5UEi-3KQ5nW66kTUVVoQ"
+uri = "file://helo_code.tar.gz"
+type = "unspecified"
+title = "Hēlo — Code source complet (sans node_modules)"

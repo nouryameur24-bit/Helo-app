@@ -9,12 +9,8 @@ import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
-import { useProfile } from "@/hooks/useProfile";
 
 function NativeTabLayout() {
-  const { role } = useProfile();
-  const isPartner = role === 'partner';
-
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
@@ -29,27 +25,9 @@ function NativeTabLayout() {
         <Icon sf={{ default: "archivebox", selected: "archivebox.fill" }} />
         <Label>Placard</Label>
       </NativeTabs.Trigger>
-      {isPartner && (
-        <NativeTabs.Trigger name="partner-checklist-tab">
-          <Icon sf={{ default: "checklist", selected: "checklist" }} />
-          <Label>Checklist</Label>
-        </NativeTabs.Trigger>
-      )}
-      <NativeTabs.Trigger name="history">
-        <Icon sf={{ default: "clock", selected: "clock.fill" }} />
-        <Label>Historique</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="journal">
-        <Icon sf={{ default: "book", selected: "book.fill" }} />
-        <Label>Journal</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="chat">
         <Icon sf={{ default: "message", selected: "message.fill" }} />
         <Label>Chat IA</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="community">
-        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
-        <Label>Communauté</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
@@ -63,8 +41,6 @@ function ClassicTabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
-  const { role } = useProfile();
-  const isPartner = role === 'partner';
 
   return (
     <Tabs
@@ -134,43 +110,6 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen
-        name="partner-checklist-tab"
-        options={{
-          title: "Checklist",
-          tabBarItemStyle: { display: isPartner ? 'flex' : 'none' },
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="checklist" tintColor={color} size={24} />
-            ) : (
-              <Feather name="check-square" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: "Historique",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="clock" tintColor={color} size={24} />
-            ) : (
-              <Feather name="clock" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="journal"
-        options={{
-          title: "Journal",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="book" tintColor={color} size={24} />
-            ) : (
-              <Feather name="book-open" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
         name="chat"
         options={{
           title: "Chat IA",
@@ -179,18 +118,6 @@ function ClassicTabLayout() {
               <SymbolView name="message" tintColor={color} size={24} />
             ) : (
               <Feather name="message-circle" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          title: "Communauté",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person.2" tintColor={color} size={24} />
-            ) : (
-              <Feather name="users" size={22} color={color} />
             ),
         }}
       />
@@ -206,6 +133,12 @@ function ClassicTabLayout() {
             ),
         }}
       />
+
+      {/* Hidden screens — accessible via router.push, not shown in tab bar */}
+      <Tabs.Screen name="history" options={{ href: null }} />
+      <Tabs.Screen name="journal" options={{ href: null }} />
+      <Tabs.Screen name="community" options={{ href: null }} />
+      <Tabs.Screen name="partner-checklist-tab" options={{ href: null }} />
     </Tabs>
   );
 }

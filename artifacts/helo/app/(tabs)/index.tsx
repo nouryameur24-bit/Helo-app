@@ -554,6 +554,32 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
+        {/* Journal card */}
+        <Animated.View entering={FadeInDown.delay(225).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/(tabs)/journal' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Mon Journal"
+          >
+            <View style={styles.briefLeft}>
+              <View style={styles.briefIconWrap}>
+                <Feather name="edit-3" size={22} color={Colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">Mon Journal</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  Grossesse jour après jour
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
         {/* Glow Score */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <View style={styles.sectionHeader}>
@@ -619,8 +645,12 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <View style={styles.sectionHeader}>
             <ThemedText variant="headlineMedium" color="textPrimary">Récents</ThemedText>
-            <Pressable accessibilityRole="button" accessibilityLabel="Voir tous les scans récents">
-              <ThemedText variant="labelLarge" color="accent">Voir tout</ThemedText>
+            <Pressable
+              onPress={() => router.push('/(tabs)/history' as never)}
+              accessibilityRole="button"
+              accessibilityLabel="Voir l'historique complet"
+            >
+              <ThemedText variant="labelLarge" color="accent">Voir l'historique</ThemedText>
             </Pressable>
           </View>
 

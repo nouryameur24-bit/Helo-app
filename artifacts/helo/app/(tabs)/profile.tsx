@@ -757,6 +757,8 @@ export default function ProfileScreen() {
             <Divider />
             <SettingRow icon="bell" title="Notifications" onPress={() => router.push('/notifications-settings' as never)} />
             <Divider />
+            <SettingRow icon="users" title="Communauté" subtitle="Contributions & produits signalés" onPress={() => router.push('/(tabs)/community' as never)} />
+            <Divider />
             <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push('/premium' as never)} />
             <Divider />
             <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push('/methodology' as never)} />

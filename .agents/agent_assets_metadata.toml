@@ -101,3 +101,9 @@ id = "okFFtXN1sOBjSZHWcaeN7"
 uri = "file://helo_design_full.txt"
 type = "text"
 title = "Helo design — à télécharger"
+
+[[outputs]]
+id = "-G7NR3CJEQWhujqEVY4Md"
+uri = "file://helo_design.tar.gz"
+type = "unspecified"
+title = "helo_design.tar.gz"

@@ -10,8 +10,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get("/download/design", (_req, res) => {
-  const file = path.resolve("/home/runner/workspace/helo_design_full.txt");
-  res.download(file, "helo_design_full.txt");
+  const file = path.resolve("/home/runner/workspace/helo_design.tar.gz");
+  res.download(file, "helo_design.tar.gz");
 });
 
 app.use("/api", router);

@@ -89,3 +89,9 @@ id = "E5UEi-3KQ5nW66kTUVVoQ"
 uri = "file://helo_code.tar.gz"
 type = "unspecified"
 title = "Hēlo — Code source complet (sans node_modules)"
+
+[[outputs]]
+id = "I5KulhP9QtxnC49wSa5Q0"
+uri = "file://helo_design_full.md"
+type = "text"
+title = "Hēlo — Code design complet (28 fichiers)"

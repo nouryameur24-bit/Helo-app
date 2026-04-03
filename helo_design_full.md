@@ -1,0 +1,7307 @@
+# Hēlo — Code design complet
+App React Native Expo · French UI · bg #FFFAF5 · accent #C9A96E · Plus Jakarta Sans
+
+
+================================================================
+# THEME — constants/theme.ts
+# artifacts/helo/constants/theme.ts
+================================================================
+export const Colors = {
+  background: '#FFFAF5',
+  backgroundSecondary: '#FFF5EE',
+  surface: '#FFFFFF',
+  surfaceElevated: '#FFFCF9',
+
+  textPrimary: '#2D2926',
+  textSecondary: '#8C7E75',
+  textTertiary: '#B8ADA6',
+
+  accent: '#C9A96E',
+  accentLight: '#E8D5B0',
+  accentDark: '#A88B4A',
+
+  safe: '#7CB69F',
+  safeLight: '#E8F5EE',
+  safeBg: '#F2FAF5',
+
+  caution: '#D4A853',
+  cautionLight: '#FFF3D6',
+  cautionBg: '#FFFBF0',
+
+  danger: '#C27B7B',
+  dangerLight: '#FCEAEA',
+  dangerBg: '#FFF5F5',
+
+  border: '#EDE7E1',
+  borderLight: '#F5F0EB',
+
+  shadow: 'rgba(45, 41, 38, 0.06)',
+  overlay: 'rgba(45, 41, 38, 0.4)',
+} as const;
+
+export const Typography = {
+  displayLarge: {
+    fontSize: 34,
+    fontWeight: '700' as const,
+    letterSpacing: -0.5,
+    fontFamily: 'PlusJakartaSans_700Bold',
+  },
+  displayMedium: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
+    fontFamily: 'PlusJakartaSans_700Bold',
+  },
+  headlineLarge: {
+    fontSize: 24,
+    fontWeight: '600' as const,
+    letterSpacing: -0.2,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+  },
+  headlineMedium: {
+    fontSize: 20,
+    fontWeight: '600' as const,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+  },
+  bodyLarge: {
+    fontSize: 17,
+    fontWeight: '400' as const,
+    lineHeight: 26,
+    fontFamily: 'PlusJakartaSans_400Regular',
+  },
+  bodyMedium: {
+    fontSize: 15,
+    fontWeight: '400' as const,
+    lineHeight: 22,
+    fontFamily: 'PlusJakartaSans_400Regular',
+  },
+  bodySmall: {
+    fontSize: 13,
+    fontWeight: '400' as const,
+    lineHeight: 18,
+    fontFamily: 'PlusJakartaSans_400Regular',
+  },
+  labelLarge: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    letterSpacing: 0.3,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+  },
+  labelSmall: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase' as const,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+  },
+} as const;
+
+export const Spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+  huge: 40,
+  massive: 48,
+  giant: 64,
+} as const;
+
+export const Radius = {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  full: 9999,
+} as const;
+
+export const Shadows = {
+  soft: {
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  medium: {
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  elevated: {
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+} as const;
+
+
+================================================================
+# UI/Button.tsx
+# artifacts/helo/components/ui/Button.tsx
+================================================================
+import * as Haptics from 'expo-haptics';
+import React from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+
+type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+
+interface ButtonProps {
+  variant?: ButtonVariant;
+  onPress?: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  fullWidth?: boolean;
+  children: React.ReactNode;
+  accessibilityLabel?: string;
+}
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export function Button({
+  variant = 'primary',
+  onPress,
+  disabled = false,
+  loading = false,
+  fullWidth = false,
+  children,
+  accessibilityLabel,
+}: ButtonProps) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.97, { damping: 20, stiffness: 300 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 20, stiffness: 300 });
+  };
+
+  const handlePress = () => {
+    if (disabled || loading) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress?.();
+  };
+
+  const containerStyle = [
+    styles.base,
+    variant === 'primary' && styles.primary,
+    variant === 'secondary' && styles.secondary,
+    variant === 'ghost' && styles.ghost,
+    fullWidth && styles.fullWidth,
+    (disabled || loading) && styles.disabled,
+  ];
+
+  const textStyle = [
+    styles.label,
+    variant === 'primary' && styles.primaryLabel,
+    variant === 'secondary' && styles.secondaryLabel,
+    variant === 'ghost' && styles.ghostLabel,
+    (disabled || loading) && styles.disabledLabel,
+  ];
+
+  return (
+    <AnimatedPressable
+      style={[animatedStyle, containerStyle]}
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={disabled || loading}
+      accessibilityLabel={accessibilityLabel}
+    >
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color={variant === 'primary' ? '#fff' : Colors.accent}
+        />
+      ) : (
+        <Text style={textStyle}>{children}</Text>
+      )}
+    </AnimatedPressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  base: {
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: Radius.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  primary: {
+    backgroundColor: Colors.accent,
+  },
+  secondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+  },
+  fullWidth: {
+    width: '100%',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  label: {
+    ...Typography.labelLarge,
+  },
+  primaryLabel: {
+    color: '#FFFFFF',
+  },
+  secondaryLabel: {
+    color: Colors.accent,
+  },
+  ghostLabel: {
+    color: Colors.textSecondary,
+  },
+  disabledLabel: {
+    opacity: 0.7,
+  },
+});
+
+
+================================================================
+# UI/ThemedText.tsx
+# artifacts/helo/components/ui/ThemedText.tsx
+================================================================
+import React from 'react';
+import { StyleProp, StyleSheet, Text, TextStyle } from 'react-native';
+import { Colors, Typography } from '@/constants/theme';
+
+type TextVariant = keyof typeof Typography;
+type TextColor = keyof typeof Colors;
+
+export interface ThemedTextProps {
+  variant?: TextVariant;
+  color?: TextColor | string;
+  style?: StyleProp<TextStyle>;
+  children: React.ReactNode;
+  numberOfLines?: number;
+  selectable?: boolean;
+  adjustsFontSizeToFit?: boolean;
+  minimumFontScale?: number;
+}
+
+export function ThemedText({
+  variant = 'bodyMedium',
+  color = 'textPrimary',
+  style,
+  children,
+  numberOfLines,
+  selectable,
+  adjustsFontSizeToFit,
+  minimumFontScale,
+}: ThemedTextProps) {
+  const resolvedColor =
+    color in Colors
+      ? Colors[color as TextColor]
+      : color;
+
+  // When the caller overrides fontSize but omits lineHeight, the base Typography
+  // variant's small lineHeight stays in effect and clips large text/emoji on iOS.
+  // We detect this and auto-correct lineHeight to ≥ fontSize × 1.3.
+  const flatStyle = StyleSheet.flatten(style) as TextStyle | null;
+  const fontSizeOverride = flatStyle?.fontSize;
+  const lineHeightOverride = flatStyle?.lineHeight;
+  const lineHeightFix: TextStyle | null =
+    fontSizeOverride != null && lineHeightOverride == null
+      ? { lineHeight: Math.ceil(fontSizeOverride * 1.3) }
+      : null;
+
+  return (
+    <Text
+      style={[
+        Typography[variant],
+        { color: resolvedColor as string },
+        style,
+        lineHeightFix,
+      ]}
+      numberOfLines={numberOfLines}
+      selectable={selectable}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
+      minimumFontScale={minimumFontScale}
+    >
+      {children}
+    </Text>
+  );
+}
+
+
+================================================================
+# UI/Card.tsx
+# artifacts/helo/components/ui/Card.tsx
+================================================================
+import React from 'react';
+import { StyleSheet, View, ViewStyle } from 'react-native';
+import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+
+interface CardProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'elevated';
+  style?: ViewStyle;
+  padding?: number;
+}
+
+export function Card({
+  children,
+  variant = 'default',
+  style,
+  padding = Spacing.xl,
+}: CardProps) {
+  return (
+    <View
+      style={[
+        styles.base,
+        variant === 'elevated' ? styles.elevated : styles.default,
+        { padding },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  base: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+  },
+  default: {
+    ...Shadows.soft,
+  },
+  elevated: {
+    ...Shadows.medium,
+  },
+});
+
+
+================================================================
+# UI/Badge.tsx
+# artifacts/helo/components/ui/Badge.tsx
+================================================================
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+
+type BadgeVariant = 'safe' | 'caution' | 'danger' | 'accent';
+
+interface BadgeProps {
+  variant?: BadgeVariant;
+  children: React.ReactNode;
+}
+
+const variantStyles = {
+  safe: {
+    bg: Colors.safeLight,
+    text: Colors.safe,
+  },
+  caution: {
+    bg: Colors.cautionLight,
+    text: Colors.caution,
+  },
+  danger: {
+    bg: Colors.dangerLight,
+    text: Colors.danger,
+  },
+  accent: {
+    bg: Colors.accentLight,
+    text: Colors.accentDark,
+  },
+};
+
+export function Badge({ variant = 'accent', children }: BadgeProps) {
+  const { bg, text } = variantStyles[variant];
+
+  return (
+    <View style={[styles.badge, { backgroundColor: bg }]}>
+      <Text style={[styles.label, { color: text }]}>{children}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  badge: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    alignSelf: 'flex-start',
+  },
+  label: {
+    ...Typography.labelSmall,
+  },
+});
+
+
+================================================================
+# UI/Divider.tsx
+# artifacts/helo/components/ui/Divider.tsx
+================================================================
+import React from 'react';
+import { StyleSheet, View, ViewStyle } from 'react-native';
+import { Colors } from '@/constants/theme';
+
+interface DividerProps {
+  color?: string;
+  style?: ViewStyle;
+}
+
+export function Divider({ color = Colors.border, style }: DividerProps) {
+  return <View style={[styles.divider, { backgroundColor: color }, style]} />;
+}
+
+const styles = StyleSheet.create({
+  divider: {
+    height: 1,
+    width: '100%',
+  },
+});
+
+
+================================================================
+# UI/IconButton.tsx
+# artifacts/helo/components/ui/IconButton.tsx
+================================================================
+import * as Haptics from 'expo-haptics';
+import React from 'react';
+import { Pressable, StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { Colors, Radius, Shadows } from '@/constants/theme';
+
+interface IconButtonProps {
+  onPress?: () => void;
+  children: React.ReactNode;
+  size?: number;
+  backgroundColor?: string;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+}
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export function IconButton({
+  onPress,
+  children,
+  size = 44,
+  backgroundColor = Colors.surfaceElevated,
+  disabled = false,
+  accessibilityLabel,
+}: IconButtonProps) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.92, { damping: 20, stiffness: 400 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 20, stiffness: 400 });
+  };
+
+  const handlePress = () => {
+    if (disabled) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress?.();
+  };
+
+  return (
+    <AnimatedPressable
+      style={[
+        animatedStyle,
+        styles.button,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor,
+        },
+        disabled && styles.disabled,
+      ]}
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      disabled={disabled}
+      accessibilityLabel={accessibilityLabel}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.soft,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+});
+
+
+================================================================
+# TABS LAYOUT
+# artifacts/helo/app/(tabs)/_layout.tsx
+================================================================
+import { BlurView } from "expo-blur";
+import { isLiquidGlassAvailable } from "expo-glass-effect";
+import { Tabs } from "expo-router";
+import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { SymbolView } from "expo-symbols";
+import { Feather } from "@expo/vector-icons";
+import React from "react";
+import { Platform, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { Colors } from "@/constants/theme";
+
+function NativeTabLayout() {
+  return (
+    <NativeTabs>
+      <NativeTabs.Trigger name="index">
+        <Icon sf={{ default: "house", selected: "house.fill" }} />
+        <Label>Accueil</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="scan">
+        <Icon sf={{ default: "barcode.viewfinder", selected: "barcode.viewfinder" }} />
+        <Label>Scanner</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="shelf">
+        <Icon sf={{ default: "archivebox", selected: "archivebox.fill" }} />
+        <Label>Placard</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="chat">
+        <Icon sf={{ default: "message", selected: "message.fill" }} />
+        <Label>Chat IA</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Icon sf={{ default: "person", selected: "person.fill" }} />
+        <Label>Profil</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
+  );
+}
+
+function ClassicTabLayout() {
+  const insets = useSafeAreaInsets();
+  const isIOS = Platform.OS === "ios";
+  const isWeb = Platform.OS === "web";
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: Colors.accent,
+        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarStyle: {
+          position: "absolute",
+          backgroundColor: isIOS ? "transparent" : Colors.surface,
+          borderTopWidth: isWeb ? 1 : 0,
+          borderTopColor: Colors.border,
+          elevation: 0,
+          ...(isWeb ? { height: 84 } : {}),
+        },
+        tabBarBackground: () =>
+          isIOS ? (
+            <BlurView
+              intensity={80}
+              tint="light"
+              style={StyleSheet.absoluteFill}
+            />
+          ) : isWeb ? (
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: Colors.surface },
+              ]}
+            />
+          ) : null,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Accueil",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="house" tintColor={color} size={24} />
+            ) : (
+              <Feather name="home" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="scan"
+        options={{
+          title: "Scanner",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="barcode.viewfinder" tintColor={color} size={24} />
+            ) : (
+              <Feather name="camera" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="shelf"
+        options={{
+          title: "Placard",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="archivebox" tintColor={color} size={24} />
+            ) : (
+              <Feather name="archive" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Chat IA",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="message" tintColor={color} size={24} />
+            ) : (
+              <Feather name="message-circle" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profil",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="person" tintColor={color} size={24} />
+            ) : (
+              <Feather name="user" size={22} color={color} />
+            ),
+        }}
+      />
+
+      {/* Hidden screens — accessible via router.push, not shown in tab bar */}
+      <Tabs.Screen name="history" options={{ href: null }} />
+      <Tabs.Screen name="journal" options={{ href: null }} />
+      <Tabs.Screen name="community" options={{ href: null }} />
+      <Tabs.Screen name="partner-checklist-tab" options={{ href: null }} />
+    </Tabs>
+  );
+}
+
+export default function TabLayout() {
+  if (isLiquidGlassAvailable()) {
+    return <NativeTabLayout />;
+  }
+  return <ClassicTabLayout />;
+}
+
+
+================================================================
+# HOME tab
+# artifacts/helo/app/(tabs)/index.tsx
+================================================================
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Dimensions,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+import Animated, {
+  FadeInDown,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+
+import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
+import { GlowScoreShareCard } from '@/components/share/GlowScoreShareCard';
+import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { Divider } from '@/components/ui/Divider';
+import { IconButton } from '@/components/ui/IconButton';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { GlowScoreCircle } from '@/components/GlowScoreCircle';
+import { Colors, Radius, Spacing } from '@/constants/theme';
+import { calculateGlowScore, getGlowLabel } from '@/lib/glowscore';
+import { useTrimester } from '@/hooks/useTrimester';
+import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
+import { useProfile } from '@/hooks/useProfile';
+import { useShelfData } from '@/hooks/useShelfData';
+import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { usePremium } from '@/hooks/usePremium';
+import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
+import type { ShelfProduct } from '@/components/shelf/ShelfCard';
+import { PactWidget } from '@/components/PactWidget';
+import { PartnerHomeScreen } from '@/components/home/PartnerHomeScreen';
+import { styles } from '@/components/home/homeStyles';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const statusColors: Record<string, { bg: string; accent: string; icon: 'check-circle' | 'alert-circle' | 'x-circle' | 'help-circle' }> = {
+  safe:    { bg: Colors.safeBg,    accent: Colors.safe,    icon: 'check-circle'  },
+  caution: { bg: Colors.cautionBg, accent: Colors.caution, icon: 'alert-circle'  },
+  danger:  { bg: Colors.dangerBg,  accent: Colors.danger,  icon: 'x-circle'      },
+  unknown: { bg: Colors.background, accent: Colors.textTertiary, icon: 'help-circle' },
+};
+
+type SafeBadgeVariant = 'safe' | 'caution' | 'danger' | 'accent';
+function verdictToBadge(v: string): SafeBadgeVariant {
+  if (v === 'safe' || v === 'caution' || v === 'danger') return v;
+  return 'accent';
+}
+
+function ScanCard({ item, index }: { item: ShelfProduct; index: number }) {
+  const color = statusColors[item.verdict] ?? statusColors.unknown;
+  const { bg, accent, icon } = color;
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 80).duration(400)}>
+      <Pressable
+        style={({ pressed }) => [
+          styles.scanCard,
+          { backgroundColor: Colors.surface, opacity: pressed ? 0.9 : 1 },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.name}, ${item.verdictLabel}`}
+      >
+        <View style={[styles.scanCardIcon, { backgroundColor: bg }]}>
+          <Feather name={icon} size={20} color={accent} />
+        </View>
+        <View style={styles.scanCardContent}>
+          <ThemedText variant="labelLarge" color="textPrimary" numberOfLines={1}>
+            {item.name}
+          </ThemedText>
+          <ThemedText variant="bodySmall" color="textTertiary">
+            {item.brand}
+          </ThemedText>
+        </View>
+        <Badge variant={verdictToBadge(item.verdict)}>{item.verdictLabel}</Badge>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function CompositionBar({ count, total, color, label }: {
+  count: number;
+  total: number;
+  color: string;
+  label: string;
+}) {
+  const pct = total > 0 ? count / total : 0;
+  return (
+    <View style={styles.barRow}>
+      <ThemedText variant="bodySmall" color="textSecondary" style={styles.barLabel}>
+        {label}
+      </ThemedText>
+      <View style={styles.barTrack}>
+        <View
+          style={[
+            styles.barFill,
+            { width: `${pct * 100}%`, backgroundColor: color },
+          ]}
+        />
+      </View>
+      <ThemedText variant="bodySmall" color="textTertiary" style={styles.barCount}>
+        {count}
+      </ThemedText>
+    </View>
+  );
+}
+
+export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : 0;
+
+  const { role, userId, firstName } = useProfile();
+  const isPartner = role === 'partner';
+
+  const {
+    weekOfPregnancy,
+    shouldSuggestBreastfeeding,
+    dismissBreastfeedingSuggestion,
+  } = useTrimester();
+
+  const {
+    isBreastfeeding,
+    enableBreastfeeding,
+    showTransition: showBFTransition,
+    changedProductsCount: bfChangedCount,
+    dismissTransition: dismissBFTransition,
+  } = useBreastfeeding();
+  const { isNew } = useWeeklyBrief(weekOfPregnancy);
+
+  const displayName = firstName || 'Hēlo';
+
+  const { shelf: realShelf } = useShelfData(userId || undefined);
+  const activeShelf = realShelf;
+
+  const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
+  const hasRisk = countDanger > 0 || countCaution > 0;
+  const { isPremium } = usePremium();
+
+  const [glowShareVisible, setGlowShareVisible] = useState(false);
+
+  if (isPartner) {
+    return <PartnerHomeScreen />;
+  }
+
+  return (
+    <View style={[styles.root, { backgroundColor: Colors.background }]}>
+      <BreastfeedingTransition
+        visible={showBFTransition}
+        changedProductsCount={bfChangedCount}
+        onDismiss={dismissBFTransition}
+      />
+
+      {glowShareVisible && (
+        <ShareBottomSheet
+          visible={glowShareVisible}
+          onClose={() => setGlowShareVisible(false)}
+          card={
+            <GlowScoreShareCard
+              score={score}
+              week={weekOfPregnancy}
+              scanCount={total}
+              safeCount={countSafe}
+              dangerCount={countDanger}
+            />
+          }
+        />
+      )}
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: topPadding + Spacing.lg, paddingBottom: bottomPadding + 120 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        {/* Header */}
+        <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
+          <View>
+            <ThemedText variant="bodySmall" color="textTertiary">Bonjour</ThemedText>
+            <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
+            {weekOfPregnancy > 0 && (
+              <View style={styles.weekPill}>
+                <ThemedText variant="labelSmall" style={{ color: Colors.accentDark }}>
+                  Semaine {weekOfPregnancy}
+                </ThemedText>
+              </View>
+            )}
+          </View>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            <IconButton size={44} onPress={() => router.push('/search')} accessibilityLabel="Rechercher">
+              <Feather name="search" size={20} color={Colors.textSecondary} />
+            </IconButton>
+            <IconButton size={44} accessibilityLabel="Notifications">
+              <Feather name="bell" size={20} color={Colors.textSecondary} />
+            </IconButton>
+          </View>
+        </Animated.View>
+
+        {/* Breastfeeding suggestion banner */}
+        {shouldSuggestBreastfeeding && !isBreastfeeding && (
+          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+            <View style={styles.bfSuggestionBanner}>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
+                  Mode allaitement disponible 🤱
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Votre DPA est dépassé. Activez le mode allaitement pour des analyses adaptées.
+                </ThemedText>
+              </View>
+              <View style={{ gap: Spacing.sm }}>
+                <Pressable
+                  onPress={async () => {
+                    await enableBreastfeeding();
+                    dismissBreastfeedingSuggestion();
+                  }}
+                  style={styles.bfSuggestionCTA}
+                  accessibilityRole="button"
+                  accessibilityLabel="Activer le mode allaitement"
+                >
+                  <ThemedText variant="labelSmall" style={{ color: '#FFF' }}>Activer</ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={dismissBreastfeedingSuggestion}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ignorer"
+                >
+                  <ThemedText variant="bodySmall" color="textTertiary" style={{ textAlign: 'center' }}>Ignorer</ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Breastfeeding active banner */}
+        {isBreastfeeding && (
+          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
+            <View style={[styles.bfSuggestionBanner, { borderColor: BREASTFEEDING_PALETTE.accentLight }]}>
+              <ThemedText style={{ fontSize: 20 }}>🤱</ThemedText>
+              <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+                <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
+                  Mode allaitement actif
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                  Vos analyses sont adaptées à la période d'allaitement
+                </ThemedText>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Hero Scan CTA */}
+        <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.heroSection}>
+          <LinearGradient
+            colors={['#E8D5B0', '#C9A96E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroBanner}
+          >
+            <View style={styles.heroContent}>
+              <ThemedText variant="headlineMedium" style={{ color: '#FFFFFF', marginBottom: 4 }}>
+                Scanner un produit
+              </ThemedText>
+              <ThemedText variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)', marginBottom: Spacing.xl }}>
+                Analysez la sécurité des ingrédients en quelques secondes
+              </ThemedText>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.heroButton,
+                  { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+                ]}
+                onPress={() => router.push('/(tabs)/scan')}
+                accessibilityRole="button"
+                accessibilityLabel="Scanner maintenant"
+              >
+                <Feather name="camera" size={18} color={Colors.accentDark} />
+                <Text style={styles.heroButtonText}>Scanner maintenant</Text>
+              </Pressable>
+            </View>
+            <View style={styles.heroDecoration}>
+              <View style={styles.heroCircle1} />
+              <View style={styles.heroCircle2} />
+            </View>
+          </LinearGradient>
+        </Animated.View>
+
+        {/* Pact Widget */}
+        <Animated.View entering={FadeInDown.delay(120).duration(500)}>
+          <PactWidget />
+        </Animated.View>
+
+        {/* Quick actions row */}
+        <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.quickRow}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+            ]}
+            onPress={() => router.push('/basket-scan' as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Mon panier"
+          >
+            <View style={[styles.quickIcon, { backgroundColor: Colors.accentLight + '55', borderColor: Colors.accentLight }]}>
+              <Feather name="shopping-cart" size={18} color={Colors.accent} />
+            </View>
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
+              Mon panier
+            </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
+              Plusieurs produits
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+            ]}
+            onPress={() => router.push('/compare' as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Comparer deux produits"
+          >
+            <View style={[styles.quickIcon, { backgroundColor: Colors.safeBg, borderColor: Colors.safeLight }]}>
+              <Feather name="git-branch" size={18} color={Colors.safe} />
+            </View>
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginTop: Spacing.sm }}>
+              Comparer
+            </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2, textAlign: 'center' }}>
+              2 produits côte à côte
+            </ThemedText>
+          </Pressable>
+        </Animated.View>
+
+        {/* Feature discovery grid */}
+        <Animated.View entering={FadeInDown.delay(155).duration(500)}>
+          <View style={styles.featureSectionHeader}>
+            <ThemedText variant="headlineMedium" color="textPrimary">Explorer</ThemedText>
+          </View>
+          <View style={styles.featureGrid}>
+            {([
+              {
+                label: 'Nutrition',
+                subtitle: 'Besoins du trimestre',
+                icon: 'heart' as const,
+                iconBg: Colors.cautionLight,
+                iconColor: Colors.caution,
+                route: '/nutrition',
+              },
+              {
+                label: 'Maison',
+                subtitle: 'Score environnement',
+                icon: 'home' as const,
+                iconBg: Colors.safeBg,
+                iconColor: Colors.safe,
+                route: '/home-score',
+              },
+              {
+                label: 'Restau',
+                subtitle: 'Analysez le menu',
+                icon: 'coffee' as const,
+                iconBg: '#FFF0E8',
+                iconColor: '#C97B40',
+                route: '/(tabs)/scan',
+              },
+              {
+                label: 'Voyage',
+                subtitle: 'Briefing santé',
+                icon: 'map' as const,
+                iconBg: '#E8F0FF',
+                iconColor: '#6B8FDB',
+                route: '/travel',
+                premium: true,
+              },
+              {
+                label: 'Vocal',
+                subtitle: 'Question IA par voix',
+                icon: 'mic' as const,
+                iconBg: '#F0E8FF',
+                iconColor: '#8B6BDB',
+                route: '/voice',
+                badge: '3/j',
+              },
+              {
+                label: 'Timeline',
+                subtitle: 'Semaine par semaine',
+                icon: 'calendar' as const,
+                iconBg: '#E8F5EE',
+                iconColor: Colors.safe,
+                route: '/timeline',
+              },
+              {
+                label: 'Scan Partie',
+                subtitle: 'Scanner en groupe',
+                icon: 'users' as const,
+                iconBg: '#FFF5E0',
+                iconColor: Colors.accentDark,
+                route: '/scan-party',
+              },
+              {
+                label: 'Miroir AR',
+                subtitle: 'Scanner en direct',
+                icon: 'aperture' as const,
+                iconBg: '#F0F8F4',
+                iconColor: Colors.safe,
+                route: '/ar-mirror',
+              },
+              {
+                label: 'Widget Glow',
+                subtitle: 'Widget écran d\'accueil',
+                icon: 'watch' as const,
+                iconBg: '#F5F0FF',
+                iconColor: '#8B6BDB',
+                route: '/widget-preview',
+              },
+            ]).map((f) => (
+              <Pressable
+                key={f.label}
+                style={({ pressed }) => [
+                  styles.featureCell,
+                  { opacity: pressed ? 0.82 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
+                ]}
+                onPress={() => router.push(f.route as never)}
+                accessibilityRole="button"
+                accessibilityLabel={f.label}
+              >
+                <View style={[styles.featureCellIcon, { backgroundColor: f.iconBg }]}>
+                  <Feather name={f.icon} size={20} color={f.iconColor} />
+                </View>
+                <ThemedText variant="labelLarge" color="textPrimary">{f.label}</ThemedText>
+                <Text style={styles.featureCellSubtitle}>{f.subtitle}</Text>
+                {'badge' in f && f.badge && (
+                  <View style={styles.featureCellBadge}>
+                    <ThemedText style={styles.featureCellBadgeText}>{f.badge}</ThemedText>
+                  </View>
+                )}
+                {'premium' in f && f.premium && !isPremium && (
+                  <View style={styles.featureCellPremiumDot}>
+                    <Feather name="star" size={9} color={Colors.accentDark} />
+                  </View>
+                )}
+              </Pressable>
+            ))}
+          </View>
+        </Animated.View>
+
+        {/* Shelf scan CTA */}
+        <Animated.View entering={FadeInDown.delay(165).duration(500)}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.shelfScanCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+            onPress={() => router.push('/shelf-scan' as never)}
+            accessibilityRole="button"
+            accessibilityLabel="Scanner une étagère"
+          >
+            <View style={styles.shelfScanIconWrap}>
+              <Feather name="layers" size={22} color={Colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="labelLarge" color="textPrimary">
+                Scanner une étagère
+              </ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
+                Analysez tous vos produits en une photo
+              </ThemedText>
+            </View>
+            {!isPremium && (
+              <View style={styles.shelfScanPremium}>
+                <Feather name="star" size={10} color={Colors.accentDark} />
+                <ThemedText style={styles.shelfScanPremiumText}>PREMIUM</ThemedText>
+              </View>
+            )}
+          </Pressable>
+        </Animated.View>
+
+        {/* Stats row — empty state when no products yet */}
+        {total === 0 ? (
+          <Animated.View entering={FadeInDown.delay(180).duration(500)}>
+            <Card padding={Spacing.lg}>
+              <View style={styles.scanNudgeRow}>
+                <View style={styles.scanNudgeIcon}>
+                  <Feather name="zap" size={20} color={Colors.accentDark} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText variant="labelLarge" color="textPrimary">Scannez votre premier produit</ThemedText>
+                  <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
+                    Votre Glow Score se construit à chaque analyse
+                  </ThemedText>
+                </View>
+                <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+              </View>
+            </Card>
+          </Animated.View>
+        ) : (
+          <Animated.View entering={FadeInDown.delay(180).duration(500)} style={styles.statsRow}>
+            <Card style={styles.statCard} padding={Spacing.lg}>
+              <ThemedText variant="displayMedium" color="accent">{total}</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">Scannés</ThemedText>
+            </Card>
+            <Card style={styles.statCard} padding={Spacing.lg}>
+              <ThemedText variant="displayMedium" style={{ color: Colors.safe }}>{countSafe}</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">Sûrs</ThemedText>
+            </Card>
+            <Card style={styles.statCard} padding={Spacing.lg}>
+              <ThemedText variant="displayMedium" style={{ color: Colors.caution }}>{countCaution + countDanger}</ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary">À vérifier</ThemedText>
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* Weekly brief */}
+        <Animated.View entering={FadeInDown.delay(220).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/weekly-brief')}
+            style={({ pressed }) => [
+              styles.briefCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Brief Semaine ${weekOfPregnancy}`}
+          >
+            <View style={styles.briefLeft}>
+              <View style={styles.briefIconWrap}>
+                <Feather name="book-open" size={22} color={Colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.briefTitleRow}>
+                  <ThemedText variant="labelLarge" color="textPrimary">
+                    Brief · Semaine {weekOfPregnancy}
+                  </ThemedText>
+                  {isNew && (
+                    <View style={styles.newBadge}>
+                      <ThemedText variant="labelSmall" style={{ color: Colors.surface }}>
+                        NOUVEAU
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  Conseils, alertes et découvertes de la semaine
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
+        {/* Journal card */}
+        <Animated.View entering={FadeInDown.delay(225).duration(500)}>
+          <Pressable
+            onPress={() => router.push('/(tabs)/journal' as never)}
+            style={({ pressed }) => [
+              styles.briefCard,
+              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Mon Journal"
+          >
+            <View style={styles.briefLeft}>
+              <View style={styles.briefIconWrap}>
+                <Feather name="edit-3" size={22} color={Colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">Mon Journal</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">
+                  Grossesse jour après jour
+                </ThemedText>
+              </View>
+            </View>
+            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+          </Pressable>
+        </Animated.View>
+
+        {/* Glow Score */}
+        <Animated.View entering={FadeInDown.delay(240).duration(500)}>
+          <View style={styles.sectionHeader}>
+            <ThemedText variant="headlineMedium" color="textPrimary">Votre Glow Score</ThemedText>
+            <IconButton size={36} onPress={() => setGlowShareVisible(true)} accessibilityLabel="Partager le Glow Score">
+              <Feather name="share-2" size={16} color={Colors.textSecondary} />
+            </IconButton>
+          </View>
+
+          <Card padding={Spacing.xl} style={styles.glowCard}>
+            <View style={styles.glowCircleRow}>
+              <GlowScoreCircle score={score} size="large" animated />
+            </View>
+            <ThemedText
+              variant="bodyMedium"
+              color="textSecondary"
+              style={styles.glowSubtitle}
+            >
+              Basé sur {total} produit{total > 1 ? 's' : ''} de votre placard
+            </ThemedText>
+
+            <Divider style={{ marginVertical: Spacing.xl }} />
+
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginBottom: Spacing.md }}>
+              Composition
+            </ThemedText>
+            <View style={styles.barsContainer}>
+              <CompositionBar count={countSafe} total={total} color={Colors.safe} label="Sûrs" />
+              <CompositionBar count={countCaution} total={total} color={Colors.caution} label="Vigilance" />
+              <CompositionBar count={countDanger} total={total} color={Colors.danger} label="À risque" />
+            </View>
+
+            {hasRisk && (
+              <Pressable
+                onPress={() => router.push('/(tabs)/shelf')}
+                style={({ pressed }) => [
+                  styles.improveCard,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel="Améliorez votre score"
+              >
+                <View style={styles.improveCardLeft}>
+                  <View style={styles.improveIcon}>
+                    <Feather name="arrow-up-circle" size={20} color={Colors.accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <ThemedText variant="labelLarge" color="textPrimary">
+                      Améliorez votre score
+                    </ThemedText>
+                    <ThemedText variant="bodySmall" color="textSecondary">
+                      {countDanger + countCaution} produit{countDanger + countCaution > 1 ? 's' : ''} à risque · voir les alternatives
+                    </ThemedText>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+              </Pressable>
+            )}
+          </Card>
+        </Animated.View>
+
+        {/* Recent scans */}
+        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
+          <View style={styles.sectionHeader}>
+            <ThemedText variant="headlineMedium" color="textPrimary">Récents</ThemedText>
+            <Pressable
+              onPress={() => router.push('/(tabs)/history' as never)}
+              accessibilityRole="button"
+              accessibilityLabel="Voir l'historique complet"
+            >
+              <ThemedText variant="labelLarge" color="accent">Voir l'historique</ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={styles.scanList}>
+            {activeShelf.length === 0 ? (
+              <Pressable
+                onPress={() => router.push('/scan')}
+                style={[styles.scanCard, { backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xl }]}
+                accessibilityRole="button"
+                accessibilityLabel="Scanner votre premier produit"
+              >
+                <Feather name="camera" size={24} color={Colors.accent} />
+                <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
+                  Scannez votre premier produit
+                </ThemedText>
+              </Pressable>
+            ) : (
+              activeShelf.slice(0, 3).map((item, index) => (
+                <ScanCard key={item.id} item={item} index={index} />
+              ))
+            )}
+          </View>
+        </Animated.View>
+
+        {/* Disclaimer */}
+        <Animated.View entering={FadeInDown.delay(400).duration(500)}>
+          <Card style={styles.disclaimerCard} padding={Spacing.lg}>
+            <View style={styles.disclaimerHeader}>
+              <Feather name="info" size={14} color={Colors.textTertiary} />
+              <ThemedText variant="labelSmall" color="textTertiary" style={{ marginLeft: 6 }}>
+                INFORMATION MÉDICALE
+              </ThemedText>
+            </View>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 6, lineHeight: 18 }}>
+              Hēlo est un outil d'information. Consultez votre médecin avant de modifier vos habitudes pendant la grossesse.
+            </ThemedText>
+          </Card>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+}
+
+
+================================================================
+# SCAN tab
+# artifacts/helo/app/(tabs)/scan.tsx
+================================================================
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+
+import { IconButton } from '@/components/ui/IconButton';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+import { useOffline } from '@/hooks/useOffline';
+import { useProfile } from '@/hooks/useProfile';
+import { usePremium } from '@/hooks/usePremium';
+import { analyzeMenu } from '@/lib/restaurant';
+import { incrementScanCount } from '@/lib/scanLimit';
+import { onProductScanned } from '@/lib/pact';
+
+import {
+  BARCODE_TYPES,
+  DEBOUNCE_MS,
+  MAX_MENU_PHOTOS,
+  SCREEN_W,
+  type ScanMode,
+  VF_BARCODE_H,
+  VF_BARCODE_W,
+  VF_BARCODE_Y,
+  VF_MENU_H,
+  VF_MENU_W,
+  VF_MENU_Y,
+  VF_OCR_H,
+  VF_OCR_W,
+  VF_OCR_Y,
+  VF_PHOTO_H,
+  VF_PHOTO_W,
+  VF_PHOTO_Y,
+} from '@/components/scan/scanConstants';
+import { FlashingViewfinder, ScanOverlay } from '@/components/scan/ScanViewfinder';
+import { ModeChip, ShutterButton } from '@/components/scan/ScanControls';
+import {
+  OfflineBadge,
+  PermissionScreen,
+  SyncToast,
+  WebPlaceholder,
+} from '@/components/scan/ScanStatusUI';
+
+const MENU_RESULT_KEY = '@helo_menu_result';
+
+export default function ScanScreen() {
+  const { ghostBarcode, forceOCR } = useLocalSearchParams<{ ghostBarcode?: string; forceOCR?: string }>();
+
+  const [permission, requestPermission] = useCameraPermissions();
+  const [torchOn, setTorchOn] = useState(false);
+  const [scanMode, setScanMode] = useState<ScanMode>('barcode');
+  const [isActive, setIsActive] = useState(false);
+  const [takingPhoto, setTakingPhoto] = useState(false);
+  const [syncToastVisible, setSyncToastVisible] = useState(false);
+  const syncToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const lastBarcode = useRef<string | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cameraRef = useRef<CameraView>(null);
+  const flashColor = useSharedValue(0);
+  const flashOverlay = useSharedValue(0);
+  const insets = useSafeAreaInsets();
+
+  const topInset = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomInset = Platform.OS === 'web' ? 34 : insets.bottom;
+
+  const { role, linkedFirstName, firstName: scanFirstName } = useProfile();
+  const isPartner = role === 'partner';
+  const partnerName = linkedFirstName;
+
+  const { isPremium, checkScanLimit, scansRemaining, requirePremium } = usePremium();
+  const { isOffline, syncComplete } = useOffline();
+
+  useEffect(() => {
+    if (syncComplete) {
+      setSyncToastVisible(true);
+      if (syncToastTimer.current) clearTimeout(syncToastTimer.current);
+      syncToastTimer.current = setTimeout(() => setSyncToastVisible(false), 2500);
+    }
+  }, [syncComplete]);
+
+  const [menuPhotos, setMenuPhotos] = useState<Array<{ uri: string; base64: string }>>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const isOCRMode = scanMode === 'ingredients';
+  const isMenuMode = scanMode === 'menu';
+  const isPhotoMode = scanMode === 'photo';
+
+  const vfW = isOCRMode ? VF_OCR_W : isMenuMode ? VF_MENU_W : isPhotoMode ? VF_PHOTO_W : VF_BARCODE_W;
+  const vfH = isOCRMode ? VF_OCR_H : isMenuMode ? VF_MENU_H : isPhotoMode ? VF_PHOTO_H : VF_BARCODE_H;
+  const vfY = isOCRMode ? VF_OCR_Y : isMenuMode ? VF_MENU_Y : isPhotoMode ? VF_PHOTO_Y : VF_BARCODE_Y;
+  const vfX = (SCREEN_W - vfW) / 2;
+
+  useEffect(() => {
+    if (forceOCR === '1') {
+      setScanMode('ingredients');
+    }
+  }, [forceOCR]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setIsActive(true);
+      return () => {
+        setIsActive(false);
+        setTorchOn(false);
+        setMenuPhotos([]);
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      };
+    }, []),
+  );
+
+  const handleBarcodeScanned = useCallback(
+    async ({ data }: { data: string }) => {
+      if (!data || data === lastBarcode.current || scanMode !== 'barcode') return;
+      lastBarcode.current = data;
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(() => { lastBarcode.current = null; }, DEBOUNCE_MS);
+
+      if (!isPremium && !isOffline) {
+        const allowed = await checkScanLimit();
+        if (!allowed) {
+          lastBarcode.current = null;
+          return;
+        }
+        await incrementScanCount();
+      }
+
+      onProductScanned(scanFirstName || '').catch(() => {});
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      flashColor.value = withSequence(
+        withTiming(1, { duration: 150 }),
+        withTiming(1, { duration: 150 }),
+        withTiming(0, { duration: 300 }),
+      );
+      setTimeout(() => {
+        router.push(`/verdict/${encodeURIComponent(data)}`);
+      }, 350);
+    },
+    [flashColor, scanMode, isPremium, isOffline, checkScanLimit],
+  );
+
+  const handleShutter = useCallback(async () => {
+    if (takingPhoto || !cameraRef.current) return;
+    setTakingPhoto(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    flashOverlay.value = withSequence(
+      withTiming(0.5, { duration: 60 }),
+      withTiming(0, { duration: 250 }),
+    );
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.8 });
+      if (photo?.uri) {
+        const ghostParam = ghostBarcode ? `&ghostBarcode=${encodeURIComponent(ghostBarcode)}` : '';
+        router.push(`/ocr-review?imageUri=${encodeURIComponent(photo.uri)}&base64=${encodeURIComponent(photo.base64 ?? '')}${ghostParam}`);
+      }
+    } catch {
+      // silent — user can retry
+    } finally {
+      setTakingPhoto(false);
+    }
+  }, [takingPhoto, flashOverlay]);
+
+  const handleMenuCapture = useCallback(async () => {
+    if (takingPhoto || !cameraRef.current || menuPhotos.length >= MAX_MENU_PHOTOS) return;
+    setTakingPhoto(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    flashOverlay.value = withSequence(
+      withTiming(0.5, { duration: 60 }),
+      withTiming(0, { duration: 250 }),
+    );
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.82 });
+      if (photo?.uri && photo.base64) {
+        setMenuPhotos((prev) => [...prev, { uri: photo.uri, base64: photo.base64! }]);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      // silent — user can retry
+    } finally {
+      setTakingPhoto(false);
+    }
+  }, [takingPhoto, flashOverlay, menuPhotos.length]);
+
+  const handleMenuAnalyze = useCallback(async () => {
+    if (menuPhotos.length === 0 || isAnalyzing) return;
+    setIsAnalyzing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const base64Array = menuPhotos.map((p) => p.base64);
+      const result = await analyzeMenu(base64Array);
+      await AsyncStorage.setItem(MENU_RESULT_KEY, JSON.stringify(result));
+      setMenuPhotos([]);
+      router.push('/restaurant-results');
+    } catch {
+      // silent
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [menuPhotos, isAnalyzing]);
+
+  const handlePhotoCapture = useCallback(async () => {
+    if (takingPhoto || !cameraRef.current) return;
+    if (!isPremium) {
+      router.push({ pathname: '/paywall', params: { trigger: 'photo_scan' } } as never);
+      return;
+    }
+    setTakingPhoto(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    flashOverlay.value = withSequence(
+      withTiming(0.5, { duration: 60 }),
+      withTiming(0, { duration: 250 }),
+    );
+    try {
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.8 });
+      if (photo?.base64) {
+        router.push(`/photo-result?base64=${encodeURIComponent(photo.base64)}`);
+      }
+    } catch {
+      // silent
+    } finally {
+      setTakingPhoto(false);
+    }
+  }, [takingPhoto, flashOverlay, isPremium]);
+
+  const flashOverlayStyle = useAnimatedStyle(() => ({
+    opacity: flashOverlay.value,
+  }));
+
+  if (Platform.OS === 'web') return <WebPlaceholder />;
+  if (!permission) return <View style={[styles.root, { backgroundColor: Colors.background }]} />;
+  if (!permission.granted) return <PermissionScreen onRequest={requestPermission} />;
+
+  return (
+    <View style={styles.root}>
+      <StatusBar style="light" />
+
+      {isActive && (
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          enableTorch={torchOn}
+          onBarcodeScanned={scanMode === 'barcode' ? handleBarcodeScanned : undefined}
+          barcodeScannerSettings={{ barcodeTypes: [...BARCODE_TYPES] }}
+        />
+      )}
+
+      <Animated.View
+        style={[StyleSheet.absoluteFill, styles.flashOverlay, flashOverlayStyle]}
+        pointerEvents="none"
+      />
+
+      <ScanOverlay vfX={vfX} vfY={vfY} vfW={vfW} vfH={vfH} />
+
+      <View
+        style={[styles.viewfinderContainer, { top: vfY, left: vfX, width: vfW, height: vfH }]}
+        pointerEvents="none"
+      >
+        <FlashingViewfinder flashColor={flashColor} />
+      </View>
+
+      <SyncToast visible={syncToastVisible} />
+
+      {/* ── Top bar ── */}
+      <View style={[styles.topBar, { paddingTop: topInset + Spacing.sm }]}>
+        <View style={styles.topLeft}>
+          {isPartner && partnerName ? (
+            <View style={styles.partnerBanner}>
+              <Feather name="heart" size={14} color={Colors.accent} />
+              <Text style={styles.partnerBannerText}>Scanner pour {partnerName}</Text>
+            </View>
+          ) : (
+            <Text style={styles.topTitle}>Scanner</Text>
+          )}
+          {isOffline && <OfflineBadge />}
+        </View>
+        <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+          {scanMode === 'barcode' && (
+            <IconButton
+              onPress={() => router.push('/basket-scan' as never)}
+              backgroundColor="rgba(255,255,255,0.18)"
+              size={40}
+            >
+              <Feather name="shopping-cart" size={18} color="#fff" />
+            </IconButton>
+          )}
+          <IconButton
+            onPress={() => setTorchOn((v) => !v)}
+            backgroundColor={torchOn ? Colors.accent : 'rgba(255,255,255,0.18)'}
+            size={40}
+          >
+            <Feather name={torchOn ? 'zap' : 'zap-off'} size={18} color="#fff" />
+          </IconButton>
+        </View>
+      </View>
+
+      {/* ── Hint pill under viewfinder ── */}
+      <View style={[styles.hintWrapper, { top: vfY + vfH + Spacing.xl }]} pointerEvents="none">
+        <View style={styles.hintPill}>
+          <Text style={styles.hintText}>
+            {isOCRMode
+              ? "Photographiez la liste d'ingrédients"
+              : isMenuMode
+              ? menuPhotos.length === 0
+                ? 'Photographiez la première page du menu'
+                : `Page ${menuPhotos.length}/${MAX_MENU_PHOTOS} · Ajoutez d'autres pages ou analysez`
+              : isPhotoMode
+              ? 'Photographiez la face avant du produit'
+              : 'Placez le code-barres dans le cadre'}
+          </Text>
+        </View>
+      </View>
+
+      {/* ── OCR shutter ── */}
+      {isOCRMode && (
+        <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
+          <ShutterButton onPress={handleShutter} />
+        </View>
+      )}
+
+      {/* ── Photo mode shutter ── */}
+      {isPhotoMode && (
+        <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
+          <ShutterButton onPress={handlePhotoCapture} />
+        </View>
+      )}
+
+      {/* ── Menu mode UI ── */}
+      {isMenuMode && (
+        <View style={[styles.menuPanel, { bottom: bottomInset + 78 }]}>
+          {menuPhotos.length > 0 && (
+            <View style={styles.menuThumbStrip}>
+              {menuPhotos.map((photo, i) => (
+                <View key={i} style={styles.menuThumb}>
+                  <Image source={{ uri: photo.uri }} style={styles.menuThumbImg} contentFit="cover" />
+                  <TouchableOpacity
+                    style={styles.menuThumbDelete}
+                    onPress={() => setMenuPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                    hitSlop={6}
+                  >
+                    <Feather name="x" size={10} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {menuPhotos.length < MAX_MENU_PHOTOS && (
+                <TouchableOpacity
+                  style={styles.menuThumbAdd}
+                  onPress={handleMenuCapture}
+                  disabled={takingPhoto}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="plus" size={20} color={Colors.accent} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          <View style={styles.menuButtons}>
+            {menuPhotos.length === 0 ? (
+              <ShutterButton onPress={handleMenuCapture} />
+            ) : (
+              <TouchableOpacity
+                style={[styles.analyzeBtn, isAnalyzing && { opacity: 0.7 }]}
+                onPress={handleMenuAnalyze}
+                disabled={isAnalyzing}
+                activeOpacity={0.85}
+              >
+                {isAnalyzing ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Feather name="search" size={18} color="#fff" />
+                )}
+                <Text style={styles.analyzeBtnText}>
+                  {isAnalyzing ? 'Analyse en cours…' : 'Analyser le menu'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* ── Free scan counter ── */}
+      {!isPremium && (
+        <View style={[styles.scanCounterWrap, { bottom: bottomInset + 132 }]} pointerEvents="none">
+          <View
+            style={[
+              styles.scanCounterPill,
+              scansRemaining === 0 && styles.scanCounterPillDanger,
+            ]}
+          >
+            {/* Dot indicators */}
+            {scansRemaining > 0 && (
+              <View style={styles.scanDots}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.scanDot,
+                      i < scansRemaining ? styles.scanDotFilled : styles.scanDotEmpty,
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+            {scansRemaining === 0 ? (
+              <Feather name="lock" size={10} color="rgba(255,120,100,0.9)" />
+            ) : (
+              <Feather name="zap" size={10} color={Colors.accent} />
+            )}
+            <ThemedText
+              style={[
+                styles.scanCounterText,
+                scansRemaining === 0 && { color: 'rgba(255,130,110,0.95)' } as TextStyle,
+              ]}
+            >
+              {scansRemaining > 0
+                ? `${scansRemaining} scan${scansRemaining > 1 ? 's' : ''} restant${scansRemaining > 1 ? 's' : ''}`
+                : 'Limite atteinte · Passer à Premium'}
+            </ThemedText>
+          </View>
+        </View>
+      )}
+
+      {/* ── Bottom mode chips ── */}
+      <View style={[styles.bottomBar, { paddingBottom: bottomInset + Spacing.lg }]}>
+        <View style={styles.chipsRow}>
+          <ModeChip label="Code-barres" active={scanMode === 'barcode'} onPress={() => setScanMode('barcode')} />
+          <ModeChip label="Ingrédients" active={scanMode === 'ingredients'} onPress={() => setScanMode('ingredients')} />
+          <ModeChip label="Menu" active={scanMode === 'menu'} onPress={() => setScanMode('menu')} />
+          <ModeChip label="💊 Ordonnance" active={false} onPress={() => router.push('/prescription-scan' as never)} />
+          <ModeChip
+            label="📷 Photo"
+            active={scanMode === 'photo'}
+            onPress={() => {
+              if (requirePremium('photo_scan')) return;
+              setScanMode('photo');
+            }}
+          />
+        </View>
+        {isMenuMode && menuPhotos.length > 0 && (
+          <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75}>
+            <Text style={styles.comingSoon}>Réinitialiser les photos</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#000' },
+  flashOverlay: { backgroundColor: '#fff', zIndex: 20 },
+  viewfinderContainer: { position: 'absolute' },
+  topBar: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl, paddingBottom: Spacing.md, zIndex: 10,
+  },
+  topLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  topTitle: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.labelLarge.fontSize,
+    letterSpacing: 0.3,
+    color: '#fff',
+  },
+  partnerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(201, 169, 110, 0.25)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 169, 110, 0.5)',
+  },
+  partnerBannerText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.labelLarge.fontSize,
+    color: Colors.accentLight,
+    letterSpacing: 0.2,
+  },
+  hintWrapper: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 10 },
+  hintPill: {
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full,
+  },
+  hintText: { fontFamily: 'PlusJakartaSans_400Regular', fontSize: Typography.bodySmall.fontSize, color: '#fff' },
+  shutterWrapper: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 10 },
+  bottomBar: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    alignItems: 'center', gap: Spacing.sm, paddingTop: Spacing.lg, zIndex: 10,
+  },
+  chipsRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+  scanCounterWrap: {
+    position: 'absolute',
+    alignSelf: 'center',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  scanCounterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 99,
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,110,0.35)',
+  },
+  scanCounterPillDanger: {
+    borderColor: 'rgba(255,100,80,0.4)',
+    backgroundColor: 'rgba(40,0,0,0.55)',
+  },
+  scanDots: {
+    flexDirection: 'row',
+    gap: 3,
+    alignItems: 'center',
+  },
+  scanDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+  },
+  scanDotFilled: {
+    backgroundColor: Colors.accent,
+  },
+  scanDotEmpty: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  scanCounterText: {
+    ...Typography.labelSmall,
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: 11,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+  },
+  comingSoon: {
+    fontFamily: 'PlusJakartaSans_400Regular',
+    fontSize: Typography.bodySmall.fontSize,
+    color: 'rgba(255,255,255,0.65)',
+    textAlign: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  menuPanel: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    gap: Spacing.md,
+    zIndex: 15,
+    paddingHorizontal: Spacing.xl,
+  },
+  menuThumbStrip: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'center',
+  },
+  menuThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.md,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: Colors.accent,
+  },
+  menuThumbImg: {
+    width: '100%',
+    height: '100%',
+  },
+  menuThumbDelete: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 8,
+    padding: 2,
+  },
+  menuThumbAdd: {
+    width: 52,
+    height: 52,
+    borderRadius: Radius.md,
+    borderWidth: 2,
+    borderColor: Colors.accent,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(201,169,110,0.1)',
+  },
+  menuButtons: {
+    alignItems: 'center',
+  },
+  analyzeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.full,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.xxl,
+  },
+  analyzeBtnText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.labelLarge.fontSize,
+    color: '#fff',
+  },
+});
+
+
+================================================================
+# PROFILE tab
+# artifacts/helo/app/(tabs)/profile.tsx
+================================================================
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  Switch,
+  TextInput,
+  View,
+} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import type { JournalEntry } from '@/app/(tabs)/journal';
+import { useShelfData } from '@/hooks/useShelfData';
+import { calculateGlowScore } from '@/lib/glowscore';
+import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
+import { GlowScoreMini } from '@/components/GlowScoreMini';
+import { NotificationPermissionScreen } from '@/components/NotificationPermissionScreen';
+import { PartnerCodeChip, SettingRow } from '@/components/profile/SettingRow';
+import styles from '@/components/profile/profileStyles';
+import { Card } from '@/components/ui/Card';
+import { Divider } from '@/components/ui/Divider';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors, Spacing } from '@/constants/theme';
+import { useBabyMode } from '@/hooks/useBabyMode';
+import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useProfile, setUserRole } from '@/hooks/useProfile';
+import { usePremium } from '@/hooks/usePremium';
+import { PREMIUM_KEY } from '@/lib/purchases';
+import {
+  checkAndSendWeekMilestoneNotification,
+  createCircle,
+  getCircle,
+  joinCircle,
+  type CircleData,
+} from '@/lib/circleUtils';
+import { exportJournalToPdf } from '@/lib/exportJournalPdf';
+import { loadEarnedBadges, PACT_BADGES, type PactBadgeId } from '@/lib/pact';
+import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
+function computeWeekFromDueDate(dueDate: string | null): number | null {
+  if (!dueDate) return null;
+  try {
+    const due = new Date(dueDate);
+    const now = new Date();
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksRemaining = (due.getTime() - now.getTime()) / msPerWeek;
+    const week = Math.round(40 - weeksRemaining);
+    if (week < 1) return null;
+    return week;
+  } catch {
+    return null;
+  }
+}
+
+export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : 0;
+
+  const {
+    showPermissionScreen,
+    setShowPermissionScreen,
+    requestPermission,
+    dismissPermissionScreen,
+    triggerPermissionScreenIfNeeded,
+  } = useNotifications();
+
+  useEffect(() => {
+    triggerPermissionScreenIfNeeded();
+  }, [triggerPermissionScreenIfNeeded]);
+
+  const {
+    userId,
+    role,
+    firstName,
+    trimester,
+    dueDate,
+    partnerCode,
+    linkedUserId,
+    linkedFirstName,
+    refresh,
+  } = useProfile();
+  const isPartner = role === 'partner';
+  const { babyMode, enableBabyMode, disableBabyMode } = useBabyMode();
+  const {
+    isBreastfeeding,
+    enableBreastfeeding,
+    disableBreastfeeding,
+    showTransition: showBFTransition,
+    changedProductsCount: bfChangedCount,
+    dismissTransition: dismissBFTransition,
+  } = useBreastfeeding();
+
+  useEffect(() => {
+    if (isBreastfeeding && !babyMode) enableBabyMode();
+  }, [isBreastfeeding, babyMode, enableBabyMode]);
+
+  const { isPremium, requirePremium, refresh: refreshPremium } = usePremium();
+  const { shelf: profileShelf } = useShelfData(userId || undefined);
+  const { score: glowScore } = calculateGlowScore(profileShelf);
+
+  const [circleData, setCircleData] = useState<CircleData | null | undefined>(undefined);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [isCreatingCircle, setIsCreatingCircle] = useState(false);
+
+  // Hidden dev shortcut: 5 taps on version number toggles premium (testing only)
+  const [devTapCount, setDevTapCount] = useState(0);
+  const devTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleVersionTap = React.useCallback(async () => {
+    if (devTapTimer.current) clearTimeout(devTapTimer.current);
+    const next = devTapCount + 1;
+    setDevTapCount(next);
+    devTapTimer.current = setTimeout(() => setDevTapCount(0), 2000);
+    if (next >= 5) {
+      setDevTapCount(0);
+      if (devTapTimer.current) clearTimeout(devTapTimer.current);
+      const next_premium = !isPremium;
+      await AsyncStorage.setItem(PREMIUM_KEY, next_premium ? 'true' : 'false');
+      await refreshPremium();
+      Alert.alert(
+        '🛠 Dev Mode',
+        next_premium ? 'Premium activé ✓' : 'Premium désactivé',
+        [{ text: 'OK' }],
+      );
+    }
+  }, [devTapCount, isPremium, refreshPremium]);
+
+  useEffect(() => {
+    if (!userId || isPartner) return;
+    getCircle(userId).then(setCircleData).catch(() => setCircleData(null));
+  }, [userId, isPartner]);
+
+  useEffect(() => {
+    if (!userId || isPartner || !firstName) return;
+    const week = computeWeekFromDueDate(dueDate);
+    if (week && week >= 1 && week <= 42) {
+      checkAndSendWeekMilestoneNotification({ userId, firstName, currentWeek: week }).catch(() => {});
+    }
+  }, [userId, isPartner, firstName, dueDate]);
+
+  const [contributionCount, setContributionCount] = useState(0);
+  const [scanCount, setScanCount] = useState(0);
+  const [safeCount, setSafeCount] = useState(0);
+  const [pactBadges, setPactBadges] = useState<PactBadgeId[]>([]);
+
+  useEffect(() => { loadEarnedBadges().then(setPactBadges); }, []);
+
+  useEffect(() => {
+    if (!userId || isPartner || !isSupabaseConfigured) return;
+    let cancelled = false;
+    const fetchStats = async () => {
+      try {
+        const { count: contributions } = await supabase
+          .from('community_submissions')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'approved');
+        if (!cancelled && contributions !== null) setContributionCount(contributions);
+
+        const { count: scans } = await supabase
+          .from('scan_history')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId);
+        if (!cancelled && scans !== null) setScanCount(scans);
+
+        const { count: safe } = await supabase
+          .from('scan_history')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('safety_level', 'safe');
+        if (!cancelled && safe !== null) setSafeCount(safe);
+      } catch {
+        // Stats are non-critical — profile still renders without them
+      }
+    };
+    fetchStats();
+    return () => { cancelled = true; };
+  }, [userId, isPartner]);
+
+  const [localPartnerCode, setLocalPartnerCode] = useState<string | null>(partnerCode);
+  useEffect(() => { setLocalPartnerCode(partnerCode); }, [partnerCode]);
+
+  const handleShareCode = async () => {
+    const code = localPartnerCode ?? partnerCode;
+    if (!code) return;
+    try {
+      await Share.share({
+        message: `Rejoins-moi sur Hēlo ! Entre mon code partenaire : ${code}`,
+      });
+    } catch {
+      // Share not supported (web) — fallback to clipboard
+      try {
+        await Clipboard.setStringAsync(code);
+        Alert.alert('Code copié', `Le code ${code} a été copié dans le presse-papiers.`);
+      } catch {
+        Alert.alert('Code partenaire', code);
+      }
+    }
+  };
+
+  const handleRegenerateCode = () => {
+    Alert.alert(
+      'Régénérer le code',
+      'Cela va créer un nouveau code et déconnecter votre partenaire actuel.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Régénérer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const newCode = await regeneratePartnerCode(userId);
+              setLocalPartnerCode(newCode);
+              const profileRaw = await AsyncStorage.getItem('user_profile');
+              if (profileRaw) {
+                const profile = JSON.parse(profileRaw);
+                profile.partnerCode = newCode;
+                await AsyncStorage.setItem('user_profile', JSON.stringify(profile));
+              }
+              await refresh();
+            } catch {
+              Alert.alert('Erreur', 'Impossible de régénérer le code.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleDisconnectPartner = () => {
+    Alert.alert(
+      'Déconnecter',
+      isPartner
+        ? `Voulez-vous vous déconnecter du compte de ${linkedFirstName ?? 'votre proche'} ?`
+        : `Voulez-vous déconnecter ${linkedFirstName ?? 'votre partenaire'} ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await unlinkPartner({ userId, role });
+              await setUserRole('pregnant');
+              await AsyncStorage.removeItem('@helo_linked_user_id');
+              await AsyncStorage.removeItem('@helo_linked_first_name');
+              await refresh();
+              if (isPartner) router.replace('/onboarding/role');
+            } catch {
+              Alert.alert('Erreur', 'Impossible de déconnecter.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleExportData = async () => {
+    try {
+      const profileRaw = await AsyncStorage.getItem('user_profile');
+      const localProfile = profileRaw ? JSON.parse(profileRaw) : {};
+
+      let supabaseData: Record<string, unknown> = {};
+      if (isSupabaseConfigured && userId) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+        const { data: scans } = await supabase.from('scan_history').select('*').eq('user_id', userId);
+        const { data: submissions } = await supabase.from('community_submissions').select('*').eq('user_id', userId);
+        supabaseData = {
+          profile: profile ?? {},
+          scan_history: scans ?? [],
+          community_submissions: submissions ?? [],
+        };
+      }
+
+      await Share.share({
+        message: JSON.stringify({ exported_at: new Date().toISOString(), local_profile: localProfile, supabase: supabaseData }, null, 2),
+        title: 'Mes données Hēlo',
+      });
+    } catch {
+      Alert.alert('Erreur', "Impossible d'exporter les données.");
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Supprimer mon compte',
+      'Attention : cette action est irréversible. Toutes vos données seront supprimées.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Continuer',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Êtes-vous sûr ?',
+              'Cette action supprimera définitivement toutes vos données.',
+              [
+                { text: 'Annuler', style: 'cancel' },
+                {
+                  text: 'Supprimer',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await AsyncStorage.clear();
+                      if (isSupabaseConfigured && userId) {
+                        await supabase.from('scan_history').delete().eq('user_id', userId);
+                        await supabase.from('community_submissions').delete().eq('user_id', userId);
+                        await supabase.from('partner_links').delete().eq('pregnant_user_id', userId);
+                        await supabase.from('partner_links').delete().eq('partner_user_id', userId);
+                        await supabase.from('profiles').delete().eq('user_id', userId);
+                      }
+                      router.replace('/onboarding');
+                    } catch {
+                      Alert.alert('Erreur', 'Impossible de supprimer le compte. Réessayez.');
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Se déconnecter',
+      'Voulez-vous réinitialiser votre session ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Se déconnecter',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              router.replace('/onboarding');
+            } catch {
+              Alert.alert('Erreur', 'Impossible de se déconnecter.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const displayName = firstName || (isPartner ? 'Partenaire' : 'Utilisateur');
+  const displayCode = localPartnerCode ?? partnerCode;
+  const trimesterLabel = trimester ? `${trimester}e trimestre` : null;
+  const currentWeek = computeWeekFromDueDate(dueDate);
+  const isPostPartum = currentWeek !== null && currentWeek > 40;
+  const weekProgress = currentWeek ? Math.min(1, currentWeek / 40) : 0;
+
+  const weekAndTrimesterLabel = (() => {
+    if (isBreastfeeding) return 'Mode allaitement 🤱';
+    if (isPostPartum) return "Après l'accouchement";
+    if (currentWeek && trimesterLabel) return `Semaine ${currentWeek} · ${trimesterLabel}`;
+    if (trimesterLabel) return trimesterLabel;
+    return null;
+  })();
+
+  const initial = displayName.charAt(0).toUpperCase();
+  const safePercent = scanCount > 0 ? Math.round((safeCount / scanCount) * 100) : 0;
+
+  return (
+    <View style={[styles.root, { backgroundColor: Colors.background }]}>
+      <NotificationPermissionScreen
+        visible={showPermissionScreen}
+        onAllow={async () => {
+          await requestPermission();
+          setShowPermissionScreen(false);
+        }}
+        onSkip={dismissPermissionScreen}
+      />
+      <BreastfeedingTransition
+        visible={showBFTransition}
+        changedProductsCount={bfChangedCount}
+        onDismiss={dismissBFTransition}
+      />
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: topPadding + Spacing.lg, paddingBottom: bottomPadding + 120 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        {/* Header Avatar */}
+        <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.avatarSection}>
+          <Pressable onPress={handleVersionTap} accessibilityRole="button" accessibilityLabel="Avatar">
+            <LinearGradient
+              colors={isPartner ? ['#A8C4E0', '#6B9BBF'] : [Colors.accentLight, Colors.accent]}
+              style={[styles.avatar, devTapCount > 0 && devTapCount < 5 && { opacity: 0.75 }]}
+            >
+              <ThemedText variant="headlineLarge" style={styles.avatarInitial}>
+                {devTapCount > 0 && devTapCount < 5 ? `${devTapCount}/5` : initial}
+              </ThemedText>
+            </LinearGradient>
+          </Pressable>
+          <View style={styles.avatarInfo}>
+            <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
+            {isPartner ? (
+              <ThemedText variant="bodyMedium" color="textSecondary">
+                {linkedFirstName ? `Partenaire de ${linkedFirstName}` : 'Mode Partenaire'}
+              </ThemedText>
+            ) : weekAndTrimesterLabel ? (
+              <ThemedText variant="bodyMedium" color="textSecondary">{weekAndTrimesterLabel}</ThemedText>
+            ) : null}
+            {!isPartner && contributionCount > 5 && (
+              <View style={styles.contributriceBadge}>
+                <ThemedText variant="labelSmall" style={styles.contributriceBadgeText}>
+                  Contributrice ✦
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </Animated.View>
+
+        {/* Pregnancy progress bar */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(60).duration(500)} style={styles.progressSection}>
+            <View
+              style={styles.progressBar}
+              accessibilityRole="progressbar"
+              accessibilityLabel={`Semaine ${currentWeek ?? 0} sur 40`}
+              accessibilityValue={{ min: 0, max: 40, now: currentWeek ?? 0 }}
+            >
+              <View style={[styles.progressFill, { width: `${weekProgress * 100}%` }]} />
+            </View>
+            <ThemedText variant="bodySmall" color="textTertiary" style={styles.progressLabel}>
+              {currentWeek ? `${currentWeek} / 40 semaines` : '0 / 40 semaines'}
+            </ThemedText>
+          </Animated.View>
+        )}
+
+        {/* GlowScoreMini */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(100).duration(500)}>
+            <Card style={styles.glowCard} padding={Spacing.xl}>
+              <View style={styles.glowCardInner}>
+                <GlowScoreMini score={glowScore} trend="stable" />
+              </View>
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* Stats grid */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(140).duration(500)} style={styles.statsGrid}>
+            <View style={styles.statsRow}>
+              <Card style={styles.statCard} padding={Spacing.lg}>
+                <ThemedText variant="headlineLarge" color="accent">{String(scanCount)}</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">Scans</ThemedText>
+              </Card>
+              <Card style={styles.statCard} padding={Spacing.lg}>
+                <ThemedText variant="headlineLarge" color="accent">{String(safeCount)}</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">Produits sûrs</ThemedText>
+              </Card>
+            </View>
+            <View style={styles.statsRow}>
+              <Card style={styles.statCard} padding={Spacing.lg}>
+                <ThemedText variant="headlineLarge" color="accent">{`${safePercent}%`}</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">% safe</ThemedText>
+              </Card>
+              <Card style={styles.statCard} padding={Spacing.lg}>
+                <ThemedText variant="headlineLarge" color="accent">{String(contributionCount)}</ThemedText>
+                <ThemedText variant="bodySmall" color="textSecondary">Contributions</ThemedText>
+              </Card>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Mon Cercle */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(190).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MON CERCLE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              {circleData ? (
+                <SettingRow
+                  icon="users"
+                  title="Mon Cercle"
+                  subtitle={`${circleData.members.length} membre${circleData.members.length > 1 ? 's' : ''} · Voir le fil d'activité`}
+                  onPress={() => router.push('/circle' as never)}
+                />
+              ) : (
+                <>
+                  <SettingRow
+                    icon="users"
+                    title="Créer mon cercle"
+                    subtitle={isPremium ? "Invitez jusqu'à 8 proches" : 'Fonctionnalité Premium ✦'}
+                    onPress={async () => {
+                      if (!isPremium) { requirePremium('circle'); return; }
+                      setIsCreatingCircle(true);
+                      try {
+                        await createCircle(userId, firstName || 'Anonyme');
+                        const data = await getCircle(userId);
+                        setCircleData(data);
+                        router.push('/circle' as never);
+                      } catch (err) {
+                        const msg = err instanceof Error ? err.message : 'Erreur';
+                        if (msg !== 'PREMIUM_REQUIRED') Alert.alert('Erreur', msg);
+                      } finally {
+                        setIsCreatingCircle(false);
+                      }
+                    }}
+                  />
+                  <Divider />
+                  <SettingRow
+                    icon="link"
+                    title="Rejoindre un cercle"
+                    subtitle="Entrez un code d'invitation"
+                    onPress={() => setShowJoinModal(true)}
+                  />
+                </>
+              )}
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* Join circle modal */}
+        <Modal
+          visible={showJoinModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowJoinModal(false)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowJoinModal(false)} />
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <ThemedText variant="headlineMedium" style={styles.modalTitle}>
+              Rejoindre un cercle
+            </ThemedText>
+            <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginBottom: Spacing.xl }}>
+              Entrez le code à 8 caractères partagé par la créatrice du cercle.
+            </ThemedText>
+            <TextInput
+              style={styles.circleCodeInput}
+              value={joinCode}
+              onChangeText={(t) => setJoinCode(t.toUpperCase())}
+              placeholder="EX: AB3C7DEF"
+              placeholderTextColor={Colors.textTertiary}
+              autoCapitalize="characters"
+              maxLength={8}
+              autoFocus
+              accessibilityLabel="Code d'invitation"
+            />
+            <Pressable
+              onPress={async () => {
+                if (!joinCode.trim() || isJoining) return;
+                setIsJoining(true);
+                try {
+                  await joinCircle(userId, firstName || 'Anonyme', joinCode.trim());
+                  const data = await getCircle(userId);
+                  setCircleData(data);
+                  setShowJoinModal(false);
+                  setJoinCode('');
+                  router.push('/circle' as never);
+                } catch (err) {
+                  Alert.alert('Erreur', err instanceof Error ? err.message : 'Code invalide');
+                } finally {
+                  setIsJoining(false);
+                }
+              }}
+              disabled={isJoining || !joinCode.trim()}
+              style={({ pressed }) => [styles.joinBtn, { opacity: pressed || isJoining ? 0.7 : 1 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Rejoindre le cercle"
+            >
+              <ThemedText variant="labelLarge" style={{ color: '#fff' }}>
+                {isJoining ? 'Rejoindre…' : 'Rejoindre'}
+              </ThemedText>
+            </Pressable>
+            <Pressable onPress={() => setShowJoinModal(false)} style={styles.cancelModalBtn}>
+              <ThemedText variant="bodyMedium" color="textSecondary">Annuler</ThemedText>
+            </Pressable>
+          </View>
+        </Modal>
+
+        {/* Partner section — pregnant user */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              PARTENAIRE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              {displayCode ? (
+                <>
+                  <View style={styles.settingRow}>
+                    <View style={[styles.settingIcon, { backgroundColor: Colors.accentLight }]}>
+                      <Feather name="key" size={18} color={Colors.accentDark} />
+                    </View>
+                    <View style={styles.settingContent}>
+                      <ThemedText variant="bodyLarge" color="textPrimary">Mon code</ThemedText>
+                      <ThemedText variant="bodySmall" color="textTertiary">Partagez ce code avec votre partenaire</ThemedText>
+                    </View>
+                    <PartnerCodeChip code={displayCode} />
+                  </View>
+                  <Divider />
+                  <SettingRow icon="share-2" title="Partager mon code" onPress={handleShareCode} />
+                  <Divider />
+                  <SettingRow icon="refresh-cw" title="Régénérer le code" subtitle="Déconnecte le partenaire actuel" onPress={handleRegenerateCode} />
+                  {linkedUserId && (
+                    <>
+                      <Divider />
+                      <SettingRow icon="user-x" title={`Déconnecter ${linkedFirstName ?? 'le partenaire'}`} danger onPress={handleDisconnectPartner} />
+                    </>
+                  )}
+                </>
+              ) : (
+                <SettingRow icon="users" title="Inviter un partenaire" subtitle="Générez un code après avoir créé votre profil" />
+              )}
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* Partner disconnection — partner role */}
+        {isPartner && (
+          <Animated.View entering={FadeInDown.delay(200).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              PARTENAIRE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              <View style={styles.settingRow}>
+                <View style={[styles.settingIcon, { backgroundColor: Colors.accentLight }]}>
+                  <Feather name="heart" size={18} color={Colors.accentDark} />
+                </View>
+                <View style={styles.settingContent}>
+                  <ThemedText variant="bodyLarge" color="textPrimary">
+                    {linkedFirstName ? `Partenaire de ${linkedFirstName}` : 'Mode Partenaire'}
+                  </ThemedText>
+                  <ThemedText variant="bodySmall" color="textTertiary">Vous voyez le placard partagé</ThemedText>
+                </View>
+              </View>
+              <Divider />
+              <SettingRow icon="user-x" title="Déconnecter" subtitle="Revenir à la sélection du rôle" danger onPress={handleDisconnectPartner} />
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* MODE — breastfeeding */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(250).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MODE
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              <View style={styles.settingRow}>
+                <View style={[styles.settingIcon, { backgroundColor: isBreastfeeding ? BREASTFEEDING_PALETTE.accentLight : Colors.accentLight }]}>
+                  <ThemedText style={{ fontSize: 18 }}>🤱</ThemedText>
+                </View>
+                <View style={styles.settingContent}>
+                  <ThemedText variant="labelLarge" color="textPrimary">Mode allaitement</ThemedText>
+                  <ThemedText variant="bodySmall" color="textTertiary">
+                    {isBreastfeeding ? "Actif — analyses adaptées à l'allaitement" : "Analyse vos produits pour l'allaitement"}
+                  </ThemedText>
+                </View>
+                <Switch
+                  value={isBreastfeeding}
+                  onValueChange={async (val) => { if (val) await enableBreastfeeding(); else await disableBreastfeeding(); }}
+                  trackColor={{ false: Colors.borderLight, true: BREASTFEEDING_PALETTE.accent }}
+                  thumbColor={isBreastfeeding ? '#FFF' : Colors.textTertiary}
+                  accessibilityLabel="Mode allaitement"
+                />
+              </View>
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* MODE BÉBÉ */}
+        {!isPartner && (
+          <Animated.View entering={FadeInDown.delay(230).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MODE BÉBÉ
+            </ThemedText>
+            <Card padding={0} style={styles.settingGroup}>
+              <View style={styles.settingRow}>
+                <View style={[styles.settingIcon, { backgroundColor: '#FFF0E8' }]}>
+                  <ThemedText style={{ fontSize: 18 }}>👶</ThemedText>
+                </View>
+                <View style={styles.settingContent}>
+                  <ThemedText variant="bodyLarge" color="textPrimary">Scanner aussi pour bébé</ThemedText>
+                  <ThemedText variant="bodySmall" color="textTertiary">
+                    {isBreastfeeding ? 'Activé automatiquement avec le mode allaitement' : 'Analyse les ingrédients selon les risques bébé (0-3 ans)'}
+                  </ThemedText>
+                </View>
+                <Switch
+                  value={babyMode}
+                  onValueChange={(val) => val ? enableBabyMode() : disableBabyMode()}
+                  disabled={isBreastfeeding}
+                  trackColor={{ false: Colors.borderLight, true: Colors.accent }}
+                  thumbColor={babyMode ? Colors.accentDark : '#f4f3f4'}
+                  accessibilityLabel="Mode bébé"
+                />
+              </View>
+            </Card>
+          </Animated.View>
+        )}
+
+        {/* Pact badges */}
+        {pactBadges.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(265).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              MES BADGES PACTE
+            </ThemedText>
+            <View style={styles.pactBadgesRow}>
+              {PACT_BADGES.map((b) => {
+                const earned = pactBadges.includes(b.id);
+                return (
+                  <View key={b.id} style={[styles.pactBadgeTile, !earned && { opacity: 0.35 }]}>
+                    <ThemedText style={{ fontSize: 28 }}>{b.emoji}</ThemedText>
+                    <ThemedText style={!earned ? [styles.pactBadgeLabel, { color: Colors.textTertiary }] : styles.pactBadgeLabel}>
+                      {b.label}
+                    </ThemedText>
+                  </View>
+                );
+              })}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* COMPTE menu */}
+        <Animated.View entering={FadeInDown.delay(270).duration(500)}>
+          <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+            COMPTE
+          </ThemedText>
+          <Card padding={0} style={styles.settingGroup}>
+            <SettingRow icon="zap" title="Mon Pacte" subtitle="Engagement quotidien · Streak 🔥" onPress={() => router.push('/pact' as never)} />
+            <Divider />
+            <SettingRow icon="package" title="Hēlo Memories" subtitle="Capsules temporelles de grossesse" onPress={() => router.push('/memories' as never)} />
+            <Divider />
+            <SettingRow icon="heart" title="Ma Nutrition" onPress={() => router.push('/nutrition' as never)} />
+            <Divider />
+            <SettingRow icon="home" title="Mon Environnement" onPress={() => router.push('/home-score' as never)} />
+            <Divider />
+            <SettingRow icon="user" title="Mon profil" onPress={() => router.push('/profile/edit' as never)} />
+            <Divider />
+            <SettingRow icon="heart" title="Mode Partenaire" onPress={() => router.push('/onboarding/role' as never)} />
+            <Divider />
+            <SettingRow icon="bell" title="Notifications" onPress={() => router.push('/notifications-settings' as never)} />
+            <Divider />
+            <SettingRow icon="users" title="Communauté" subtitle="Contributions & produits signalés" onPress={() => router.push('/(tabs)/community' as never)} />
+            <Divider />
+            <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push('/premium' as never)} />
+            <Divider />
+            <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push('/methodology' as never)} />
+            <Divider />
+            <SettingRow icon="file-text" title="CGU" onPress={() => router.push('/legal/terms' as never)} />
+            <Divider />
+            <SettingRow icon="shield" title="Confidentialité" onPress={() => router.push('/legal/privacy' as never)} />
+            <Divider />
+            <SettingRow icon="calendar" title="Ma Timeline de Grossesse" subtitle="Fresque visuelle de vos 40 semaines" onPress={() => router.push('/timeline' as never)} />
+            <Divider />
+            <SettingRow icon="camera" title="Mode Miroir AR" subtitle="Halos colorés sur vos produits en temps réel" onPress={() => router.push('/ar-mirror' as never)} />
+            <Divider />
+            <SettingRow icon="smartphone" title="Widget & Apple Watch" subtitle="Glow Score sur l'écran d'accueil" onPress={() => router.push('/widget-preview' as never)} />
+            <Divider />
+            <SettingRow icon="book" title="Exporter mon journal" subtitle="Générer un PDF de votre journal de grossesse" onPress={() => exportJournalToPdf(firstName)} />
+            <Divider />
+            <SettingRow icon="download" title="Exporter mes données" onPress={handleExportData} />
+            <Divider />
+            <SettingRow icon="trash-2" title="Supprimer mon compte" danger onPress={handleDeleteAccount} />
+            <Divider />
+            <SettingRow icon="mail" title="Contact" onPress={() => Linking.openURL('mailto:hello@helo-app.fr')} />
+          </Card>
+        </Animated.View>
+
+        {/* Footer */}
+        <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.footer}>
+          <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
+            {`Version 1.0.0${isPremium ? ' · Premium ✓' : ''}`}
+          </ThemedText>
+          <Pressable
+            onPress={handleLogout}
+            style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Se déconnecter"
+          >
+            <ThemedText variant="bodyLarge" color="danger" style={styles.logoutText}>
+              Se déconnecter
+            </ThemedText>
+          </Pressable>
+        </Animated.View>
+      </ScrollView>
+    </View>
+  );
+}
+
+
+================================================================
+# VERDICT screen
+# artifacts/helo/app/verdict/[scanId].tsx
+================================================================
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, useLocalSearchParams } from 'expo-router';
+import { syncWidgetData, reloadWidgets } from '@/lib/widgetStorage';
+import { calculateGlowScore } from '@/lib/glowscore';
+import { calculateTrimester } from '@/lib/trimester';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Platform,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+
+import { ScanDisclaimerBanner } from '@/components/ScanDisclaimerBanner';
+import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
+import { VerdictShareCard } from '@/components/share/VerdictShareCard';
+import { Badge } from '@/components/ui/Badge';
+import { Divider } from '@/components/ui/Divider';
+import { ThemedText } from '@/components/ui/ThemedText';
+
+import { LoadingScreen, ScoreCircle, VerdictLabel, Toast } from '@/components/verdict/VerdictAnimations';
+import { CircleShareRow } from '@/components/verdict/CircleShareRow';
+import { IngredientsSection } from '@/components/verdict/IngredientsSection';
+import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
+import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
+import { ReportBottomSheet } from '@/components/verdict/ReportBottomSheet';
+import { GhostCaptureModal } from '@/components/verdict/GhostCaptureModal';
+import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
+import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
+import {
+  getVerdictColor,
+  getVerdictBg,
+  getVerdictLabel,
+  computeGlowScore,
+  sortMatches,
+  phaseLabel,
+  BOTTOM_BAR_HEIGHT,
+} from '@/components/verdict/verdictHelpers';
+import styles from '@/components/verdict/verdictStyles';
+
+import { SCAN_DISCLAIMER } from '@/constants/disclaimers';
+import { Colors, Spacing } from '@/constants/theme';
+import { useOffline } from '@/hooks/useOffline';
+import { useProfile } from '@/hooks/useProfile';
+import { usePremium } from '@/hooks/usePremium';
+import { useScan } from '@/hooks/useScan';
+import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
+import { getBabyMode } from '@/hooks/useBabyMode';
+import { sendShelfAddNotification } from '@/lib/notifications';
+import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
+import { getCircle } from '@/lib/circleUtils';
+import { matchIngredients, getVerdict } from '@/lib/productLookup';
+import type { RappelConsoRecord } from '@/lib/rappelConso';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import type { MatchResult, Phase, VerdictResult } from '@/types';
+
+export default function VerdictScreen() {
+  const { scanId } = useLocalSearchParams<{ scanId: string }>();
+  const barcode = decodeURIComponent(scanId ?? '');
+  const insets = useSafeAreaInsets();
+  const { loading, product, matches, verdict, error, notFound, scanBarcode, setDirectResult } = useScan();
+  const { isPremium, requirePremium } = usePremium();
+  const { isOffline } = useOffline();
+
+  const { role, userId, trimester: profileTrimester, linkedUserId, firstName } = useProfile();
+  const isPartner = role === 'partner';
+  const effectiveUserId = isPartner && linkedUserId ? linkedUserId : userId;
+  const senderFirstName = firstName || 'Votre partenaire';
+  const recipientUserId = linkedUserId ?? null;
+
+  const [labelVisible, setLabelVisible] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [recallMatch, setRecallMatch] = useState<RappelConsoRecord | null>(null);
+  const [shareVisible, setShareVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [phase, setPhase] = useState<Phase>(2);
+  const [isOCRMode, setIsOCRMode] = useState(false);
+  const [isPhotoMode, setIsPhotoMode] = useState(false);
+  const [isBabyMode, setIsBabyMode] = useState(false);
+  const [babyMatches, setBabyMatches] = useState<MatchResult[]>([]);
+  const [babyVerdict, setBabyVerdict] = useState<VerdictResult | null>(null);
+  const [activeTab, setActiveTab] = useState<'pregnancy' | 'baby'>('pregnancy');
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Prevent double-scan: phase change (async profile load) must not re-trigger
+  // a second concurrent fetchProductByBarcode that could timeout and overwrite success.
+  const activeScanRef = useRef<string | null>(null);
+  const phaseRef = useRef<Phase>(2);
+
+  const [circleId, setCircleId] = useState<string | null>(null);
+  const [sharedToCircle, setSharedToCircle] = useState(false);
+  const [reportVisible, setReportVisible] = useState(false);
+  const [ghostVisible, setGhostVisible] = useState(false);
+  const lastFailedBarcode = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    getCircle(userId).then((data) => {
+      setCircleId(data?.circle?.id ?? null);
+    }).catch(() => {});
+  }, [userId]);
+
+  useEffect(() => {
+    getBreastfeedingMode().then((isBF) => {
+      if (isBF) {
+        setPhase('breastfeeding');
+        phaseRef.current = 'breastfeeding';
+        return;
+      }
+      if (profileTrimester !== null && profileTrimester !== undefined) {
+        setPhase(profileTrimester as Phase);
+        phaseRef.current = profileTrimester as Phase;
+      } else {
+        AsyncStorage.getItem('user_profile').then((raw) => {
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (p.trimester) {
+              setPhase(p.trimester as Phase);
+              phaseRef.current = p.trimester as Phase;
+            }
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }, [profileTrimester]);
+
+  useEffect(() => {
+    if (!barcode) return;
+
+    if (barcode.startsWith('ocr_')) {
+      setIsOCRMode(true);
+      const id = barcode.slice(4);
+      AsyncStorage.getItem(`@helo_ocr_${id}`).then((raw) => {
+        if (raw) {
+          const data = JSON.parse(raw);
+          setDirectResult(data.product, data.matches, data.verdict);
+        }
+      }).catch(() => {});
+      return;
+    }
+
+    if (barcode === 'photo-scan') {
+      setIsPhotoMode(true);
+      AsyncStorage.getItem('@helo_photo_scan_result').then((raw) => {
+        if (raw) {
+          const data = JSON.parse(raw);
+          setDirectResult(data.product, data.matches, data.verdict);
+        }
+      }).catch(() => {});
+      return;
+    }
+
+    // Guard: fire only once per barcode — phase change (async profile load) must
+    // not launch a second concurrent OFF fetch that could timeout + overwrite success.
+    // activeScanRef is set INSIDE the timer so that a cleanup (phase changed before
+    // the 50 ms elapsed) properly resets the guard and the next fire can schedule
+    // its own timer with the correct phase.
+    if (activeScanRef.current === barcode) return;
+
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      // Mark as scanned only once the timer actually fires
+      activeScanRef.current = barcode;
+      scanBarcode(barcode, phaseRef.current, isOffline);
+    }, 50);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+    // `scanBarcode` and `setDirectResult` are stable refs from useScan — intentionally omitted
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barcode, phase, isOffline]);
+
+  useEffect(() => {
+    getBabyMode().then(setIsBabyMode).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isBabyMode || !product || !product.ingredientsList || product.ingredientsList.length === 0) return;
+    matchIngredients(product.ingredientsList, 'baby')
+      .then((babyM) => {
+        setBabyMatches(babyM);
+        setBabyVerdict(getVerdict(babyM));
+      })
+      .catch(() => {});
+  }, [isBabyMode, product]);
+
+  useEffect(() => {
+    if (!barcode || barcode.startsWith('ocr_') || barcode === 'photo-scan' || !isPremium) return;
+    fetchRecallForBarcode(barcode)
+      .then((r) => setRecallMatch(r))
+      .catch(() => {});
+  }, [barcode, isPremium]);
+
+  useEffect(() => {
+    if (!verdict) return;
+    if (verdict.verdict === 'safe') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else if (verdict.verdict === 'caution') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  }, [verdict]);
+
+  const handleShelfSelect = useCallback(async (category: string) => {
+    setSheetVisible(false);
+
+    const shelfUserId = effectiveUserId;
+    const productName = product?.name ?? 'Produit';
+
+    try {
+      const existing = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
+      const shelf = JSON.parse(existing);
+      shelf.push({
+        barcode,
+        productName,
+        brand: product?.brand,
+        category,
+        verdict: verdict?.verdict,
+        savedAt: Date.now(),
+        userId: shelfUserId,
+        ...(isBabyMode ? { baby_product: true } : {}),
+      });
+      await AsyncStorage.setItem('@helo_shelf', JSON.stringify(shelf));
+      try {
+        const { score } = calculateGlowScore(
+          shelf.map((i: { verdict?: string }, idx: number) => ({
+            id: String(idx),
+            name: '',
+            brand: '',
+            verdict: (i.verdict ?? 'safe') as 'safe' | 'caution' | 'danger',
+            verdictLabel: '',
+            category: 'salle-de-bain' as const,
+            verdictChanged: false,
+          })),
+        );
+        const profileRaw = await AsyncStorage.getItem('user_profile');
+        let weekOfPregnancy = 20;
+        let trimesterNum = 2;
+        if (profileRaw) {
+          const profile = JSON.parse(profileRaw);
+          if (profile.dueDate) {
+            const info = calculateTrimester(profile.dueDate);
+            weekOfPregnancy = info.weekOfPregnancy;
+            trimesterNum = info.trimester;
+          }
+        }
+        await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
+        await reloadWidgets();
+      } catch {
+        // Widget sync failure is non-critical — home screen widget falls back to last known data
+      }
+    } catch {
+      // Shelf AsyncStorage update failure — verdict still shown, widget update skipped
+    }
+
+    if (isSupabaseConfigured && shelfUserId) {
+      try {
+        const { data: productRow } = await supabase
+          .from('products')
+          .select('id')
+          .eq('barcode', barcode)
+          .maybeSingle();
+
+        const productId = productRow?.id ?? null;
+
+        await supabase.from('scan_history').insert({
+          user_id: shelfUserId,
+          product_id: productId,
+          trimester: phase === 'breastfeeding' ? null : phase,
+          in_shelf: true,
+          shelf_category: category,
+          verdict_at_shelf_add: verdict?.verdict ?? null,
+        });
+
+        if (recipientUserId) {
+          await sendShelfAddNotification({
+            firstName: senderFirstName,
+            productName,
+            recipientUserId,
+          });
+        }
+      } catch (err) {
+        if (__DEV__) console.warn('[verdict] shelf Supabase insert error:', err);
+      }
+    }
+
+    setToastVisible(true);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
+  }, [barcode, product, verdict, effectiveUserId, phase, recipientUserId, senderFirstName]);
+
+  const handleShare = useCallback(() => {
+    if (!product || !verdict) return;
+    setShareVisible(true);
+  }, [product, verdict]);
+
+  const displayVerdict = isBabyMode && activeTab === 'baby' ? (babyVerdict ?? verdict) : verdict;
+  const displayMatches = isBabyMode && activeTab === 'baby' ? babyMatches : matches;
+
+  const verdictColor = getVerdictColor(displayVerdict?.verdict);
+  const verdictBgColor = getVerdictBg(displayVerdict?.verdict);
+  const glowScore = displayVerdict ? computeGlowScore(displayVerdict) : 0;
+  const sorted = sortMatches(displayMatches);
+  const flagged = sorted.filter((m) => m.riskLevel !== 'no_signal');
+  const noSignal = sorted.filter((m) => m.riskLevel === 'no_signal');
+  const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+
+  if (loading) return <LoadingScreen />;
+
+  if (error) {
+    if (notFound) {
+      return (
+        <View style={styles.root}>
+          <GhostCaptureModal
+            visible
+            barcode={barcode}
+            onPhotograph={() => {
+              lastFailedBarcode.current = barcode;
+              router.replace({
+                pathname: '/(tabs)/scan',
+                params: { ghostBarcode: barcode, forceOCR: '1' },
+              } as never);
+            }}
+            onDismiss={() => {
+              router.back();
+            }}
+          />
+        </View>
+      );
+    }
+    return (
+      <VerdictErrorScreen
+        error={error}
+        barcode={barcode}
+        topInset={Platform.OS === 'web' ? 67 : insets.top}
+      />
+    );
+  }
+
+  if (!verdict || !product) return <LoadingScreen />;
+
+  return (
+    <View style={styles.root}>
+      <Toast visible={toastVisible} message="Ajouté à votre placard ✓" />
+
+      <ShelfBottomSheet
+        visible={sheetVisible}
+        onSelect={handleShelfSelect}
+        onClose={() => setSheetVisible(false)}
+        babyMode={isBabyMode}
+      />
+
+      {shareVisible && product && verdict && (
+        <ShareBottomSheet
+          visible={shareVisible}
+          onClose={() => setShareVisible(false)}
+          card={
+            <VerdictShareCard
+              productName={product.name}
+              brand={product.brand ?? undefined}
+              verdict={verdict.verdict as 'safe' | 'caution' | 'danger'}
+              score={glowScore}
+              phase={phase}
+            />
+          }
+        />
+      )}
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: BOTTOM_BAR_HEIGHT + bottomPad + Spacing.xl },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── HERO ── */}
+        <LinearGradient
+          colors={[verdictBgColor, Colors.background]}
+          style={styles.hero}
+        >
+          <TouchableOpacity
+            style={[styles.backRow, { marginTop: (Platform.OS === 'web' ? 67 : insets.top) + Spacing.sm }]}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
+          >
+            <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
+            <ThemedText variant="bodyMedium" style={styles.backRowText}>Retour</ThemedText>
+          </TouchableOpacity>
+
+          <View style={styles.heroCenter}>
+            <ScoreCircle
+              score={glowScore}
+              color={verdictColor}
+              onAnimDone={() => setLabelVisible(true)}
+            />
+            <VerdictLabel
+              label={getVerdictLabel(displayVerdict?.verdict ?? verdict.verdict)}
+              color={verdictColor}
+              visible={labelVisible}
+            />
+          </View>
+
+          <View style={styles.productRow}>
+            {product.imageUrl ? (
+              <Image
+                source={{ uri: product.imageUrl }}
+                style={styles.productImage}
+                contentFit="contain"
+              />
+            ) : (
+              <View style={[styles.productImage, styles.productImagePlaceholder]}>
+                <Feather name="package" size={18} color={Colors.textTertiary} />
+              </View>
+            )}
+            <View style={styles.productInfo}>
+              <ThemedText variant="headlineMedium" numberOfLines={2}>{product.name}</ThemedText>
+              {product.brand ? (
+                <ThemedText variant="bodyMedium" color="textSecondary">{product.brand}</ThemedText>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.trimesterBadgeRow}>
+            {isOCRMode ? (
+              <Badge variant="accent">Analysé par lecture d'ingrédients</Badge>
+            ) : isPhotoMode ? (
+              <Badge variant="accent">Identifié par photo 📷</Badge>
+            ) : phase === 'breastfeeding' ? (
+              <Badge variant="accent">Mode allaitement 🤱</Badge>
+            ) : (
+              <Badge variant="accent">Évalué pour votre {phaseLabel(phase)}</Badge>
+            )}
+          </View>
+        </LinearGradient>
+
+        {/* ── BABY MODE TABS ── */}
+        {isBabyMode && (
+          <View style={styles.tabRow}>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'pregnancy' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('pregnancy')}
+              accessibilityRole="tab"
+              accessibilityLabel="Grossesse"
+              accessibilityState={{ selected: activeTab === 'pregnancy' }}
+            >
+              <ThemedText
+                variant="labelLarge"
+                style={activeTab === 'pregnancy' ? styles.tabBtnTextActive : styles.tabBtnText}
+              >
+                🤰 Ma grossesse
+              </ThemedText>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabBtn, activeTab === 'baby' && styles.tabBtnActive]}
+              onPress={() => setActiveTab('baby')}
+              accessibilityRole="tab"
+              accessibilityLabel="Bébé"
+              accessibilityState={{ selected: activeTab === 'baby' }}
+            >
+              <ThemedText
+                variant="labelLarge"
+                style={activeTab === 'baby' ? styles.tabBtnTextActive : styles.tabBtnText}
+              >
+                👶 Mon bébé
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── PHOTO IDENTIFICATION BANNER ── */}
+        {product?.isPhotoIdentified && (
+          <View style={styles.photoBanner}>
+            <View style={styles.photoBannerIcon}>
+              <Feather name="info" size={18} color={Colors.accent} />
+            </View>
+            <ThemedText variant="bodySmall" style={styles.photoBannerText}>
+              Ce produit a été identifié visuellement. Pour un résultat plus précis, scannez le code-barres ou la liste d'ingrédients.
+            </ThemedText>
+          </View>
+        )}
+
+        {/* ── RECALL ALERT BANNER ── */}
+        {recallMatch && <RecallAlertBanner recallMatch={recallMatch} />}
+
+        {/* ── INGREDIENT DETAILS ── */}
+        <IngredientsSection
+          flagged={flagged}
+          noSignal={noSignal}
+          isPremium={isPremium}
+          requirePremium={requirePremium}
+        />
+
+        {/* ── PARTAGER DANS MON CERCLE ── */}
+        {circleId && verdict && product && (
+          <CircleShareRow
+            circleId={circleId}
+            isPartner={isPartner}
+            verdict={verdict}
+            product={product}
+            firstName={firstName ?? ''}
+            userId={userId}
+            sharedToCircle={sharedToCircle}
+            setSharedToCircle={setSharedToCircle}
+          />
+        )}
+
+        {/* ── DISCLAIMER ── */}
+        <View style={styles.disclaimerSection}>
+          <Divider style={styles.sectionDivider} />
+          <ThemedText variant="bodySmall" color="textTertiary" style={styles.disclaimerText}>
+            {SCAN_DISCLAIMER}
+          </ThemedText>
+          <TouchableOpacity
+            onPress={() => router.push('/methodology')}
+            style={styles.methodologyLink}
+            accessibilityRole="link"
+            accessibilityLabel="Notre méthodologie"
+          >
+            <ThemedText variant="bodySmall" style={styles.methodologyLinkText}>
+              Notre méthodologie →
+            </ThemedText>
+          </TouchableOpacity>
+          <ScanDisclaimerBanner />
+          <TouchableOpacity
+            onPress={() => setReportVisible(true)}
+            style={styles.methodologyLink}
+            accessibilityRole="button"
+            accessibilityLabel="Signaler une erreur"
+          >
+            <ThemedText variant="bodySmall" style={{ color: Colors.textTertiary, textAlign: 'center' }}>
+              Signaler une erreur
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* ── BOTTOM ACTION BAR ── */}
+      <VerdictBottomBar
+        verdict={verdict}
+        product={product}
+        barcode={barcode}
+        onShelf={() => setSheetVisible(true)}
+        onShare={handleShare}
+        bottomPad={bottomPad}
+      />
+
+      <ReportBottomSheet
+        visible={reportVisible}
+        onClose={() => setReportVisible(false)}
+        userId={userId ?? null}
+        scanId={barcode}
+        productName={product?.name ?? ''}
+      />
+    </View>
+  );
+}
+
+
+================================================================
+# OCR REVIEW
+# artifacts/helo/app/ocr-review.tsx
+================================================================
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { matchIngredients, getVerdict, ghostCaptureSave } from '@/lib/productLookup';
+import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
+import type { Phase } from '@/types';
+import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
+import type { ProductData, MatchResult, VerdictResult } from '@/types';
+
+const CATEGORIES = ['Cosmétique', 'Soin corps', 'Cheveux', 'Maquillage', 'Autre'] as const;
+type Category = typeof CATEGORIES[number];
+
+// ─── Category picker ──────────────────────────────────────────────────────────
+function CategoryPicker({
+  selected,
+  onChange,
+}: {
+  selected: Category;
+  onChange: (c: Category) => void;
+}) {
+  return (
+    <View style={catStyles.row}>
+      {CATEGORIES.map((c) => (
+        <TouchableOpacity
+          key={c}
+          onPress={() => onChange(c)}
+          activeOpacity={0.75}
+          style={[catStyles.chip, selected === c && catStyles.chipActive]}
+        >
+          <ThemedText
+            variant="bodySmall"
+            style={{ color: selected === c ? '#fff' : Colors.textSecondary }}
+          >
+            {c}
+          </ThemedText>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+const catStyles = StyleSheet.create({
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  chip: {
+    paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chipActive: { backgroundColor: Colors.accent, borderColor: Colors.accent },
+});
+
+// ─── Warning card ─────────────────────────────────────────────────────────────
+function WarningCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <Card style={warnStyles.card} padding={Spacing.lg}>
+      <View style={warnStyles.row}>
+        <Feather name="alert-triangle" size={20} color={Colors.caution} />
+        <ThemedText variant="bodyMedium" style={warnStyles.text}>{message}</ThemedText>
+      </View>
+      <TouchableOpacity onPress={onRetry} style={warnStyles.retry}>
+        <ThemedText variant="bodySmall" style={{ color: Colors.accent }}>Réessayer →</ThemedText>
+      </TouchableOpacity>
+    </Card>
+  );
+}
+
+const warnStyles = StyleSheet.create({
+  card: { marginBottom: Spacing.lg },
+  row: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
+  text: { flex: 1, color: Colors.textSecondary },
+  retry: { marginTop: Spacing.md, alignSelf: 'flex-end' },
+});
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
+export default function OcrReviewScreen() {
+  const { imageUri, base64, ghostBarcode } = useLocalSearchParams<{ imageUri: string; base64?: string; ghostBarcode?: string }>();
+  const insets = useSafeAreaInsets();
+
+  const [ocrText, setOcrText] = useState('');
+  const [productName, setProductName] = useState('');
+  const [brand, setBrand] = useState('');
+  const [category, setCategory] = useState<Category>('Cosmétique');
+  const [ocrLoading, setOcrLoading] = useState(true);
+  const [ocrWarning, setOcrWarning] = useState<string | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const [parsedCount, setParsedCount] = useState<number | null>(null);
+  const hasRun = useRef(false);
+
+  const uri = imageUri ? decodeURIComponent(imageUri) : '';
+  const b64 = base64 ? decodeURIComponent(base64) : '';
+
+  const runOCR = async () => {
+    setOcrLoading(true);
+    setOcrWarning(null);
+    try {
+      if (!b64) throw new Error('NO_TEXT_DETECTED');
+      const raw = await processOCRImage(b64);
+      const cleaned = cleanOCRText(raw);
+      const ingredients = parseINCI(cleaned);
+      setOcrText(cleaned);
+      setParsedCount(ingredients.length);
+      if (ingredients.length < 3) {
+        setOcrWarning(
+          `Seuls ${ingredients.length} ingrédient${ingredients.length > 1 ? 's' : ''} détecté${ingredients.length > 1 ? 's' : ''}. Vous pouvez corriger le texte ci-dessus.`,
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+      if (msg.includes('NO_TEXT_DETECTED') || msg.includes('NO_API_KEY')) {
+        setOcrWarning(
+          msg.includes('NO_API_KEY')
+            ? 'Clé Google Vision manquante. Saisissez la liste manuellement.'
+            : 'Nous n\'avons pas pu lire le texte. Essayez avec plus de lumière ou un angle différent.',
+        );
+      } else {
+        setOcrWarning('Erreur lors de l\'analyse OCR. Saisissez la liste manuellement.');
+      }
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+    runOCR();
+    // Intentional one-shot effect — hasRun.current ref prevents double execution in StrictMode
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleAnalyse = async () => {
+    if (!ocrText.trim()) return;
+    setAnalysing(true);
+    try {
+      const cleaned = cleanOCRText(ocrText);
+      const ingredients = parseINCI(cleaned);
+
+      // Get phase from user profile (breastfeeding takes priority)
+      let phase: Phase = 2;
+      try {
+        const isBF = await getBreastfeedingMode();
+        if (isBF) {
+          phase = 'breastfeeding';
+        } else {
+          const raw = await AsyncStorage.getItem('user_profile');
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (p.trimester) phase = p.trimester as Phase;
+          }
+        }
+      } catch {
+        // Profile read failure — OCR analysis continues with default phase
+      }
+
+      const matchesArr = await matchIngredients(ingredients, phase);
+      const verdictResult = getVerdict(matchesArr);
+
+      // Build a fake ProductData from user inputs
+      const product: ProductData = {
+        barcode: `ocr_${Date.now()}`,
+        name: productName.trim() || 'Produit scanné',
+        brand: brand.trim() || undefined,
+        imageUrl: uri || undefined,
+        ingredientsList: ingredients,
+        categories: [category],
+        nutriscore: null,
+        ecoscore: null,
+      };
+
+      // Persist to AsyncStorage
+      const id = `${Date.now()}`;
+      const key = `@helo_ocr_${id}`;
+      await AsyncStorage.setItem(key, JSON.stringify({
+        product,
+        matches: matchesArr,
+        verdict: verdictResult,
+        isOCR: true,
+        savedAt: Date.now(),
+      }));
+
+      // Navigate to verdict with ocr_ prefix
+      router.replace(`/verdict/${encodeURIComponent(`ocr_${id}`)}`);
+
+      // ── Ghost Capture: background save (fire-and-forget) ──────────────────
+      if (ghostBarcode) {
+        ghostCaptureSave({
+          barcode: ghostBarcode,
+          productName: product.name,
+          category,
+          ocrText: cleaned,
+          verdict: verdictResult,
+          trimester: phase,
+        }).catch(() => {});
+      }
+    } catch {
+      setAnalysing(false);
+    }
+  };
+
+  const topPad = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: topPad + Spacing.sm }]}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
+          <ThemedText variant="bodyMedium" style={{ marginLeft: 8 }}>Retour</ThemedText>
+        </TouchableOpacity>
+        <ThemedText variant="headlineMedium">Vérifier les ingrédients</ThemedText>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad + 100 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Captured image */}
+        {uri ? (
+          <Image
+            source={{ uri }}
+            style={styles.capturedImage}
+            contentFit="contain"
+          />
+        ) : null}
+
+        {/* OCR status / warning */}
+        {ocrLoading && (
+          <View style={styles.ocrLoadingRow}>
+            <ActivityIndicator size="small" color={Colors.accent} />
+            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginLeft: Spacing.sm }}>
+              Lecture du texte en cours…
+            </ThemedText>
+          </View>
+        )}
+
+        {!ocrLoading && ocrWarning && (
+          <WarningCard message={ocrWarning} onRetry={runOCR} />
+        )}
+
+        {!ocrLoading && parsedCount !== null && parsedCount >= 3 && (
+          <View style={styles.successRow}>
+            <Feather name="check-circle" size={16} color={Colors.safe} />
+            <ThemedText variant="bodySmall" color="textSecondary" style={{ marginLeft: 6 }}>
+              {parsedCount} ingrédients détectés
+            </ThemedText>
+          </View>
+        )}
+
+        {/* OCR text (editable) */}
+        <View style={styles.fieldGroup}>
+          <ThemedText variant="labelLarge" style={styles.fieldLabel}>Texte détecté</ThemedText>
+          <TextInput
+            style={styles.textArea}
+            value={ocrText}
+            onChangeText={setOcrText}
+            multiline
+            placeholder="La liste d'ingrédients apparaîtra ici. Vous pouvez la corriger."
+            placeholderTextColor={Colors.textTertiary}
+            textAlignVertical="top"
+            scrollEnabled={false}
+          />
+          <ThemedText variant="bodySmall" color="textTertiary" style={styles.fieldHint}>
+            Format INCI : ingrédients séparés par des virgules
+          </ThemedText>
+        </View>
+
+        {/* Product name */}
+        <View style={styles.fieldGroup}>
+          <ThemedText variant="labelLarge" style={styles.fieldLabel}>Nom du produit</ThemedText>
+          <TextInput
+            style={styles.textInput}
+            value={productName}
+            onChangeText={setProductName}
+            placeholder="Ex: Crème hydratante Nivea"
+            placeholderTextColor={Colors.textTertiary}
+            returnKeyType="next"
+          />
+        </View>
+
+        {/* Brand */}
+        <View style={styles.fieldGroup}>
+          <ThemedText variant="labelLarge" style={styles.fieldLabel}>
+            Marque{' '}
+            <ThemedText variant="bodySmall" color="textTertiary">(optionnel)</ThemedText>
+          </ThemedText>
+          <TextInput
+            style={styles.textInput}
+            value={brand}
+            onChangeText={setBrand}
+            placeholder="Ex: Nivea, L'Oréal…"
+            placeholderTextColor={Colors.textTertiary}
+            returnKeyType="done"
+          />
+        </View>
+
+        {/* Category */}
+        <View style={styles.fieldGroup}>
+          <ThemedText variant="labelLarge" style={styles.fieldLabel}>Catégorie</ThemedText>
+          <CategoryPicker selected={category} onChange={setCategory} />
+        </View>
+
+        {/* Info badge */}
+        <View style={styles.infoBadge}>
+          <Feather name="info" size={14} color={Colors.accent} />
+          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginLeft: 6, flex: 1 }}>
+            L'analyse sera adaptée à votre trimestre actuel et évaluera chaque ingrédient détecté.
+          </ThemedText>
+        </View>
+      </ScrollView>
+
+      {/* Bottom action */}
+      <View style={[styles.bottomBar, { paddingBottom: bottomPad + Spacing.md }]}>
+        <Button
+          variant="primary"
+          fullWidth
+          onPress={handleAnalyse}
+          disabled={!ocrText.trim() || analysing}
+          loading={analysing}
+        >
+          Analyser les ingrédients
+        </Button>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.background },
+
+  header: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.md,
+    gap: Spacing.md,
+    backgroundColor: Colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  backBtn: { flexDirection: 'row', alignItems: 'center' },
+
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, gap: Spacing.xl },
+
+  capturedImage: {
+    width: '100%',
+    height: 250,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.backgroundSecondary,
+  },
+
+  ocrLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  successRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+
+  fieldGroup: { gap: Spacing.sm },
+  fieldLabel: { color: Colors.textPrimary },
+  fieldHint: { marginTop: 2 },
+
+  textArea: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    padding: Spacing.lg,
+    minHeight: 140,
+    fontFamily: 'PlusJakartaSans_400Regular',
+    fontSize: Typography.bodyMedium.fontSize,
+    color: Colors.textPrimary,
+    lineHeight: 22,
+  },
+  textInput: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    height: 52,
+    fontFamily: 'PlusJakartaSans_400Regular',
+    fontSize: Typography.bodyMedium.fontSize,
+    color: Colors.textPrimary,
+  },
+
+  infoBadge: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.md,
+    padding: Spacing.lg,
+    gap: 6,
+  },
+
+  bottomBar: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+    ...Shadows.medium,
+  },
+});
+
+
+================================================================
+# PAYWALL
+# artifacts/helo/app/paywall.tsx
+================================================================
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
+
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { PLANS, type PlanId, type Plan } from '@/lib/purchases';
+import { usePremium } from '@/hooks/usePremium';
+
+// ─── Feature comparison data ──────────────────────────────────────────────────
+
+interface Feature {
+  label: string;
+  free: boolean;
+  premium: boolean;
+}
+
+const FEATURES: Feature[] = [
+  { label: 'Scans par jour',              free: false, premium: true  }, // "5/jour" vs "illimité"
+  { label: 'Détails ingrédients',         free: false, premium: true  },
+  { label: 'Alternatives sûres',          free: false, premium: true  },
+  { label: 'Recherche par nom',           free: false, premium: true  },
+  { label: 'OCR — photo ingrédients',     free: false, premium: true  },
+  { label: 'Scan Party',                  free: false, premium: true  },
+  { label: 'Placard illimité',            free: false, premium: true  },
+  { label: 'Mode hors ligne',             free: false, premium: true  },
+  { label: 'Badge Premium ✦',            free: false, premium: true  },
+  { label: 'Verdicts basiques',           free: true,  premium: true  },
+  { label: 'Weekly Brief',               free: true,  premium: true  },
+  { label: 'Communauté',                 free: true,  premium: true  },
+];
+
+// ─── Plan card ────────────────────────────────────────────────────────────────
+
+function PlanCard({
+  plan,
+  selected,
+  onSelect,
+}: {
+  plan: Plan;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onSelect}
+      style={({ pressed }) => [
+        pc.wrap,
+        plan.highlight && pc.wrapHighlight,
+        selected && pc.wrapSelected,
+        { opacity: pressed ? 0.92 : 1 },
+      ]}
+    >
+      {/* Badge */}
+      {plan.badge && (
+        <View style={[pc.badge, plan.highlight && pc.badgeGold]}>
+          <ThemedText style={[pc.badgeText, plan.highlight && pc.badgeTextGold]}>
+            {plan.badge}
+          </ThemedText>
+        </View>
+      )}
+
+      <View style={pc.inner}>
+        {/* Radio */}
+        <View style={[pc.radio, selected && pc.radioSelected]}>
+          {selected && <View style={pc.radioDot} />}
+        </View>
+
+        {/* Labels */}
+        <View style={{ flex: 1 }}>
+          <ThemedText variant="labelLarge" color="textPrimary">{plan.label}</ThemedText>
+          {plan.trial && (
+            <View style={pc.trialBadge}>
+              <ThemedText style={pc.trialText}>{plan.trial}</ThemedText>
+            </View>
+          )}
+        </View>
+
+        {/* Pricing */}
+        <View style={{ alignItems: 'flex-end' }}>
+          <ThemedText variant="headlineMedium" color="textPrimary">{plan.price}</ThemedText>
+          {plan.pricePerMonth && (
+            <ThemedText variant="bodySmall" color="textTertiary">{plan.pricePerMonth}</ThemedText>
+          )}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
+// ─── Feature row ──────────────────────────────────────────────────────────────
+
+function FeatureRow({ feature, index }: { feature: Feature; index: number }) {
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(index * 30).duration(280)}
+      style={fr.row}
+    >
+      <ThemedText variant="bodyMedium" color="textSecondary" style={{ flex: 1 }}>
+        {feature.label === 'Scans par jour' ? (
+          <>
+            <ThemedText variant="bodyMedium" color="textSecondary">Scans par jour</ThemedText>
+          </>
+        ) : feature.label}
+      </ThemedText>
+      {/* Free col */}
+      <View style={fr.col}>
+        {feature.label === 'Scans par jour' ? (
+          <ThemedText style={fr.limitText}>5/j</ThemedText>
+        ) : feature.free ? (
+          <Feather name="check" size={16} color={Colors.safe} />
+        ) : (
+          <Feather name="x" size={16} color={Colors.textTertiary} />
+        )}
+      </View>
+      {/* Premium col */}
+      <View style={fr.col}>
+        {feature.label === 'Scans par jour' ? (
+          <ThemedText style={fr.unlimitedText}>∞</ThemedText>
+        ) : (
+          <Feather name="check" size={16} color={Colors.safe} />
+        )}
+      </View>
+    </Animated.View>
+  );
+}
+
+// ─── Main Screen ─────────────────────────────────────────────────────────────
+
+export default function PaywallScreen() {
+  const insets = useSafeAreaInsets();
+  const { trigger } = useLocalSearchParams<{ trigger?: string }>();
+  const { purchase, restore, isPremium } = usePremium();
+
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual');
+  const [purchasing, setPurchasing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+
+  // Already premium — shouldn't be here, go back (must be in useEffect, not during render)
+  useEffect(() => {
+    if (isPremium) {
+      router.back();
+    }
+  }, [isPremium]);
+
+  const triggerMessages: Record<string, string> = {
+    scan_limit:   'Vous avez atteint vos 5 scans gratuits du jour.',
+    feature:      'Fonctionnalité réservée aux abonnées Premium.',
+    shelf_limit:  'Le placard gratuit est limité à 20 produits.',
+    search:       'La recherche par nom est réservée aux abonnées Premium.',
+    ocr:          'L\'analyse par photo est réservée aux abonnées Premium.',
+    scan_party:   'Scan Party est réservé aux abonnées Premium.',
+    shelf_scan:   'Le scan d\'étagère est réservé aux abonnées Premium.',
+    voyage:       'Le Mode Voyage est réservé aux abonnées Premium.',
+  };
+  const triggerMsg = trigger ? (triggerMessages[trigger] ?? null) : null;
+
+  const handlePurchase = async () => {
+    if (purchasing) return;
+    setPurchasing(true);
+    try {
+      const success = await purchase(selectedPlan);
+      if (success) {
+        router.back();
+      }
+    } catch {
+      Alert.alert(
+        'Achat impossible',
+        'Impossible de traiter votre achat. Vérifiez votre connexion et réessayez.',
+      );
+    } finally {
+      setPurchasing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (restoring) return;
+    setRestoring(true);
+    try {
+      const success = await restore();
+      if (success) {
+        Alert.alert('Achats restaurés', 'Votre abonnement Premium a été rétabli.');
+        router.back();
+      } else {
+        Alert.alert('Aucun achat trouvé', 'Aucun abonnement Premium actif trouvé sur ce compte.');
+      }
+    } catch {
+      Alert.alert('Erreur', 'Impossible de restaurer vos achats. Réessayez plus tard.');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const selectedPlanData = PLANS.find((p) => p.id === selectedPlan)!;
+
+  return (
+    <View style={[s.root, { backgroundColor: Colors.background }]}>
+      {/* Close button */}
+      <View style={[s.closeRow, { paddingTop: insets.top + Spacing.sm }]}>
+        <Pressable onPress={() => router.back()} style={s.closeBtn}>
+          <Feather name="x" size={20} color={Colors.textSecondary} />
+        </Pressable>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero gradient header */}
+        <LinearGradient
+          colors={[Colors.accentLight, '#e8c98a', Colors.accentLight]}
+          style={s.hero}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={s.heroCrown}>
+            <ThemedText style={s.crownEmoji}>👑</ThemedText>
+          </View>
+          <ThemedText variant="displayMedium" style={s.heroTitle}>
+            Hēlo Premium
+          </ThemedText>
+          <ThemedText variant="bodyMedium" style={s.heroSub}>
+            Protégez votre grossesse sans compromis
+          </ThemedText>
+          {triggerMsg && (
+            <View style={s.triggerBanner}>
+              <Feather name="info" size={14} color={Colors.accentDark} />
+              <ThemedText variant="bodySmall" style={s.triggerText}>{triggerMsg}</ThemedText>
+            </View>
+          )}
+        </LinearGradient>
+
+        {/* Comparison table */}
+        <View style={s.section}>
+          {/* Column headers */}
+          <View style={fr.header}>
+            <View style={{ flex: 1 }} />
+            <View style={fr.colHeader}>
+              <ThemedText style={fr.colHeaderText}>Gratuit</ThemedText>
+            </View>
+            <View style={[fr.colHeader, fr.colHeaderPremium]}>
+              <ThemedText style={[fr.colHeaderText, { color: Colors.accentDark }]}>Premium</ThemedText>
+            </View>
+          </View>
+          {FEATURES.map((f, i) => (
+            <FeatureRow key={f.label} feature={f} index={i} />
+          ))}
+        </View>
+
+        {/* Plans */}
+        <View style={s.section}>
+          <ThemedText variant="labelLarge" color="textPrimary" style={s.sectionTitle}>
+            Choisissez votre formule
+          </ThemedText>
+          <View style={s.plans}>
+            {PLANS.map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                selected={selectedPlan === plan.id}
+                onSelect={() => setSelectedPlan(plan.id)}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* CTA */}
+        <View style={s.ctaWrap}>
+          <Pressable
+            style={({ pressed }) => [s.ctaBtn, { opacity: purchasing || pressed ? 0.85 : 1 }]}
+            onPress={handlePurchase}
+            disabled={purchasing}
+          >
+            <LinearGradient
+              colors={[Colors.accent, Colors.accentDark]}
+              style={s.ctaGrad}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              {purchasing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <ThemedText
+                  style={s.ctaText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {selectedPlanData.trial
+                    ? `Commencer mon essai gratuit (${selectedPlanData.trial})`
+                    : `Obtenir Premium — ${selectedPlanData.price}`}
+                </ThemedText>
+              )}
+            </LinearGradient>
+          </Pressable>
+
+          {/* Restore */}
+          <Pressable
+            onPress={handleRestore}
+            disabled={restoring}
+            style={({ pressed }) => [s.restoreBtn, { opacity: restoring || pressed ? 0.6 : 1 }]}
+          >
+            {restoring ? (
+              <ActivityIndicator color={Colors.textTertiary} size="small" />
+            ) : (
+              <ThemedText variant="bodySmall" color="textTertiary">
+                Restaurer mes achats
+              </ThemedText>
+            )}
+          </Pressable>
+
+          {/* Legal */}
+          <ThemedText variant="bodySmall" color="textTertiary" style={s.legal}>
+            {Platform.OS === 'ios'
+              ? 'Paiement débité sur votre compte Apple ID à confirmation d\'achat. Renouvelable automatiquement. Gérez vos abonnements dans les Réglages.'
+              : 'Paiement via Google Play. Abonnement renouvelable. Gérez-le dans les paramètres Google Play.'}
+            {'\n'}
+            Annulable à tout moment · CGU · Confidentialité
+          </ThemedText>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const s = StyleSheet.create({
+  root: { flex: 1 },
+  closeRow: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    alignItems: 'flex-end',
+  },
+  closeBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.borderLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  scroll: { gap: 0 },
+  hero: {
+    padding: Spacing.xxl,
+    paddingTop: Spacing.xl,
+    alignItems: 'center',
+    marginBottom: Spacing.xxl,
+  },
+  heroCrown: {
+    width: 68, height: 68, borderRadius: 34,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.md,
+    ...Shadows.soft,
+  },
+  crownEmoji: { fontSize: 32 },
+  heroTitle: {
+    color: Colors.accentDark,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  heroSub: {
+    color: Colors.accentDark,
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  triggerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginTop: Spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  triggerText: { color: Colors.accentDark, flex: 1 },
+  section: { paddingHorizontal: Spacing.xl, marginBottom: Spacing.xxl },
+  sectionTitle: { marginBottom: Spacing.md },
+  plans: { gap: Spacing.md },
+  ctaWrap: {
+    paddingHorizontal: Spacing.xl,
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  ctaBtn: {
+    width: '100%',
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+    ...Shadows.elevated,
+  },
+  ctaGrad: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    borderRadius: Radius.full,
+  },
+  ctaText: { ...Typography.labelLarge, color: '#fff', fontSize: 16 },
+  restoreBtn: { paddingVertical: Spacing.sm },
+  legal: {
+    textAlign: 'center',
+    lineHeight: 16,
+    fontSize: 10,
+    paddingHorizontal: Spacing.lg,
+  },
+});
+
+const pc = StyleSheet.create({
+  wrap: {
+    borderRadius: Radius.xl,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderColor: Colors.borderLight,
+    overflow: 'hidden',
+    ...Shadows.soft,
+  },
+  wrapHighlight: {
+    borderColor: Colors.accentLight,
+    backgroundColor: '#FFFDF8',
+  },
+  wrapSelected: {
+    borderColor: Colors.accent,
+    borderWidth: 2,
+  },
+  badge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.borderLight,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 3,
+  },
+  badgeGold: {
+    backgroundColor: Colors.accent,
+  },
+  badgeText: {
+    ...Typography.labelSmall,
+    color: Colors.textSecondary,
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  badgeTextGold: { color: '#fff' },
+  inner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.xl,
+  },
+  radio: {
+    width: 20, height: 20, borderRadius: 10,
+    borderWidth: 2, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  radioSelected: { borderColor: Colors.accent },
+  radioDot: {
+    width: 10, height: 10, borderRadius: 5,
+    backgroundColor: Colors.accent,
+  },
+  trialBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 3,
+    backgroundColor: Colors.safeBg,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  trialText: { ...Typography.labelSmall, color: Colors.safe, fontSize: 10 },
+});
+
+const fr = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+    marginBottom: Spacing.xs,
+  },
+  colHeader: {
+    width: 72, alignItems: 'center',
+    paddingHorizontal: Spacing.xs,
+  },
+  colHeaderPremium: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.sm,
+    paddingVertical: 3,
+  },
+  colHeaderText: { ...Typography.labelSmall, color: Colors.textTertiary },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  col: { width: 72, alignItems: 'center' },
+  limitText: { ...Typography.labelSmall, color: Colors.textTertiary, fontSize: 11 },
+  unlimitedText: { ...Typography.headlineMedium, color: Colors.safe },
+});
+
+
+================================================================
+# ONBOARDING/role
+# artifacts/helo/app/onboarding/role.tsx
+================================================================
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+
+import { ThemedText } from "@/components/ui/ThemedText";
+import { Colors, Radius, Spacing } from "@/constants/theme";
+
+type Role = "pregnant" | "partner";
+
+interface RoleCard {
+  role: Role;
+  emoji: string;
+  title: string;
+  description: string;
+  gradient: [string, string];
+}
+
+const ROLES: RoleCard[] = [
+  {
+    role: "pregnant",
+    emoji: "🤰",
+    title: "Je suis enceinte",
+    description: "Analysez vos produits au quotidien et suivez votre grossesse semaine par semaine.",
+    gradient: [Colors.accentLight, "#FFF0D0"],
+  },
+  {
+    role: "partner",
+    emoji: "💙",
+    title: "J'accompagne",
+    description: "Scannez des produits pour votre proche et accédez à son placard.",
+    gradient: ["#EAF3FF", "#D5E8FF"],
+  },
+];
+
+function AnimatedRoleCard({
+  card,
+  selected,
+  onSelect,
+}: {
+  card: RoleCard;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const checkScale = useSharedValue(selected ? 1 : 0);
+  const borderAnim = useSharedValue(selected ? 1 : 0);
+
+  const handlePress = () => {
+    scale.value = withSequence(
+      withTiming(0.96, { duration: 80 }),
+      withSpring(1.01, { stiffness: 280, damping: 14 }),
+      withSpring(1, { stiffness: 200, damping: 16 }),
+    );
+    checkScale.value = withSpring(1, { stiffness: 300, damping: 16 });
+    borderAnim.value = withTiming(1, { duration: 200 });
+    onSelect();
+  };
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const checkStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+    opacity: checkScale.value,
+  }));
+
+  return (
+    <Animated.View style={cardStyle}>
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityLabel={card.title}
+        accessibilityState={{ selected }}
+      >
+        <LinearGradient
+          colors={selected ? card.gradient : ["#FFFFFF", "#FAFAFA"]}
+          style={[
+            styles.card,
+            selected && styles.cardSelected,
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          {/* Emoji */}
+          <View style={styles.emojiWrap}>
+            <ThemedText style={styles.cardEmoji}>{card.emoji}</ThemedText>
+          </View>
+
+          {/* Text */}
+          <View style={styles.cardBody}>
+            <ThemedText variant="headlineMedium" color="textPrimary">
+              {card.title}
+            </ThemedText>
+            <ThemedText
+              variant="bodyMedium"
+              color="textSecondary"
+              style={{ marginTop: 4, lineHeight: 20 }}
+            >
+              {card.description}
+            </ThemedText>
+          </View>
+
+          {/* Checkmark */}
+          <Animated.View style={[styles.checkCircle, selected && styles.checkCircleSelected, checkStyle]}>
+            {selected && (
+              <Feather name="check" size={14} color="#fff" />
+            )}
+          </Animated.View>
+        </LinearGradient>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+export default function RoleSelectionScreen() {
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+  const [selected, setSelected] = useState<Role | null>(null);
+
+  const handleSelect = async (role: Role) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelected(role);
+
+    await AsyncStorage.setItem("@helo_user_role", role);
+
+    setTimeout(() => {
+      if (role === "pregnant") {
+        router.replace("/onboarding/profile");
+      } else {
+        router.replace("/onboarding/partner-code");
+      }
+    }, 280);
+  };
+
+  return (
+    <View
+      style={[
+        styles.root,
+        { paddingTop: topPadding + Spacing.xl, paddingBottom: bottomPadding + Spacing.xxl },
+      ]}
+    >
+      {/* Step indicator */}
+      <Animated.View
+        entering={FadeIn.delay(0).duration(400)}
+        style={styles.stepRow}
+      >
+        <View style={styles.stepDot} />
+        <View style={[styles.stepLine, { opacity: 0.25 }]} />
+        <View style={[styles.stepDot, { opacity: 0.25 }]} />
+      </Animated.View>
+
+      {/* Header */}
+      <Animated.View
+        entering={FadeInDown.delay(60).duration(450)}
+        style={styles.header}
+      >
+        <ThemedText variant="displayMedium" color="textPrimary" style={styles.title}>
+          Bienvenue sur Hēlo
+        </ThemedText>
+        <ThemedText variant="bodyLarge" color="textSecondary" style={styles.subtitle}>
+          Comment souhaitez-vous utiliser l'application ?
+        </ThemedText>
+      </Animated.View>
+
+      {/* Cards */}
+      <View style={styles.cards}>
+        {ROLES.map((card, i) => (
+          <Animated.View
+            key={card.role}
+            entering={FadeInDown.delay(120 + i * 80).duration(400)}
+          >
+            <AnimatedRoleCard
+              card={card}
+              selected={selected === card.role}
+              onSelect={() => handleSelect(card.role)}
+            />
+          </Animated.View>
+        ))}
+      </View>
+
+      {/* Trust line */}
+      <Animated.View
+        entering={FadeInDown.delay(320).duration(400)}
+        style={styles.trustRow}
+      >
+        <Feather name="shield" size={14} color={Colors.textTertiary} />
+        <ThemedText variant="bodySmall" color="textTertiary" style={{ marginLeft: 6 }}>
+          Vos données restent sur votre appareil
+        </ThemedText>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.xl,
+  },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 0,
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.accent,
+  },
+  stepLine: {
+    flex: 1,
+    height: 1.5,
+    backgroundColor: Colors.accent,
+    marginHorizontal: 4,
+  },
+  header: {
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  title: {
+    textAlign: "center",
+  },
+  subtitle: {
+    textAlign: "center",
+    lineHeight: 26,
+  },
+  cards: {
+    gap: Spacing.lg,
+    flex: 1,
+    justifyContent: "center",
+  },
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.lg,
+    padding: Spacing.xl,
+    borderRadius: Radius.xl,
+    borderWidth: 2,
+    borderColor: Colors.borderLight,
+  },
+  cardSelected: {
+    borderColor: Colors.accent,
+  },
+  emojiWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardEmoji: {
+    fontSize: 28,
+  },
+  cardBody: {
+    flex: 1,
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  checkCircleSelected: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  trustRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: Spacing.sm,
+  },
+});
+
+
+================================================================
+# ONBOARDING/profile
+# artifacts/helo/app/onboarding/profile.tsx
+================================================================
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import React, { useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Divider } from "@/components/ui/Divider";
+import { ThemedText } from "@/components/ui/ThemedText";
+import { GENERAL_DISCLAIMER } from "@/constants/disclaimers";
+import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
+import { getOrCreateUserId } from "@/hooks/useProfile";
+import { upsertProfile, generatePartnerCode } from "@/lib/partnerUtils";
+
+type Category = "cosmetics" | "food" | "meds";
+
+const CATEGORIES: { key: Category; label: string; icon: keyof typeof Feather.glyphMap }[] = [
+  { key: "cosmetics", label: "Cosmétiques & soins", icon: "droplet" },
+  { key: "food", label: "Alimentation", icon: "coffee" },
+  { key: "meds", label: "Médicaments", icon: "activity" },
+];
+
+function computeTrimester(dueDate: Date): { trimester: number; weeksLeft: number } | null {
+  const now = new Date();
+  const totalPregnancyWeeks = 40;
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const weeksUntilDue = (dueDate.getTime() - now.getTime()) / msPerWeek;
+  if (weeksUntilDue < 0 || weeksUntilDue > totalPregnancyWeeks) return null;
+  const weeksPregnant = Math.round(totalPregnancyWeeks - weeksUntilDue);
+  const trimester = weeksPregnant <= 12 ? 1 : weeksPregnant <= 26 ? 2 : 3;
+  return { trimester, weeksLeft: Math.round(weeksUntilDue) };
+}
+
+function parseDateInput(raw: string): Date | null {
+  // Accept DD/MM/YYYY
+  const parts = raw.split("/");
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts.map(Number);
+  if (!d || !m || !y || y < 2024 || y > 2027) return null;
+  const date = new Date(y, m - 1, d);
+  if (isNaN(date.getTime())) return null;
+  return date;
+}
+
+const TRIMESTER_LABELS: Record<number, string> = {
+  1: "1er trimestre",
+  2: "2e trimestre",
+  3: "3e trimestre",
+};
+
+const TRIMESTER_BADGE: Record<number, "accent" | "safe" | "caution"> = {
+  1: "caution",
+  2: "safe",
+  3: "accent",
+};
+
+export default function ProfileSetupScreen() {
+  const insets = useSafeAreaInsets();
+  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+
+  const [firstName, setFirstName] = useState("");
+  const [dueDateRaw, setDueDateRaw] = useState("");
+  const [firstNameFocused, setFirstNameFocused] = useState(false);
+  const [dueDateFocused, setDueDateFocused] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<Set<Category>>(
+    new Set(["cosmetics", "food", "meds"])
+  );
+  const [loading, setLoading] = useState(false);
+
+  const parsedDate = parseDateInput(dueDateRaw);
+  const trimesterInfo = parsedDate ? computeTrimester(parsedDate) : null;
+
+  const toggleCategory = (key: Category) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const formatDateInput = (raw: string) => {
+    // Auto-insert slashes: DD/MM/YYYY
+    const digits = raw.replace(/\D/g, "").slice(0, 8);
+    let formatted = digits;
+    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2);
+    if (digits.length > 4) formatted = formatted.slice(0, 5) + "/" + formatted.slice(5);
+    return formatted;
+  };
+
+  const handleDueDateChange = (text: string) => {
+    setDueDateRaw(formatDateInput(text));
+  };
+
+  const isValid = firstName.trim().length >= 2 && parsedDate !== null;
+
+  const handleSubmit = async () => {
+    if (!isValid) return;
+    setLoading(true);
+    try {
+      const partnerCode = generatePartnerCode();
+      const profile = {
+        firstName: firstName.trim(),
+        dueDate: parsedDate!.toISOString(),
+        trimester: trimesterInfo?.trimester ?? null,
+        categories: Array.from(selectedCategories),
+        createdAt: new Date().toISOString(),
+        partnerCode,
+      };
+
+      // ── 1. Save locally first — this is the source of truth ──────────────────
+      await AsyncStorage.multiSet([
+        ["onboarding_completed", "true"],
+        ["user_profile", JSON.stringify(profile)],
+      ]);
+
+      // ── 2. Navigate immediately — app works offline ───────────────────────────
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(tabs)");
+
+      // ── 3. Sync to Supabase in the background (non-blocking) ─────────────────
+      getOrCreateUserId().then((userId) => {
+        upsertProfile({
+          userId,
+          firstName: firstName.trim(),
+          dueDate: parsedDate!.toISOString().split("T")[0],
+          trimester: trimesterInfo?.trimester ?? null,
+          partnerCode,
+        }).catch((err) => {
+          if (__DEV__) console.error('[onboarding] Supabase upsert failed:', err?.message ?? err);
+        });
+      }).catch((err) => {
+        if (__DEV__) console.error('[onboarding] getOrCreateUserId failed:', err?.message ?? err);
+      });
+
+    } catch (err: unknown) {
+      if (__DEV__) console.error('[onboarding] handleSubmit error:', err instanceof Error ? err.message : err);
+      Alert.alert("Erreur", "Impossible de sauvegarder votre profil localement. Réessayez.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: Colors.background }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: topPadding + Spacing.xl,
+            paddingBottom: bottomPadding + Spacing.xxl,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Step indicator */}
+        <Animated.View entering={FadeIn.delay(0).duration(400)} style={styles.stepRow}>
+          <View style={[styles.stepDot, styles.stepDotDone]}>
+            <Feather name="check" size={10} color="#fff" />
+          </View>
+          <LinearGradient
+            colors={[Colors.accent, Colors.accentDark]}
+            style={styles.stepLine}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+          />
+          <View style={[styles.stepDot, styles.stepDotActive]}>
+            <Feather name="user" size={10} color="#fff" />
+          </View>
+          <View style={styles.stepLineEmpty} />
+          <View style={styles.stepDot} />
+        </Animated.View>
+
+        {/* Header */}
+        <Animated.View entering={FadeInDown.delay(60).duration(350)} style={styles.header}>
+          <ThemedText variant="displayMedium" color="textPrimary">
+            Parlons de vous
+          </ThemedText>
+          <ThemedText variant="bodyLarge" color="textSecondary" style={{ marginTop: Spacing.sm }}>
+            Quelques informations pour personnaliser votre expérience.
+          </ThemedText>
+        </Animated.View>
+
+        {/* Prénom */}
+        <Animated.View entering={FadeInDown.delay(80).duration(350)}>
+          <ThemedText variant="labelLarge" color="textSecondary" style={styles.fieldLabel}>
+            Prénom
+          </ThemedText>
+          <View
+            style={[
+              styles.inputWrapper,
+              firstNameFocused && styles.inputFocused,
+            ]}
+          >
+            <TextInput
+              style={styles.input}
+              placeholder="Votre prénom"
+              placeholderTextColor={Colors.textTertiary}
+              value={firstName}
+              onChangeText={setFirstName}
+              onFocus={() => setFirstNameFocused(true)}
+              onBlur={() => setFirstNameFocused(false)}
+              autoCapitalize="words"
+              returnKeyType="next"
+            />
+          </View>
+        </Animated.View>
+
+        {/* Date d'accouchement */}
+        <Animated.View entering={FadeInDown.delay(140).duration(350)}>
+          <ThemedText variant="labelLarge" color="textSecondary" style={styles.fieldLabel}>
+            Date prévue d'accouchement
+          </ThemedText>
+          <View
+            style={[
+              styles.inputWrapper,
+              dueDateFocused && styles.inputFocused,
+            ]}
+          >
+            <Feather name="calendar" size={18} color={dueDateFocused ? Colors.accent : Colors.textTertiary} style={{ marginRight: Spacing.md }} />
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="JJ/MM/AAAA"
+              placeholderTextColor={Colors.textTertiary}
+              value={dueDateRaw}
+              onChangeText={handleDueDateChange}
+              onFocus={() => setDueDateFocused(true)}
+              onBlur={() => setDueDateFocused(false)}
+              keyboardType="numeric"
+              maxLength={10}
+              returnKeyType="done"
+            />
+          </View>
+
+          {/* Trimester badge */}
+          {trimesterInfo && (
+            <Animated.View entering={FadeInDown.duration(250)} style={styles.trimesterRow}>
+              <Badge variant={TRIMESTER_BADGE[trimesterInfo.trimester]}>
+                {TRIMESTER_LABELS[trimesterInfo.trimester]}
+              </Badge>
+              <ThemedText variant="bodySmall" color="textTertiary">
+                {trimesterInfo.weeksLeft > 0
+                  ? `${trimesterInfo.weeksLeft} semaines restantes`
+                  : "Terme dépassé"}
+              </ThemedText>
+            </Animated.View>
+          )}
+
+          {dueDateRaw.length === 10 && !parsedDate && (
+            <ThemedText variant="bodySmall" style={{ color: Colors.danger, marginTop: 6 }}>
+              Date invalide. Format : JJ/MM/AAAA
+            </ThemedText>
+          )}
+        </Animated.View>
+
+        {/* Categories */}
+        <Animated.View entering={FadeInDown.delay(200).duration(350)}>
+          <ThemedText variant="labelLarge" color="textSecondary" style={styles.fieldLabel}>
+            Ce qui m'intéresse
+          </ThemedText>
+          <View style={styles.chipsRow}>
+            {CATEGORIES.map((cat) => {
+              const active = selectedCategories.has(cat.key);
+              return (
+                <Pressable
+                  key={cat.key}
+                  onPress={() => toggleCategory(cat.key)}
+                  style={[
+                    styles.chip,
+                    active ? styles.chipActive : styles.chipInactive,
+                  ]}
+                >
+                  <Feather
+                    name={cat.icon}
+                    size={14}
+                    color={active ? Colors.accentDark : Colors.textTertiary}
+                    style={{ marginRight: 6 }}
+                  />
+                  <Text
+                    style={[
+                      styles.chipLabel,
+                      { color: active ? Colors.accentDark : Colors.textSecondary },
+                    ]}
+                  >
+                    {cat.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Animated.View>
+
+        {/* CTA */}
+        <Animated.View entering={FadeInDown.delay(260).duration(350)} style={styles.ctaBlock}>
+          <Button
+            variant="primary"
+            fullWidth
+            onPress={handleSubmit}
+            disabled={!isValid}
+            loading={loading}
+          >
+            Créer mon profil
+          </Button>
+
+          <Divider style={{ marginVertical: Spacing.lg }} />
+
+          <ThemedText variant="bodySmall" color="textTertiary" style={styles.disclaimer}>
+            {GENERAL_DISCLAIMER}
+          </ThemedText>
+        </Animated.View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.xxl,
+  },
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: Spacing.sm,
+  },
+  stepDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.borderLight,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  stepDotDone: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  stepDotActive: {
+    backgroundColor: Colors.accentDark,
+    borderColor: Colors.accentDark,
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    marginHorizontal: 4,
+  },
+  stepLineEmpty: {
+    flex: 1,
+    height: 2,
+    backgroundColor: Colors.borderLight,
+    marginHorizontal: 4,
+  },
+  header: {
+    gap: Spacing.xs,
+  },
+  fieldLabel: {
+    marginBottom: Spacing.sm,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: 16,
+    backgroundColor: Colors.surface,
+  },
+  inputFocused: {
+    borderColor: Colors.accent,
+    backgroundColor: Colors.surfaceElevated,
+  },
+  input: {
+    ...Typography.bodyLarge,
+    color: Colors.textPrimary,
+    padding: 0,
+    flex: 1,
+  },
+  trimesterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  chipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full,
+    borderWidth: 1.5,
+  },
+  chipActive: {
+    backgroundColor: Colors.accentLight,
+    borderColor: Colors.accent,
+  },
+  chipInactive: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
+  },
+  chipLabel: {
+    ...Typography.labelLarge,
+    fontSize: 13,
+  },
+  ctaBlock: {
+    gap: 0,
+  },
+  disclaimer: {
+    lineHeight: 18,
+    textAlign: "center",
+  },
+});
+
+
+================================================================
+# verdictStyles
+# artifacts/helo/components/verdict/verdictStyles.ts
+================================================================
+import { StyleSheet } from 'react-native';
+import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { CIRCLE_RADIUS, CIRCLE_STROKE } from './verdictHelpers';
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.background },
+
+  loadingRoot: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xl,
+  },
+  loadingCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.accentLight,
+  },
+  loadingText: { marginTop: Spacing.md },
+
+  errorCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.massive,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centeredText: { textAlign: 'center' },
+  errorSubtitle: { marginTop: Spacing.sm },
+  errorActions: { marginTop: Spacing.xl, width: '100%', gap: Spacing.md },
+  backRowText: { marginLeft: 8 },
+
+  scroll: { flex: 1 },
+  scrollContent: {},
+
+  hero: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.xxl,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+    alignSelf: 'flex-start',
+  },
+  heroCenter: {
+    alignItems: 'center',
+    marginBottom: Spacing.xl,
+    gap: Spacing.md,
+  },
+
+  scoreCircleWrapper: {
+    width: (CIRCLE_RADIUS + CIRCLE_STROKE) * 2,
+    height: (CIRCLE_RADIUS + CIRCLE_STROKE) * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreCenter: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreNumber: {
+    fontFamily: 'PlusJakartaSans_700Bold',
+    fontSize: 40,
+    letterSpacing: -1,
+  },
+
+  verdictLabel: {
+    fontFamily: 'PlusJakartaSans_700Bold',
+    fontSize: Typography.displayMedium.fontSize,
+    letterSpacing: Typography.displayMedium.letterSpacing,
+    textAlign: 'center',
+  },
+
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  productImage: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+  },
+  productImagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  productInfo: { flex: 1, gap: 2 },
+  trimesterBadgeRow: { alignItems: 'flex-start' },
+
+  section: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xxl,
+    gap: Spacing.sm,
+  },
+  sectionTitle: { marginBottom: Spacing.sm },
+
+  ingredientCard: { marginBottom: Spacing.sm },
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  riskDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 7,
+  },
+  ingredientMeta: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  ingredientDesc: {
+    marginTop: Spacing.sm,
+    lineHeight: 18,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+
+  noSignalTitle: { marginBottom: Spacing.sm },
+  noSignalCard: {},
+  noSignalItem: { paddingVertical: Spacing.xs },
+  noSignalDivider: { marginVertical: Spacing.xs },
+  ingredientsWrap: { position: 'relative' },
+
+  tabRow: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabBtnActive: {
+    borderBottomColor: Colors.accent,
+  },
+  tabBtnText: { color: Colors.textSecondary },
+  tabBtnTextActive: { color: Colors.accent },
+
+  photoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.accent + '44',
+  },
+  photoBannerIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.accent + '22',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accent + '33',
+    flexShrink: 0,
+  },
+  photoBannerText: {
+    flex: 1,
+    color: Colors.accent,
+    lineHeight: 18,
+  },
+
+  recallBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.dangerLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.danger + '44',
+  },
+  recallContent: { flex: 1 },
+  recallTitle: { color: Colors.danger },
+  recallSubtitle: { marginTop: 2 },
+  recallBannerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.dangerBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.danger + '33',
+  },
+
+  premiumGate: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.xl,
+  },
+  premiumGateCard: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accent,
+    ...Shadows.soft,
+  },
+  premiumGateEmoji: { fontSize: 32, marginBottom: Spacing.sm },
+  premiumGateTitle: { textAlign: 'center', marginBottom: Spacing.sm },
+  premiumGateBody: { textAlign: 'center', marginBottom: Spacing.xl, lineHeight: 20 },
+  premiumGateBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.full,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.xxl,
+  },
+  premiumGateBtnText: { ...Typography.labelLarge, color: '#fff' },
+
+  disclaimerSection: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xl,
+  },
+  disclaimerText: { lineHeight: 18 },
+  methodologyLink: { marginTop: Spacing.sm },
+  methodologyLinkText: { color: Colors.accent },
+
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.surface,
+    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+  },
+  bottomActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  bottomBtn: { flex: 1 },
+  iconRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.lg,
+  },
+
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+  },
+  sheetContainer: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.massive,
+    paddingTop: Spacing.md,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.borderLight,
+    alignSelf: 'center',
+    marginBottom: Spacing.xl,
+  },
+  sheetTitle: {
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+  sheetOptions: { gap: Spacing.md },
+  sheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.lg,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+  },
+  sheetOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetSuccess: {
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetCancel: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+  },
+
+  toast: {
+    position: 'absolute',
+    top: 60,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.safe,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.full,
+    zIndex: 999,
+    ...Shadows.elevated,
+  },
+  toastText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.bodyMedium.fontSize,
+    color: '#fff',
+  },
+
+  sectionDivider: { marginVertical: Spacing.lg },
+  circleSectionWrap: {
+    paddingHorizontal: Spacing.xl,
+  },
+  circleShareContent: { flex: 1 },
+  circleShareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+  },
+  circleShareIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+export default styles;
+
+
+================================================================
+# GhostCaptureModal
+# artifacts/helo/components/verdict/GhostCaptureModal.tsx
+================================================================
+import React, { useEffect } from 'react';
+import {
+  Modal,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { Feather } from '@expo/vector-icons';
+
+import { Button } from '@/components/ui/Button';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+
+interface GhostCaptureModalProps {
+  visible: boolean;
+  barcode: string;
+  onPhotograph: () => void;
+  onDismiss: () => void;
+}
+
+export function GhostCaptureModal({
+  visible,
+  barcode: _barcode,
+  onPhotograph,
+  onDismiss,
+}: GhostCaptureModalProps) {
+  const translateY = useSharedValue(400);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      opacity.value = withTiming(1, { duration: 220 });
+      translateY.value = withSpring(0, { damping: 18, stiffness: 160 });
+    } else {
+      opacity.value = withTiming(0, { duration: 180 });
+      translateY.value = withTiming(400, { duration: 200 });
+    }
+  }, [visible, opacity, translateY]);
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onDismiss}
+    >
+      <TouchableWithoutFeedback onPress={onDismiss}>
+        <Animated.View style={[styles.backdrop, backdropStyle]} />
+      </TouchableWithoutFeedback>
+
+      <Animated.View style={[styles.sheet, sheetStyle]}>
+        {/* Handle */}
+        <View style={styles.handle} />
+
+        {/* Icon */}
+        <View style={styles.iconWrap}>
+          <View style={styles.iconCircle}>
+            <ThemedText style={styles.iconEmoji}>📸</ThemedText>
+          </View>
+        </View>
+
+        {/* Title */}
+        <ThemedText variant="headlineMedium" style={styles.title}>
+          Produit non répertorié
+        </ThemedText>
+
+        {/* Subtitle */}
+        <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
+          Nous n'avons pas trouvé ce produit dans notre base de données.{'\n'}
+          Photographiez la liste des ingrédients et nous l'analyserons pour vous{' '}
+          <ThemedText variant="bodyMedium" style={styles.accentText}>et toute la communauté</ThemedText>
+          {' '}✨
+        </ThemedText>
+
+        {/* Info row */}
+        <View style={styles.infoRow}>
+          <Feather name="zap" size={14} color={Colors.accent} />
+          <ThemedText variant="bodySmall" color="textTertiary" style={styles.infoText}>
+            Analyse instantanée sur nos 4 962 ingrédients référencés
+          </ThemedText>
+        </View>
+
+        {/* CTA */}
+        <View style={styles.cta}>
+          <Button
+            variant="primary"
+            fullWidth
+            onPress={onPhotograph}
+          >
+            Photographier les ingrédients
+          </Button>
+        </View>
+
+        {/* Dismiss */}
+        <TouchableOpacity onPress={onDismiss} style={styles.dismissRow} activeOpacity={0.6}>
+          <ThemedText variant="bodySmall" color="textTertiary">
+            Scanner un autre produit
+          </ThemedText>
+        </TouchableOpacity>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(45, 41, 38, 0.45)',
+  },
+  sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.massive,
+    paddingTop: Spacing.sm,
+    alignItems: 'center',
+    ...Shadows.elevated,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    marginBottom: Spacing.xl,
+    alignSelf: 'center',
+  },
+  iconWrap: {
+    marginBottom: Spacing.lg,
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconEmoji: {
+    fontSize: 32,
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  subtitle: {
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+  },
+  accentText: {
+    color: Colors.accent,
+    fontWeight: '600',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.accentLight,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.md,
+    marginBottom: Spacing.xl,
+  },
+  infoText: {
+    flex: 1,
+  },
+  cta: {
+    marginBottom: Spacing.md,
+  },
+  dismissRow: {
+    paddingVertical: Spacing.sm,
+  },
+});
+
+
+================================================================
+# ReportBottomSheet
+# artifacts/helo/components/verdict/ReportBottomSheet.tsx
+================================================================
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+
+const REPORT_TYPES = [
+  { key: 'wrong_ingredient', label: 'Ingrédient mal classé' },
+  { key: 'wrong_product',    label: 'Produit mal identifié' },
+  { key: 'other',            label: 'Autre' },
+] as const;
+
+type ReportType = typeof REPORT_TYPES[number]['key'];
+
+interface Props {
+  visible: boolean;
+  onClose: () => void;
+  userId: string | null;
+  scanId: string;
+  productName: string;
+}
+
+export function ReportBottomSheet({ visible, onClose, userId, scanId, productName }: Props) {
+  const [selected, setSelected] = useState<ReportType>('wrong_ingredient');
+  const [details, setDetails] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const translateY = useSharedValue(400);
+  const opacity = useSharedValue(0);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setDone(false);
+      setSelected('wrong_ingredient');
+      setDetails('');
+      opacity.value = withTiming(1, { duration: 200 });
+      translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
+    } else {
+      opacity.value = withTiming(0, { duration: 180 });
+      translateY.value = withTiming(400, { duration: 220 });
+    }
+  }, [visible, opacity, translateY]);
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  const handleSubmit = async () => {
+    Keyboard.dismiss();
+    setSubmitting(true);
+    try {
+      if (isSupabaseConfigured) {
+        await supabase.from('ingredient_reports').insert({
+          user_id: userId ?? null,
+          scan_id: scanId,
+          product_name: productName,
+          report_type: selected,
+          details: details.trim() || null,
+        });
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDone(true);
+      setTimeout(() => {
+        onClose();
+      }, 2200);
+    } catch {
+      // Non-critical — close anyway
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Animated.View style={[styles.overlay, overlayStyle]}>
+          <Pressable style={{ flex: 1 }} onPress={onClose} />
+        </Animated.View>
+
+        <Animated.View style={[styles.sheet, sheetStyle]}>
+          {/* Handle */}
+          <View style={styles.handle} />
+
+          {done ? (
+            <View style={styles.successWrap}>
+              <Feather name="heart" size={36} color={Colors.accent} />
+              <ThemedText variant="headlineMedium" style={styles.successTitle}>
+                Merci pour votre vigilance 💛
+              </ThemedText>
+              <ThemedText variant="bodySmall" color="textSecondary" style={styles.successSub}>
+                Votre signalement nous aide à améliorer la base de données.
+              </ThemedText>
+            </View>
+          ) : (
+            <>
+              {/* Header */}
+              <View style={styles.header}>
+                <ThemedText variant="headlineMedium" color="textPrimary">
+                  Signaler une erreur
+                </ThemedText>
+                <Pressable onPress={onClose} hitSlop={12} accessibilityRole="button" accessibilityLabel="Fermer">
+                  <Feather name="x" size={20} color={Colors.textTertiary} />
+                </Pressable>
+              </View>
+
+              {productName ? (
+                <ThemedText variant="bodySmall" color="textTertiary" style={styles.productLabel}>
+                  {productName}
+                </ThemedText>
+              ) : null}
+
+              {/* Radio options */}
+              <View style={styles.radioGroup}>
+                {REPORT_TYPES.map((rt) => (
+                  <Pressable
+                    key={rt.key}
+                    style={[styles.radioRow, selected === rt.key && styles.radioRowActive]}
+                    onPress={() => setSelected(rt.key)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected === rt.key }}
+                    accessibilityLabel={rt.label}
+                  >
+                    <View style={[styles.radioDot, selected === rt.key && styles.radioDotActive]}>
+                      {selected === rt.key && <View style={styles.radioDotInner} />}
+                    </View>
+                    <ThemedText
+                      variant="bodyMedium"
+                      color={selected === rt.key ? 'textPrimary' : 'textSecondary'}
+                    >
+                      {rt.label}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Optional details */}
+              <TextInput
+                ref={inputRef}
+                style={styles.textInput}
+                placeholder="Détails (optionnel)"
+                placeholderTextColor={Colors.textTertiary}
+                value={details}
+                onChangeText={setDetails}
+                multiline
+                numberOfLines={3}
+                returnKeyType="done"
+                blurOnSubmit
+              />
+
+              {/* Submit */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.submitBtn,
+                  { opacity: pressed || submitting ? 0.75 : 1 },
+                ]}
+                onPress={handleSubmit}
+                disabled={submitting}
+                accessibilityRole="button"
+                accessibilityLabel="Envoyer le signalement"
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <ThemedText variant="labelLarge" style={styles.submitText}>
+                    Envoyer
+                  </ThemedText>
+                )}
+              </Pressable>
+            </>
+          )}
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.massive,
+    paddingTop: Spacing.sm,
+    ...Shadows.elevated,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
+    marginBottom: Spacing.lg,
+    marginTop: Spacing.xs,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xs,
+  },
+  productLabel: {
+    marginBottom: Spacing.xl,
+  },
+  radioGroup: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  radioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    backgroundColor: Colors.background,
+  },
+  radioRowActive: {
+    borderColor: Colors.accent,
+    backgroundColor: Colors.accentLight,
+  },
+  radioDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioDotActive: {
+    borderColor: Colors.accent,
+  },
+  radioDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.accent,
+  },
+  textInput: {
+    backgroundColor: Colors.background,
+    borderRadius: Radius.md,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.bodyMedium.fontSize,
+    fontFamily: 'PlusJakartaSans_400Regular',
+    color: Colors.textPrimary,
+    minHeight: 72,
+    textAlignVertical: 'top',
+    marginBottom: Spacing.xl,
+  },
+  submitBtn: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  submitText: {
+    color: '#fff',
+  },
+  successWrap: {
+    alignItems: 'center',
+    paddingVertical: Spacing.massive,
+    gap: Spacing.lg,
+  },
+  successTitle: {
+    textAlign: 'center',
+  },
+  successSub: {
+    textAlign: 'center',
+    maxWidth: 260,
+  },
+});
+
+
+================================================================
+# VerdictAnimations
+# artifacts/helo/components/verdict/VerdictAnimations.tsx
+================================================================
+import React, { useEffect } from 'react';
+import { Text, View } from 'react-native';
+import Animated, {
+  runOnJS,
+  useAnimatedProps,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
+import { Circle, Svg } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors } from '@/constants/theme';
+import { CIRCLE_RADIUS, CIRCLE_STROKE, CIRCUMFERENCE } from './verdictHelpers';
+import styles from './verdictStyles';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+export function LoadingScreen() {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.6);
+  useEffect(() => {
+    scale.value = withTiming(1.15, { duration: 900 });
+    opacity.value = withTiming(1, { duration: 900 });
+    const interval = setInterval(() => {
+      scale.value = withTiming(scale.value > 1.05 ? 1 : 1.15, { duration: 900 });
+      opacity.value = withTiming(opacity.value > 0.8 ? 0.6 : 1, { duration: 900 });
+    }, 900);
+    return () => clearInterval(interval);
+  }, [scale, opacity]);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+  return (
+    <View style={styles.loadingRoot}>
+      <Animated.View style={[styles.loadingCircle, animStyle]} />
+      <ThemedText variant="bodyMedium" color="textSecondary" style={styles.loadingText}>
+        Analyse en cours…
+      </ThemedText>
+    </View>
+  );
+}
+
+export function ScoreCircle({
+  score,
+  color,
+  onAnimDone,
+}: {
+  score: number;
+  color: string;
+  onAnimDone: () => void;
+}) {
+  const circleOpacity = useSharedValue(0);
+  const strokeProgress = useSharedValue(0);
+  const scoreOpacity = useSharedValue(0);
+
+  const circleStyle = useAnimatedStyle(() => ({ opacity: circleOpacity.value }));
+
+  const animatedProps = useAnimatedProps(() => ({
+    strokeDashoffset: CIRCUMFERENCE * (1 - strokeProgress.value),
+  }));
+
+  useEffect(() => {
+    circleOpacity.value = withTiming(1, { duration: 400 });
+    strokeProgress.value = withDelay(
+      500,
+      withTiming(1, { duration: 700 }, (finished) => {
+        if (finished) {
+          scoreOpacity.value = withTiming(1, { duration: 200 }, (f2) => {
+            if (f2) runOnJS(onAnimDone)();
+          });
+        }
+      }),
+    );
+  }, [circleOpacity, strokeProgress, scoreOpacity, onAnimDone]);
+
+  const scoreStyle = useAnimatedStyle(() => ({ opacity: scoreOpacity.value }));
+
+  return (
+    <Animated.View style={[styles.scoreCircleWrapper, circleStyle]}>
+      <Svg width={CIRCLE_RADIUS * 2 + CIRCLE_STROKE * 2} height={CIRCLE_RADIUS * 2 + CIRCLE_STROKE * 2}>
+        <Circle
+          cx={CIRCLE_RADIUS + CIRCLE_STROKE}
+          cy={CIRCLE_RADIUS + CIRCLE_STROKE}
+          r={CIRCLE_RADIUS}
+          stroke={Colors.borderLight}
+          strokeWidth={CIRCLE_STROKE}
+          fill="none"
+        />
+        <AnimatedCircle
+          cx={CIRCLE_RADIUS + CIRCLE_STROKE}
+          cy={CIRCLE_RADIUS + CIRCLE_STROKE}
+          r={CIRCLE_RADIUS}
+          stroke={color}
+          strokeWidth={CIRCLE_STROKE}
+          fill="none"
+          strokeDasharray={CIRCUMFERENCE}
+          strokeLinecap="round"
+          rotation="-90"
+          origin={`${CIRCLE_RADIUS + CIRCLE_STROKE}, ${CIRCLE_RADIUS + CIRCLE_STROKE}`}
+          animatedProps={animatedProps}
+        />
+      </Svg>
+      <Animated.View style={[styles.scoreCenter, scoreStyle]}>
+        <Text style={[styles.scoreNumber, { color }]}>{score}</Text>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+export function VerdictLabel({ label, color, visible }: { label: string; color: string; visible: boolean }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(10);
+  useEffect(() => {
+    if (visible) {
+      opacity.value = withDelay(0, withTiming(1, { duration: 250 }));
+      translateY.value = withDelay(0, withTiming(0, { duration: 250 }));
+    }
+  }, [visible, opacity, translateY]);
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+  return (
+    <Animated.View style={style}>
+      <Text style={[styles.verdictLabel, { color }]}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+export function Toast({ visible, message }: { visible: boolean; message: string }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(-20);
+  useEffect(() => {
+    if (visible) {
+      opacity.value = withTiming(1, { duration: 200 });
+      translateY.value = withTiming(0, { duration: 200 });
+    } else {
+      opacity.value = withTiming(0, { duration: 300 });
+      translateY.value = withTiming(-20, { duration: 300 });
+    }
+  }, [visible, opacity, translateY]);
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+  return (
+    <Animated.View style={[styles.toast, style]} pointerEvents="none">
+      <Feather name="check-circle" size={16} color="#fff" style={{ marginRight: 8 }} />
+      <Text style={styles.toastText}>{message}</Text>
+    </Animated.View>
+  );
+}
+
+
+================================================================
+# VerdictErrorScreen
+# artifacts/helo/components/verdict/VerdictErrorScreen.tsx
+================================================================
+import { router } from 'expo-router';
+import React from 'react';
+import { TouchableOpacity, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+
+import { Button } from '@/components/ui/Button';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors, Spacing } from '@/constants/theme';
+import styles from './verdictStyles';
+
+interface VerdictErrorScreenProps {
+  error: string;
+  barcode: string;
+  topInset: number;
+}
+
+export function VerdictErrorScreen({ error, barcode, topInset }: VerdictErrorScreenProps) {
+  const isNotFound = error.startsWith('Produit non trouvé');
+
+  return (
+    <View style={[styles.root, { paddingTop: topInset + Spacing.lg }]}>
+      <TouchableOpacity
+        style={styles.backRow}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Retour"
+      >
+        <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
+        <ThemedText variant="bodyMedium" style={styles.backRowText}>Retour</ThemedText>
+      </TouchableOpacity>
+
+      <View style={styles.errorCenter}>
+        <View style={[styles.iconCircle, { backgroundColor: isNotFound ? Colors.cautionBg : Colors.dangerLight }]}>
+          <Feather
+            name={isNotFound ? 'search' : 'wifi-off'}
+            size={32}
+            color={isNotFound ? Colors.caution : Colors.danger}
+          />
+        </View>
+
+        <ThemedText variant="headlineMedium" style={styles.centeredText}>
+          {isNotFound ? 'Produit non trouvé' : 'Erreur de chargement'}
+        </ThemedText>
+
+        <ThemedText
+          variant="bodyMedium"
+          color="textSecondary"
+          style={[styles.centeredText, styles.errorSubtitle]}
+        >
+          {isNotFound
+            ? "Ce produit n'est pas encore dans notre base de données."
+            : error}
+        </ThemedText>
+
+        <View style={styles.errorActions}>
+          {isNotFound && (
+            <Button
+              variant="primary"
+              fullWidth
+              onPress={() => {
+                router.push({
+                  pathname: '/submit-product',
+                  params: { barcode },
+                } as never);
+              }}
+            >
+              Contribuer — ajouter ce produit ✦
+            </Button>
+          )}
+          <Button
+            variant={isNotFound ? 'secondary' : 'primary'}
+            fullWidth
+            onPress={() => router.back()}
+          >
+            Scanner un autre produit
+          </Button>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+
+================================================================
+# VerdictBottomBar
+# artifacts/helo/components/verdict/VerdictBottomBar.tsx
+================================================================
+import { router } from 'expo-router';
+import React from 'react';
+import { View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+
+import { Button } from '@/components/ui/Button';
+import { IconButton } from '@/components/ui/IconButton';
+import { Colors, Spacing } from '@/constants/theme';
+import type { ProductData, VerdictResult } from '@/types';
+import { BOTTOM_BAR_HEIGHT } from './verdictHelpers';
+import styles from './verdictStyles';
+
+interface VerdictBottomBarProps {
+  verdict: VerdictResult;
+  product: ProductData;
+  barcode: string;
+  onShelf: () => void;
+  onShare: () => void;
+  bottomPad: number;
+}
+
+export function VerdictBottomBar({
+  verdict,
+  product,
+  barcode,
+  onShelf,
+  onShare,
+  bottomPad,
+}: VerdictBottomBarProps) {
+  return (
+    <View style={[styles.bottomBar, { paddingBottom: bottomPad + Spacing.lg }]}>
+      <View style={styles.bottomActions}>
+        {verdict.verdict !== 'safe' ? (
+          <>
+            <View style={styles.bottomBtn}>
+              <Button
+                variant="primary"
+                fullWidth
+                onPress={() => {
+                  router.push({
+                    pathname: '/alternatives',
+                    params: {
+                      barcode,
+                      category: 'cosmetic',
+                      productName: product.name,
+                      productBrand: product.brand ?? '',
+                    },
+                  });
+                }}
+              >
+                Voir les alternatives →
+              </Button>
+            </View>
+            <View style={styles.bottomBtn}>
+              <Button variant="secondary" fullWidth onPress={onShelf}>
+                Ajouter au placard
+              </Button>
+            </View>
+          </>
+        ) : (
+          <Button variant="primary" fullWidth onPress={onShelf}>
+            Ajouter au placard
+          </Button>
+        )}
+      </View>
+
+      <View style={styles.iconRow}>
+        <IconButton onPress={onShare} size={44} accessibilityLabel="Partager">
+          <Feather name="share-2" size={18} color={Colors.textSecondary} />
+        </IconButton>
+        <IconButton
+          onPress={() =>
+            router.push({
+              pathname: '/compare',
+              params: { barcode, slot: 'A' },
+            } as never)
+          }
+          size={44}
+          accessibilityLabel="Comparer"
+        >
+          <Feather name="git-branch" size={18} color={Colors.textSecondary} />
+        </IconButton>
+        <IconButton onPress={() => router.back()} size={44} accessibilityLabel="Scanner un autre produit">
+          <Feather name="camera" size={18} color={Colors.textSecondary} />
+        </IconButton>
+      </View>
+    </View>
+  );
+}
+
+
+================================================================
+# IngredientsSection
+# artifacts/helo/components/verdict/IngredientsSection.tsx
+================================================================
+import React from 'react';
+import { Pressable, View } from 'react-native';
+
+import { Card } from '@/components/ui/Card';
+import { Divider } from '@/components/ui/Divider';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Spacing } from '@/constants/theme';
+import type { MatchResult } from '@/types';
+import { IngredientCard } from './IngredientCard';
+import styles from './verdictStyles';
+
+interface IngredientsSectionProps {
+  flagged: MatchResult[];
+  noSignal: MatchResult[];
+  isPremium: boolean;
+  requirePremium: (reason: string) => void;
+}
+
+export function IngredientsSection({
+  flagged,
+  noSignal,
+  isPremium,
+  requirePremium,
+}: IngredientsSectionProps) {
+  if (flagged.length === 0 && noSignal.length === 0) return null;
+
+  return (
+    <View style={styles.ingredientsWrap}>
+      {flagged.length > 0 && (
+        <View style={styles.section}>
+          <ThemedText variant="headlineMedium" style={styles.sectionTitle}>
+            Ingrédients analysés
+          </ThemedText>
+          {(isPremium ? flagged : flagged.slice(0, 2)).map((m) => (
+            <IngredientCard key={m.ingredientName} match={m} />
+          ))}
+        </View>
+      )}
+
+      {isPremium && noSignal.length > 0 && (
+        <View style={styles.section}>
+          <ThemedText variant="labelSmall" color="textTertiary" style={styles.noSignalTitle}>
+            AUCUN SIGNALEMENT CONNU ({noSignal.length})
+          </ThemedText>
+          <Card style={styles.noSignalCard} padding={Spacing.lg}>
+            {noSignal.map((m, i) => (
+              <View key={m.ingredientName}>
+                <ThemedText variant="bodySmall" color="textSecondary" style={styles.noSignalItem}>
+                  {m.ingredientName}
+                </ThemedText>
+                {i < noSignal.length - 1 && (
+                  <Divider style={styles.noSignalDivider} />
+                )}
+              </View>
+            ))}
+          </Card>
+        </View>
+      )}
+
+      {!isPremium && (
+        <View style={styles.premiumGate}>
+          <View style={styles.premiumGateCard}>
+            <ThemedText style={styles.premiumGateEmoji}>🔍</ThemedText>
+            <ThemedText variant="headlineMedium" color="textPrimary" style={styles.premiumGateTitle}>
+              Détails ingrédients
+            </ThemedText>
+            <ThemedText variant="bodyMedium" color="textSecondary" style={styles.premiumGateBody}>
+              Accédez à l'analyse complète de tous les ingrédients, leurs risques par trimestre et les sources scientifiques.
+            </ThemedText>
+            <Pressable
+              onPress={() => requirePremium('feature')}
+              style={({ pressed }) => [styles.premiumGateBtn, { opacity: pressed ? 0.88 : 1 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Voir les détails avec Premium"
+            >
+              <ThemedText style={styles.premiumGateBtnText}>Voir les détails — Premium</ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
+
+================================================================
+# ShelfBottomSheet
+# artifacts/helo/components/verdict/ShelfBottomSheet.tsx
+================================================================
+import React, { useState } from 'react';
+import { Modal, Pressable, TouchableOpacity, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { ThemedText } from '@/components/ui/ThemedText';
+import { Colors } from '@/constants/theme';
+import styles from './verdictStyles';
+
+const SHELF_OPTIONS = [
+  { key: 'salle-de-bain', label: 'Salle de bain', icon: 'droplet' as const },
+  { key: 'cuisine',       label: 'Cuisine',       icon: 'coffee'  as const },
+  { key: 'pharmacie',     label: 'Pharmacie',     icon: 'plus-circle' as const },
+];
+
+const BABY_SHELF_OPTIONS = [
+  { key: 'couches',        label: 'Couches',           icon: 'package'     as const },
+  { key: 'lingettes-bebe', label: 'Lingettes bébé',    icon: 'wind'        as const },
+  { key: 'creme-change',   label: 'Crème de change',   icon: 'sun'         as const },
+  { key: 'lait-bebe',      label: 'Lait bébé',         icon: 'thermometer' as const },
+  { key: 'shampoing-bebe', label: 'Shampoing bébé',    icon: 'droplet'     as const },
+];
+
+interface ShelfBottomSheetProps {
+  visible: boolean;
+  onSelect: (category: string) => void;
+  onClose: () => void;
+  babyMode?: boolean;
+}
+
+export function ShelfBottomSheet({ visible, onSelect, onClose, babyMode }: ShelfBottomSheetProps) {
+  const checkScale = useSharedValue(0);
+  const [chosen, setChosen] = useState<string | null>(null);
+
+  const handleSelect = (cat: string) => {
+    setChosen(cat);
+    checkScale.value = withSpring(1, { damping: 12, stiffness: 200 });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => {
+      onSelect(cat);
+      setChosen(null);
+      checkScale.value = 0;
+    }, 700);
+  };
+
+  const checkStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: checkScale.value }],
+    opacity: checkScale.value,
+  }));
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={styles.sheetOverlay} onPress={onClose} accessibilityRole="button" accessibilityLabel="Fermer" />
+      <View style={styles.sheetContainer}>
+        <View style={styles.sheetHandle} />
+        <ThemedText variant="headlineMedium" style={styles.sheetTitle}>
+          Ajouter au placard
+        </ThemedText>
+        {chosen ? (
+          <View style={styles.sheetSuccess}>
+            <Animated.View style={checkStyle}>
+              <Feather name="check-circle" size={52} color={Colors.safe} />
+            </Animated.View>
+          </View>
+        ) : (
+          <View style={styles.sheetOptions}>
+            {(babyMode ? BABY_SHELF_OPTIONS : SHELF_OPTIONS).map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={styles.sheetOption}
+                onPress={() => handleSelect(opt.key)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={`Ajouter dans ${opt.label}`}
+              >
+                <View style={styles.sheetOptionIcon}>
+                  <Feather name={opt.icon} size={22} color={Colors.accent} />
+                </View>
+                <ThemedText variant="bodyLarge">{opt.label}</ThemedText>
+                <Feather name="chevron-right" size={18} color={Colors.textTertiary} style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+        <TouchableOpacity
+          onPress={onClose}
+          style={styles.sheetCancel}
+          accessibilityRole="button"
+          accessibilityLabel="Annuler"
+        >
+          <ThemedText variant="bodyMedium" color="textSecondary">Annuler</ThemedText>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+
+================================================================
+# ScanViewfinder
+# artifacts/helo/components/scan/ScanViewfinder.tsx
+================================================================
+/**
+ * ScanViewfinder — CornerBracket, FlashingViewfinder et ScanOverlay.
+ */
+
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  interpolateColor,
+  SharedValue,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+
+import { Colors, Radius } from '@/constants/theme';
+import { CORNER_SIZE, CORNER_THICKNESS, OVERLAY_COLOR } from './scanConstants';
+
+// ─── CornerBracket ────────────────────────────────────────────────────────────
+interface CornerBracketProps {
+  position: 'tl' | 'tr' | 'bl' | 'br';
+  color: string;
+}
+
+export function CornerBracket({ position, color }: CornerBracketProps) {
+  const isTop = position === 'tl' || position === 'tr';
+  const isLeft = position === 'tl' || position === 'bl';
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        width: CORNER_SIZE,
+        height: CORNER_SIZE,
+        top: isTop ? 0 : undefined,
+        bottom: isTop ? undefined : 0,
+        left: isLeft ? 0 : undefined,
+        right: isLeft ? undefined : 0,
+      }}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          width: CORNER_SIZE,
+          height: CORNER_THICKNESS,
+          backgroundColor: color,
+          top: isTop ? 0 : undefined,
+          bottom: isTop ? undefined : 0,
+          left: 0,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          width: CORNER_THICKNESS,
+          height: CORNER_SIZE,
+          backgroundColor: color,
+          top: 0,
+          left: isLeft ? 0 : undefined,
+          right: isLeft ? undefined : 0,
+        }}
+      />
+    </View>
+  );
+}
+
+// ─── FlashingViewfinder ───────────────────────────────────────────────────────
+interface FlashingViewfinderProps {
+  flashColor: SharedValue<number>;
+}
+
+export function FlashingViewfinder({ flashColor }: FlashingViewfinderProps) {
+  const pulseOpacity = useSharedValue(0.5);
+
+  React.useEffect(() => {
+    pulseOpacity.value = withRepeat(
+      withSequence(withTiming(1, { duration: 1000 }), withTiming(0.5, { duration: 1000 })),
+      -1,
+      false,
+    );
+  }, [pulseOpacity]);
+
+  const borderStyle = useAnimatedStyle(() => ({
+    opacity: pulseOpacity.value,
+    borderColor: interpolateColor(flashColor.value, [0, 1], [Colors.accent, Colors.safe]),
+  }));
+  const accentStyle = useAnimatedStyle(() => ({ opacity: 1 - flashColor.value }));
+  const safeStyle = useAnimatedStyle(() => ({ opacity: flashColor.value }));
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Animated.View style={[StyleSheet.absoluteFill, vf.border, borderStyle]} />
+      <Animated.View style={[StyleSheet.absoluteFill, accentStyle]}>
+        <CornerBracket position="tl" color={Colors.accent} />
+        <CornerBracket position="tr" color={Colors.accent} />
+        <CornerBracket position="bl" color={Colors.accent} />
+        <CornerBracket position="br" color={Colors.accent} />
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFill, safeStyle]}>
+        <CornerBracket position="tl" color={Colors.safe} />
+        <CornerBracket position="tr" color={Colors.safe} />
+        <CornerBracket position="bl" color={Colors.safe} />
+        <CornerBracket position="br" color={Colors.safe} />
+      </Animated.View>
+    </View>
+  );
+}
+
+// ─── ScanOverlay ──────────────────────────────────────────────────────────────
+interface ScanOverlayProps {
+  vfX: number;
+  vfY: number;
+  vfW: number;
+  vfH: number;
+}
+
+export function ScanOverlay({ vfX, vfY, vfW, vfH }: ScanOverlayProps) {
+  return (
+    <>
+      <View pointerEvents="none" style={[vf.strip, { top: 0, left: 0, right: 0, height: vfY }]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
+      </View>
+      <View pointerEvents="none" style={[vf.strip, { top: vfY + vfH, left: 0, right: 0, bottom: 0 }]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
+      </View>
+      <View pointerEvents="none" style={[vf.strip, { top: vfY, left: 0, width: vfX, height: vfH }]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
+      </View>
+      <View pointerEvents="none" style={[vf.strip, { top: vfY, left: vfX + vfW, right: 0, height: vfH }]}>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: OVERLAY_COLOR }]} />
+      </View>
+    </>
+  );
+}
+
+const vf = StyleSheet.create({
+  strip: { position: 'absolute' },
+  border: { borderWidth: 1.5, borderRadius: Radius.sm },
+});
+
+
+================================================================
+# ScanControls
+# artifacts/helo/components/scan/ScanControls.tsx
+================================================================
+/**
+ * ScanControls — ModeChip et ShutterButton.
+ */
+
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { Feather } from '@expo/vector-icons';
+
+import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+
+// ─── ModeChip ─────────────────────────────────────────────────────────────────
+interface ModeChipProps {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}
+
+export function ModeChip({ label, active, onPress }: ModeChipProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[ctrl.chip, active ? ctrl.chipActive : ctrl.chipInactive]}
+    >
+      <Text style={[ctrl.chipText, { color: active ? '#fff' : Colors.textPrimary }]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── ShutterButton ────────────────────────────────────────────────────────────
+interface ShutterButtonProps {
+  onPress: () => void;
+}
+
+export function ShutterButton({ onPress }: ShutterButtonProps) {
+  const scale = useSharedValue(1);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  const handlePress = () => {
+    scale.value = withSequence(withTiming(0.9, { duration: 80 }), withTiming(1, { duration: 120 }));
+    onPress();
+  };
+
+  return (
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+      <Animated.View style={[ctrl.shutter, style]}>
+        <View style={ctrl.shutterInner}>
+          <Feather name="camera" size={26} color="#fff" />
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+const ctrl = StyleSheet.create({
+  chip: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.full,
+  },
+  chipActive: { backgroundColor: Colors.accent },
+  chipInactive: { backgroundColor: 'rgba(255,255,255,0.82)' },
+  chipText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.bodySmall.fontSize,
+  },
+  shutter: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.accentDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  shutterInner: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
+
+
+================================================================
+# scanConstants
+# artifacts/helo/components/scan/scanConstants.ts
+================================================================
+/**
+ * Constantes partagées du scanner de produits.
+ */
+
+import { Dimensions } from 'react-native';
+
+const { width: W, height: H } = Dimensions.get('window');
+
+// ─── Viewfinder dimensions ────────────────────────────────────────────────────
+export const VF_BARCODE_W = Math.min(W * 0.68, 280);
+export const VF_BARCODE_H = VF_BARCODE_W;
+export const VF_BARCODE_Y = H * 0.28;
+
+export const VF_OCR_W = Math.min(W * 0.85, 340);
+export const VF_OCR_H = Math.round(VF_OCR_W * (2 / 3));
+export const VF_OCR_Y = H * 0.24;
+
+export const VF_MENU_W = W - 24;
+export const VF_MENU_H = Math.min(Math.round(VF_MENU_W * 1.15), H * 0.5);
+export const VF_MENU_Y = H * 0.14;
+
+export const VF_PHOTO_W = Math.min(W * 0.85, 340);
+export const VF_PHOTO_H = Math.round(VF_PHOTO_W * (2 / 3));
+export const VF_PHOTO_Y = H * 0.24;
+
+export const SCREEN_W = W;
+
+// ─── Corner bracket ───────────────────────────────────────────────────────────
+export const CORNER_SIZE = 22;
+export const CORNER_THICKNESS = 3;
+
+// ─── Overlay ──────────────────────────────────────────────────────────────────
+export const OVERLAY_COLOR = 'rgba(45, 41, 38, 0.62)';
+
+// ─── Debounce ─────────────────────────────────────────────────────────────────
+export const DEBOUNCE_MS = 3000;
+
+// ─── Barcode types ────────────────────────────────────────────────────────────
+export const BARCODE_TYPES = [
+  'ean13', 'ean8', 'upc_a', 'upc_e', 'code128',
+] as const;
+
+// ─── Menu ─────────────────────────────────────────────────────────────────────
+export const MAX_MENU_PHOTOS = 5;
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+export type ScanMode = 'barcode' | 'ingredients' | 'menu' | 'photo';
+
+
+================================================================
+# homeStyles
+# artifacts/helo/components/home/homeStyles.ts
+================================================================
+import { StyleSheet } from 'react-native';
+import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+
+export const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.xxl,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  heroSection: {
+    borderRadius: Radius.xl,
+    overflow: 'hidden',
+    ...Shadows.medium,
+  },
+  heroBanner: {
+    borderRadius: Radius.xl,
+    padding: Spacing.xxl,
+    overflow: 'hidden',
+  },
+  heroContent: {
+    zIndex: 1,
+  },
+  heroButton: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radius.full,
+    alignSelf: 'flex-start',
+  },
+  heroButtonText: {
+    ...Typography.labelLarge,
+    color: Colors.accentDark,
+  },
+  heroDecoration: {
+    position: 'absolute',
+    right: -20,
+    top: -20,
+    bottom: -20,
+  },
+  heroCircle1: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    position: 'absolute',
+    right: 10,
+    top: 10,
+  },
+  heroCircle2: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    position: 'absolute',
+    right: 50,
+    bottom: 10,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  statCard: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  glowCard: {
+    alignItems: 'stretch',
+  },
+  glowCircleRow: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  glowSubtitle: {
+    textAlign: 'center',
+    marginTop: Spacing.md,
+  },
+  barsContainer: {
+    gap: Spacing.md,
+  },
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  barLabel: {
+    width: 64,
+  },
+  barTrack: {
+    flex: 1,
+    height: 8,
+    backgroundColor: Colors.borderLight,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: 8,
+    borderRadius: Radius.full,
+  },
+  barCount: {
+    width: 20,
+    textAlign: 'right',
+  },
+  improveCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    marginTop: Spacing.xl,
+  },
+  improveCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  improveIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareRow: {
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+  },
+  scanList: {
+    gap: Spacing.sm,
+  },
+  scanCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    ...Shadows.soft,
+  },
+  scanCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanCardContent: {
+    flex: 1,
+    gap: 2,
+  },
+  disclaimerCard: {
+    backgroundColor: Colors.backgroundSecondary,
+  },
+  disclaimerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bfSuggestionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F5',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#F0D0DC',
+    padding: Spacing.lg,
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  bfSuggestionCTA: {
+    backgroundColor: '#D4A0B0',
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  quickCard: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    ...Shadows.soft,
+  },
+  quickIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  weekPill: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    marginTop: 5,
+  },
+  featureSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  featureGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  featureCell: {
+    width: '48%',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    gap: Spacing.xs,
+    ...Shadows.soft,
+  },
+  featureCellIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  featureCellSubtitle: {
+    fontSize: 11,
+    color: Colors.textTertiary,
+    lineHeight: 14,
+    marginTop: 1,
+  },
+  featureCellPremiumDot: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureCellBadge: {
+    backgroundColor: '#F0E8FF',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+  },
+  featureCellBadgeText: {
+    fontSize: 9,
+    color: '#8B6BDB',
+    fontWeight: '700' as const,
+  },
+  scanNudgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  scanNudgeIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shelfScanCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.accent + '44',
+    ...Shadows.soft,
+  },
+  shelfScanIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  shelfScanPremium: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: Colors.accent + '33',
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    flexShrink: 0,
+  },
+  shelfScanPremiumText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.accentDark,
+    fontFamily: 'PlusJakartaSans_700Bold',
+    letterSpacing: 0.5,
+  },
+  briefCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    ...Shadows.soft,
+  },
+  briefLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  briefIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  briefTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  newBadge: {
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+});
+
+export const partnerStyles = StyleSheet.create({
+  tipBanner: {
+    backgroundColor: Colors.accentLight,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.accent + '55',
+    ...Shadows.soft,
+  },
+  tipBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+  },
+  tipIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  missionCard: {
+    backgroundColor: Colors.safeBg,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.safeLight,
+    ...Shadows.soft,
+  },
+});
+

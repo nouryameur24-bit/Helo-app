@@ -95,3 +95,9 @@ id = "I5KulhP9QtxnC49wSa5Q0"
 uri = "file://helo_design_full.md"
 type = "text"
 title = "Hēlo — Code design complet (28 fichiers)"
+
+[[outputs]]
+id = "okFFtXN1sOBjSZHWcaeN7"
+uri = "file://helo_design_full.txt"
+type = "text"
+title = "Hēlo — Design complet (28 fichiers)"

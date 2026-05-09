@@ -107,3 +107,9 @@ id = "-G7NR3CJEQWhujqEVY4Md"
 uri = "file://helo_design.tar.gz"
 type = "unspecified"
 title = "helo_design.tar.gz — complet à jour"
+
+[[outputs]]
+id = "iW95YKDcP_rW4TU_lUP0H"
+uri = "file://helo_project.tar.gz"
+type = "unspecified"
+title = "helo_project.tar.gz — projet complet (sans node_modules)"

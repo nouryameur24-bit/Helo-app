@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
+import { triggerGhostMode } from '../(tabs)/scan';
 import { ScanDisclaimerBanner } from '@/components/ScanDisclaimerBanner';
 import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
 import { VerdictShareCard } from '@/components/share/VerdictShareCard';
@@ -340,9 +341,10 @@ export default function VerdictScreen() {
             barcode={barcode}
             onPhotograph={() => {
               lastFailedBarcode.current = barcode;
+              triggerGhostMode();
               router.replace({
                 pathname: '/(tabs)/scan',
-                params: { ghostBarcode: barcode, forceOCR: '1' },
+                params: { ghostBarcode: barcode },
               } as never);
             }}
             onDismiss={() => {

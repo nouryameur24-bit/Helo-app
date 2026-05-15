@@ -66,6 +66,15 @@ import {
 
 const MENU_RESULT_KEY = '@helo_menu_result';
 
+// Module-level one-shot flag: when verdict's "Photographier la composition" CTA
+// is tapped, it sets this to true before navigating. The next time the Scan tab
+// gains focus, we flip to OCR mode ONCE and consume the flag. Every other focus
+// (tab switch, back-from-modal, app foreground) resets to barcode mode.
+let globalGhostFlag = false;
+export function triggerGhostMode() {
+  globalGhostFlag = true;
+}
+
 export default function ScanScreen() {
   // First-use discovery sheets — barcode auto-shows on mount; the other modes
   // trigger when their chip is tapped for the first time.
@@ -75,7 +84,7 @@ export default function ScanScreen() {
   const fdRestaurant = useFeatureDiscovery('restaurant', { autoShow: false });
   const fdPrescription = useFeatureDiscovery('prescription', { autoShow: false });
 
-  const { ghostBarcode, forceOCR } = useLocalSearchParams<{ ghostBarcode?: string; forceOCR?: string }>();
+  const { ghostBarcode } = useLocalSearchParams<{ ghostBarcode?: string }>();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
@@ -122,22 +131,18 @@ export default function ScanScreen() {
   const vfY = isOCRMode ? VF_OCR_Y : isMenuMode ? VF_MENU_Y : isPhotoMode ? VF_PHOTO_Y : VF_BARCODE_Y;
   const vfX = (SCREEN_W - vfW) / 2;
 
-  // Ghost Capture one-shot: when arriving from verdict's "Photographier la
-  // composition" CTA (forceOCR=1), flip to OCR mode ONCE then clear the
-  // param so subsequent tab visits default back to 'barcode'.
-  const forceOCRConsumed = useRef(false);
-  useEffect(() => {
-    if (forceOCR === '1' && !forceOCRConsumed.current) {
-      forceOCRConsumed.current = true;
-      setScanMode('ingredients');
-      // Clear the param AFTER applying it so reopening the tab doesn't re-fire.
-      router.setParams({ forceOCR: '' } as never);
-    }
-  }, [forceOCR]);
-
   useFocusEffect(
     useCallback(() => {
       setIsActive(true);
+      // Reset to barcode on every focus, UNLESS Ghost Capture just triggered.
+      // The flag is set by triggerGhostMode() (called from verdict screen) and
+      // consumed exactly once here.
+      if (globalGhostFlag) {
+        globalGhostFlag = false;
+        setScanMode('ingredients');
+      } else {
+        setScanMode('barcode');
+      }
       return () => {
         setIsActive(false);
         setTorchOn(false);

@@ -211,6 +211,9 @@ export default function HomeScreen() {
             <IconButton size={44} onPress={() => router.push('/search')} accessibilityLabel="Rechercher">
               <Feather name="search" size={20} color={Colors.textSecondary} />
             </IconButton>
+            <IconButton size={44} onPress={() => router.push('/guide' as never)} accessibilityLabel="Guide">
+              <Feather name="help-circle" size={20} color={Colors.textSecondary} />
+            </IconButton>
             <IconButton size={44} accessibilityLabel="Notifications">
               <Feather name="bell" size={20} color={Colors.textSecondary} />
             </IconButton>

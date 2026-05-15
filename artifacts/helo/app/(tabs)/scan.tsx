@@ -306,6 +306,14 @@ export default function ScanScreen() {
           {isOffline && <OfflineBadge />}
         </View>
         <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+          <IconButton
+            onPress={() => router.push('/guide' as never)}
+            backgroundColor="rgba(255,255,255,0.18)"
+            size={40}
+            accessibilityLabel="Guide"
+          >
+            <Feather name="help-circle" size={18} color="#fff" />
+          </IconButton>
           {scanMode === 'barcode' && (
             <IconButton
               onPress={() => router.push('/basket-scan' as never)}

@@ -194,3 +194,55 @@ export async function resetDiscovery(key: DiscoveryKey): Promise<void> {
     // best-effort
   }
 }
+
+/** Resets every @helo_discovery_* flag so all sheets reappear on next visit. */
+export async function resetAllDiscoveries(): Promise<void> {
+  try {
+    const keys = (Object.keys(DISCOVERIES) as DiscoveryKey[]).map(storageKey);
+    await AsyncStorage.multiRemove(keys);
+  } catch {
+    // best-effort
+  }
+}
+
+// ─── Category grouping for the in-app feature guide ─────────────────────────
+export type DiscoveryCategory = 'Scanner' | 'Analyse' | 'Social' | 'Ma Grossesse';
+
+export type GuideEntry = {
+  key: DiscoveryKey;
+  category: DiscoveryCategory;
+  /** Expo Router pathname to navigate to when the card is tapped. */
+  route: string;
+};
+
+export const GUIDE_ENTRIES: GuideEntry[] = [
+  // Scanner
+  { key: 'barcode',      category: 'Scanner',      route: '/(tabs)/scan' },
+  { key: 'ocr',          category: 'Scanner',      route: '/(tabs)/scan' },
+  { key: 'photo',        category: 'Scanner',      route: '/(tabs)/scan' },
+  { key: 'voice',        category: 'Scanner',      route: '/voice' },
+  { key: 'basket',       category: 'Scanner',      route: '/basket-scan' },
+  { key: 'shelf',        category: 'Scanner',      route: '/shelf-scan' },
+  { key: 'prescription', category: 'Scanner',      route: '/prescription-scan' },
+  // Analyse
+  { key: 'restaurant',   category: 'Analyse',      route: '/(tabs)/scan' },
+  { key: 'chat',         category: 'Analyse',      route: '/(tabs)/chat' },
+  { key: 'nutrition',    category: 'Analyse',      route: '/nutrition' },
+  { key: 'travel',       category: 'Analyse',      route: '/travel' },
+  // Social
+  { key: 'partner',      category: 'Social',       route: '/(tabs)/partner-checklist-tab' },
+  { key: 'circle',       category: 'Social',       route: '/circle' },
+  { key: 'pact',         category: 'Social',       route: '/pact' },
+  // Ma Grossesse
+  { key: 'timeline',     category: 'Ma Grossesse', route: '/timeline' },
+  { key: 'journal',      category: 'Ma Grossesse', route: '/(tabs)/journal' },
+  { key: 'memories',     category: 'Ma Grossesse', route: '/memories' },
+  { key: 'ar_mirror',    category: 'Ma Grossesse', route: '/ar-mirror' },
+];
+
+export const GUIDE_CATEGORIES: DiscoveryCategory[] = [
+  'Scanner',
+  'Analyse',
+  'Social',
+  'Ma Grossesse',
+];

@@ -787,6 +787,8 @@ export default function ProfileScreen() {
             <Divider />
             <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push('/premium' as never)} />
             <Divider />
+            <SettingRow icon="help-circle" title="Guide des fonctionnalités" subtitle="Comment marche chaque mode" onPress={() => router.push('/guide' as never)} />
+            <Divider />
             <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push('/methodology' as never)} />
             <Divider />
             <SettingRow icon="file-text" title="CGU" onPress={() => router.push('/legal/terms' as never)} />

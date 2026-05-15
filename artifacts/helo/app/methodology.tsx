@@ -116,11 +116,11 @@ export default function MethodologyScreen() {
               <Feather name="bar-chart-2" size={18} color={Colors.accent} />
             </View>
             <ThemedText variant="headlineMedium" color="textPrimary">
-              Niveaux de verdict
+              Niveaux d'analyse
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Chaque produit scanné reçoit l'un des trois niveaux de verdict suivants :
+            Chaque produit scanné reçoit l'un des trois niveaux d'analyse suivants :
           </ThemedText>
           {VERDICT_LEVELS.map((level) => (
             <View key={level.label} style={[styles.verdictRow, { backgroundColor: level.bg }]}>
@@ -161,7 +161,7 @@ export default function MethodologyScreen() {
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Hēlo n'est pas un dispositif médical et ne fournit pas de diagnostic. L'application ne remplace en aucun cas l'avis de votre médecin, sage-femme ou pharmacien. Les verdicts sont basés sur les données disponibles et peuvent ne pas couvrir toutes les situations individuelles.
+            Hēlo n'est pas un dispositif médical et ne fournit pas de diagnostic. L'application ne remplace en aucun cas l'avis de votre médecin, sage-femme ou pharmacien. Les analyses sont basées sur les données disponibles (CRAT, ANSM, EFSA, SCCS) et peuvent ne pas couvrir toutes les situations individuelles.
           </ThemedText>
         </Card>
 
@@ -175,7 +175,7 @@ export default function MethodologyScreen() {
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Notre base de données est régulièrement mise à jour pour refléter les dernières publications scientifiques et les recommandations des autorités de santé. Les verdicts peuvent évoluer en fonction des nouvelles données disponibles.
+            Notre base de données est régulièrement mise à jour pour refléter les dernières publications scientifiques et les recommandations des autorités de santé. Les analyses peuvent évoluer en fonction des nouvelles données disponibles.
           </ThemedText>
         </Card>
 

@@ -232,6 +232,12 @@ export default function BasketResultsScreen() {
             <ThemedText style={styles.scoreTotal}>{items.length}</ThemedText>
             <ThemedText style={styles.scoreLabel}>compatibles</ThemedText>
           </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: Spacing.sm, paddingHorizontal: Spacing.lg }}>
+            <Feather name="info" size={11} color={Colors.textTertiary} />
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ fontStyle: 'italic', fontSize: 11, textAlign: 'center' }}>
+              Analyse basée sur les données CRAT, ANSM, EFSA
+            </ThemedText>
+          </View>
         </Animated.View>
 
         {/* Color bar */}

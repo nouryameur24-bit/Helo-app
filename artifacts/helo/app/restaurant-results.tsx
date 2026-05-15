@@ -420,6 +420,12 @@ export default function RestaurantResultsScreen() {
               </View>
             </View>
           </LinearGradient>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: Spacing.sm, paddingHorizontal: Spacing.lg }}>
+            <Feather name="info" size={11} color={Colors.textTertiary} />
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ fontStyle: 'italic', fontSize: 11, textAlign: 'center' }}>
+              Analyse basée sur les données EFSA / ANSES
+            </ThemedText>
+          </View>
         </Animated.View>
 
         {/* ── Course tabs ── */}

@@ -153,72 +153,62 @@ function validateBriefingShape(parsed: unknown): void {
   }
 }
 
+// Section keys, French titles and emojis are filled in client-side after parsing
+// to keep the prompt minimal — the LLM only returns content/tips/riskLevel per section.
+const SECTION_META: Record<
+  'water' | 'food' | 'mosquitoes' | 'vaccines' | 'sun' | 'emergency',
+  { title: string; emoji: string }
+> = {
+  water:      { title: 'Eau & Hydratation',     emoji: '💧' },
+  food:       { title: 'Alimentation',          emoji: '🍽️' },
+  mosquitoes: { title: 'Moustiques & Parasites', emoji: '🦟' },
+  vaccines:   { title: 'Vaccins & Médicaments',  emoji: '💉' },
+  sun:        { title: 'Soleil & Chaleur',       emoji: '☀️' },
+  emergency:  { title: 'Urgences & Santé',       emoji: '🏥' },
+};
+
 function buildPrompt(country: string, departureDate: string, returnDate: string, trimesterLabel: string): string {
-  return `Tu es une sage-femme et médecin du voyage francophone. Génère un briefing santé grossesse complet pour une femme enceinte au ${trimesterLabel} qui voyage en ${country} du ${departureDate} au ${returnDate}.
+  // Compact prompt: ~10 lines instead of ~65, faster to process by Claude Haiku.
+  return `Sage-femme/médecin du voyage. Briefing santé pour femme enceinte (${trimesterLabel}) en ${country} du ${departureDate} au ${returnDate}.
 
-Réponds UNIQUEMENT avec un objet JSON valide (sans markdown, sans texte avant/après) respectant exactement ce format :
+Réponds UNIQUEMENT avec ce JSON (sans markdown) :
+{"flag":"<emoji drapeau>","sections":{"water":{"content":"...","tips":["..","..",".."], "riskLevel":"low|medium|high"},"food":{...},"mosquitoes":{...},"vaccines":{...},"sun":{...},"emergency":{...}},"checklist":["item1",...,"item10"]}
 
-{
-  "flag": "<emoji drapeau pays>",
-  "sections": {
-    "water": {
-      "title": "Eau & Hydratation",
-      "emoji": "💧",
-      "content": "<paragraphe concis sur la qualité de l'eau en ${country}>",
-      "tips": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
-      "riskLevel": "<low|medium|high>"
-    },
-    "food": {
-      "title": "Alimentation",
-      "emoji": "🍽️",
-      "content": "<paragraphe sur la sécurité alimentaire en ${country} pendant la grossesse>",
-      "tips": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
-      "riskLevel": "<low|medium|high>"
-    },
-    "mosquitoes": {
-      "title": "Moustiques & Parasites",
-      "emoji": "🦟",
-      "content": "<paragraphe sur les risques (paludisme, dengue, zika, etc.) en ${country}>",
-      "tips": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
-      "riskLevel": "<low|medium|high>"
-    },
-    "vaccines": {
-      "title": "Vaccins & Médicaments",
-      "emoji": "💉",
-      "content": "<paragraphe sur les vaccinations recommandées/obligatoires et médicaments compatibles grossesse>",
-      "tips": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
-      "riskLevel": "<low|medium|high>"
-    },
-    "sun": {
-      "title": "Soleil & Chaleur",
-      "emoji": "☀️",
-      "content": "<paragraphe sur les précautions soleil et chaleur pendant la grossesse en ${country}>",
-      "tips": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
-      "riskLevel": "<low|medium|high>"
-    },
-    "emergency": {
-      "title": "Urgences & Santé",
-      "emoji": "🏥",
-      "content": "<paragraphe sur le système de santé local, numéros d'urgence, assurance voyage grossesse>",
-      "tips": ["<conseil 1>", "<conseil 2>", "<conseil 3>"],
-      "riskLevel": "<low|medium|high>"
-    }
-  },
-  "checklist": [
-    "<item à emporter/préparer 1>",
-    "<item 2>",
-    "<item 3>",
-    "<item 4>",
-    "<item 5>",
-    "<item 6>",
-    "<item 7>",
-    "<item 8>",
-    "<item 9>",
-    "<item 10>"
-  ]
+Sections : water (eau), food (alimentation), mosquitoes (paludisme/dengue/zika), vaccines (vaccins+médocs grossesse), sun (soleil/chaleur), emergency (santé locale, numéros, assurance).
+Chaque section : 1 paragraphe court + 3 tips actionnables + riskLevel. Checklist : 10 items à emporter. Adapte au ${trimesterLabel} et au pays.`;
 }
 
-Adapte TOUTES les recommandations au trimestre (${trimesterLabel}) et au pays spécifique. Sois précise et pratique. Les tips doivent être des phrases courtes et actionnables.`;
+const EDGE_TIMEOUT_MS = 25_000;
+const MAX_ATTEMPTS = 2;
+
+interface ChatData { content?: Array<{ text?: string }> }
+
+async function invokeChatWithTimeout(prompt: string): Promise<string> {
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const invokePromise = supabase.functions.invoke('chat', {
+        body: { messages: [{ role: 'user', content: prompt }] },
+      });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), EDGE_TIMEOUT_MS),
+      );
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+      if (error) throw error;
+      const text = (data as ChatData)?.content?.[0]?.text ?? '';
+      if (!text) throw new Error('EMPTY_RESPONSE');
+      return text;
+    } catch (err) {
+      lastErr = err;
+      if (__DEV__) console.warn(`[Hēlo Travel] attempt ${attempt}/${MAX_ATTEMPTS} failed:`, err);
+      if (attempt < MAX_ATTEMPTS) {
+        // Backoff before retry: 800ms then 1.6s
+        await new Promise((r) => setTimeout(r, 800 * attempt));
+      }
+    }
+  }
+  if (__DEV__) console.error('[Hēlo Travel] all attempts failed:', lastErr);
+  throw new Error('API_ERROR_EDGE');
 }
 
 export async function generateTravelBriefing(
@@ -240,17 +230,7 @@ export async function generateTravelBriefing(
 
   const prompt = buildPrompt(country, departureDate, returnDate, trimesterLabel);
 
-  const { data, error } = await supabase.functions.invoke('chat', {
-    body: { messages: [{ role: 'user', content: prompt }] },
-  });
-
-  if (error) {
-    if (__DEV__) console.error('[Hēlo Travel] Edge function error:', error);
-    throw new Error('API_ERROR_EDGE');
-  }
-
-  type ChatData = { content?: Array<{ text?: string }> };
-  const rawText = (data as ChatData)?.content?.[0]?.text ?? '';
+  const rawText = await invokeChatWithTimeout(prompt);
 
   let parsed: {
     flag?: string;
@@ -275,6 +255,13 @@ export async function generateTravelBriefing(
 
   validateBriefingShape(parsed);
 
+  // Inject French titles/emojis client-side (the compact prompt no longer asks for them).
+  const sectionWithMeta = (key: keyof typeof SECTION_META) => ({
+    ...(parsed.sections[key] as Record<string, unknown>),
+    title: SECTION_META[key].title,
+    emoji: SECTION_META[key].emoji,
+  });
+
   const id = `travel_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const briefing: TravelBriefing = {
@@ -286,12 +273,12 @@ export async function generateTravelBriefing(
     trimester: trimesterNum,
     generatedAt: Date.now(),
     sections: {
-      water: normalizeSection(parsed.sections.water),
-      food: normalizeSection(parsed.sections.food),
-      mosquitoes: normalizeSection(parsed.sections.mosquitoes),
-      vaccines: normalizeSection(parsed.sections.vaccines),
-      sun: normalizeSection(parsed.sections.sun),
-      emergency: normalizeSection(parsed.sections.emergency),
+      water: normalizeSection(sectionWithMeta('water')),
+      food: normalizeSection(sectionWithMeta('food')),
+      mosquitoes: normalizeSection(sectionWithMeta('mosquitoes')),
+      vaccines: normalizeSection(sectionWithMeta('vaccines')),
+      sun: normalizeSection(sectionWithMeta('sun')),
+      emergency: normalizeSection(sectionWithMeta('emergency')),
     },
     checklist: (parsed.checklist ?? []).map((label: string, i: number) => ({
       id: `check_${i}`,

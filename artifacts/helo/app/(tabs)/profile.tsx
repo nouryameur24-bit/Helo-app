@@ -36,7 +36,6 @@ import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeedin
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProfile, setUserRole } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
-import { PREMIUM_KEY } from '@/lib/purchases';
 import {
   checkAndSendWeekMilestoneNotification,
   createCircle,
@@ -108,7 +107,7 @@ export default function ProfileScreen() {
     if (isBreastfeeding && !babyMode) enableBabyMode();
   }, [isBreastfeeding, babyMode, enableBabyMode]);
 
-  const { isPremium, requirePremium, refresh: refreshPremium } = usePremium();
+  const { isPremium, requirePremium } = usePremium();
   const { shelf: profileShelf } = useShelfData(userId || undefined);
   const { score: glowScore } = calculateGlowScore(profileShelf);
 
@@ -117,29 +116,6 @@ export default function ProfileScreen() {
   const [joinCode, setJoinCode] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [isCreatingCircle, setIsCreatingCircle] = useState(false);
-
-  // Hidden dev shortcut: 5 taps on version number toggles premium (testing only)
-  const [devTapCount, setDevTapCount] = useState(0);
-  const devTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleVersionTap = React.useCallback(async () => {
-    if (devTapTimer.current) clearTimeout(devTapTimer.current);
-    const next = devTapCount + 1;
-    setDevTapCount(next);
-    devTapTimer.current = setTimeout(() => setDevTapCount(0), 2000);
-    if (next >= 5) {
-      setDevTapCount(0);
-      if (devTapTimer.current) clearTimeout(devTapTimer.current);
-      const next_premium = !isPremium;
-      await AsyncStorage.setItem(PREMIUM_KEY, next_premium ? 'true' : 'false');
-      await refreshPremium();
-      Alert.alert(
-        '🛠 Dev Mode',
-        next_premium ? 'Premium activé ✓' : 'Premium désactivé',
-        [{ text: 'OK' }],
-      );
-    }
-  }, [devTapCount, isPremium, refreshPremium]);
 
   useEffect(() => {
     if (!userId || isPartner) return;
@@ -404,16 +380,14 @@ export default function ProfileScreen() {
       >
         {/* Header Avatar */}
         <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.avatarSection}>
-          <Pressable onPress={handleVersionTap} accessibilityRole="button" accessibilityLabel="Avatar">
-            <LinearGradient
-              colors={isPartner ? ['#A8C4E0', '#6B9BBF'] : [Colors.accentLight, Colors.accent]}
-              style={[styles.avatar, devTapCount > 0 && devTapCount < 5 && { opacity: 0.75 }]}
-            >
-              <ThemedText variant="headlineLarge" style={styles.avatarInitial}>
-                {devTapCount > 0 && devTapCount < 5 ? `${devTapCount}/5` : initial}
-              </ThemedText>
-            </LinearGradient>
-          </Pressable>
+          <LinearGradient
+            colors={isPartner ? ['#A8C4E0', '#6B9BBF'] : [Colors.accentLight, Colors.accent]}
+            style={styles.avatar}
+          >
+            <ThemedText variant="headlineLarge" style={styles.avatarInitial}>
+              {initial}
+            </ThemedText>
+          </LinearGradient>
           <View style={styles.avatarInfo}>
             <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
             {isPartner ? (
@@ -787,22 +761,6 @@ export default function ProfileScreen() {
             <Divider />
             <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push('/premium' as never)} />
             <Divider />
-            {__DEV__ && (
-              <>
-                <SettingRow
-                  icon="unlock"
-                  title={isPremium ? '🛠 DEV : Désactiver Premium' : '🛠 DEV : Activer Premium'}
-                  subtitle="Visible en développement uniquement"
-                  onPress={async () => {
-                    const next = !isPremium;
-                    await AsyncStorage.setItem(PREMIUM_KEY, next ? 'true' : 'false');
-                    await refreshPremium();
-                    Alert.alert('🛠 Dev Mode', next ? 'Premium activé ✓' : 'Premium désactivé');
-                  }}
-                />
-                <Divider />
-              </>
-            )}
             <SettingRow icon="help-circle" title="Guide des fonctionnalités" subtitle="Comment marche chaque mode" onPress={() => router.push('/guide' as never)} />
             <Divider />
             <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push('/methodology' as never)} />

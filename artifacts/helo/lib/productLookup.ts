@@ -75,43 +75,27 @@ async function checkLocalProducts(barcode: string): Promise<ProductData | null> 
   try {
     const { data: product, error } = await supabase
       .from('products')
-      .select('name, brand, ingredient_ids')
+      .select('barcode, name, brand, ingredients_raw, image_url')
       .eq('barcode', barcode)
       .maybeSingle();
 
     if (error || !product) return null;
 
-    const ingredientIds = (product.ingredient_ids ?? []) as string[];
-    if (ingredientIds.length === 0) {
-      // No linked ingredients → cannot compute a real verdict. Fall through to
-      // community / OFF / OBF where we can get actual ingredient text.
-      // Returning here would silently produce a false "safe" verdict.
+    const ingredientsRaw = (product.ingredients_raw ?? '').toString().trim();
+    if (!ingredientsRaw) {
+      // No raw ingredient text → cannot compute a real verdict. Fall through
+      // to community / OFF / OBF rather than return a false "safe" result.
       return null;
     }
 
-    const { data: ings, error: ingErr } = await supabase
-      .from('ingredients')
-      .select('name')
-      .in('id', ingredientIds);
-
-    const ingredientsList: string[] = (!ingErr && ings)
-      ? (ings as Array<{ name: string }>)
-          .map((i) => i.name?.toLowerCase().trim())
-          .filter((n): n is string => !!n && n.length >= 2)
-      : [];
-
-    if (ingredientsList.length === 0) {
-      // ingredient_ids referenced but none resolved (data quality issue) →
-      // also fall through rather than return an empty (false-safe) result.
-      if (__DEV__) console.warn('[Hēlo] checkLocalProducts: ingredient_ids unresolved for', barcode);
-      return null;
-    }
+    const ingredientsList = parseIngredients(ingredientsRaw);
+    if (ingredientsList.length === 0) return null;
 
     return {
       name: product.name ?? 'Produit',
       brand: product.brand ?? '',
-      imageUrl: null,
-      ingredientsRaw: ingredientsList.join(', '),
+      imageUrl: product.image_url ?? null,
+      ingredientsRaw,
       ingredientsList,
       source: 'helo' as ProductData['source'],
     };

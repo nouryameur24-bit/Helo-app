@@ -73,9 +73,9 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
   try {
     const { data, error } = await supabase
       .from('community_submissions')
-      .select('product_name, category, metadata')
+      .select('name, category, metadata, status')
       .eq('barcode', barcode)
-      .eq('status', 'auto_captured')
+      .in('status', ['auto_captured', 'community_verified'])
       .not('metadata->ingredients_raw', 'is', null)
       .maybeSingle();
 
@@ -87,7 +87,7 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
     if (ingredientsList.length === 0) return null;
 
     return {
-      name: data.product_name ?? 'Produit communautaire',
+      name: data.name ?? 'Produit communautaire',
       brand: undefined,
       imageUrl: null,
       ingredientsList,
@@ -99,6 +99,15 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
   }
 }
 
+// ─── Ghost Capture save — atomic via RPC, fallback to manual upsert ──────────
+//
+// Uses the `ghost_capture_upsert` Postgres function (see
+// supabase/migration-ghost-capture.sql) for an ATOMIC scan_count increment +
+// auto-promotion to community_verified at >= 3 scans.
+//
+// If the RPC is missing (older DB without the migration applied), falls back
+// to a best-effort client-side read-then-write. Both paths return false on
+// any persistence error so the boolean contract is real.
 export async function ghostCaptureSave(params: {
   barcode: string;
   productName: string;
@@ -106,49 +115,100 @@ export async function ghostCaptureSave(params: {
   ocrText: string;
   verdict: VerdictResult;
   trimester: Phase;
-}): Promise<void> {
-  if (!isSupabaseConfigured) return;
+}): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+
   try {
-    await supabase.from('community_submissions').upsert(
-      {
-        barcode: params.barcode,
-        product_name: params.productName,
-        category: params.category,
-        ingredients_photo_url: null,
-        status: 'auto_captured',
-        metadata: {
-          ingredients_raw: params.ocrText,
-          ai_verdict: params.verdict,
-          trimester: params.trimester,
-        },
-      },
-      { onConflict: 'barcode', ignoreDuplicates: false },
-    );
+    const { error: rpcError } = await supabase.rpc('ghost_capture_upsert', {
+      p_barcode:      params.barcode,
+      p_product_name: params.productName,
+      p_category:     params.category,
+      p_ocr_text:     params.ocrText,
+      p_ai_verdict:   params.verdict as unknown as Record<string, unknown>,
+      p_trimester:    String(params.trimester),
+    });
+
+    if (!rpcError) return true;
+
+    // RPC missing (PGRST202) or schema mismatch — fall through to client logic
+    if (__DEV__) console.warn('[Hēlo] ghost_capture_upsert RPC failed, falling back:', rpcError.message);
   } catch {
-    // fire-and-forget — silent failure
+    // Network error on RPC — try client-side fallback
+  }
+
+  // ── Client-side fallback (best-effort, non-atomic) ─────────────────────────
+  try {
+    const { data: existing, error: selectError } = await supabase
+      .from('community_submissions')
+      .select('id, metadata')
+      .eq('barcode', params.barcode)
+      .in('status', ['auto_captured', 'community_verified'])
+      .maybeSingle();
+    if (selectError) return false;
+
+    if (existing) {
+      const meta = (existing.metadata ?? {}) as Record<string, unknown>;
+      const prevCount = typeof meta.scan_count === 'number' ? meta.scan_count : 1;
+      const scanCount = prevCount + 1;
+      const newStatus = scanCount >= 3 ? 'community_verified' : 'auto_captured';
+      const { error: updateError } = await supabase
+        .from('community_submissions')
+        .update({
+          status: newStatus,
+          metadata: {
+            ...meta,
+            scan_count: scanCount,
+            last_scanned: new Date().toISOString(),
+          },
+        })
+        .eq('id', existing.id);
+      return !updateError;
+    }
+
+    const { error: insertError } = await supabase.from('community_submissions').insert({
+      barcode: params.barcode,
+      name: params.productName,
+      brand: '',
+      category: params.category,
+      product_photo_url: null,
+      ingredients_photo_url: null,
+      status: 'auto_captured',
+      metadata: {
+        ingredients_raw: params.ocrText,
+        ai_verdict: params.verdict,
+        trimester: params.trimester,
+        scan_count: 1,
+        first_captured: new Date().toISOString(),
+      },
+    });
+    return !insertError;
+  } catch {
+    return false;
   }
 }
 
-// ─── 3. Fetch product by barcode — cascades OFF → OBF → community ────────────
+// ─── 3. Fetch product by barcode — cascades community → OFF → OBF ────────────
+// community_submissions is checked FIRST so ghost-captured products load
+// instantly for the next user (no remote API roundtrip needed).
 
 export async function fetchProductByBarcode(barcode: string): Promise<ProductData | null> {
-  // 1st attempt: Open Food Facts (food products)
+  // 1st attempt: community submissions (auto_captured + community_verified)
+  const community = await checkCommunitySubmissions(barcode);
+  if (community) return community;
+
+  // 2nd attempt: Open Food Facts (food products)
   const offData = await fetchFromAPI(OFF_API_BASE, barcode);
   if (offData) {
     const product = parseOFFResponse(offData, 'openfoodfacts');
     if (product) return product;
   }
 
-  // 2nd attempt: Open Beauty Facts (cosmetics)
+  // 3rd attempt: Open Beauty Facts (cosmetics)
   const obfData = await fetchFromAPI(OBF_API_BASE, barcode);
   if (obfData) {
     const product = parseOFFResponse(obfData, 'openbeautyfacts');
     if (product) return product;
   }
-
-  // 3rd attempt: community auto-captured submissions
-  const community = await checkCommunitySubmissions(barcode);
-  if (community) return community;
 
   return null;
 }

@@ -170,7 +170,7 @@ export default function ProfileScreen() {
           .from('community_submissions')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
-          .eq('status', 'approved');
+          .in('status', ['approved', 'auto_captured', 'community_verified']);
         if (!cancelled && contributions !== null) setContributionCount(contributions);
 
         const { count: scans } = await supabase
@@ -423,10 +423,10 @@ export default function ProfileScreen() {
             ) : weekAndTrimesterLabel ? (
               <ThemedText variant="bodyMedium" color="textSecondary">{weekAndTrimesterLabel}</ThemedText>
             ) : null}
-            {!isPartner && contributionCount > 5 && (
+            {!isPartner && contributionCount >= 5 && (
               <View style={styles.contributriceBadge}>
                 <ThemedText variant="labelSmall" style={styles.contributriceBadgeText}>
-                  Contributrice ✦
+                  Contributrice Hēlo 🏅
                 </ThemedText>
               </View>
             )}
@@ -484,6 +484,32 @@ export default function ProfileScreen() {
                 <ThemedText variant="bodySmall" color="textSecondary">Contributions</ThemedText>
               </Card>
             </View>
+          </Animated.View>
+        )}
+
+        {/* Vos contributions */}
+        {!isPartner && contributionCount > 0 && (
+          <Animated.View entering={FadeInDown.delay(170).duration(500)}>
+            <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+              VOS CONTRIBUTIONS
+            </ThemedText>
+            <Card padding={Spacing.lg} style={styles.contribCard}>
+              <View style={styles.contribRow}>
+                <View style={styles.contribIconCircle}>
+                  <ThemedText style={{ fontSize: 22 }}>🤝</ThemedText>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <ThemedText variant="bodyLarge" color="textPrimary">
+                    {contributionCount} produit{contributionCount > 1 ? 's' : ''} ajouté{contributionCount > 1 ? 's' : ''} à la communauté
+                  </ThemedText>
+                  <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                    {contributionCount >= 5
+                      ? 'Vous êtes Contributrice Hēlo 🏅'
+                      : `Encore ${5 - contributionCount} pour devenir Contributrice Hēlo`}
+                  </ThemedText>
+                </View>
+              </View>
+            </Card>
           </Animated.View>
         )}
 

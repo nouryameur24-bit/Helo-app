@@ -202,6 +202,25 @@ const profileStyles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.sm,
   },
+  contribCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  contribRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    flex: 1,
+  },
+  contribIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default profileStyles;

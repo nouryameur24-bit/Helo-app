@@ -61,7 +61,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { MatchResult, Phase, VerdictResult } from '@/types';
 
 export default function VerdictScreen() {
-  const { scanId } = useLocalSearchParams<{ scanId: string }>();
+  const { scanId, ghostThanks } = useLocalSearchParams<{ scanId: string; ghostThanks?: string }>();
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();
   const { loading, product, matches, verdict, error, notFound, scanBarcode, setDirectResult } = useScan();
@@ -79,6 +79,22 @@ export default function VerdictScreen() {
   const [recallMatch, setRecallMatch] = useState<RappelConsoRecord | null>(null);
   const [shareVisible, setShareVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('Ajouté à votre placard ✓');
+  const ghostThanksShownRef = useRef(false);
+
+  // ── Ghost Capture "merci" toast ─────────────────────────────────────────────
+  // Triggered when the user arrives from the OCR review flow with ghostThanks=1.
+  // Non-blocking, plays a success haptic and auto-hides after 3s.
+  useEffect(() => {
+    if (ghostThanks !== '1' || ghostThanksShownRef.current) return;
+    if (loading) return;
+    ghostThanksShownRef.current = true;
+    setToastMessage("✨ Merci ! Vous venez d'aider la communauté Hēlo");
+    setToastVisible(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    const t = setTimeout(() => setToastVisible(false), 3000);
+    return () => clearTimeout(t);
+  }, [ghostThanks, loading]);
   const [phase, setPhase] = useState<Phase>(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
   const [isPhotoMode, setIsPhotoMode] = useState(false);
@@ -349,7 +365,7 @@ export default function VerdictScreen() {
 
   return (
     <View style={styles.root}>
-      <Toast visible={toastVisible} message="Ajouté à votre placard ✓" />
+      <Toast visible={toastVisible} message={toastMessage} />
 
       <ShelfBottomSheet
         visible={sheetVisible}

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -200,11 +201,14 @@ export default function OcrReviewScreen() {
         savedAt: Date.now(),
       }));
 
-      // Navigate to verdict with ocr_ prefix
-      router.replace(`/verdict/${encodeURIComponent(`ocr_${id}`)}`);
+      // Navigate to verdict with ocr_ prefix; pass ghostThanks param so the
+      // verdict screen renders the "merci" toast over its content.
+      const verdictPath = `/verdict/${encodeURIComponent(`ocr_${id}`)}`;
+      router.replace(ghostBarcode ? `${verdictPath}?ghostThanks=1` : verdictPath);
 
       // ── Ghost Capture: background save (fire-and-forget) ──────────────────
       if (ghostBarcode) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         ghostCaptureSave({
           barcode: ghostBarcode,
           productName: product.name,
@@ -345,8 +349,17 @@ export default function OcrReviewScreen() {
           disabled={!ocrText.trim() || analysing}
           loading={analysing}
         >
-          Analyser les ingrédients
+          {ghostBarcode ? 'Analyser & Contribuer' : 'Analyser les ingrédients'}
         </Button>
+        {ghostBarcode ? (
+          <ThemedText
+            variant="bodySmall"
+            color="textTertiary"
+            style={{ textAlign: 'center', marginTop: Spacing.sm }}
+          >
+            En analysant, vous aidez anonymement la communauté Hēlo 🤝
+          </ThemedText>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );

@@ -1,0 +1,91 @@
+Upgrade Ghost Capture to Elite mode:
+
+1. LEGAL FIX — In app/ocr-review.tsx, change the analyse button:
+- Text: "Analyser & Contribuer"  
+- Add below the button a small text (bodySmall, muted):
+  "En analysant, vous aidez anonymement la communauté Hēlo 🤝"
+- This gives implicit consent for the background save
+
+2. TOAST SUCCESS — After ghostCaptureSave succeeds in app/ocr-review.tsx,
+show a non-blocking toast notification:
+- Text: "✨ Merci ! Vous venez d'aider la communauté Hēlo"
+- Gold/accent background, white text, 3 seconds duration
+- Add Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+- Only show if ghostBarcode is present (= user came from Ghost flow)
+- Don't block navigation — the toast appears OVER the verdict screen
+
+3. SCAN COUNT — In ghostCaptureSave (lib/productLookup.ts), before upserting,
+check if this barcode already exists in community_submissions:
+- If it exists: increment a scan_count field in metadata instead of overwriting
+- If scan_count reaches 3: automatically change status from 'auto_captured' 
+  to 'community_verified'
+- This means products scanned by 3 different users are auto-validated
+
+Update the ghostCaptureSave function:
+
+export async function ghostCaptureSave(params: {
+  barcode: string;
+  productName: string;
+  category: string;
+  ocrText: string;
+  verdict: VerdictResult;
+  trimester: Phase;
+}): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    // Check if already captured before
+    const { data: existing } = await supabase
+      .from('community_submissions')
+      .select('id, metadata')
+      .eq('barcode', params.barcode)
+      .single();
+
+    if (existing) {
+      const meta = existing.metadata || {};
+      const scanCount = (meta.scan_count || 1) + 1;
+      const newStatus = scanCount >= 3 ? 'community_verified' : 'auto_captured';
+      await supabase
+        .from('community_submissions')
+        .update({ 
+          status: newStatus,
+          metadata: { ...meta, scan_count: scanCount, last_scanned: new Date().toISOString() }
+        })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('community_submissions').insert({
+        barcode: params.barcode,
+        product_name: params.productName,
+        category: params.category,
+        ingredients_photo_url: null,
+        status: 'auto_captured',
+        metadata: {
+          ingredients_raw: params.ocrText,
+          ai_verdict: params.verdict,
+          trimester: params.trimester,
+          scan_count: 1,
+          first_captured: new Date().toISOString(),
+        },
+      });
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+4. FASTER LOOKUP — In the product lookup cascade (lib/productLookup.ts),
+add community_submissions as a source BEFORE hitting OFF/OBF APIs:
+
+Order should be:
+1. Check local Supabase products table
+2. Check community_submissions where status = 'auto_captured' or 'community_verified'
+3. If found in community_submissions: use ingredients_raw from metadata, skip OFF/OBF
+4. Only if NOT found anywhere: trigger Ghost Capture modal
+
+This means Ghost-captured products load INSTANTLY for the next user.
+
+5. CONTRIBUTOR PROFILE — In app/(tabs)/profile.tsx, add a small section:
+"Vos contributions"
+- "X produits ajoutés à la communauté" (count from community_submissions where contributor matches)
+- Small gold badge if contributions >= 5: "Contributrice Hēlo 🏅"
+- This is just a display, no complex logic needed

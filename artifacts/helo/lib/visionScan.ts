@@ -1,19 +1,12 @@
 /**
  * lib/visionScan.ts — Photo product identification via Claude Vision
  *
- * Sends a base64-encoded product photo to Claude Vision API,
- * parses the JSON response, and returns a ProductData object.
- * Requires EXPO_PUBLIC_ANTHROPIC_API_KEY in env.
+ * Sends a base64-encoded product photo to the Supabase `chat` Edge Function,
+ * which proxies to Claude. No API key is exposed to the client.
  */
 
 import type { ProductData } from '@/types';
-
-import { Config } from '@/lib/config';
-
-const API_KEY = (process.env as Record<string, string | undefined>)['EXPO_PUBLIC_ANTHROPIC_API_KEY'] ?? '';
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-opus-4-5';
-const MAX_TOKENS = 1024;
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 interface VisionResponse {
   product_name: string;
@@ -21,6 +14,8 @@ interface VisionResponse {
   probable_ingredients: string[];
   confidence: 'high' | 'medium' | 'low';
 }
+
+type ChatData = { content?: Array<{ text?: string }> };
 
 const VISION_PROMPT = `Tu es un expert en cosmétiques et alimentation. Analyse cette photo du produit et identifie-le.
 
@@ -39,53 +34,44 @@ Règles :
 - confidence = "high" si tu es sûr, "medium" si probable, "low" si incertain
 - Réponds en français pour product_name et brand`;
 
-export async function identifyProduct(base64Image: string): Promise<ProductData> {
-  if (!API_KEY) {
-    throw new Error("La clé API Anthropic n'est pas configurée.");
+async function invokeChatVision(base64Image: string, prompt: string): Promise<string> {
+  if (!isSupabaseConfigured) {
+    throw new Error("Le service d'analyse n'est pas configuré.");
   }
 
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      messages: [
+  const messages = [
+    {
+      role: 'user' as const,
+      content: [
         {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/jpeg',
-                data: base64Image,
-              },
-            },
-            {
-              type: 'text',
-              text: VISION_PROMPT,
-            },
-          ],
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: 'image/jpeg',
+            data: base64Image,
+          },
         },
+        { type: 'text', text: prompt },
       ],
-    }),
+    },
+  ];
+
+  const { data, error } = await supabase.functions.invoke('chat', {
+    body: { messages },
   });
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    if (__DEV__) console.error('[Hēlo VisionScan] Anthropic error:', res.status, err);
-    if (res.status === 401) throw new Error('Clé API invalide.');
-    if (res.status === 429) throw new Error('Trop de requêtes. Réessayez dans quelques instants.');
+  if (error) {
+    if (__DEV__) console.error('[Hēlo VisionScan] Edge function error:', error);
     throw new Error("Erreur lors de l'identification visuelle. Réessayez.");
   }
 
-  const data = await res.json();
-  const rawText: string = data.content?.[0]?.text ?? '';
+  const text = (data as ChatData)?.content?.[0]?.text ?? '';
+  if (!text) throw new Error("Réponse vide du service. Réessayez.");
+  return text;
+}
+
+export async function identifyProduct(base64Image: string): Promise<ProductData> {
+  const rawText = await invokeChatVision(base64Image, VISION_PROMPT);
 
   let parsed: VisionResponse;
   try {
@@ -94,7 +80,7 @@ export async function identifyProduct(base64Image: string): Promise<ProductData>
     parsed = JSON.parse(jsonMatch[0]) as VisionResponse;
   } catch {
     if (__DEV__) console.error('[Hēlo VisionScan] JSON parse error:', rawText);
-    throw new Error("Impossible d'analyser la réponse de Claude. Réessayez.");
+    throw new Error("Impossible d'analyser la réponse. Réessayez.");
   }
 
   if (!parsed.product_name || parsed.product_name === 'Produit non identifié') {
@@ -140,52 +126,7 @@ Règles :
 - Si aucun produit n'est identifiable, retourne un tableau vide []`;
 
 export async function scanShelf(base64Image: string): Promise<ShelfDetectedProduct[]> {
-  if (!API_KEY) {
-    throw new Error("La clé API Anthropic n'est pas configurée.");
-  }
-
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 2048,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/jpeg',
-                data: base64Image,
-              },
-            },
-            {
-              type: 'text',
-              text: SHELF_VISION_PROMPT,
-            },
-          ],
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    if (__DEV__) console.error('[Hēlo ShelfScan] Anthropic error:', res.status, err);
-    if (res.status === 401) throw new Error('Clé API invalide.');
-    if (res.status === 429) throw new Error('Trop de requêtes. Réessayez dans quelques instants.');
-    throw new Error("Erreur lors de l'analyse de l'étagère. Réessayez.");
-  }
-
-  const data = await res.json();
-  const rawText: string = data.content?.[0]?.text ?? '';
+  const rawText = await invokeChatVision(base64Image, SHELF_VISION_PROMPT);
 
   let parsed: ShelfDetectedProduct[];
   try {
@@ -195,7 +136,7 @@ export async function scanShelf(base64Image: string): Promise<ShelfDetectedProdu
     if (!Array.isArray(parsed)) throw new Error('Not an array');
   } catch {
     if (__DEV__) console.error('[Hēlo ShelfScan] JSON parse error:', rawText);
-    throw new Error("Impossible d'analyser la réponse de Claude. Réessayez.");
+    throw new Error("Impossible d'analyser la réponse. Réessayez.");
   }
 
   return parsed.filter(

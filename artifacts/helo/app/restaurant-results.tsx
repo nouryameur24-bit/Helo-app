@@ -319,8 +319,7 @@ export default function RestaurantResultsScreen() {
             Clé API manquante
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.xl }}>
-            Le Mode Restaurant nécessite une clé Google Vision. Ajoutez{' '}
-            EXPO_PUBLIC_GOOGLE_VISION_KEY dans vos variables d'environnement.
+            Le service d'analyse de menu est temporairement indisponible. Veuillez réessayer plus tard.
           </ThemedText>
         </View>
       </View>

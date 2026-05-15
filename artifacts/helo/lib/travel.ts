@@ -6,11 +6,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY ?? '';
-const API_URL = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-haiku-4-5-20251001';
-const MAX_TOKENS = 2048;
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 const TRAVEL_BRIEFINGS_INDEX_KEY = '@helo_travel_briefings_index';
 const MAX_BRIEFINGS = 5;
@@ -238,35 +234,23 @@ export async function generateTravelBriefing(
     : trimesterNum === 2 ? '2ème trimestre'
     : '3ème trimestre';
 
-  if (!API_KEY) {
+  if (!isSupabaseConfigured) {
     throw new Error('API_KEY_MISSING');
   }
 
   const prompt = buildPrompt(country, departureDate, returnDate, trimesterLabel);
 
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+  const { data, error } = await supabase.functions.invoke('chat', {
+    body: { messages: [{ role: 'user', content: prompt }] },
   });
 
-  if (!res.ok) {
-    const status = res.status;
-    if (status === 401) throw new Error('API_KEY_INVALID');
-    if (status === 429) throw new Error('RATE_LIMIT');
-    throw new Error(`API_ERROR_${status}`);
+  if (error) {
+    if (__DEV__) console.error('[Hēlo Travel] Edge function error:', error);
+    throw new Error('API_ERROR_EDGE');
   }
 
-  const data = await res.json();
-  const rawText = data.content?.[0]?.text ?? '';
+  type ChatData = { content?: Array<{ text?: string }> };
+  const rawText = (data as ChatData)?.content?.[0]?.text ?? '';
 
   let parsed: {
     flag?: string;

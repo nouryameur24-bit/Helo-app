@@ -66,7 +66,61 @@ function parseOFFResponse(
   return { name, brand, imageUrl, ingredientsRaw, ingredientsList, source };
 }
 
-// ─── 2. Community submissions fallback ───────────────────────────────────────
+// ─── 2a. Local Supabase products table (12k+ curated entries) ───────────────
+// Checked FIRST — these are pre-vetted, ingredient-linked products that load
+// instantly from our own DB without any third-party API roundtrip.
+
+async function checkLocalProducts(barcode: string): Promise<ProductData | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('name, brand, ingredient_ids')
+      .eq('barcode', barcode)
+      .maybeSingle();
+
+    if (error || !product) return null;
+
+    const ingredientIds = (product.ingredient_ids ?? []) as string[];
+    if (ingredientIds.length === 0) {
+      // No linked ingredients → cannot compute a real verdict. Fall through to
+      // community / OFF / OBF where we can get actual ingredient text.
+      // Returning here would silently produce a false "safe" verdict.
+      return null;
+    }
+
+    const { data: ings, error: ingErr } = await supabase
+      .from('ingredients')
+      .select('name')
+      .in('id', ingredientIds);
+
+    const ingredientsList: string[] = (!ingErr && ings)
+      ? (ings as Array<{ name: string }>)
+          .map((i) => i.name?.toLowerCase().trim())
+          .filter((n): n is string => !!n && n.length >= 2)
+      : [];
+
+    if (ingredientsList.length === 0) {
+      // ingredient_ids referenced but none resolved (data quality issue) →
+      // also fall through rather than return an empty (false-safe) result.
+      if (__DEV__) console.warn('[Hēlo] checkLocalProducts: ingredient_ids unresolved for', barcode);
+      return null;
+    }
+
+    return {
+      name: product.name ?? 'Produit',
+      brand: product.brand ?? '',
+      imageUrl: null,
+      ingredientsRaw: ingredientsList.join(', '),
+      ingredientsList,
+      source: 'helo' as ProductData['source'],
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ─── 2b. Community submissions fallback ──────────────────────────────────────
 
 async function checkCommunitySubmissions(barcode: string): Promise<ProductData | null> {
   if (!isSupabaseConfigured) return null;
@@ -192,18 +246,22 @@ export async function ghostCaptureSave(params: {
 // instantly for the next user (no remote API roundtrip needed).
 
 export async function fetchProductByBarcode(barcode: string): Promise<ProductData | null> {
-  // 1st attempt: community submissions (auto_captured + community_verified)
+  // 1st attempt: local Supabase products table (curated, pre-vetted, ~12k entries)
+  const local = await checkLocalProducts(barcode);
+  if (local) return local;
+
+  // 2nd attempt: community submissions (auto_captured + community_verified)
   const community = await checkCommunitySubmissions(barcode);
   if (community) return community;
 
-  // 2nd attempt: Open Food Facts (food products)
+  // 3rd attempt: Open Food Facts (food products)
   const offData = await fetchFromAPI(OFF_API_BASE, barcode);
   if (offData) {
     const product = parseOFFResponse(offData, 'openfoodfacts');
     if (product) return product;
   }
 
-  // 3rd attempt: Open Beauty Facts (cosmetics)
+  // 4th attempt: Open Beauty Facts (cosmetics)
   const obfData = await fetchFromAPI(OBF_API_BASE, barcode);
   if (obfData) {
     const product = parseOFFResponse(obfData, 'openbeautyfacts');

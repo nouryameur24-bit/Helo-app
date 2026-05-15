@@ -787,6 +787,22 @@ export default function ProfileScreen() {
             <Divider />
             <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push('/premium' as never)} />
             <Divider />
+            {__DEV__ && (
+              <>
+                <SettingRow
+                  icon="unlock"
+                  title={isPremium ? '🛠 DEV : Désactiver Premium' : '🛠 DEV : Activer Premium'}
+                  subtitle="Visible en développement uniquement"
+                  onPress={async () => {
+                    const next = !isPremium;
+                    await AsyncStorage.setItem(PREMIUM_KEY, next ? 'true' : 'false');
+                    await refreshPremium();
+                    Alert.alert('🛠 Dev Mode', next ? 'Premium activé ✓' : 'Premium désactivé');
+                  }}
+                />
+                <Divider />
+              </>
+            )}
             <SettingRow icon="help-circle" title="Guide des fonctionnalités" subtitle="Comment marche chaque mode" onPress={() => router.push('/guide' as never)} />
             <Divider />
             <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push('/methodology' as never)} />

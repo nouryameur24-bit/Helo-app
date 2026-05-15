@@ -146,6 +146,40 @@ const styles = StyleSheet.create({
   noSignalDivider: { marginVertical: Spacing.xs },
   ingredientsWrap: { position: 'relative' },
 
+  // Free-tier compact ingredient row (name + badge + 1-line caption)
+  freeIngredientRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  freeIngredientBody: { flex: 1, gap: 4 },
+  freeIngredientHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
+  freeIngredientName: { flexShrink: 1 },
+  freeIngredientCaption: { lineHeight: 16 },
+
+  // "All clear" empty state when 0 flagged ingredients
+  allClearCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.xxl,
+    backgroundColor: Colors.safeBg,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.safe + '33',
+  },
+  allClearText: { flex: 1, color: Colors.textPrimary, lineHeight: 20 },
+
   tabRow: {
     flexDirection: 'row',
     marginHorizontal: Spacing.xl,

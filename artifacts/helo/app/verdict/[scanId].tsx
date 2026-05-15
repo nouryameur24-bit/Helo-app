@@ -528,6 +528,8 @@ export default function VerdictScreen() {
           noSignal={noSignal}
           isPremium={isPremium}
           requirePremium={requirePremium}
+          phase={phase}
+          totalIngredientsCount={product?.ingredientsList?.length ?? 0}
         />
 
         {/* ── PARTAGER DANS MON CERCLE ── */}

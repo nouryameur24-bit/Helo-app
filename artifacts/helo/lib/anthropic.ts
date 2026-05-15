@@ -103,12 +103,114 @@ INGRÉDIENTS CLÉS À RISQUE :
 - Ibuprofène / AINS : contre-indiqués à partir du 6ème mois`;
 }
 
+// ─── Medication safety pre-filter ─────────────────────────────────────────────
+
+/**
+ * High-risk medications that must NEVER receive a free-form AI answer.
+ * Each entry is the canonical lowercase, accent-stripped name. The user
+ * message is normalized the same way before matching with word boundaries.
+ *
+ * Well-documented safe medications (paracétamol, doliprane, spasfon, gaviscon,
+ * smecta) are intentionally NOT in this list — Claude can answer those.
+ */
+const BLOCKED_MEDICATIONS = [
+  'methotrexate',
+  'isotretinoine',
+  'roaccutane',
+  'accutane',
+  'warfarine',
+  'coumadine',
+  'lithium',
+  'valproate',
+  'depakine',
+  'misoprostol',
+  'cytotec',
+  'thalidomide',
+  'tretinoine',
+  'finasteride',
+  'propecia',
+  'statine',
+  'atorvastatine',
+  'ibuprofene',
+  'advil',
+  'nurofen',
+  'aspirine',
+  'aspegic',
+  'diclofenac',
+  'voltarene',
+  'ketoprofene',
+  'naproxene',
+] as const;
+
+/** Strip diacritics + lowercase for accent-insensitive matching. */
+function normalize(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Returns the matched medication name (canonical), or null. */
+export function detectBlockedMedication(userMessage: string): string | null {
+  const haystack = normalize(userMessage);
+  for (const med of BLOCKED_MEDICATIONS) {
+    // Word boundary match — avoids matching "lithiumXX" or substrings.
+    const re = new RegExp(`\\b${med}\\b`, 'i');
+    if (re.test(haystack)) return med;
+  }
+  return null;
+}
+
+/** Pretty-cased name for display in the safe response. */
+function displayMedName(med: string): string {
+  return med.charAt(0).toUpperCase() + med.slice(1);
+}
+
+function buildBlockedResponse(med: string): string {
+  const name = displayMedName(med);
+  return `⚠️ ${name} est un médicament qui nécessite un avis médical personnalisé pendant la grossesse.
+
+Selon le CRAT (Centre de Référence sur les Agents Tératogènes), ce médicament peut présenter des risques selon votre trimestre et votre situation personnelle.
+
+👉 Consultez la fiche officielle : https://www.lecrat.fr
+👉 Parlez-en à votre médecin ou pharmacien avant toute prise.
+
+Pour la douleur pendant la grossesse, le paracétamol (Doliprane, Efferalgan, Dafalgan) est généralement considéré comme compatible selon le CRAT. Mais même pour le paracétamol, respectez les doses et consultez votre médecin.
+
+Pour toute décision concernant votre grossesse, consultez votre médecin ou sage-femme.`;
+}
+
+/** Best-effort logging to Supabase; never throws. */
+async function logBlockedQuery(query: string, med: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const { error } = await supabase.from('blocked_medication_queries').insert({
+      query_text: query,
+      medication_detected: med,
+      timestamp: new Date().toISOString(),
+    });
+    if (error) {
+      logError('anthropic.logBlockedQuery.insert', error, { medication: med });
+    }
+  } catch (err) {
+    logError('anthropic.logBlockedQuery', err, { medication: med });
+  }
+}
+
 // ─── Edge function call ───────────────────────────────────────────────────────
 
 export async function sendMessage(
   history: ChatMessage[],
   userMessage: string,
 ): Promise<string> {
+  // ── Medication safety pre-filter (runs BEFORE any AI call) ──
+  const blockedMed = detectBlockedMedication(userMessage);
+  if (blockedMed) {
+    // Fire-and-forget logging — never blocks the user response
+    void logBlockedQuery(userMessage, blockedMed);
+    return buildBlockedResponse(blockedMed);
+  }
+
   if (!isSupabaseConfigured) {
     return "Le service de chat n'est pas encore configuré. Veuillez contacter le support Hēlo.";
   }

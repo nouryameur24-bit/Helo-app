@@ -149,18 +149,26 @@ export default function ScanScreen() {
 
   const handleBarcodeScanned = useCallback(
     async ({ data }: { data: string }) => {
-      if (!data || data === lastBarcode.current || scanMode !== 'barcode') return;
+      console.warn('[SCAN] barcode detected:', data, 'lastBarcode:', lastBarcode.current, 'scanMode:', scanMode);
+      if (!data || data === lastBarcode.current || scanMode !== 'barcode') {
+        console.warn('[SCAN] BLOCKED early — empty/dup/wrongMode');
+        return;
+      }
       lastBarcode.current = data;
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
       debounceTimer.current = setTimeout(() => { lastBarcode.current = null; }, DEBOUNCE_MS);
 
       if (!isPremium && !isOffline) {
         const allowed = await checkScanLimit();
+        console.warn('[SCAN] scanLimit allowed:', allowed, 'isPremium:', isPremium, 'isOffline:', isOffline);
         if (!allowed) {
+          console.warn('[SCAN] BLOCKED by scan limit — paywall should show');
           lastBarcode.current = null;
           return;
         }
         await incrementScanCount();
+      } else {
+        console.warn('[SCAN] scanLimit bypassed (premium or offline)');
       }
 
       onProductScanned(scanFirstName || '').catch(() => {});
@@ -171,6 +179,7 @@ export default function ScanScreen() {
         withTiming(0, { duration: 300 }),
       );
       setTimeout(() => {
+        console.warn('[SCAN] navigating to verdict:', data);
         router.push(`/verdict/${encodeURIComponent(data)}`);
       }, 350);
     },

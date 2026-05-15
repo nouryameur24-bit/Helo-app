@@ -7,6 +7,7 @@
 
 import type { ProductData } from '@/types';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { logError } from '@/lib/logger';
 
 interface VisionResponse {
   product_name: string;
@@ -78,8 +79,8 @@ export async function identifyProduct(base64Image: string): Promise<ProductData>
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON found');
     parsed = JSON.parse(jsonMatch[0]) as VisionResponse;
-  } catch {
-    if (__DEV__) console.error('[Hēlo VisionScan] JSON parse error:', rawText);
+  } catch (err) {
+    logError('visionScan.identifyProduct.parse', err, { rawText: rawText.slice(0, 500) });
     throw new Error("Impossible d'analyser la réponse. Réessayez.");
   }
 
@@ -134,8 +135,8 @@ export async function scanShelf(base64Image: string): Promise<ShelfDetectedProdu
     if (!jsonMatch) throw new Error('No JSON array found');
     parsed = JSON.parse(jsonMatch[0]) as ShelfDetectedProduct[];
     if (!Array.isArray(parsed)) throw new Error('Not an array');
-  } catch {
-    if (__DEV__) console.error('[Hēlo ShelfScan] JSON parse error:', rawText);
+  } catch (err) {
+    logError('visionScan.scanShelf.parse', err, { rawText: rawText.slice(0, 500) });
     throw new Error("Impossible d'analyser la réponse. Réessayez.");
   }
 

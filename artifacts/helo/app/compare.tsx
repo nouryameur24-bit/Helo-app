@@ -16,6 +16,7 @@ import { CompareShareCard } from '@/components/share/CompareShareCard';
 import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { logError } from '@/lib/logger';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
@@ -64,8 +65,9 @@ export default function CompareScreen() {
         const data: SlotData = { barcode, product, matches, verdict, score };
         if (slot === 'A') setSlotA(data);
         else setSlotB(data);
-      } catch {
+      } catch (err) {
         // Leave slot empty on error
+        logError('compare.loadSlot', err, { barcode, slot });
       } finally {
         setLoadingSlot(null);
       }

@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
+import { logError } from '@/lib/logger';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import {
   loadTravelBriefing,
@@ -302,7 +303,8 @@ export default function TravelBriefingScreen() {
 
         setBriefing(data);
         setChecklist(data.checklist);
-      } catch {
+      } catch (err) {
+        logError('travelBriefing.load', err);
         setError('Impossible de charger le briefing.');
       } finally {
         setLoading(false);

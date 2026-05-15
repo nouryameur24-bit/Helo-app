@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getLocalIngredients, matchIngredientsLocal } from '@/lib/offline';
+import { logError } from '@/lib/logger';
 import type {
   IngredientData,
   MatchResult,
@@ -126,7 +127,8 @@ async function checkLocalProducts(barcode: string): Promise<ProductData | null> 
       ingredientsList,
       source: 'helo' as ProductData['source'],
     };
-  } catch {
+  } catch (err) {
+    logError('productLookup.checkLocalProducts', err, { barcode });
     return null;
   }
 }
@@ -215,8 +217,9 @@ export async function ghostCaptureSave(params: {
 
     // RPC missing (PGRST202) or schema mismatch — fall through to client logic
     if (__DEV__) console.warn('[Hēlo] ghost_capture_upsert RPC failed, falling back:', rpcError.message);
-  } catch {
+  } catch (err) {
     // Network error on RPC — try client-side fallback
+    logError('productLookup.ghostCaptureSave.rpc', err, { barcode: params.barcode });
   }
 
   // ── Client-side fallback (best-effort, non-atomic) ─────────────────────────
@@ -265,7 +268,8 @@ export async function ghostCaptureSave(params: {
       },
     });
     return !insertError;
-  } catch {
+  } catch (err) {
+    logError('productLookup.ghostCaptureSave.fallback', err, { barcode: params.barcode });
     return false;
   }
 }
@@ -412,7 +416,9 @@ export async function matchIngredients(
   AsyncStorage.setItem(
     '@helo_ingredients_db',
     JSON.stringify({ ingredients: dbIngredients, downloadedAt: Date.now() }),
-  ).catch(() => {});
+  ).catch((err) => {
+    logError('productLookup.cacheWrite', err);
+  });
 
   return ingredientsList.map((ingredientName): MatchResult => {
     const nameLower = ingredientName.toLowerCase();

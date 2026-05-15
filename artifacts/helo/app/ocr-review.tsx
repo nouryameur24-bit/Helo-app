@@ -18,6 +18,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { logError } from '@/lib/logger';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
@@ -171,8 +172,9 @@ export default function OcrReviewScreen() {
             if (p.trimester) phase = p.trimester as Phase;
           }
         }
-      } catch {
+      } catch (err) {
         // Profile read failure — OCR analysis continues with default phase
+        logError('ocrReview.readProfile', err);
       }
 
       const matchesArr = await matchIngredients(ingredients, phase);
@@ -208,7 +210,9 @@ export default function OcrReviewScreen() {
 
       // ── Ghost Capture: background save (fire-and-forget) ──────────────────
       if (ghostBarcode) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch((err) => {
+          logError('ocrReview.haptics', err);
+        });
         ghostCaptureSave({
           barcode: ghostBarcode,
           productName: product.name,
@@ -216,9 +220,12 @@ export default function OcrReviewScreen() {
           ocrText: cleaned,
           verdict: verdictResult,
           trimester: phase,
-        }).catch(() => {});
+        }).catch((err) => {
+          logError('ocrReview.ghostCaptureSave', err);
+        });
       }
-    } catch {
+    } catch (err) {
+      logError('ocrReview.analyse', err);
       setAnalysing(false);
     }
   };

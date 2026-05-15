@@ -5,6 +5,7 @@ import { Alert, Platform, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 
 import { useProfile } from '@/hooks/useProfile';
+import { logError } from '@/lib/logger';
 import { exp } from '@/components/scan-party/scanPartyStyles';
 import { PARTY_USED_KEY, type PartyResult, type Phase, type Theme } from '@/components/scan-party/scanPartyTypes';
 
@@ -58,7 +59,8 @@ export default function ScanPartyScreen() {
       } else {
         Alert.alert('Partage non disponible', "Votre appareil ne supporte pas le partage d'images.");
       }
-    } catch {
+    } catch (err) {
+      logError('scanParty.share', err);
       setPhase('summary');
       Alert.alert('Erreur', "Impossible de générer l'image. Réessayez.");
     }

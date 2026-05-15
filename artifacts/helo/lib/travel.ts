@@ -7,6 +7,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { logError } from '@/lib/logger';
 
 const TRAVEL_BRIEFINGS_INDEX_KEY = '@helo_travel_briefings_index';
 const MAX_BRIEFINGS = 5;
@@ -65,7 +66,8 @@ export async function loadTravelBriefingsIndex(): Promise<TravelBriefingMeta[]> 
     const raw = await AsyncStorage.getItem(TRAVEL_BRIEFINGS_INDEX_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as TravelBriefingMeta[];
-  } catch {
+  } catch (err) {
+    logError('travel.loadIndex', err);
     return [];
   }
 }
@@ -75,7 +77,8 @@ export async function loadTravelBriefing(storageKey: string): Promise<TravelBrie
     const raw = await AsyncStorage.getItem(storageKey);
     if (!raw) return null;
     return JSON.parse(raw) as TravelBriefing;
-  } catch {
+  } catch (err) {
+    logError('travel.loadBriefing', err, { storageKey });
     return null;
   }
 }
@@ -100,13 +103,16 @@ async function saveTravelBriefing(briefing: TravelBriefing, storageKey: string):
     if (filtered.length >= MAX_BRIEFINGS) {
       const removed = [meta, ...filtered].slice(MAX_BRIEFINGS);
       for (const old of removed) {
-        await AsyncStorage.removeItem(old.storageKey).catch(() => {});
+        await AsyncStorage.removeItem(old.storageKey).catch((err) => {
+          logError('travel.evictOldBriefing', err, { storageKey: old.storageKey });
+        });
       }
     }
 
     await AsyncStorage.setItem(TRAVEL_BRIEFINGS_INDEX_KEY, JSON.stringify(updated));
-  } catch {
+  } catch (err) {
     // AsyncStorage write failure — briefing may not appear until app restarts
+    logError('travel.saveBriefing', err, { storageKey });
   }
 }
 
@@ -116,8 +122,9 @@ export async function deleteTravelBriefing(storageKey: string): Promise<void> {
     const index = await loadTravelBriefingsIndex();
     const updated = index.filter((m) => m.storageKey !== storageKey);
     await AsyncStorage.setItem(TRAVEL_BRIEFINGS_INDEX_KEY, JSON.stringify(updated));
-  } catch {
+  } catch (err) {
     // AsyncStorage failure — item may reappear after restart; user can delete again
+    logError('travel.deleteBriefing', err, { storageKey });
   }
 }
 
@@ -217,7 +224,10 @@ export async function generateTravelBriefing(
   departureDate: string,
   returnDate: string,
 ): Promise<TravelBriefing> {
-  const trimesterRaw = await AsyncStorage.getItem('@helo_last_trimester').catch(() => null);
+  const trimesterRaw = await AsyncStorage.getItem('@helo_last_trimester').catch((err) => {
+    logError('travel.generateBriefing.readTrimester', err);
+    return null;
+  });
   const trimesterNum = parseInt(trimesterRaw ?? '2', 10);
   const trimesterLabel =
     trimesterNum === 1 ? '1er trimestre'
@@ -249,7 +259,8 @@ export async function generateTravelBriefing(
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON found');
     parsed = JSON.parse(jsonMatch[0]);
-  } catch {
+  } catch (err) {
+    logError('travel.generateBriefing.parse', err, { rawText: rawText.slice(0, 500) });
     throw new Error('PARSE_ERROR');
   }
 

@@ -24,6 +24,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
+import { logError } from '@/lib/logger';
 import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
 import { ShelfScanShareCard } from '@/components/share/ShelfScanShareCard';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
@@ -85,8 +86,9 @@ async function lookupProductInSupabase(name: string, brand: string): Promise<Ver
       const v = data[0].verdict as string;
       if (v === 'safe' || v === 'caution' || v === 'danger') return v;
     }
-  } catch {
+  } catch (err) {
     // silent
+    logError('shelfResults.fetchVerdict', err);
   }
   return 'unverified';
 }
@@ -241,7 +243,8 @@ export default function ShelfResultsScreen() {
         `${newItems.length} produit${newItems.length > 1 ? 's' : ''} ajouté${newItems.length > 1 ? 's' : ''} au placard (${room}).`,
         [{ text: 'OK' }],
       );
-    } catch {
+    } catch (err) {
+      logError('shelfResults.addToShelf', err);
       Alert.alert('Erreur', "Impossible d'ajouter les produits au placard.");
     }
   }, [products]);

@@ -8,6 +8,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logError } from '@/lib/logger';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -28,7 +29,8 @@ export async function loadChatHistory(): Promise<ChatMessage[]> {
     const raw = await AsyncStorage.getItem(CHAT_HISTORY_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as ChatMessage[];
-  } catch {
+  } catch (err) {
+    logError('anthropic.loadChatHistory', err);
     return [];
   }
 }
@@ -37,23 +39,28 @@ export async function saveChatHistory(messages: ChatMessage[]): Promise<void> {
   try {
     const trimmed = messages.slice(-MAX_HISTORY);
     await AsyncStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(trimmed));
-  } catch {
+  } catch (err) {
     // Non-critical — history may be lost; conversation still works
+    logError('anthropic.saveChatHistory', err, { count: messages.length });
   }
 }
 
 export async function clearChatHistory(): Promise<void> {
   try {
     await AsyncStorage.removeItem(CHAT_HISTORY_KEY);
-  } catch {
+  } catch (err) {
     // Non-critical — stale history will be overwritten on the next session
+    logError('anthropic.clearChatHistory', err);
   }
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
 async function buildSystemPrompt(): Promise<string> {
-  const trimesterRaw = await AsyncStorage.getItem('@helo_last_trimester').catch(() => null);
+  const trimesterRaw = await AsyncStorage.getItem('@helo_last_trimester').catch((err) => {
+    logError('anthropic.buildSystemPrompt.readTrimester', err);
+    return null;
+  });
   const trimester = trimesterRaw ?? '?';
   const trimesterLabel =
     trimester === '1' ? '1er trimestre'
@@ -119,7 +126,7 @@ export async function sendMessage(
     });
 
     if (error) {
-      if (__DEV__) console.error('[Hēlo Chat] Edge function error:', error);
+      logError('anthropic.sendMessage.edgeFunction', error);
       return "Une erreur est survenue. Veuillez réessayer dans quelques instants.";
     }
 
@@ -128,7 +135,7 @@ export async function sendMessage(
     if (!text) return "Désolée, je n'ai pas pu générer une réponse. Réessayez.";
     return text;
   } catch (e) {
-    if (__DEV__) console.error('[Hēlo Chat] Network error:', e);
+    logError('anthropic.sendMessage.network', e);
     return "Impossible de joindre l'assistant. Vérifiez votre connexion internet.";
   }
 }

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { logError } from '@/lib/logger';
 
 const STORAGE_KEY = 'disclaimer_accepted_version';
 const CURRENT_VERSION = '1.0.0';
@@ -31,8 +32,9 @@ export function DisclaimerModal() {
         if (acceptedVersion !== CURRENT_VERSION) {
           setVisible(true);
         }
-      } catch {
+      } catch (err) {
         // Non-critical
+        logError('disclaimerModal.checkVersion', err);
       }
     };
     check();
@@ -53,8 +55,9 @@ export function DisclaimerModal() {
             .eq('id', user.id);
         }
       }
-    } catch {
+    } catch (err) {
       // Non-critical
+      logError('disclaimerModal.acceptUpdate', err);
     } finally {
       setVisible(false);
     }

@@ -1,3 +1,19 @@
+/**
+ * Returns the given hex color with the supplied alpha (0..1).
+ *
+ *   withAlpha(Colors.accentLight, 0.33)  // → '#E8D5B054'
+ *
+ * Use this instead of `Colors.x + '55'` string concatenation to keep
+ * opacity values explicit and theme-driven.
+ */
+export function withAlpha(hex: string, alpha: number): string {
+  const a = Math.max(0, Math.min(1, alpha));
+  const byte = Math.round(a * 255).toString(16).padStart(2, '0').toUpperCase();
+  // Strip any existing alpha suffix (#RRGGBBAA → #RRGGBB).
+  const base = hex.length === 9 ? hex.slice(0, 7) : hex;
+  return `${base}${byte}`;
+}
+
 export const Colors = {
   background: '#FFFAF5',
   backgroundSecondary: '#FFF5EE',

@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import { GlowScoreCircle } from '@/components/GlowScoreCircle';
+import { logError } from '@/lib/logger';
 import { GlowScoreMini } from '@/components/GlowScoreMini';
 import { IllustrationGlowScore } from '@/components/illustrations/IllustrationGlowScore';
 import { IllustrationShelf } from '@/components/illustrations/IllustrationShelf';
@@ -367,8 +368,9 @@ function SlidePartager({ glowScore, week }: { glowScore: number; week: number })
       await Share.share({
         message: `Semaine ${week} de grossesse — mon Glow Score Hēlo est de ${glowScore}/100 ! Analysez vos produits en toute sécurité avec Hēlo.`,
       });
-    } catch {
+    } catch (err) {
       // Share not supported in web renderer — no-op for native mobile app
+      logError('weeklyBrief.share', err);
     }
   }, [glowScore, week]);
 

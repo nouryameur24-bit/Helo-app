@@ -16,6 +16,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Card } from '@/components/ui/Card';
+import { logError } from '@/lib/logger';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -50,7 +51,8 @@ function computeWeekFromDueDate(dueDate: string | null): number | null {
     const week = Math.round(40 - weeksRemaining);
     if (week < 1 || week > 40) return null;
     return week;
-  } catch {
+  } catch (err) {
+    logError('journalEntry.computeWeek', err);
     return null;
   }
 }
@@ -99,7 +101,8 @@ export default function JournalEntryScreen() {
       existing.push(entry);
       await AsyncStorage.setItem('journal_entries', JSON.stringify(existing));
       router.back();
-    } catch {
+    } catch (err) {
+      logError('journalEntry.save', err);
       Alert.alert('Erreur', 'Impossible de sauvegarder l\'entrée. Réessayez.');
     } finally {
       setSaving(false);

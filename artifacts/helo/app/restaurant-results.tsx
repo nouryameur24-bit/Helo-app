@@ -18,6 +18,7 @@ import {
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { logError } from '@/lib/logger';
 
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -199,8 +200,9 @@ export default function RestaurantResultsScreen() {
         if (raw) {
           setAnalysis(JSON.parse(raw) as MenuAnalysis);
         }
-      } catch {
+      } catch (err) {
         // AsyncStorage read failure is non-critical — screen will show empty state
+        logError('restaurantResults.load', err);
       } finally {
         setLoading(false);
       }
@@ -233,8 +235,9 @@ export default function RestaurantResultsScreen() {
     text += 'Analysé avec Hēlo — l\'appli grossesse & sécurité produits';
     try {
       await Share.share({ message: text });
-    } catch {
+    } catch (err) {
       // Share not supported in web renderer — no-op for native mobile app
+      logError('restaurantResults.share', err);
     }
   }, [analysis]);
 

@@ -203,7 +203,7 @@ function RoomCard({
         </ThemedText>
 
         <View style={{ marginTop: Spacing.md }}>
-          <GlowScoreCircle score={total > 0 ? score : 0} size="small" />
+          <GlowScoreCircle score={total > 0 ? score : 0} size="small" empty={total === 0} />
         </View>
 
         {total > 0 ? (

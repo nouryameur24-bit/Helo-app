@@ -18,6 +18,7 @@ interface GlowScoreCircleProps {
   score: number;
   size?: 'large' | 'small';
   animated?: boolean;
+  empty?: boolean;
 }
 
 const CONFIG = {
@@ -39,6 +40,7 @@ export function GlowScoreCircle({
   score,
   size = 'large',
   animated = true,
+  empty = false,
 }: GlowScoreCircleProps) {
   const config = CONFIG[size];
   const { diameter, strokeWidth } = config;
@@ -47,7 +49,10 @@ export function GlowScoreCircle({
   const circumference = 2 * Math.PI * radius;
   const center = diameter / 2;
 
-  const glowLabel = getGlowLabel(score);
+  const glowLabel = getGlowLabel(score, !empty);
+  const ringColor = empty ? Colors.borderLight : glowLabel.color;
+  const textColor = empty ? Colors.textTertiary : glowLabel.color;
+  const displayScore = empty ? '—' : String(score);
 
   const progress = useSharedValue(animated ? 0 : score / 100);
 
@@ -85,7 +90,7 @@ export function GlowScoreCircle({
             cx={center}
             cy={center}
             r={radius}
-            stroke={glowLabel.color}
+            stroke={ringColor}
             strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={circumference}
@@ -96,8 +101,8 @@ export function GlowScoreCircle({
           />
         </Svg>
         <View style={[styles.center, { width: diameter, height: diameter }]}>
-          <ThemedText variant={config.scoreVariant} style={{ color: glowLabel.color }}>
-            {score}
+          <ThemedText variant={config.scoreVariant} style={{ color: textColor }}>
+            {displayScore}
           </ThemedText>
         </View>
       </View>
@@ -119,7 +124,7 @@ export function GlowScoreCircle({
           cx={center}
           cy={center}
           r={radius}
-          stroke={glowLabel.color}
+          stroke={ringColor}
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={circumference}
@@ -130,12 +135,12 @@ export function GlowScoreCircle({
         />
       </Svg>
       <View style={[styles.center, { width: diameter, height: diameter }]}>
-        <ThemedText variant={config.scoreVariant} style={{ color: glowLabel.color }}>
-          {score}
+        <ThemedText variant={config.scoreVariant} style={{ color: textColor }}>
+          {displayScore}
         </ThemedText>
         <ThemedText
           variant={config.labelVariant}
-          style={{ color: glowLabel.color, marginTop: 2 }}
+          style={{ color: textColor, marginTop: 2 }}
         >
           {glowLabel.label}
         </ThemedText>

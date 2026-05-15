@@ -36,7 +36,10 @@ export interface GlowLabel {
   variant: 'safe' | 'accent' | 'caution' | 'danger';
 }
 
-export function getGlowLabel(score: number): GlowLabel {
+export function getGlowLabel(score: number, hasData: boolean = true): GlowLabel {
+  if (!hasData) {
+    return { label: 'Pas encore d\'analyse', color: Colors.textTertiary, variant: 'accent' };
+  }
   if (score > 80) {
     return { label: 'Excellent', color: Colors.safe, variant: 'safe' };
   }

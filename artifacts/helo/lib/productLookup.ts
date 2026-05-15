@@ -313,6 +313,17 @@ export async function fetchProductByBarcode(barcode: string): Promise<ProductDat
 
 // ─── 3. Parse ingredients list ───────────────────────────────────────────────
 
+// Patterns that look like nutritional values, not ingredients
+// Matches strings that look like nutrition-table labels rather than actual ingredients.
+// Note: must NOT include single tokens like "sodium" or "sel" because those are
+// also valid INCI prefixes ("Sodium benzoate", "Sodium lauryl sulfate", etc.).
+const NUTRITION_PATTERNS = /\b(mati[èe]res?\s+grasses?|acides?\s+gras\s+satur[ée]s?|fibres?\s+alimentaires?|valeur\s+[ée]nerg[ée]tique|sels?\s+min[ée]raux|dont\s+(?:sucres?|acides?))\b/i;
+
+function capitalizeFirst(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function parseIngredients(ingredientsText: string): string[] {
   if (!ingredientsText.trim()) return [];
 
@@ -320,6 +331,8 @@ export function parseIngredients(ingredientsText: string): string[] {
 
   // Remove content in parentheses (sub-ingredients / percentages)
   text = text.replace(/\([^)]*\)/g, '');
+  // Remove orphan stray closing parens left over from malformed inputs
+  text = text.replace(/[()]/g, '');
 
   // Remove percentage patterns like "12%", "12,5%"
   text = text.replace(/\d+[,.]?\d*\s*%/g, '');
@@ -331,11 +344,20 @@ export function parseIngredients(ingredientsText: string): string[] {
   const raw = text.split(/[,;]/);
 
   const cleaned = raw
-    .map((s) => s.trim().toLowerCase())
+    .map((s) => s.trim())
     .map((s) => s.replace(/^[\s\-–—:.]+/, '').trim())
     .map((s) => s.replace(/[\s\-–—:.]+$/, '').trim())
     .filter((s) => s.length >= 2)
-    .filter((s, i, arr) => arr.indexOf(s) === i);
+    // Drop anything that contains a "label: number" pattern (e.g. "saturés: 0")
+    .filter((s) => !/:\s*\d/.test(s))
+    // Drop "dont …" sub-nutritional facts
+    .filter((s) => !/^dont\b/i.test(s))
+    // Drop pure nutritional labels
+    .filter((s) => !NUTRITION_PATTERNS.test(s))
+    // Dedup using lowercase form
+    .filter((s, i, arr) => arr.findIndex((o) => o.toLowerCase() === s.toLowerCase()) === i)
+    // Capitalize first letter for display, downstream matching is case-insensitive
+    .map(capitalizeFirst);
 
   return cleaned;
 }

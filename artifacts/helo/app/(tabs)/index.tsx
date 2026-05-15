@@ -142,6 +142,7 @@ export default function HomeScreen() {
   const { isPremium } = usePremium();
 
   const [glowShareVisible, setGlowShareVisible] = useState(false);
+  const [showAllFeatures, setShowAllFeatures] = useState(false);
 
   if (isPartner) {
     return <PartnerHomeScreen />;
@@ -362,82 +363,85 @@ export default function HomeScreen() {
             <ThemedText variant="headlineMedium" color="textPrimary">Explorer</ThemedText>
           </View>
           <View style={styles.featureGrid}>
-            {([
-              {
-                label: 'Nutrition',
-                subtitle: 'Besoins du trimestre',
-                icon: 'heart' as const,
-                iconBg: Colors.cautionLight,
-                iconColor: Colors.caution,
-                route: '/nutrition',
-              },
-              {
-                label: 'Maison',
-                subtitle: 'Score environnement',
-                icon: 'home' as const,
-                iconBg: Colors.safeBg,
-                iconColor: Colors.safe,
-                route: '/home-score',
-              },
-              {
-                label: 'Restau',
-                subtitle: 'Analysez le menu',
-                icon: 'coffee' as const,
-                iconBg: '#FFF0E8',
-                iconColor: '#C97B40',
-                route: '/(tabs)/scan',
-              },
-              {
-                label: 'Voyage',
-                subtitle: 'Briefing santé',
-                icon: 'map' as const,
-                iconBg: '#E8F0FF',
-                iconColor: '#6B8FDB',
-                route: '/travel',
-                premium: true,
-              },
-              {
-                label: 'Vocal',
-                subtitle: 'Question IA par voix',
-                icon: 'mic' as const,
-                iconBg: '#F0E8FF',
-                iconColor: '#8B6BDB',
-                route: '/voice',
-                badge: '3/j',
-              },
-              {
-                label: 'Timeline',
-                subtitle: 'Semaine par semaine',
-                icon: 'calendar' as const,
-                iconBg: '#E8F5EE',
-                iconColor: Colors.safe,
-                route: '/timeline',
-              },
-              {
-                label: 'Scan Partie',
-                subtitle: 'Scanner en groupe',
-                icon: 'users' as const,
-                iconBg: '#FFF5E0',
-                iconColor: Colors.accentDark,
-                route: '/scan-party',
-              },
-              {
-                label: 'Miroir AR',
-                subtitle: 'Scanner en direct',
-                icon: 'aperture' as const,
-                iconBg: '#F0F8F4',
-                iconColor: Colors.safe,
-                route: '/ar-mirror',
-              },
-              {
-                label: 'Widget Glow',
-                subtitle: 'Widget écran d\'accueil',
-                icon: 'watch' as const,
-                iconBg: '#F5F0FF',
-                iconColor: '#8B6BDB',
-                route: '/widget-preview',
-              },
-            ]).map((f) => (
+            {(() => {
+              const allFeatures = [
+                {
+                  label: 'Nutrition',
+                  subtitle: 'Besoins du trimestre',
+                  icon: 'heart' as const,
+                  iconBg: Colors.cautionLight,
+                  iconColor: Colors.caution,
+                  route: '/nutrition',
+                },
+                {
+                  label: 'Maison',
+                  subtitle: 'Score environnement',
+                  icon: 'home' as const,
+                  iconBg: Colors.safeBg,
+                  iconColor: Colors.safe,
+                  route: '/home-score',
+                },
+                {
+                  label: 'Restau',
+                  subtitle: 'Analysez le menu',
+                  icon: 'coffee' as const,
+                  iconBg: '#FFF0E8',
+                  iconColor: '#C97B40',
+                  route: '/(tabs)/scan',
+                },
+                {
+                  label: 'Voyage',
+                  subtitle: 'Briefing santé',
+                  icon: 'map' as const,
+                  iconBg: '#E8F0FF',
+                  iconColor: '#6B8FDB',
+                  route: '/travel',
+                  premium: true,
+                },
+                {
+                  label: 'Vocal',
+                  subtitle: 'Question IA par voix',
+                  icon: 'mic' as const,
+                  iconBg: '#F0E8FF',
+                  iconColor: '#8B6BDB',
+                  route: '/voice',
+                  badge: '3/j',
+                },
+                {
+                  label: 'Timeline',
+                  subtitle: 'Semaine par semaine',
+                  icon: 'calendar' as const,
+                  iconBg: '#E8F5EE',
+                  iconColor: Colors.safe,
+                  route: '/timeline',
+                },
+                {
+                  label: 'Scan Partie',
+                  subtitle: 'Scanner en groupe',
+                  icon: 'users' as const,
+                  iconBg: '#FFF5E0',
+                  iconColor: Colors.accentDark,
+                  route: '/scan-party',
+                },
+                {
+                  label: 'Miroir AR',
+                  subtitle: 'Scanner en direct',
+                  icon: 'aperture' as const,
+                  iconBg: '#F0F8F4',
+                  iconColor: Colors.safe,
+                  route: '/ar-mirror',
+                },
+                {
+                  label: 'Widget Glow',
+                  subtitle: 'Widget écran d\'accueil',
+                  icon: 'watch' as const,
+                  iconBg: '#F5F0FF',
+                  iconColor: '#8B6BDB',
+                  route: '/widget-preview',
+                },
+              ];
+              return showAllFeatures ? allFeatures : allFeatures.slice(0, 4);
+            })().map((f) => (
               <Pressable
                 key={f.label}
                 style={({ pressed }) => [
@@ -466,6 +470,22 @@ export default function HomeScreen() {
               </Pressable>
             ))}
           </View>
+          <Pressable
+            onPress={() => setShowAllFeatures((v) => !v)}
+            style={({ pressed }) => ({
+              alignSelf: 'center',
+              marginTop: Spacing.md,
+              paddingVertical: Spacing.sm,
+              paddingHorizontal: Spacing.lg,
+              opacity: pressed ? 0.7 : 1,
+            })}
+            accessibilityRole="button"
+            accessibilityLabel={showAllFeatures ? 'Voir moins' : 'Voir plus de fonctionnalités'}
+          >
+            <ThemedText variant="labelLarge" color="accent">
+              {showAllFeatures ? 'Voir moins ↑' : 'Voir plus →'}
+            </ThemedText>
+          </Pressable>
         </Animated.View>
 
         {/* Shelf scan CTA */}
@@ -571,32 +591,6 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Journal card */}
-        <Animated.View entering={FadeInDown.delay(225).duration(500)}>
-          <Pressable
-            onPress={() => router.push('/(tabs)/journal' as never)}
-            style={({ pressed }) => [
-              styles.briefCard,
-              { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="Mon Journal"
-          >
-            <View style={styles.briefLeft}>
-              <View style={styles.briefIconWrap}>
-                <Feather name="edit-3" size={22} color={Colors.accent} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" color="textPrimary">Mon Journal</ThemedText>
-                <ThemedText variant="bodySmall" color="textSecondary">
-                  Grossesse jour après jour
-                </ThemedText>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
-          </Pressable>
-        </Animated.View>
-
         {/* Glow Score */}
         <Animated.View entering={FadeInDown.delay(240).duration(500)}>
           <View style={styles.sectionHeader}>
@@ -608,26 +602,31 @@ export default function HomeScreen() {
 
           <Card padding={Spacing.xl} style={styles.glowCard}>
             <View style={styles.glowCircleRow}>
-              <GlowScoreCircle score={score} size="large" animated />
+              <GlowScoreCircle score={score} size="large" animated empty={total === 0} />
             </View>
             <ThemedText
               variant="bodyMedium"
               color="textSecondary"
               style={styles.glowSubtitle}
             >
-              Basé sur {total} produit{total > 1 ? 's' : ''} de votre placard
+              {total === 0
+                ? 'Scannez votre premier produit pour découvrir votre Glow Score'
+                : `Basé sur ${total} produit${total > 1 ? 's' : ''} de votre placard`}
             </ThemedText>
 
-            <Divider style={{ marginVertical: Spacing.xl }} />
-
-            <ThemedText variant="labelLarge" color="textPrimary" style={{ marginBottom: Spacing.md }}>
-              Composition
-            </ThemedText>
-            <View style={styles.barsContainer}>
-              <CompositionBar count={countSafe} total={total} color={Colors.safe} label="Sûrs" />
-              <CompositionBar count={countCaution} total={total} color={Colors.caution} label="Vigilance" />
-              <CompositionBar count={countDanger} total={total} color={Colors.danger} label="À risque" />
-            </View>
+            {total > 0 && (
+              <>
+                <Divider style={{ marginVertical: Spacing.xl }} />
+                <ThemedText variant="labelLarge" color="textPrimary" style={{ marginBottom: Spacing.md }}>
+                  Composition
+                </ThemedText>
+                <View style={styles.barsContainer}>
+                  <CompositionBar count={countSafe} total={total} color={Colors.safe} label="Sûrs" />
+                  <CompositionBar count={countCaution} total={total} color={Colors.caution} label="Vigilance" />
+                  <CompositionBar count={countDanger} total={total} color={Colors.danger} label="À risque" />
+                </View>
+              </>
+            )}
 
             {hasRisk && (
               <Pressable

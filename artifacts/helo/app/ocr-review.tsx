@@ -181,7 +181,7 @@ export default function OcrReviewScreen() {
       // Build a fake ProductData from user inputs
       const product: ProductData = {
         barcode: `ocr_${Date.now()}`,
-        name: productName.trim() || 'Produit scanné',
+        name: productName.trim() || 'Produit analysé par OCR',
         brand: brand.trim() || undefined,
         imageUrl: uri || undefined,
         ingredientsList: ingredients,

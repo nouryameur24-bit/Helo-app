@@ -6,7 +6,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -62,6 +62,19 @@ export function usePremium(): UsePremiumReturn {
     // Then reconcile with RC in background
     refresh();
   }, []);
+
+  // Re-read cache every time the screen gains focus so the DEV toggle in
+  // profile (or any other instance that flips PREMIUM_KEY) propagates to all
+  // mounted hook instances. Without this each screen kept its initial state
+  // until next mount, so scan/paywall would still see the stale value.
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem(PREMIUM_KEY).then((v) => {
+        setIsPremium(v === 'true');
+      });
+      getDailyScanCount().then(setScanCount);
+    }, []),
+  );
 
   const requirePremium = useCallback(
     (trigger?: string): boolean => {

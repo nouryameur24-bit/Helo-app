@@ -30,7 +30,12 @@ import MemberAvatar from '@/components/circle/MemberAvatar';
 import CircleFeedCard, { EmptyFeed } from '@/components/circle/CircleFeedCard';
 import NoCercleScreen from '@/components/circle/NoCercleScreen';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 export default function CircleScreen() {
+  const __discovery_circle = useFeatureDiscovery('circle');
   const insets = useSafeAreaInsets();
   const { userId, firstName } = useProfile();
   const { isPremium, requirePremium } = usePremium();
@@ -124,12 +129,14 @@ export default function CircleScreen() {
     <View style={[s.root, { paddingTop: topPad }]}>
       <Header />
       <View style={s.loadingCenter}><ActivityIndicator color={Colors.accent} size="large" /></View>
+      <FeatureDiscoverySheet {...__discovery_circle.sheetProps} />
     </View>
   );
 
   if (!circle) return (
     <View style={[s.root, { paddingTop: topPad }]}>
       <Header />
+      <FeatureDiscoverySheet {...__discovery_circle.sheetProps} />
       {showJoinInput ? (
         <View style={s.joinWrap}>
           <ThemedText variant="headlineMedium" color="textPrimary" style={{ textAlign: 'center' }}>
@@ -291,6 +298,7 @@ export default function CircleScreen() {
           </Pressable>
         </View>
       </View>
+    <FeatureDiscoverySheet {...__discovery_circle.sheetProps} />
     </KeyboardAvoidingView>
   );
 }

@@ -39,10 +39,15 @@ import {
 } from '@/components/memories/MemoryCreationSteps';
 import { styles } from '@/components/memories/memoriesStyles';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 type ScreenMode = 'list' | 'create' | 'sealing' | 'opening' | 'viewing';
 type CreateStep = 0 | 1 | 2;
 
 export default function MemoriesScreen() {
+  const __discovery_memories = useFeatureDiscovery('memories');
   const insets = useSafeAreaInsets();
   const { firstName, dueDate, trimester } = useProfile();
   const { isPremium } = usePremium();
@@ -310,6 +315,7 @@ export default function MemoriesScreen() {
           <ThemedText style={styles.fabLabel}>Créer une capsule</ThemedText>
         </Pressable>
       </Animated.View>
+    <FeatureDiscoverySheet {...__discovery_memories.sheetProps} />
     </View>
   );
 }

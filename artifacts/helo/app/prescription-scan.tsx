@@ -25,6 +25,10 @@ import { useTrimester } from '@/hooks/useTrimester';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 const { width: W, height: H } = Dimensions.get('window');
 
 const VF_W = W - 40;
@@ -62,6 +66,7 @@ function ShutterButton({ onPress, disabled }: { onPress: () => void; disabled?: 
 }
 
 export default function PrescriptionScanScreen() {
+  const __discovery_prescription = useFeatureDiscovery('prescription');
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -192,6 +197,7 @@ export default function PrescriptionScanScreen() {
           <ShutterButton onPress={handleCapture} disabled={isProcessing} />
         )}
       </View>
+    <FeatureDiscoverySheet {...__discovery_prescription.sheetProps} />
     </View>
   );
 }

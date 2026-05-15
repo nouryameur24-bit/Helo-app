@@ -17,6 +17,10 @@ import PulsingCircle, { type VoicePhase } from '@/components/voice/PulsingCircle
 import PhaseLabel from '@/components/voice/PhaseLabel';
 import styles from '@/components/voice/voiceStyles';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 const EXAMPLE_QUESTIONS = [
   'Est-ce que je peux manger du parmesan ?',
   'Le Nurofen est-il safe ?',
@@ -55,6 +59,7 @@ function stripMarkdown(text: string): string {
 }
 
 export default function VoiceScreen() {
+  const __discovery_voice = useFeatureDiscovery('voice');
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = insets.bottom || 20;
@@ -309,6 +314,7 @@ export default function VoiceScreen() {
           )}
         </View>
       </View>
+    <FeatureDiscoverySheet {...__discovery_voice.sheetProps} />
     </View>
   );
 }

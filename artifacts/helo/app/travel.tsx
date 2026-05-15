@@ -25,6 +25,10 @@ import { Feather } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
+
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
 import {
   generateTravelBriefing,
   loadTravelBriefingsIndex,
@@ -242,6 +246,7 @@ const hc = StyleSheet.create({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function TravelScreen() {
+  const __discovery_travel = useFeatureDiscovery('travel');
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const { isPremium, requirePremium } = usePremium();
@@ -563,6 +568,7 @@ export default function TravelScreen() {
           </Animated.View>
         )}
       </ScrollView>
+    <FeatureDiscoverySheet {...__discovery_travel.sheetProps} />
     </View>
   );
 }

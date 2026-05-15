@@ -30,6 +30,10 @@ import { getTipForWeek } from '@/constants/weeklyTips';
 import type { PregnancyEvent } from '@/constants/pregnancyEvents';
 import { useTimelineData, type WeekData } from '@/hooks/useTimelineData';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 const COLUMN_WIDTH = 76;
 const COLUMN_GAP = 8;
 
@@ -304,6 +308,7 @@ function WeekDetailSheet({ visible, data, onClose }: WeekDetailSheetProps) {
 }
 
 export default function TimelineScreen() {
+  const __discovery_timeline = useFeatureDiscovery('timeline');
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const viewShotRef = useRef<ViewShot>(null);
@@ -500,6 +505,7 @@ export default function TimelineScreen() {
         data={selectedWeek}
         onClose={() => setSelectedWeek(null)}
       />
+    <FeatureDiscoverySheet {...__discovery_timeline.sheetProps} />
     </View>
   );
 }

@@ -36,6 +36,10 @@ import {
 } from '@/components/pact/PactComponents';
 import styles from '@/components/pact/pactStyles';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 const DURATIONS: { days: number; label: string; sub: string }[] = [
   { days: 7, label: '7 jours', sub: 'Débutante' },
   { days: 14, label: '14 jours', sub: 'Motivée' },
@@ -43,6 +47,7 @@ const DURATIONS: { days: number; label: string; sub: string }[] = [
 ];
 
 export default function PactScreen() {
+  const __discovery_pact = useFeatureDiscovery('pact');
   const insets = useSafeAreaInsets();
   const { userId, firstName } = useProfile();
   const { members: circleMembers } = useCircle(userId, firstName || 'Toi');
@@ -429,6 +434,7 @@ export default function PactScreen() {
 
         <View style={{ height: insets.bottom + 32 }} />
       </ScrollView>
+    <FeatureDiscoverySheet {...__discovery_pact.sheetProps} />
     </View>
   );
 }

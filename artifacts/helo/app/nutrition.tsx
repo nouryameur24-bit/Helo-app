@@ -27,6 +27,10 @@ import FoodCard from '@/components/nutrition/FoodCard';
 import RecipeCard from '@/components/nutrition/RecipeCard';
 import TipPill from '@/components/nutrition/TipPill';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 interface ShelfItem { productName?: string; category?: string; savedAt?: number; }
 interface NutritionTip { icon: string; text: string; type: 'info' | 'warn' | 'good'; }
 
@@ -94,6 +98,7 @@ function generateTips(phaseKey: string, recentScans: ShelfItem[], fills: Record<
 }
 
 export default function NutritionScreen() {
+  const __discovery_nutrition = useFeatureDiscovery('nutrition');
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const phaseKey = usePhaseKey();
@@ -237,6 +242,7 @@ export default function NutritionScreen() {
           </Pressable>
         </Animated.View>
       </ScrollView>
+    <FeatureDiscoverySheet {...__discovery_nutrition.sheetProps} />
     </View>
   );
 }

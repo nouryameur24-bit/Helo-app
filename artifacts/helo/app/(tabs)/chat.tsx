@@ -21,6 +21,10 @@ import { Feather } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
+
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
 import {
   type ChatMessage,
   clearChatHistory,
@@ -98,6 +102,7 @@ function TypingIndicator() {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function ChatScreen() {
+  const __discovery_chat = useFeatureDiscovery('chat');
   const insets = useSafeAreaInsets();
   const { isPremium, requirePremium } = usePremium();
   const scrollRef = useRef<ScrollView>(null);
@@ -379,6 +384,7 @@ export default function ChatScreen() {
           </View>
         )}
       </View>
+    <FeatureDiscoverySheet {...__discovery_chat.sheetProps} />
     </KeyboardAvoidingView>
   );
 }

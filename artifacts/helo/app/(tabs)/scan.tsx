@@ -54,6 +54,9 @@ import {
 } from '@/components/scan/scanConstants';
 import { FlashingViewfinder, ScanOverlay } from '@/components/scan/ScanViewfinder';
 import { ModeChip, ShutterButton } from '@/components/scan/ScanControls';
+
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from '@/hooks/useFeatureDiscovery';
 import {
   OfflineBadge,
   PermissionScreen,
@@ -64,6 +67,14 @@ import {
 const MENU_RESULT_KEY = '@helo_menu_result';
 
 export default function ScanScreen() {
+  // First-use discovery sheets — barcode auto-shows on mount; the other modes
+  // trigger when their chip is tapped for the first time.
+  const fdBarcode = useFeatureDiscovery('barcode');
+  const fdOcr = useFeatureDiscovery('ocr', { autoShow: false });
+  const fdPhoto = useFeatureDiscovery('photo', { autoShow: false });
+  const fdRestaurant = useFeatureDiscovery('restaurant', { autoShow: false });
+  const fdPrescription = useFeatureDiscovery('prescription', { autoShow: false });
+
   const { ghostBarcode, forceOCR } = useLocalSearchParams<{ ghostBarcode?: string; forceOCR?: string }>();
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -444,15 +455,37 @@ export default function ScanScreen() {
       <View style={[styles.bottomBar, { paddingBottom: bottomInset + Spacing.lg }]}>
         <View style={styles.chipsRow}>
           <ModeChip label="Code-barres" active={scanMode === 'barcode'} onPress={() => setScanMode('barcode')} />
-          <ModeChip label="Ingrédients" active={scanMode === 'ingredients'} onPress={() => setScanMode('ingredients')} />
-          <ModeChip label="Menu" active={scanMode === 'menu'} onPress={() => setScanMode('menu')} />
-          <ModeChip label="💊 Ordonnance" active={false} onPress={() => router.push('/prescription-scan' as never)} />
+          <ModeChip
+            label="Ingrédients"
+            active={scanMode === 'ingredients'}
+            onPress={() => {
+              setScanMode('ingredients');
+              void fdOcr.trigger();
+            }}
+          />
+          <ModeChip
+            label="Menu"
+            active={scanMode === 'menu'}
+            onPress={() => {
+              setScanMode('menu');
+              void fdRestaurant.trigger();
+            }}
+          />
+          <ModeChip
+            label="💊 Ordonnance"
+            active={false}
+            onPress={() => {
+              void fdPrescription.trigger();
+              router.push('/prescription-scan' as never);
+            }}
+          />
           <ModeChip
             label="📷 Photo"
             active={scanMode === 'photo'}
             onPress={() => {
               if (requirePremium('photo_scan')) return;
               setScanMode('photo');
+              void fdPhoto.trigger();
             }}
           />
         </View>
@@ -462,6 +495,15 @@ export default function ScanScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Single-sheet arbitration: render only the first visible discovery
+          to avoid stacked RN Modals when timers and chip taps overlap. */}
+      {(() => {
+        const active = [fdBarcode, fdOcr, fdPhoto, fdRestaurant, fdPrescription].find(
+          (fd) => fd.visible,
+        );
+        return active ? <FeatureDiscoverySheet {...active.sheetProps} /> : null;
+      })()}
     </View>
   );
 }

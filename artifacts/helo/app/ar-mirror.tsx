@@ -19,6 +19,10 @@ import type { ProductData, VerdictResult } from '@/types';
 import Halo from '@/components/ar-mirror/Halo';
 import QuickScanResult from '@/components/ar-mirror/QuickScanResult';
 import styles from '@/components/ar-mirror/arMirrorStyles';
+
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
 import {
   BARCODE_TYPES,
   FADE_START_MS,
@@ -36,6 +40,7 @@ import {
 } from '@/components/ar-mirror/arMirrorTypes';
 
 export default function ARMirrorScreen() {
+  const __discovery_ar_mirror = useFeatureDiscovery('ar_mirror');
   const insets = useSafeAreaInsets();
   const { isPremium } = usePremium();
 
@@ -300,6 +305,7 @@ export default function ARMirrorScreen() {
           </View>
         </Pressable>
       </View>
+    <FeatureDiscoverySheet {...__discovery_ar_mirror.sheetProps} />
     </View>
   );
 }

@@ -6,7 +6,12 @@ import { PartnerChecklist } from '@/components/partner/PartnerChecklist';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 export default function PartnerChecklistTab() {
+  const __discovery_partner = useFeatureDiscovery('partner');
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
@@ -19,6 +24,7 @@ export default function PartnerChecklistTab() {
       </View>
 
       <PartnerChecklist showHeader={false} />
+    <FeatureDiscoverySheet {...__discovery_partner.sheetProps} />
     </View>
   );
 }

@@ -17,6 +17,10 @@ import { Card } from '@/components/ui/Card';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 export interface JournalEntry {
   id: string;
   date: string;
@@ -114,6 +118,7 @@ const EntryCard = React.memo(function EntryCard({ entry }: { entry: JournalEntry
 });
 
 export default function JournalScreen() {
+  const __discovery_journal = useFeatureDiscovery('journal');
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
@@ -196,6 +201,7 @@ export default function JournalScreen() {
           </Animated.View>
         )}
       />
+    <FeatureDiscoverySheet {...__discovery_journal.sheetProps} />
     </View>
   );
 }

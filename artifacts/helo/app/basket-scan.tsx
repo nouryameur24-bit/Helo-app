@@ -33,6 +33,10 @@ import { saveBasket, verdictLabel, type BasketItem } from '@/lib/basket';
 import { useProfile } from '@/hooks/useProfile';
 import type { Verdict } from '@/types';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 const { width: W, height: H } = Dimensions.get('window');
 const VF_W = Math.min(W * 0.75, 300);
 const VF_H = VF_W;
@@ -57,6 +61,7 @@ interface OverlayInfo {
 }
 
 export default function BasketScanScreen() {
+  const __discovery_basket = useFeatureDiscovery('basket');
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const { trimester } = useProfile();
@@ -291,6 +296,7 @@ export default function BasketScanScreen() {
           </ThemedText>
         )}
       </View>
+    <FeatureDiscoverySheet {...__discovery_basket.sheetProps} />
     </View>
   );
 }

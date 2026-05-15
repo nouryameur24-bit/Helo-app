@@ -28,12 +28,17 @@ import { usePremium } from '@/hooks/usePremium';
 import { scanShelf } from '@/lib/visionScan';
 import type { ShelfDetectedProduct } from '@/lib/visionScan';
 
+import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
+import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+  
+
 const { width: W, height: H } = Dimensions.get('window');
 
 const VF_W = W - Spacing.xxl * 2;
 const VF_H = VF_W * (9 / 16);
 
 export default function ShelfScanScreen() {
+  const __discovery_shelf = useFeatureDiscovery('shelf');
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const { requirePremium, isPremium, isLoading } = usePremium();
@@ -242,6 +247,7 @@ export default function ShelfScanScreen() {
           )}
         </TouchableOpacity>
       </Animated.View>
+    <FeatureDiscoverySheet {...__discovery_shelf.sheetProps} />
     </View>
   );
 }

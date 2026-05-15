@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { ROUTES } from '@/types/routes';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -138,7 +139,7 @@ export default function TrimesterMilestoneScreen() {
               styles.ctaButton,
               { backgroundColor: palette.accent, opacity: pressed ? 0.85 : 1 },
             ]}
-            onPress={() => router.push('/(tabs)/shelf' as never)}
+            onPress={() => router.push(ROUTES.shelf)}
           >
             <Feather name="package" size={18} color="#fff" />
             <ThemedText style={styles.ctaText}>

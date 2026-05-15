@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as Sharing from 'expo-sharing';
@@ -180,7 +181,7 @@ export default function ARMirrorScreen() {
             ))}
           </View>
           <Pressable
-            onPress={() => router.replace('/premium' as never)}
+            onPress={() => router.replace(ROUTES.premium)}
             style={({ pressed }) => [styles.gatePremiumBtn, { opacity: pressed ? 0.85 : 1 }]}
           >
             <Feather name="star" size={16} color="#1A1A1A" />

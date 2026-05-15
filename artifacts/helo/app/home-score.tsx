@@ -1,5 +1,6 @@
 // ─── Score Environnement — Hēlo ──────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -308,7 +309,7 @@ export default function HomeScoreScreen() {
   }, [roomScores, roomProducts, shelf.length]);
 
   const handleRoomPress = useCallback((_room: RoomDef) => {
-    router.push('/(tabs)/shelf' as never);
+    router.push(ROUTES.shelf);
   }, []);
 
   return (
@@ -430,7 +431,7 @@ export default function HomeScoreScreen() {
                 Scannez des produits et ajoutez-les à votre placard pour voir votre score par pièce.
               </ThemedText>
               <Pressable
-                onPress={() => router.push('/(tabs)/scan' as never)}
+                onPress={() => router.push(ROUTES.scan)}
                 style={({ pressed }) => [styles.scanCTA, { opacity: pressed ? 0.7 : 1 }]}
               >
                 <Feather name="camera" size={15} color={Colors.accent} />

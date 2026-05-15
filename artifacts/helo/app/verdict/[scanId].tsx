@@ -345,7 +345,7 @@ export default function VerdictScreen() {
               router.replace({
                 pathname: '/(tabs)/scan',
                 params: { ghostBarcode: barcode },
-              } as never);
+              });
             }}
             onDismiss={() => {
               router.back();

@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { ROUTES } from '@/types/routes';
 import { router } from 'expo-router';
 import React from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
@@ -152,7 +153,7 @@ export function PartnerHomeScreen() {
               styles.quickCard,
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
             ]}
-            onPress={() => router.push('/(tabs)/partner-checklist-tab' as never)}
+            onPress={() => router.push(ROUTES.partnerChecklistTab)}
             accessibilityRole="button"
             accessibilityLabel="Ma checklist"
           >
@@ -172,7 +173,7 @@ export function PartnerHomeScreen() {
               styles.quickCard,
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
             ]}
-            onPress={() => router.push('/partner-weekly-brief' as never)}
+            onPress={() => router.push(ROUTES.partnerWeeklyBrief)}
             accessibilityRole="button"
             accessibilityLabel="Brief co-parent"
           >

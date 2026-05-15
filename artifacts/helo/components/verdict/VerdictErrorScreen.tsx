@@ -61,7 +61,7 @@ export function VerdictErrorScreen({ error, barcode, topInset }: VerdictErrorScr
                 router.push({
                   pathname: '/submit-product',
                   params: { barcode },
-                } as never);
+                });
               }}
             >
               Contribuer — ajouter ce produit ✦

@@ -1,5 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { ROUTES } from '@/types/routes';
+import { router, type Href } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Dimensions,
@@ -212,7 +213,7 @@ export default function HomeScreen() {
             <IconButton size={44} onPress={() => router.push('/search')} accessibilityLabel="Rechercher">
               <Feather name="search" size={20} color={Colors.textSecondary} />
             </IconButton>
-            <IconButton size={44} onPress={() => router.push('/guide' as never)} accessibilityLabel="Guide">
+            <IconButton size={44} onPress={() => router.push(ROUTES.guide)} accessibilityLabel="Guide">
               <Feather name="help-circle" size={20} color={Colors.textSecondary} />
             </IconButton>
             <IconButton size={44} accessibilityLabel="Notifications">
@@ -321,7 +322,7 @@ export default function HomeScreen() {
               styles.quickCard,
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
             ]}
-            onPress={() => router.push('/basket-scan' as never)}
+            onPress={() => router.push(ROUTES.basketScan)}
             accessibilityRole="button"
             accessibilityLabel="Mon panier"
           >
@@ -341,7 +342,7 @@ export default function HomeScreen() {
               styles.quickCard,
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
             ]}
-            onPress={() => router.push('/compare' as never)}
+            onPress={() => router.push(ROUTES.compare)}
             accessibilityRole="button"
             accessibilityLabel="Comparer deux produits"
           >
@@ -448,7 +449,7 @@ export default function HomeScreen() {
                   styles.featureCell,
                   { opacity: pressed ? 0.82 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
                 ]}
-                onPress={() => router.push(f.route as never)}
+                onPress={() => router.push(f.route as Href)}
                 accessibilityRole="button"
                 accessibilityLabel={f.label}
               >
@@ -495,7 +496,7 @@ export default function HomeScreen() {
               styles.shelfScanCard,
               { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
             ]}
-            onPress={() => router.push('/shelf-scan' as never)}
+            onPress={() => router.push(ROUTES.shelfScan)}
             accessibilityRole="button"
             accessibilityLabel="Scanner une étagère"
           >
@@ -662,7 +663,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <ThemedText variant="headlineMedium" color="textPrimary">Récents</ThemedText>
             <Pressable
-              onPress={() => router.push('/(tabs)/history' as never)}
+              onPress={() => router.push(ROUTES.history)}
               accessibilityRole="button"
               accessibilityLabel="Voir l'historique complet"
             >

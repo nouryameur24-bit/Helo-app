@@ -329,7 +329,7 @@ export default function TravelScreen() {
       router.push({
         pathname: '/travel-briefing',
         params: { briefingId: briefing.id, country: briefing.country, flag: briefing.flag },
-      } as never);
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'UNKNOWN';
       if (msg === 'API_KEY_MISSING' || msg === 'API_KEY_INVALID') {
@@ -566,7 +566,7 @@ export default function TravelScreen() {
                       country: meta.country,
                       flag: meta.flag,
                     },
-                  } as never);
+                  });
                 }}
               />
             ))}

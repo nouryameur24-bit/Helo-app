@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { ROUTES } from '@/types/routes';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { type ComponentProps, useCallback, useEffect, useState } from 'react';
@@ -132,7 +133,7 @@ function CircleCard() {
   return (
     <Animated.View entering={FadeInDown.delay(60).duration(450)}>
       <Pressable
-        onPress={() => router.push('/circle' as never)}
+        onPress={() => router.push(ROUTES.circle)}
         style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
         accessibilityRole="button"
         accessibilityLabel="Mon Cercle"
@@ -182,7 +183,7 @@ function ContributeCard() {
   return (
     <Animated.View entering={FadeInDown.delay(120).duration(450)}>
       <Pressable
-        onPress={() => router.push('/submit-product' as never)}
+        onPress={() => router.push(ROUTES.submitProduct)}
         style={({ pressed }) => [
           styles.contributeCard,
           { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },

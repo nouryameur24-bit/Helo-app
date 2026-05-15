@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { ROUTES } from '@/types/routes';
 import React, { useState } from 'react';
 import {
   Platform,
@@ -72,7 +73,7 @@ export default function ShelfScreen() {
         {/* Shelf scanner button */}
         <TouchableOpacity
           style={styles.shelfScanBtn}
-          onPress={() => router.push('/shelf-scan' as never)}
+          onPress={() => router.push(ROUTES.shelfScan)}
           activeOpacity={0.82}
         >
           <Feather name="layers" size={16} color={Colors.accentDark} />

@@ -233,7 +233,7 @@ export default function CompareScreen() {
                         productName: worseSlot.product.name,
                         productBrand: worseSlot.product.brand ?? '',
                       },
-                    } as never)
+                    })
                   }
                 >
                   Voir des alternatives →

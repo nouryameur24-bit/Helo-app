@@ -1,5 +1,6 @@
 // ─── Chat IA — Hēlo ──────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -143,7 +144,7 @@ export default function ChatScreen() {
     if (!isPremium) {
       const ok = await canChatFree();
       if (!ok) {
-        router.push({ pathname: '/paywall', params: { trigger: 'chat_limit' } } as never);
+        router.push({ pathname: '/paywall', params: { trigger: 'chat_limit' } });
         return;
       }
     }
@@ -238,7 +239,7 @@ export default function ChatScreen() {
           </View>
         </View>
         <TouchableOpacity
-          onPress={() => router.push('/voice' as never)}
+          onPress={() => router.push(ROUTES.voice)}
           hitSlop={12}
           style={styles.voiceBtn}
         >
@@ -297,7 +298,7 @@ export default function ChatScreen() {
         {!hasMessages && (
           <TouchableOpacity
             style={styles.prescriptionCTA}
-            onPress={() => router.push('/prescription-scan' as never)}
+            onPress={() => router.push(ROUTES.prescriptionScan)}
             activeOpacity={0.8}
           >
             <Feather name="file-text" size={15} color={Colors.accent} />

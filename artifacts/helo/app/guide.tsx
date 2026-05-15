@@ -1,5 +1,5 @@
 // ─── Guide des fonctionnalités — searchable accordion of all 18 modes ──────
-import { router, Stack } from 'expo-router';
+import { router, Stack, type Href } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useState } from 'react';
 import {
@@ -57,7 +57,7 @@ export default function GuideScreen() {
     if (Platform.OS !== 'web') void Haptics.selectionAsync();
     if (expanded === entry.key) {
       // Already open — navigate
-      router.push(entry.route as never);
+      router.push(entry.route as Href);
     } else {
       setExpanded(entry.key);
     }
@@ -65,7 +65,7 @@ export default function GuideScreen() {
 
   const handleNavigate = (route: string) => {
     if (Platform.OS !== 'web') void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(route as never);
+    router.push(route as Href);
   };
 
   const handleResetTutorials = () => {

@@ -102,7 +102,7 @@ export default function ShelfScanScreen() {
             products: JSON.stringify([]),
             photoBase64: encodeURIComponent(photo.base64),
           },
-        } as never);
+        });
         return;
       }
 
@@ -112,7 +112,7 @@ export default function ShelfScanScreen() {
           products: JSON.stringify(products),
           photoBase64: encodeURIComponent(photo.base64),
         },
-      } as never);
+      });
     } catch (err: unknown) {
       setCapturing(false);
       setAnalyzing(false);
@@ -123,7 +123,7 @@ export default function ShelfScanScreen() {
           products: JSON.stringify([]),
           error: msg,
         },
-      } as never);
+      });
     }
   }, [capturing, analyzing]);
 

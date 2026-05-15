@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
@@ -176,7 +177,7 @@ export default function JournalScreen() {
                 ) : null}
               </View>
               <Pressable
-                onPress={() => router.push('/journal-entry' as never)}
+                onPress={() => router.push(ROUTES.journalEntry)}
                 style={({ pressed }) => [styles.newEntryBtn, { opacity: pressed ? 0.8 : 1 }]}
               >
                 <Feather name="plus" size={16} color="#fff" />

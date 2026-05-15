@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { ROUTES } from '@/types/routes';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -500,7 +501,7 @@ export default function ProfileScreen() {
                   icon="users"
                   title="Mon Cercle"
                   subtitle={`${circleData.members.length} membre${circleData.members.length > 1 ? 's' : ''} · Voir le fil d'activité`}
-                  onPress={() => router.push('/circle' as never)}
+                  onPress={() => router.push(ROUTES.circle)}
                 />
               ) : (
                 <>
@@ -515,7 +516,7 @@ export default function ProfileScreen() {
                         await createCircle(userId, firstName || 'Anonyme');
                         const data = await getCircle(userId);
                         setCircleData(data);
-                        router.push('/circle' as never);
+                        router.push(ROUTES.circle);
                       } catch (err) {
                         const msg = err instanceof Error ? err.message : 'Erreur';
                         if (msg !== 'PREMIUM_REQUIRED') Alert.alert('Erreur', msg);
@@ -579,7 +580,7 @@ export default function ProfileScreen() {
                   setCircleData(data);
                   setShowJoinModal(false);
                   setJoinCode('');
-                  router.push('/circle' as never);
+                  router.push(ROUTES.circle);
                 } catch (err) {
                   Alert.alert('Erreur', err instanceof Error ? err.message : 'Code invalide');
                 } finally {
@@ -750,37 +751,37 @@ export default function ProfileScreen() {
             COMPTE
           </ThemedText>
           <Card padding={0} style={styles.settingGroup}>
-            <SettingRow icon="zap" title="Mon Pacte" subtitle="Engagement quotidien · Streak 🔥" onPress={() => router.push('/pact' as never)} />
+            <SettingRow icon="zap" title="Mon Pacte" subtitle="Engagement quotidien · Streak 🔥" onPress={() => router.push(ROUTES.pact)} />
             <Divider />
-            <SettingRow icon="package" title="Hēlo Memories" subtitle="Capsules temporelles de grossesse" onPress={() => router.push('/memories' as never)} />
+            <SettingRow icon="package" title="Hēlo Memories" subtitle="Capsules temporelles de grossesse" onPress={() => router.push(ROUTES.memories)} />
             <Divider />
-            <SettingRow icon="heart" title="Ma Nutrition" onPress={() => router.push('/nutrition' as never)} />
+            <SettingRow icon="heart" title="Ma Nutrition" onPress={() => router.push(ROUTES.nutrition)} />
             <Divider />
-            <SettingRow icon="home" title="Mon Environnement" onPress={() => router.push('/home-score' as never)} />
+            <SettingRow icon="home" title="Mon Environnement" onPress={() => router.push(ROUTES.homeScore)} />
             <Divider />
-            <SettingRow icon="user" title="Mon profil" onPress={() => router.push('/profile/edit' as never)} />
+            <SettingRow icon="user" title="Mon profil" onPress={() => router.push(ROUTES.profileEdit)} />
             <Divider />
-            <SettingRow icon="heart" title="Mode Partenaire" onPress={() => router.push('/onboarding/role' as never)} />
+            <SettingRow icon="heart" title="Mode Partenaire" onPress={() => router.push(ROUTES.onboardingRole)} />
             <Divider />
-            <SettingRow icon="bell" title="Notifications" onPress={() => router.push('/notifications-settings' as never)} />
+            <SettingRow icon="bell" title="Notifications" onPress={() => router.push(ROUTES.notificationsSettings)} />
             <Divider />
-            <SettingRow icon="users" title="Communauté" subtitle="Contributions & produits signalés" onPress={() => router.push('/(tabs)/community' as never)} />
+            <SettingRow icon="users" title="Communauté" subtitle="Contributions & produits signalés" onPress={() => router.push(ROUTES.community)} />
             <Divider />
-            <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push('/premium' as never)} />
+            <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push(ROUTES.premium)} />
             <Divider />
-            <SettingRow icon="help-circle" title="Guide des fonctionnalités" subtitle="Comment marche chaque mode" onPress={() => router.push('/guide' as never)} />
+            <SettingRow icon="help-circle" title="Guide des fonctionnalités" subtitle="Comment marche chaque mode" onPress={() => router.push(ROUTES.guide)} />
             <Divider />
-            <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push('/methodology' as never)} />
+            <SettingRow icon="book-open" title="Méthodologie" onPress={() => router.push(ROUTES.methodology)} />
             <Divider />
-            <SettingRow icon="file-text" title="CGU" onPress={() => router.push('/legal/terms' as never)} />
+            <SettingRow icon="file-text" title="CGU" onPress={() => router.push(ROUTES.termsLegal)} />
             <Divider />
-            <SettingRow icon="shield" title="Confidentialité" onPress={() => router.push('/legal/privacy' as never)} />
+            <SettingRow icon="shield" title="Confidentialité" onPress={() => router.push(ROUTES.privacyLegal)} />
             <Divider />
-            <SettingRow icon="calendar" title="Ma Timeline de Grossesse" subtitle="Fresque visuelle de vos 40 semaines" onPress={() => router.push('/timeline' as never)} />
+            <SettingRow icon="calendar" title="Ma Timeline de Grossesse" subtitle="Fresque visuelle de vos 40 semaines" onPress={() => router.push(ROUTES.timeline)} />
             <Divider />
-            <SettingRow icon="camera" title="Mode Miroir AR" subtitle="Halos colorés sur vos produits en temps réel" onPress={() => router.push('/ar-mirror' as never)} />
+            <SettingRow icon="camera" title="Mode Miroir AR" subtitle="Halos colorés sur vos produits en temps réel" onPress={() => router.push(ROUTES.arMirror)} />
             <Divider />
-            <SettingRow icon="smartphone" title="Widget & Apple Watch" subtitle="Glow Score sur l'écran d'accueil" onPress={() => router.push('/widget-preview' as never)} />
+            <SettingRow icon="smartphone" title="Widget & Apple Watch" subtitle="Glow Score sur l'écran d'accueil" onPress={() => router.push(ROUTES.widgetPreview)} />
             <Divider />
             <SettingRow icon="book" title="Exporter mon journal" subtitle="Générer un PDF de votre journal de grossesse" onPress={() => exportJournalToPdf(firstName)} />
             <Divider />

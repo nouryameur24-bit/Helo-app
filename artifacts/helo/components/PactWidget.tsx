@@ -4,6 +4,7 @@
 // S'auto-charge depuis AsyncStorage.
 
 import { router } from 'expo-router';
+import { ROUTES } from '@/types/routes';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -68,7 +69,7 @@ export function PactWidget({ onReload }: PactWidgetProps) {
 
   return (
     <Pressable
-      onPress={() => router.push('/pact' as never)}
+      onPress={() => router.push(ROUTES.pact)}
       style={({ pressed }) => [
         styles.root,
         { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },

@@ -1,5 +1,6 @@
 // ─── Résultats Mon Panier ─────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -69,7 +70,7 @@ function ProductCard({ item, index }: { item: BasketItem; index: number }) {
     <Animated.View entering={FadeInDown.delay(index * 40).duration(280)}>
       <TouchableOpacity
         activeOpacity={0.8}
-        onPress={() => router.push(`/verdict/${item.scanId}` as never)}
+        onPress={() => router.push(ROUTES.verdict(item.scanId))}
       >
         <Card style={styles.productCard} padding={Spacing.lg}>
           <View style={[styles.productIcon, { backgroundColor: VERDICT_BG[item.verdict] }]}>

@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { ROUTES } from '@/types/routes';
 import { router } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -255,7 +256,7 @@ export default function VoiceScreen() {
               </ThemedText>
               <Pressable
                 style={styles.premiumBtn}
-                onPress={() => router.push('/premium' as never)}
+                onPress={() => router.push(ROUTES.premium)}
                 accessibilityRole="button"
                 accessibilityLabel="Débloquer Premium"
               >

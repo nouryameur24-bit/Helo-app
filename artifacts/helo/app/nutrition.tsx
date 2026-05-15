@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -232,7 +233,7 @@ export default function NutritionScreen() {
 
         <Animated.View entering={FadeInDown.delay(260).duration(400)}>
           <Pressable
-            onPress={() => router.push('/(tabs)/scan' as never)}
+            onPress={() => router.push(ROUTES.scan)}
             style={({ pressed }) => [s.scanCTA, { opacity: pressed ? 0.8 : 1 }]}
             accessibilityRole="button"
             accessibilityLabel="Scanner un aliment"

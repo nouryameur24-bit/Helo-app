@@ -73,7 +73,7 @@ export function VerdictBottomBar({
             router.push({
               pathname: '/compare',
               params: { barcode, slot: 'A' },
-            } as never)
+            })
           }
           size={44}
           accessibilityLabel="Comparer"

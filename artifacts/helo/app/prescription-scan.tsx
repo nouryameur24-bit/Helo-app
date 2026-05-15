@@ -1,5 +1,6 @@
 // ─── Scanner d'ordonnance — Hēlo ─────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
@@ -83,7 +84,7 @@ export default function PrescriptionScanScreen() {
       const premiumRaw = await AsyncStorage.getItem(PREMIUM_KEY);
       const isPremium = premiumRaw === 'true';
       if (!isPremium) {
-        router.replace('/paywall' as never);
+        router.replace(ROUTES.paywall);
         return;
       }
 
@@ -99,7 +100,7 @@ export default function PrescriptionScanScreen() {
       const results = await checkMedications(medications, phase);
 
       const encoded = encodeURIComponent(JSON.stringify(results));
-      router.push(`/prescription-results?results=${encoded}` as never);
+      router.push({ pathname: ROUTES.prescriptionResults, params: { results: encoded } });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'NO_TEXT_DETECTED') {

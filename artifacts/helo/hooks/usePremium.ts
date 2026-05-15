@@ -79,7 +79,7 @@ export function usePremium(): UsePremiumReturn {
   const requirePremium = useCallback(
     (trigger?: string): boolean => {
       if (isPremium) return false;
-      router.push({ pathname: '/paywall', params: { trigger: trigger ?? 'feature' } } as never);
+      router.push({ pathname: '/paywall', params: { trigger: trigger ?? 'feature' } });
       return true;
     },
     [isPremium],
@@ -89,7 +89,7 @@ export function usePremium(): UsePremiumReturn {
     if (isPremium) return true;
     const ok = await canScanFree();
     if (!ok) {
-      router.push({ pathname: '/paywall', params: { trigger: 'scan_limit' } } as never);
+      router.push({ pathname: '/paywall', params: { trigger: 'scan_limit' } });
       return false;
     }
     return true;

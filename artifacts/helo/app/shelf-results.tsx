@@ -1,5 +1,6 @@
 // ─── Résultats Scan d'Étagère ──────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -277,7 +278,7 @@ export default function ShelfResultsScreen() {
           <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginBottom: Spacing.xxxl }}>
             {error}
           </ThemedText>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => router.replace('/shelf-scan' as never)}>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => router.replace(ROUTES.shelfScan)}>
             <ThemedText style={styles.retryBtnText}>Réessayer</ThemedText>
           </TouchableOpacity>
         </View>
@@ -446,7 +447,7 @@ export default function ShelfResultsScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.retrySmallBtn}
-          onPress={() => router.replace('/shelf-scan' as never)}
+          onPress={() => router.replace(ROUTES.shelfScan)}
           activeOpacity={0.85}
         >
           <Feather name="refresh-cw" size={16} color={Colors.textSecondary} />

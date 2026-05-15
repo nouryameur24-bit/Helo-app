@@ -1,5 +1,6 @@
 // ─── Résultats ordonnance — Hēlo ─────────────────────────────────────────────
 import { router, useLocalSearchParams } from 'expo-router';
+import { ROUTES } from '@/types/routes';
 import React, { useMemo } from 'react';
 import {
   Platform,
@@ -242,7 +243,7 @@ export default function PrescriptionResultsScreen() {
         {/* Scan another */}
         <Animated.View entering={FadeInDown.delay(results.length * 80 + 360).duration(400)} style={{ marginTop: Spacing.lg }}>
           <Pressable
-            onPress={() => router.replace('/prescription-scan' as never)}
+            onPress={() => router.replace(ROUTES.prescriptionScan)}
             style={({ pressed }) => [styles.rescanBtn, { opacity: pressed ? 0.7 : 1 }]}
           >
             <Feather name="camera" size={16} color={Colors.accent} />

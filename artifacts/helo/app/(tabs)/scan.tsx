@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ROUTES } from '@/types/routes';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
@@ -244,7 +245,7 @@ export default function ScanScreen() {
   const handlePhotoCapture = useCallback(async () => {
     if (takingPhoto || !cameraRef.current) return;
     if (!isPremium) {
-      router.push({ pathname: '/paywall', params: { trigger: 'photo_scan' } } as never);
+      router.push({ pathname: '/paywall', params: { trigger: 'photo_scan' } });
       return;
     }
     setTakingPhoto(true);
@@ -319,7 +320,7 @@ export default function ScanScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
           <IconButton
-            onPress={() => router.push('/guide' as never)}
+            onPress={() => router.push(ROUTES.guide)}
             backgroundColor="rgba(255,255,255,0.18)"
             size={40}
             accessibilityLabel="Guide"
@@ -328,7 +329,7 @@ export default function ScanScreen() {
           </IconButton>
           {scanMode === 'barcode' && (
             <IconButton
-              onPress={() => router.push('/basket-scan' as never)}
+              onPress={() => router.push(ROUTES.basketScan)}
               backgroundColor="rgba(255,255,255,0.18)"
               size={40}
             >
@@ -496,7 +497,7 @@ export default function ScanScreen() {
             active={false}
             onPress={() => {
               void fdPrescription.trigger();
-              router.push('/prescription-scan' as never);
+              router.push(ROUTES.prescriptionScan);
             }}
           />
           <ModeChip

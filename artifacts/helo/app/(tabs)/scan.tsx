@@ -75,7 +75,7 @@ export default function ScanScreen() {
   const fdRestaurant = useFeatureDiscovery('restaurant', { autoShow: false });
   const fdPrescription = useFeatureDiscovery('prescription', { autoShow: false });
 
-  const { ghostBarcode } = useLocalSearchParams<{ ghostBarcode?: string }>();
+  const { ghostBarcode, forceOCR } = useLocalSearchParams<{ ghostBarcode?: string; forceOCR?: string }>();
 
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
@@ -122,9 +122,19 @@ export default function ScanScreen() {
   const vfY = isOCRMode ? VF_OCR_Y : isMenuMode ? VF_MENU_Y : isPhotoMode ? VF_PHOTO_Y : VF_BARCODE_Y;
   const vfX = (SCREEN_W - vfW) / 2;
 
-  // Always default to 'barcode' on mount. The verdict screen's
-  // "Photographier les ingrédients" CTA still passes ghostBarcode for context
-  // but the user must explicitly tap the OCR chip — no auto-switch.
+  // Ghost Capture one-shot: when arriving from verdict's "Photographier la
+  // composition" CTA (forceOCR=1), flip to OCR mode ONCE then clear the
+  // param so subsequent tab visits default back to 'barcode'.
+  const forceOCRConsumed = useRef(false);
+  useEffect(() => {
+    if (forceOCR === '1' && !forceOCRConsumed.current) {
+      forceOCRConsumed.current = true;
+      setScanMode('ingredients');
+      // Clear the param AFTER applying it so reopening the tab doesn't re-fire.
+      router.setParams({ forceOCR: '' } as never);
+    }
+  }, [forceOCR]);
+
   useFocusEffect(
     useCallback(() => {
       setIsActive(true);

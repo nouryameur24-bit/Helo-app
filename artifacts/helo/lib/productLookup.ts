@@ -36,15 +36,29 @@ async function fetchFromAPI(
   base: string,
   barcode: string,
 ): Promise<OFFResponse | null> {
+  const label = base.includes('openbeauty') ? 'OBF' : 'OFF';
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const url = `${base}/${encodeURIComponent(barcode)}.json?fields=${FIELDS}`;
+    if (__DEV__) console.warn(`[Hēlo cascade] ${label} → fetching ${url}`);
     const response = await fetch(url, { signal: controller.signal });
-    if (response.status === 404) return null;
-    if (!response.ok) return null;
-    return (await response.json()) as OFFResponse;
+    if (response.status === 404) {
+      if (__DEV__) console.warn(`[Hēlo cascade] ${label} → 404 (not found)`);
+      return null;
+    }
+    if (!response.ok) {
+      if (__DEV__) console.warn(`[Hēlo cascade] ${label} → HTTP ${response.status}`);
+      return null;
+    }
+    const json = (await response.json()) as OFFResponse;
+    if (__DEV__) console.warn(`[Hēlo cascade] ${label} → status=${json.status}, hasProduct=${!!json.product}`);
+    return json;
   } catch (error: unknown) {
+    if (__DEV__) {
+      const msg = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+      console.warn(`[Hēlo cascade] ${label} → fetch error: ${msg}`);
+    }
     if (error instanceof Error && error.name === 'AbortError') return null;
     return null;
   } finally {
@@ -71,7 +85,10 @@ function parseOFFResponse(
 // instantly from our own DB without any third-party API roundtrip.
 
 async function checkLocalProducts(barcode: string): Promise<ProductData | null> {
-  if (!isSupabaseConfigured) return null;
+  if (!isSupabaseConfigured) {
+    if (__DEV__) console.warn('[Hēlo cascade] LOCAL → skipped (Supabase not configured)');
+    return null;
+  }
   try {
     const { data: product, error } = await supabase
       .from('products')
@@ -79,18 +96,28 @@ async function checkLocalProducts(barcode: string): Promise<ProductData | null> 
       .eq('barcode', barcode)
       .maybeSingle();
 
-    if (error || !product) return null;
+    if (error) {
+      if (__DEV__) console.warn(`[Hēlo cascade] LOCAL → query error: ${error.message}`);
+      return null;
+    }
+    if (!product) {
+      if (__DEV__) console.warn(`[Hēlo cascade] LOCAL → not found for ${barcode}`);
+      return null;
+    }
 
     const ingredientsRaw = (product.ingredients_raw ?? '').toString().trim();
     if (!ingredientsRaw) {
-      // No raw ingredient text → cannot compute a real verdict. Fall through
-      // to community / OFF / OBF rather than return a false "safe" result.
+      if (__DEV__) console.warn(`[Hēlo cascade] LOCAL → found "${product.name}" but ingredients_raw empty, falling through`);
       return null;
     }
 
     const ingredientsList = parseIngredients(ingredientsRaw);
-    if (ingredientsList.length === 0) return null;
+    if (ingredientsList.length === 0) {
+      if (__DEV__) console.warn(`[Hēlo cascade] LOCAL → found but parseIngredients returned [] for ${barcode}`);
+      return null;
+    }
 
+    if (__DEV__) console.warn(`[Hēlo cascade] LOCAL → ✓ found "${product.name}" (${ingredientsList.length} ingredients)`);
     return {
       name: product.name ?? 'Produit',
       brand: product.brand ?? '',
@@ -107,7 +134,10 @@ async function checkLocalProducts(barcode: string): Promise<ProductData | null> 
 // ─── 2b. Community submissions fallback ──────────────────────────────────────
 
 async function checkCommunitySubmissions(barcode: string): Promise<ProductData | null> {
-  if (!isSupabaseConfigured) return null;
+  if (!isSupabaseConfigured) {
+    if (__DEV__) console.warn('[Hēlo cascade] COMMUNITY → skipped (Supabase not configured)');
+    return null;
+  }
   try {
     const { data, error } = await supabase
       .from('community_submissions')
@@ -117,13 +147,27 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
       .not('metadata->ingredients_raw', 'is', null)
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) {
+      if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → query error: ${error.message}`);
+      return null;
+    }
+    if (!data) {
+      if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → not found for ${barcode}`);
+      return null;
+    }
     const meta = data.metadata as { ingredients_raw?: string; [k: string]: unknown };
-    if (!meta?.ingredients_raw) return null;
+    if (!meta?.ingredients_raw) {
+      if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → found but no metadata.ingredients_raw`);
+      return null;
+    }
 
     const ingredientsList = parseIngredients(meta.ingredients_raw);
-    if (ingredientsList.length === 0) return null;
+    if (ingredientsList.length === 0) {
+      if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → parseIngredients returned []`);
+      return null;
+    }
 
+    if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → ✓ found "${data.name}" (${ingredientsList.length} ingredients)`);
     return {
       name: data.name ?? 'Produit communautaire',
       brand: undefined,
@@ -132,7 +176,8 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
       ingredientsRaw: meta.ingredients_raw,
       source: 'community' as ProductData['source'],
     };
-  } catch {
+  } catch (e) {
+    if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → exception: ${e instanceof Error ? e.message : String(e)}`);
     return null;
   }
 }
@@ -230,6 +275,8 @@ export async function ghostCaptureSave(params: {
 // instantly for the next user (no remote API roundtrip needed).
 
 export async function fetchProductByBarcode(barcode: string): Promise<ProductData | null> {
+  if (__DEV__) console.warn(`[Hēlo cascade] === START barcode=${barcode} ===`);
+
   // 1st attempt: local Supabase products table (curated, pre-vetted, ~12k entries)
   const local = await checkLocalProducts(barcode);
   if (local) return local;
@@ -242,16 +289,25 @@ export async function fetchProductByBarcode(barcode: string): Promise<ProductDat
   const offData = await fetchFromAPI(OFF_API_BASE, barcode);
   if (offData) {
     const product = parseOFFResponse(offData, 'openfoodfacts');
-    if (product) return product;
+    if (product && product.ingredientsList.length > 0) {
+      if (__DEV__) console.warn(`[Hēlo cascade] OFF → ✓ parsed "${product.name}" (${product.ingredientsList.length} ingredients)`);
+      return product;
+    }
+    if (__DEV__) console.warn(`[Hēlo cascade] OFF → response received but parseOFFResponse returned ${product ? 'empty ingredients' : 'null'}`);
   }
 
   // 4th attempt: Open Beauty Facts (cosmetics)
   const obfData = await fetchFromAPI(OBF_API_BASE, barcode);
   if (obfData) {
     const product = parseOFFResponse(obfData, 'openbeautyfacts');
-    if (product) return product;
+    if (product && product.ingredientsList.length > 0) {
+      if (__DEV__) console.warn(`[Hēlo cascade] OBF → ✓ parsed "${product.name}" (${product.ingredientsList.length} ingredients)`);
+      return product;
+    }
+    if (__DEV__) console.warn(`[Hēlo cascade] OBF → response received but parseOFFResponse returned ${product ? 'empty ingredients' : 'null'}`);
   }
 
+  if (__DEV__) console.warn(`[Hēlo cascade] === FAIL: nothing found for ${barcode} → Ghost Capture ===`);
   return null;
 }
 

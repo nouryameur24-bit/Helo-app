@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -73,8 +73,17 @@ export default function VoiceScreen() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [textInput, setTextInput] = useState('');
   const inputRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const recognitionRef = useRef<any>(null);
   const recognizedTextRef = useRef('');
+
+  // Auto-scroll to the bottom when the AI response arrives so it stays visible
+  // above the keyboard.
+  useEffect(() => {
+    if (!aiResponse) return;
+    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120);
+    return () => clearTimeout(t);
+  }, [aiResponse]);
   const canUseVoice = isSpeechRecognitionAvailable();
 
   useEffect(() => {
@@ -169,7 +178,11 @@ export default function VoiceScreen() {
   const micBg = micActive ? Colors.danger : Colors.accent;
 
   return (
-    <View style={[styles.root, { paddingTop: topPadding }]}>
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: topPadding }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Retour">
           <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
@@ -185,6 +198,7 @@ export default function VoiceScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPadding + 20 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -315,6 +329,6 @@ export default function VoiceScreen() {
         </View>
       </View>
     <FeatureDiscoverySheet {...__discovery_voice.sheetProps} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }

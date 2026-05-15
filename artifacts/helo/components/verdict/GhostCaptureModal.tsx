@@ -72,13 +72,13 @@ export function GhostCaptureModal({
 
         {/* Title */}
         <ThemedText variant="headlineMedium" style={styles.title}>
-          Produit non répertorié
+          Aidez-nous à vérifier ce produit
         </ThemedText>
 
         {/* Subtitle */}
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
-          Nous n'avons pas trouvé ce produit dans notre base de données.{'\n'}
-          Photographiez la liste des ingrédients et nous l'analyserons pour vous{' '}
+          Ce produit n'est pas encore dans notre base.{'\n'}
+          Photographiez la composition et nous l'analyserons pour vous{' '}
           <ThemedText variant="bodyMedium" style={styles.accentText}>et toute la communauté</ThemedText>
           {' '}✨
         </ThemedText>
@@ -98,7 +98,7 @@ export function GhostCaptureModal({
             fullWidth
             onPress={onPhotograph}
           >
-            Photographier les ingrédients
+            Photographier la composition
           </Button>
         </View>
 

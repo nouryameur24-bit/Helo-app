@@ -184,7 +184,21 @@ export default function HomeScreen() {
         <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
           <View>
             <ThemedText variant="bodySmall" color="textTertiary">Bonjour</ThemedText>
-            <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+              <ThemedText variant="headlineLarge" color="textPrimary">{displayName}</ThemedText>
+              <View style={{
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 6,
+                backgroundColor: Colors.accentLight,
+                borderWidth: 1,
+                borderColor: Colors.accent,
+              }}>
+                <ThemedText variant="labelSmall" style={{ color: Colors.accentDark, fontSize: 10, letterSpacing: 0.8 }}>
+                  BÊTA
+                </ThemedText>
+              </View>
+            </View>
             {weekOfPregnancy > 0 && (
               <View style={styles.weekPill}>
                 <ThemedText variant="labelSmall" style={{ color: Colors.accentDark }}>

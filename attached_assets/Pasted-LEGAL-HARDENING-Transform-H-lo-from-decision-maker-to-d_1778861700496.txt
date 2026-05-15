@@ -1,0 +1,106 @@
+LEGAL HARDENING — Transform Hēlo from "decision maker" to "data aggregator"
+to remove medical liability without external audit.
+
+1. WORDING — Replace all instances throughout the entire codebase:
+- "Verdict" → "Analyse"
+- "verdict" → "analyse"
+- "VERDICT" → "ANALYSE"
+Search every .ts, .tsx, .md file. Update screens, components, types, 
+i18n strings, app-store-metadata.md, ARCHITECTURE.md. Keep code variable 
+names (verdictColor, getVerdict) but update all USER-FACING strings only.
+
+2. SOURCE ATTRIBUTION — On every verdict/analysis screen, add a small 
+attribution line below the result:
+- For cosmetics: "Analyse basée sur les données SCCS / CosIng (Commission Européenne)"
+- For food: "Analyse basée sur les données EFSA / ANSES"
+- For medications: "Analyse basée sur les données CRAT (Centre de Référence sur les Agents Tératogènes)"
+- For mixed/Glow Score: "Analyse basée sur les données CRAT, ANSM, EFSA"
+Style: small text, muted color, italic, with a small "ⓘ" icon.
+
+3. WORDING SHIFT — Replace authoritative phrasing:
+- "Ce produit est dangereux" → "Cet ingrédient est signalé par l'ANSM"
+- "Safe pour vous" → "Compatible selon les sources disponibles"
+- "Ne pas utiliser" → "Les autorités sanitaires recommandent la prudence"
+- "Recommandé" → "Compatible selon nos sources"
+Apply throughout verdict screens, ingredient cards, restaurant mode, 
+and chatbot responses.
+
+4. GATEKEEPER SCREEN — Create a blocking disclaimer modal that appears:
+- On first app launch (after onboarding)
+- After every major app update (track via version number in AsyncStorage)
+
+Modal content:
+"
+Avant de commencer
+
+Hēlo est un outil d'information et de vulgarisation scientifique. 
+
+Il ne remplace EN AUCUN CAS l'avis de votre médecin, gynécologue, 
+sage-femme ou pharmacien.
+
+Les analyses sont basées sur des données publiques (CRAT, ANSM, EFSA, 
+SCCS). Elles sont indicatives et ne constituent pas un diagnostic médical.
+
+Pour toute question médicale, consultez systématiquement un professionnel 
+de santé.
+
+[Bouton] J'ai compris et j'accepte
+"
+
+The button must be HARD-LOCKED — app is unusable until clicked. Save 
+acceptance in AsyncStorage with version number.
+
+5. CHATBOT SYSTEM PROMPT — Reinforce the existing system prompt in 
+lib/anthropic.ts. Add at the top of the system prompt:
+
+"
+RÈGLES ABSOLUES :
+
+1. Tu n'es PAS un médecin. Tu n'as INTERDICTION FORMELLE de poser 
+un diagnostic médical.
+
+2. URGENCE — Si l'utilisatrice mentionne : douleur abdominale, 
+saignement, contractions, perte de liquide, baisse de mouvements 
+du bébé, fièvre forte, vomissements répétés, maux de tête sévères, 
+troubles de la vue — ta SEULE réponse possible est :
+
+'⚠️ Ce que vous décrivez peut nécessiter une consultation urgente. 
+Contactez immédiatement le 15 (SAMU) ou rendez-vous à la maternité 
+la plus proche. Ne tardez pas.'
+
+3. Pour les questions produits/ingrédients : commence TOUJOURS par 
+'Selon les données disponibles du CRAT/ANSM/EFSA...' Cite la source.
+
+4. Termine CHAQUE réponse par : 'Pour toute décision concernant 
+votre grossesse, consultez votre médecin ou sage-femme.'
+
+5. Tu ne donnes JAMAIS de posologie, JAMAIS de dosage exact, 
+JAMAIS d'avis sur l'arrêt ou la prise d'un traitement.
+"
+
+6. APP STORE METADATA — Update app-store-metadata.md:
+- Replace "Verdict par trimestre" with "Analyse par trimestre"
+- Add to description: "Hēlo est un outil d'information basé sur les 
+données publiques du CRAT, ANSM, EFSA et SCCS. Il ne remplace pas 
+l'avis d'un professionnel de santé."
+- Update subtitle/keywords accordingly
+
+7. BETA LABEL — Add a discrete "BETA" badge:
+- In the home screen header next to the Hēlo logo
+- In the App Store description: "Hēlo — Bêta ouverte"
+- In the about/profile screen with a line: "Vous participez à la 
+phase bêta. Vos retours nous aident à améliorer Hēlo."
+This positions the user as a collaborator, not a customer expecting 
+perfection.
+
+8. GHOST CAPTURE COPY — Reframe the Ghost Capture feature copy:
+- Old: "Photographiez les ingrédients"
+- New: "Aidez-nous à vérifier ce produit — photographiez la composition"
+This frames it as a collaborative effort, reducing the user's 
+expectation of perfection.
+
+After all changes:
+- Run npx tsc --noEmit → zero errors
+- Verify no instance of "Verdict" remains in user-facing strings
+- Verify the gatekeeper modal blocks app usage until accepted
+- Test that the chatbot returns the emergency response for medical urgency keywords

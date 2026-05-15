@@ -2,7 +2,7 @@
 
 ## App Store Connect
 
-**Title:** Hēlo — Scanner Grossesse
+**Title:** Hēlo — Scanner Grossesse (Bêta ouverte)
 **Subtitle:** Cosmétiques · Alimentation · Médicaments
 **Category:** Health & Fitness
 **Age Rating:** 4+
@@ -19,11 +19,13 @@ Hēlo vérifie instantanément si vos cosmétiques, aliments et médicaments son
 ▸ SCANNER INTELLIGENT
 Scannez le code-barres, photographiez les ingrédients, ou prenez en photo un menu de restaurant. 7 modes de scan pour chaque situation.
 
-▸ VERDICT PAR TRIMESTRE
-Le même produit peut être safe au 2ème trimestre et à risque au 3ème. Hēlo s'adapte automatiquement à votre avancement.
+▸ ANALYSE PAR TRIMESTRE
+Le même produit peut être compatible au 2ème trimestre et à risque au 3ème. Hēlo s'adapte automatiquement à votre avancement.
 
 ▸ 4 962 INGRÉDIENTS VÉRIFIÉS
-Base sourcée médicalement : CRAT, ANSM, ANSES, OMS, EFSA. Chaque verdict affiche sa source.
+Base sourcée médicalement : CRAT, ANSM, ANSES, OMS, EFSA. Chaque analyse affiche sa source.
+
+Hēlo est un outil d'information basé sur les données publiques du CRAT, ANSM, EFSA et SCCS. Il ne remplace pas l'avis d'un professionnel de santé.
 
 ▸ MODE RESTAURANT — EXCLUSIF
 Photographiez le menu. En 5 secondes, Hēlo analyse chaque plat et génère les questions à poser au serveur.
@@ -42,7 +44,7 @@ Journal de grossesse · Timeline 40 semaines · Mode allaitement · Mode bébé 
 
 Hēlo est un outil d'information et ne remplace pas l'avis d'un professionnel de santé.
 
-Gratuit : 5 scans/jour, verdicts, placard, Glow Score
+Gratuit : 5 scans/jour, analyses, placard, Glow Score
 Premium : scans illimités, Mode Restaurant, Sage-Femme IA, mode hors-ligne
 - 4,99€/mois
 - 29,99€/an (7 jours d'essai gratuit)
@@ -66,10 +68,10 @@ grossesse,enceinte,scanner,safe,cosmétiques,alimentation,médicaments,bébé,tr
 
 ## Review Notes for Apple
 
-Hēlo is a product scanning app for pregnant women. It analyzes cosmetics, food, and medication ingredients for pregnancy safety, with trimester-specific verdicts based on medical sources (CRAT, ANSM, WHO, EFSA).
+Hēlo is a product scanning app for pregnant women. It analyzes cosmetics, food, and medication ingredients for pregnancy safety, with trimester-specific analyses based on public medical sources (CRAT, ANSM, WHO, EFSA, SCCS). The app is in open beta and is an informational tool — it does not replace professional medical advice.
 
 Test account: No account required. The app works without login.
-To test: Open the app → complete onboarding (any name, future due date) → go to Scan tab → scan any food/cosmetic barcode → view the verdict.
+To test: Open the app → complete onboarding (any name, future due date) → go to Scan tab → scan any food/cosmetic barcode → view the analysis.
 
 The AI chatbot provides general pregnancy information only and always ends with a disclaimer to consult a healthcare professional. The restaurant mode uses AI to analyze menu photos — results are labeled as AI-generated.
 
@@ -91,7 +93,7 @@ This app is an informational tool and does not provide medical diagnosis or trea
 
 ### iPhone 6.9" (1290×2796) — 5 screenshots
 1. Scanner — "Scannez. Vérifiez. Respirez."
-2. Verdict — "Un verdict clair en 2 secondes"
+2. Analyse — "Une analyse claire en 2 secondes"
 3. Restaurant — "Le Mode Restaurant"
 4. Glow Score — "Votre Glow Score"
 5. Chatbot — "Votre Sage-Femme IA"

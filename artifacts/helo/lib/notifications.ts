@@ -56,7 +56,7 @@ export const NOTIFICATION_LABELS: Record<NotificationType, { title: string; desc
   },
   product_reclassified: {
     title: 'Produit reclassifié',
-    description: 'Alertes quand un produit de votre étagère change de verdict.',
+    description: "Alertes quand un produit de votre étagère change d'analyse.",
   },
   partner_activity: {
     title: 'Activité du partenaire',

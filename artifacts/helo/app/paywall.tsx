@@ -37,7 +37,7 @@ const FEATURES: Feature[] = [
   { label: 'Placard illimité',            free: false, premium: true  },
   { label: 'Mode hors ligne',             free: false, premium: true  },
   { label: 'Badge Premium ✦',            free: false, premium: true  },
-  { label: 'Verdicts basiques',           free: true,  premium: true  },
+  { label: 'Analyses basiques',           free: true,  premium: true  },
   { label: 'Weekly Brief',               free: true,  premium: true  },
   { label: 'Communauté',                 free: true,  premium: true  },
 ];

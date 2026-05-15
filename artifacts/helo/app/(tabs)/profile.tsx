@@ -785,6 +785,23 @@ export default function ProfileScreen() {
 
         {/* Footer */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)} style={styles.footer}>
+          <View style={{
+            alignSelf: 'center',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            borderRadius: 8,
+            backgroundColor: Colors.accentLight,
+            borderWidth: 1,
+            borderColor: Colors.accent,
+            marginBottom: Spacing.md,
+          }}>
+            <ThemedText variant="labelSmall" style={{ color: Colors.accentDark, letterSpacing: 0.8, fontSize: 11 }}>
+              BÊTA OUVERTE
+            </ThemedText>
+          </View>
+          <ThemedText variant="bodySmall" color="textTertiary" style={[styles.version, { textAlign: 'center', paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm }]}>
+            Vous participez à la phase bêta. Vos retours nous aident à améliorer Hēlo.
+          </ThemedText>
           <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
             {`Version 1.0.0${isPremium ? ' · Premium ✓' : ''}`}
           </ThemedText>

@@ -36,6 +36,7 @@ import {
   getVerdictColor,
   getVerdictBg,
   getVerdictLabel,
+  getSourceAttribution,
   computeGlowScore,
   sortMatches,
   phaseLabel,
@@ -407,6 +408,18 @@ export default function VerdictScreen() {
               color={verdictColor}
               visible={labelVisible}
             />
+            {labelVisible && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: Spacing.sm, paddingHorizontal: Spacing.lg }}>
+                <Feather name="info" size={11} color={Colors.textTertiary} />
+                <ThemedText
+                  variant="bodySmall"
+                  color="textTertiary"
+                  style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 11 }}
+                >
+                  {getSourceAttribution(product.source)}
+                </ThemedText>
+              </View>
+            )}
           </View>
 
           <View style={styles.productRow}>

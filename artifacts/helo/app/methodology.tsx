@@ -68,7 +68,7 @@ export default function MethodologyScreen() {
             'Scan du produit — identification par code-barres ou photo',
             'Identification des ingrédients — extraction de la liste complète',
             'Croisement avec notre base de données — vérification de chaque ingrédient',
-            'Génération du verdict — évaluation globale du produit',
+            "Génération de l'analyse — évaluation globale du produit",
           ].map((step, i) => (
             <View key={i} style={styles.stepRow}>
               <View style={styles.stepNumber}>

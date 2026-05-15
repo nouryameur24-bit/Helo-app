@@ -64,3 +64,13 @@ export function phaseLabel(p: Phase): string {
   if (p === 2) return '2ème trimestre';
   return '3ème trimestre';
 }
+
+export function getSourceAttribution(source?: string): string {
+  if (source === 'openbeautyfacts') {
+    return 'Analyse basée sur les données SCCS / CosIng (Commission Européenne)';
+  }
+  if (source === 'openfoodfacts') {
+    return 'Analyse basée sur les données EFSA / ANSES';
+  }
+  return 'Analyse basée sur les données CRAT, ANSM, EFSA';
+}

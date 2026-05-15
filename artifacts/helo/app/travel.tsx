@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -387,7 +388,11 @@ export default function TravelScreen() {
   today.setHours(0, 0, 0, 0);
 
   return (
-    <View style={[s.root, { backgroundColor: Colors.background }]}>
+    <KeyboardAvoidingView
+      style={[s.root, { backgroundColor: Colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <View style={[s.header, { paddingTop: topPadding + Spacing.md }]}>
         <Pressable onPress={() => router.back()} style={s.backBtn}>
           <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
@@ -569,7 +574,7 @@ export default function TravelScreen() {
         )}
       </ScrollView>
     <FeatureDiscoverySheet {...__discovery_travel.sheetProps} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

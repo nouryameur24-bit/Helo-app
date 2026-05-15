@@ -211,11 +211,13 @@ export default function ChatScreen() {
     );
   }
 
+  const TAB_BAR_HEIGHT = Platform.select({ ios: 49, android: 56, default: 49 }) ?? 49;
+
   return (
     <KeyboardAvoidingView
       style={[styles.root, { backgroundColor: Colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={0}
     >
       {/* ── Header ── */}
       <Animated.View
@@ -290,7 +292,7 @@ export default function ChatScreen() {
       </ScrollView>
 
       {/* ── Bottom area ── */}
-      <View style={[styles.bottomArea, { paddingBottom: insets.bottom + Spacing.sm }]}>
+      <View style={[styles.bottomArea, { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + Spacing.sm }]}>
         {/* Prescription scanner shortcut */}
         {!hasMessages && (
           <TouchableOpacity

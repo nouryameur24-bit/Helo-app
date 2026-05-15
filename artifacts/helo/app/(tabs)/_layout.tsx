@@ -113,6 +113,7 @@ function ClassicTabLayout() {
         name="chat"
         options={{
           title: "Chat IA",
+          tabBarHideOnKeyboard: true,
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="message" tintColor={color} size={24} />

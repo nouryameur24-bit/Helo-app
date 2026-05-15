@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -544,6 +545,11 @@ export default function ProfileScreen() {
           onRequestClose={() => setShowJoinModal(false)}
         >
           <Pressable style={styles.modalOverlay} onPress={() => setShowJoinModal(false)} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, justifyContent: 'flex-end' }}
+            pointerEvents="box-none"
+          >
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
             <ThemedText variant="headlineMedium" style={styles.modalTitle}>
@@ -593,6 +599,7 @@ export default function ProfileScreen() {
               <ThemedText variant="bodyMedium" color="textSecondary">Annuler</ThemedText>
             </Pressable>
           </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* Partner section — pregnant user */}

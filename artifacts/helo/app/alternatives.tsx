@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
@@ -318,7 +319,11 @@ export default function AlternativesScreen() {
   const topPad = Platform.OS === 'web' ? 60 : insets.top;
 
   return (
-    <View style={[styles.root, { paddingTop: topPad }]}>
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: topPad }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <View style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()}>
           <Feather name="x" size={22} color={Colors.textPrimary} />
@@ -333,6 +338,7 @@ export default function AlternativesScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <OriginalProductHeader productName={productName} productBrand={productBrand} />
 
@@ -377,7 +383,7 @@ export default function AlternativesScreen() {
           </>
         )}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

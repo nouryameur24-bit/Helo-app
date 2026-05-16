@@ -22,13 +22,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ui/ThemedText";
+import { IllustrationTrimester } from "@/components/illustrations/IllustrationTrimester";
+import { IllustrationCommunity } from "@/components/illustrations/IllustrationCommunity";
 import { Colors, Radius, Spacing } from "@/constants/theme";
 
 type Role = "pregnant" | "partner";
 
 interface RoleCard {
   role: Role;
-  emoji: string;
+  Illustration: React.FC<{ size?: number }>;
   title: string;
   description: string;
   gradient: [string, string];
@@ -37,14 +39,14 @@ interface RoleCard {
 const ROLES: RoleCard[] = [
   {
     role: "pregnant",
-    emoji: "🤰",
+    Illustration: IllustrationTrimester,
     title: "Je suis enceinte",
     description: "Analysez vos produits au quotidien et suivez votre grossesse semaine par semaine.",
     gradient: [Colors.accentLight, "#FFF0D0"],
   },
   {
     role: "partner",
-    emoji: "💙",
+    Illustration: IllustrationCommunity,
     title: "J'accompagne",
     description: "Scannez des produits pour votre proche et accédez à son placard.",
     gradient: ["#EAF3FF", "#D5E8FF"],
@@ -101,9 +103,9 @@ function AnimatedRoleCard({
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          {/* Emoji */}
-          <View style={styles.emojiWrap}>
-            <ThemedText style={styles.cardEmoji}>{card.emoji}</ThemedText>
+          {/* Illustration */}
+          <View style={styles.illustrationWrap}>
+            <card.Illustration size={80} />
           </View>
 
           {/* Text */}
@@ -265,16 +267,11 @@ const styles = StyleSheet.create({
   cardSelected: {
     borderColor: Colors.accent,
   },
-  emojiWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "rgba(255,255,255,0.7)",
+  illustrationWrap: {
+    width: 80,
+    height: 80,
     alignItems: "center",
     justifyContent: "center",
-  },
-  cardEmoji: {
-    fontSize: 28,
   },
   cardBody: {
     flex: 1,

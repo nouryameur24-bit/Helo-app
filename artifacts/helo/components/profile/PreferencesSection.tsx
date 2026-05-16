@@ -3,6 +3,8 @@ import { Switch, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Card } from '@/components/ui/Card';
+import { Feather } from '@expo/vector-icons';
+
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors } from '@/constants/theme';
 import { useBabyMode } from '@/hooks/useBabyMode';
@@ -38,7 +40,7 @@ export function PreferencesSection() {
         <Card padding={0} style={styles.settingGroup}>
           <View style={styles.settingRow}>
             <View style={[styles.settingIcon, { backgroundColor: isBreastfeeding ? BREASTFEEDING_PALETTE.accentLight : Colors.accentLight }]}>
-              <ThemedText style={{ fontSize: 18 }}>🤱</ThemedText>
+              <Feather name="heart" size={18} color={isBreastfeeding ? BREASTFEEDING_PALETTE.accent : Colors.accent} />
             </View>
             <View style={styles.settingContent}>
               <ThemedText variant="labelLarge" color="textPrimary">Mode allaitement</ThemedText>

@@ -44,7 +44,7 @@ export function ProfileHeader() {
   const weekProgress = currentWeek ? Math.min(1, currentWeek / 40) : 0;
 
   const weekAndTrimesterLabel = (() => {
-    if (isBreastfeeding) return 'Mode allaitement 🤱';
+    if (isBreastfeeding) return 'Mode allaitement';
     if (isPostPartum) return "Après l'accouchement";
     if (currentWeek && trimesterLabel) return `Semaine ${currentWeek} · ${trimesterLabel}`;
     if (trimesterLabel) return trimesterLabel;

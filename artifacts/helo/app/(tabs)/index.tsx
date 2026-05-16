@@ -228,7 +228,7 @@ export default function HomeScreen() {
             <View style={styles.bfSuggestionBanner}>
               <View style={{ flex: 1 }}>
                 <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
-                  Mode allaitement disponible 🤱
+                  Mode allaitement disponible
                 </ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   Votre DPA est dépassé. Activez le mode allaitement pour des analyses adaptées.
@@ -262,7 +262,7 @@ export default function HomeScreen() {
         {isBreastfeeding && (
           <Animated.View entering={FadeInDown.delay(50).duration(400)}>
             <View style={[styles.bfSuggestionBanner, { borderColor: BREASTFEEDING_PALETTE.accentLight }]}>
-              <ThemedText style={{ fontSize: 20 }}>🤱</ThemedText>
+              <Feather name="heart" size={20} color={BREASTFEEDING_PALETTE.accent} />
               <View style={{ flex: 1, marginLeft: Spacing.sm }}>
                 <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
                   Mode allaitement actif

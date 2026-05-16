@@ -434,7 +434,7 @@ export default function OnboardingScreen() {
               end={{ x: 1, y: 1 }}
             >
               <ThemedText style={styles.primaryBtnText}>
-                {isLast ? "Commencer ✨" : "Suivant"}
+                {isLast ? "Commencer" : "Suivant"}
               </ThemedText>
             </LinearGradient>
           </Pressable>

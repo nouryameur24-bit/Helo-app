@@ -60,7 +60,6 @@ export default function PartnerWelcomeScreen() {
         <ThemedText style={styles.emoji}>💙</ThemedText>
         <View style={styles.confettiRow}>
           <ThemedText style={styles.confetti}>🎉</ThemedText>
-          <ThemedText style={styles.confetti}>✨</ThemedText>
           <ThemedText style={styles.confetti}>🎊</ThemedText>
         </View>
       </Animated.View>
@@ -71,7 +70,7 @@ export default function PartnerWelcomeScreen() {
         </ThemedText>
         {partnerName ? (
           <ThemedText variant="headlineLarge" color="accent" style={styles.subtitle}>
-            Vous accompagnez{'\n'}{partnerName} 🤰
+            Vous accompagnez{'\n'}{partnerName}
           </ThemedText>
         ) : (
           <ThemedText variant="headlineLarge" color="accent" style={styles.subtitle}>

@@ -284,7 +284,7 @@ export default function ChatScreen() {
               <ThemedText style={styles.emptyAvatarText}>H</ThemedText>
             </View>
             <ThemedText variant="headlineMedium" style={styles.emptyTitle}>
-              Bonjour 🤱
+              Bonjour
             </ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
               Je suis votre assistante santé Hēlo. Posez-moi toutes vos questions sur votre grossesse — alimentation, cosmétiques, médicaments, bien-être.

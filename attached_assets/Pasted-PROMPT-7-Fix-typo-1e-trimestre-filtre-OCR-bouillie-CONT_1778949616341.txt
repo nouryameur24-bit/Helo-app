@@ -1,0 +1,174 @@
+PROMPT 7 — Fix typo "1e trimestre" + filtre OCR bouillie
+[CONTEXTE]
+Deux fixes UX précis avant submission App Store. Aucune nouvelle feature,
+juste des correctifs de qualité.
+
+────────────────────────────────────────────────────────────
+FIX 1 — Typo "1e trimestre" → "1er trimestre"
+────────────────────────────────────────────────────────────
+
+Fichier : components/profile/ProfileHeader.tsx
+Ligne ~41
+
+Remplacer EXACTEMENT :
+  const trimesterLabel = trimester ? `${trimester}e trimestre` : null;
+
+Par :
+  const trimesterLabel = trimester
+    ? (trimester === 1 ? '1er trimestre' : `${trimester}e trimestre`)
+    : null;
+
+Résultat attendu : "1er trimestre" (avec 'r'), "2e trimestre", "3e trimestre".
+
+────────────────────────────────────────────────────────────
+FIX 2 — Filtre OCR bouillie sur écran verdict
+────────────────────────────────────────────────────────────
+
+Problème : quand l'OCR renvoie des ingrédients pourris ("saveur menthet vert",
+"matieres grasses %dent acides gras saturés: 0)", "placides:"), ils sont
+affichés bruts. Casse la confiance.
+
+ÉTAPE 2.1 — Créer un helper réutilisable
+
+Créer le fichier : lib/ocrQuality.ts
+
+  /**
+   * Détecte si une liste OCR est de mauvaise qualité.
+   * Retourne true si > 40% des lignes ont des problèmes détectables.
+   */
+  export function isLowQualityOcr(lines: string[] | undefined | null): boolean {
+    if (!lines || lines.length === 0) return true;
+
+    const issues = lines.filter((rawLine) => {
+      const l = (rawLine ?? '').trim();
+      // Trop court
+      if (l.length < 3) return true;
+      // Ligne qui se termine par % ou parenthèse non fermée
+      if (/[%()][a-z]?\s*$/i.test(l)) return true;
+      // Ligne qui se termine par ":" suivi de rien
+      if (/:\s*$/.test(l)) return true;
+      // Suite de 5+ consonnes (mot inventé probable)
+      if (/[bcdfghjklmnpqrstvwxz]{5,}/i.test(l)) return true;
+      // Caractères spéciaux suspects en chaîne
+      if (/[#@~`^]{2,}/.test(l)) return true;
+      return false;
+    });
+
+    return issues.length / lines.length > 0.4;
+  }
+
+ÉTAPE 2.2 — Tester avec un fichier test
+
+Créer __tests__/ocrQuality.test.ts :
+
+  import { isLowQualityOcr } from '@/lib/ocrQuality';
+
+  describe('isLowQualityOcr', () => {
+    test('detect bouillie évidente', () => {
+      expect(isLowQualityOcr([
+        'saveur menthet vert',
+        'matieres grasses %dent',
+        'placides:',
+        'acides gras saturés: 0)',
+      ])).toBe(true);
+    });
+
+    test('accepte liste propre', () => {
+      expect(isLowQualityOcr([
+        'eau',
+        'sucre',
+        'lait écrémé en poudre',
+        'arôme naturel vanille',
+        'sel',
+      ])).toBe(false);
+    });
+
+    test('liste vide ou null = low quality', () => {
+      expect(isLowQualityOcr([])).toBe(true);
+      expect(isLowQualityOcr(null)).toBe(true);
+      expect(isLowQualityOcr(undefined)).toBe(true);
+    });
+
+    test('liste mixte ≤ 40% problèmes = OK', () => {
+      expect(isLowQualityOcr([
+        'eau',
+        'sucre',
+        'lait',
+        'arôme',
+        'menthet:', // 1/5 = 20%, on accepte
+      ])).toBe(false);
+    });
+  });
+
+ÉTAPE 2.3 — Intégrer dans app/verdict/[scanId].tsx
+
+Localiser le bloc qui affiche la liste d'ingrédients (cherche `isOCRMode` ou
+le rendu de la liste). Au-dessus du rendu de la liste, ajouter :
+
+  import { isLowQualityOcr } from '@/lib/ocrQuality';
+
+  // Dans le composant, calculer une fois la qualité OCR :
+  const ocrLines = useMemo(() => {
+    // Adapter à la source réelle : analysis.ingredients, scanData.ingredientsText.split('\n'), etc.
+    // Récupérer la liste de strings telle qu'elle est rendue à l'écran.
+    if (!isOCRMode) return null;
+    return (analysis?.ingredients ?? []).map((i) => i.name ?? '');
+  }, [isOCRMode, analysis]);
+
+  const ocrIsBouillie = useMemo(() => isLowQualityOcr(ocrLines), [ocrLines]);
+
+Dans le rendu, quand isOCRMode === true ET ocrIsBouillie === true :
+remplacer la liste brute par ce composant inline :
+
+  <Card padding={Spacing.lg} style={{ marginTop: Spacing.md }}>
+    <View style={{ alignItems: 'center', gap: Spacing.sm }}>
+      <Feather name="camera-off" size={32} color={Colors.textSecondary} />
+      <ThemedText variant="headlineMedium" style={{ textAlign: 'center' }}>
+        Texte partiellement lu
+      </ThemedText>
+      <ThemedText
+        variant="bodyMedium"
+        color="textSecondary"
+        style={{ textAlign: 'center' }}
+      >
+        Pour un verdict précis, scannez à nouveau avec un meilleur éclairage,
+        ou ajoutez ce produit via la communauté.
+      </ThemedText>
+      <Pressable
+        onPress={() => router.push('/scan')}
+        style={{
+          marginTop: Spacing.sm,
+          paddingVertical: Spacing.sm,
+          paddingHorizontal: Spacing.lg,
+          backgroundColor: Colors.accent,
+          borderRadius: Radius.md,
+        }}
+      >
+        <ThemedText style={{ color: '#FFF', fontWeight: '600' }}>
+          Re-scanner
+        </ThemedText>
+      </Pressable>
+    </View>
+  </Card>
+
+Si la liste est OK (pas bouillie) → afficher comme avant (rien à changer).
+
+Imports à ajouter si manquants dans verdict/[scanId].tsx :
+  import { Feather } from '@expo/vector-icons';
+  import { Pressable } from 'react-native';
+  import { Radius } from '@/constants/theme';
+  import { isLowQualityOcr } from '@/lib/ocrQuality';
+  import { useMemo } from 'react';
+
+[VÉRIFICATIONS]
+- `pnpm typecheck` passe
+- `pnpm test` passe (le nouveau ocrQuality.test.ts inclus)
+- Test manuel : forcer isOCRMode=true avec ingrédients pourris → message
+  "Texte partiellement lu" + bouton "Re-scanner".
+
+[RÈGLES STRICTES]
+- NE PAS modifier la logique de scan elle-même
+- NE PAS toucher au verdict principal (le score + le cercle de couleur)
+- Le filtre ne s'applique QUE quand isOCRMode === true
+- Si le code n'arrive pas à localiser ocrLines (champ exact dans analysis),
+  s'arrêter et demander — ne pas inventer un chemin de données.

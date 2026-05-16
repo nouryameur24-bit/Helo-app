@@ -489,8 +489,8 @@ export default function ProfileScreen() {
           </Animated.View>
         )}
 
-        {/* Mon Cercle */}
-        {!isPartner && (
+        {/* Mon Cercle — V1: masqué, réactiver pour V2 */}
+        {false && !isPartner && circleData && (
           <Animated.View entering={FadeInDown.delay(190).duration(500)}>
             <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
               MON CERCLE
@@ -500,7 +500,7 @@ export default function ProfileScreen() {
                 <SettingRow
                   icon="users"
                   title="Mon Cercle"
-                  subtitle={`${circleData.members.length} membre${circleData.members.length > 1 ? 's' : ''} · Voir le fil d'activité`}
+                  subtitle={`${circleData?.members.length ?? 0} membre${(circleData?.members.length ?? 0) > 1 ? 's' : ''} · Voir le fil d'activité`}
                   onPress={() => router.push(ROUTES.circle)}
                 />
               ) : (
@@ -765,8 +765,10 @@ export default function ProfileScreen() {
             <Divider />
             <SettingRow icon="bell" title="Notifications" onPress={() => router.push(ROUTES.notificationsSettings)} />
             <Divider />
+            {/* V1: Communauté masquée, réactiver pour V2
             <SettingRow icon="users" title="Communauté" subtitle="Contributions & produits signalés" onPress={() => router.push(ROUTES.community)} />
             <Divider />
+            */}
             <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push(ROUTES.premium)} />
             <Divider />
             <SettingRow icon="help-circle" title="Guide des fonctionnalités" subtitle="Comment marche chaque mode" onPress={() => router.push(ROUTES.guide)} />

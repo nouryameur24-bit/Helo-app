@@ -1,0 +1,18 @@
+**Dis à Replit de juste le cacher.** Ne fais jamais l'erreur de jeter du code fonctionnel à la poubelle. Tu as passé du temps à le concevoir, c'est de l'actif pour ton entreprise. C'est simplement que ce n'est pas le bon timing pour la V1.
+Voici la stratégie **Nature Peinture** pour gérer ça proprement sans perdre une seule ligne de ton travail :
+### 1. Pourquoi "Masquer" est 100 % Safe pour l'App Store
+Les testeurs d'Apple (et leurs outils de scan automatique) ne vont pas aller lire tes fichiers sources dans ton dossier app/ pour voir si du code dort. Ils se contentent de tester l'application compilée.
+ * Si un écran n'a **aucun bouton** qui pointe vers lui, **aucune icône**, et qu'il n'est pas accessible dans la barre des onglets (Tabs), pour Apple, il n'existe pas. Tu passes le contrôle technique sans problème.
+### 2. Comment le cacher proprement ?
+Dans ton _layout.tsx, la route community est déjà configurée avec href: null (donc invisible dans la barre du bas). Mais le vrai piège, ce sont les boutons "raccourcis" cachés dans tes autres écrans.
+Par exemple, dans ton fichier community.tsx, tu as le composant CircleCard qui redirige vers /circle. Si tu as d'autres liaisons sur ton écran d'accueil, c'est là que ça peut coincer.
+### Le Prompt exact à donner à Replit Agent 🤖
+Copie-colle ça à ton agent pour qu'il fasse le ménage proprement :
+> *"Masque complètement la fonctionnalité 'Cercle' (Communauté) pour le lancement de la V1, mais sans supprimer les fichiers de code.
+>  1. Commente ou retire toutes les cartes, boutons et points d'accès visuels qui mènent au Cercle ou à l'écran Communauté depuis l'écran d'Accueil (index.tsx) et les autres fichiers.
+>  2. Assure-toi que la route est totalement inaccessible pour l'utilisateur.
+>    Nous réactiverons ce code plus tard pour la V2 quand nous mettrons en place la modération."*
+> 
+### Le bénéfice pour ton post-launch
+Dans deux mois, quand tu auras stabilisé tes 100 premières mamans et que tu auras le temps de coder un système de signalement (bouton "Report") pour le DSA, tu n'auras qu'à décommenter tes boutons. En une mise à jour de 10 minutes, tu sortiras une "Nouvelle fonctionnalité majeure" pour ta communauté sans avoir à tout retravailler. C'est ça, la gestion intelligente d'un produit Tech.
+**On valide cette mise en cache du Cercle pour se concentrer sur le blindage du bouton Premium et du chat médical ?**

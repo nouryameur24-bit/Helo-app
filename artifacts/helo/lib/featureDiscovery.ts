@@ -231,7 +231,8 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
   { key: 'travel',       category: 'Analyse',      route: '/travel' },
   // Social
   { key: 'partner',      category: 'Social',       route: '/(tabs)/partner-checklist-tab' },
-  { key: 'circle',       category: 'Social',       route: '/circle' },
+  // V1: Cercle masqué dans le Guide, réactiver pour V2
+  // { key: 'circle',       category: 'Social',       route: '/circle' },
   { key: 'pact',         category: 'Social',       route: '/pact' },
   // Ma Grossesse
   { key: 'timeline',     category: 'Ma Grossesse', route: '/timeline' },

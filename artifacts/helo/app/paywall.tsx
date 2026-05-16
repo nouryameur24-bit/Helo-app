@@ -39,7 +39,8 @@ const FEATURES: Feature[] = [
   { label: 'Badge Premium ✦',            free: false, premium: true  },
   { label: 'Analyses basiques',           free: true,  premium: true  },
   { label: 'Weekly Brief',               free: true,  premium: true  },
-  { label: 'Communauté',                 free: true,  premium: true  },
+  // V1: Communauté masquée, réactiver pour V2
+  // { label: 'Communauté',                 free: true,  premium: true  },
 ];
 
 // ─── Plan card ────────────────────────────────────────────────────────────────

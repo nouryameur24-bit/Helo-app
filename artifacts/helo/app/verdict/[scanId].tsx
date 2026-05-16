@@ -532,7 +532,8 @@ export default function VerdictScreen() {
           totalIngredientsCount={product?.ingredientsList?.length ?? 0}
         />
 
-        {/* ── PARTAGER DANS MON CERCLE ── */}
+        {/* ── PARTAGER DANS MON CERCLE — V1: masqué, réactiver pour V2 ── */}
+        {/* Réactiver pour V2 :
         {circleId && verdict && product && (
           <CircleShareRow
             circleId={circleId}
@@ -545,6 +546,7 @@ export default function VerdictScreen() {
             setSharedToCircle={setSharedToCircle}
           />
         )}
+        */}
 
         {/* ── DISCLAIMER ── */}
         <View style={styles.disclaimerSection}>

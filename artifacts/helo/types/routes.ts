@@ -35,7 +35,7 @@ export const ROUTES = {
   travelBriefing: '/travel-briefing',
   restaurant: '/restaurant-results',
   paywall: '/paywall',
-  premium: '/premium',
+  premium: '/paywall', // alias — the paywall screen is the canonical pricing page
   weeklyBrief: '/weekly-brief',
   partnerWeeklyBrief: '/partner-weekly-brief',
   pact: '/pact',

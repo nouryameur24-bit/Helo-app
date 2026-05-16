@@ -1,0 +1,143 @@
+PROMPT 6 — [SÉCURITÉ MÉDICALE] Fallback mots-clés d'urgence côté serveur
+[CONTEXTE]
+L'edge function supabase/functions/chat/index.ts route toutes les questions
+utilisatrice vers claude-haiku-4-5. Haiku est un excellent modèle mais sur un
+vertical médical (femmes enceintes), un message du type "je saigne", "j'ai des
+contractions", "je ne sens plus bébé bouger" doit déclencher une réponse
+d'urgence DÉTERMINISTE — pas une réponse générée par un modèle qui pourrait
+varier.
+
+Le system prompt actuel demande au modèle de renvoyer une réponse SAMU
+fixe sur ces cas, mais c'est confié au LLM. Sur une question médicale, on ne
+confie pas la sécurité au LLM : on l'intercepte avant.
+
+Bonus du même coup : capper MAX_TOKENS à 512 (au lieu de 1024) — les réponses
+font 4-8 phrases d'après le system prompt, 512 tokens est largement suffisant.
+Économie : ~50% sur le coût Anthropic.
+
+⚠️ Ce prompt suppose que les PROMPTS 1 (auth) et 2 (sécurité edge functions)
+sont déjà déployés. Sinon, fusionner les changements à la main.
+
+[OBJECTIF]
+Intercepter les messages d'urgence AVANT l'appel Anthropic et renvoyer une
+réponse déterministe avec le numéro 15 (SAMU). Le LLM n'est jamais appelé pour
+ces cas.
+
+[ÉTAPES]
+
+1. supabase/functions/chat/index.ts — En haut du fichier, après les constantes
+   existantes, ajouter :
+
+```typescript
+   // Réduction du cap tokens (réponses 4-8 phrases d'après system prompt)
+   const MAX_TOKENS = 512;
+
+   // Mots-clés d'urgence (regex insensible à la casse, gère accents et variantes)
+   const EMERGENCY_PATTERNS: RegExp[] = [
+     /\b(saigne(ment)?s?|h[ée]morr?agie|perte\s+de\s+sang)\b/i,
+     /\b(contraction|contractions)\b/i,
+     /\b(perte\s+(d['e]\s*)?(eau|liquide)|fissur(e|ation)\s+poche)\b/i,
+     /\b(b[ée]b[ée]\s+ne\s+bouge|baisse\s+(des|de)\s+mouvement|plus\s+de\s+mouvement)\b/i,
+     /\b(douleur\s+(abdominale|au\s+ventre)|mal\s+au\s+ventre\s+(intense|fort|tr[èe]s))\b/i,
+     /\b(fi[èe]vre\s+(forte|[ée]lev[ée]e|haute)|39[°,.]|40[°,.])\b/i,
+     /\b(vomissement[s]?\s+r[ée]p[ée]t[ée]s|je\s+vomis\s+sans\s+arr[êe]t)\b/i,
+     /\b(maux?\s+de\s+t[êe]te\s+(s[ée]v[èe]re|intense|insupportable)|migraine\s+forte)\b/i,
+     /\b(trouble[s]?\s+(de\s+la\s+)?vue|vision\s+floue|tache[s]?\s+noire[s]?)\b/i,
+     /\b(suicid|me\s+tuer|en\s+finir|envie\s+de\s+mourir)\b/i,
+   ];
+
+   const EMERGENCY_RESPONSE = "⚠️ Ce que vous décrivez peut nécessiter une consultation urgente. Contactez immédiatement le 15 (SAMU) ou rendez-vous à la maternité la plus proche. Ne tardez pas.\n\nPour toute décision concernant votre grossesse, consultez votre médecin ou sage-femme.";
+
+   function detectEmergency(messages: Array<{ role: string; content: string }>): boolean {
+     // Ne regarder QUE le dernier message utilisateur
+     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+     if (!lastUser) return false;
+     return EMERGENCY_PATTERNS.some((rx) => rx.test(lastUser.content));
+   }
+```
+
+2. Dans le handler `serve(async (req) => { ... })`, APRÈS la validation
+   d'input et le rate-limit check (donc après les blocs ajoutés au prompt 2),
+   mais AVANT le `fetch(ANTHROPIC_API_URL, ...)`, ajouter :
+
+```typescript
+   // Interception urgence — réponse déterministe, jamais routée au LLM
+   if (detectEmergency(body.messages)) {
+     // Logger pour suivi (table api_usage avec endpoint='chat_emergency')
+     await sb.from('api_usage').insert({ user_id: user.id, endpoint: 'chat' });
+
+     return new Response(
+       JSON.stringify({
+         content: [{ type: 'text', text: EMERGENCY_RESPONSE }],
+         role: 'assistant',
+         emergency: true,
+       }),
+       { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+     );
+   }
+```
+
+3. lib/anthropic.ts côté client — Vérifier que le parser de réponse gère
+   correctement le shape { content: [{ type: 'text', text: ... }], role: 'assistant' }.
+   Il devrait déjà — c'est le shape standard Anthropic Messages API. Si le flag
+   `emergency: true` est présent, on peut optionnellement afficher l'UI
+   différemment (fond rouge / bouton "Appeler le 15" cliquable via `tel:15`).
+   Cette amélioration UI est optionnelle pour ce prompt — la sécurité fonctionne
+   sans.
+
+4. __tests__/emergency.test.ts — Créer le fichier avec ces cas de test
+   (utiliser une version exportée de `detectEmergency` ou répliquer la regex
+   dans le test) :
+
+```typescript
+   describe('detectEmergency', () => {
+     const emergencyCases = [
+       'je saigne beaucoup',
+       'J\'ai des saignements depuis ce matin',
+       'J\'ai des contractions toutes les 5 minutes',
+       'Je perds du liquide',
+       'Bébé ne bouge plus depuis hier',
+       'baisse des mouvements du bébé',
+       'douleur abdominale intense',
+       'J\'ai mal au ventre très fort',
+       'fièvre forte 39.5',
+       'vomissements répétés depuis 2 jours',
+       'maux de tête sévères',
+       'j\'ai la vision floue',
+       'envie de mourir',
+     ];
+
+     const safeCases = [
+       'Je peux manger du fromage à pâte molle ?',
+       'Est-ce que la crème solaire avec rétinol est dangereuse ?',
+       'À partir de quand sent-on bébé bouger ?',
+       'mal au dos léger',
+       'petite contraction de Braxton Hicks',  // false negative acceptable
+     ];
+
+     test.each(emergencyCases)('detecte urgence: "%s"', (msg) => {
+       expect(detectEmergency([{ role: 'user', content: msg }])).toBe(true);
+     });
+
+     test.each(safeCases)('ne flag pas: "%s"', (msg) => {
+       expect(detectEmergency([{ role: 'user', content: msg }])).toBe(false);
+     });
+   });
+```
+
+   Note sur "petite contraction" : la regex va matcher "contraction" et flag.
+   C'est un faux positif acceptable — mieux vaut envoyer 100 femmes au SAMU
+   pour rien que d'en rater une qui en a besoin. Ne pas chercher à raffiner.
+
+[VÉRIFICATIONS]
+- `pnpm typecheck` passe.
+- `pnpm test` passe (le nouveau fichier emergency.test.ts inclus).
+- Test manuel : envoyer "je saigne" via l'app → réponse SAMU instantanée,
+  pas de latence Anthropic.
+- Vérifier dans les logs Supabase Edge Functions qu'aucun appel Anthropic
+  n'est fait pour les cas d'urgence.
+
+[ACTIONS MANUELLES]
+- `supabase functions deploy chat`
+- Tester depuis l'app : envoyer "je saigne beaucoup" → réponse SAMU.
+- Tester un cas safe : "je peux manger du saumon fumé" → réponse normale.

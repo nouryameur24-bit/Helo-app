@@ -1,0 +1,138 @@
+PROMPT 2 — [SÉCURITÉ CRITIQUE] Sécuriser les Edge Functions chat et ocr
+[CONTEXTE]
+supabase/functions/chat/index.ts et supabase/functions/ocr/index.ts sont
+actuellement déployées avec --no-verify-jwt, CORS *, zéro rate limit, zéro
+validation d'input. Elles proxient Anthropic et Google Vision sans aucune
+protection : un attaquant peut faire exploser la facture API.
+
+⚠️ Ce prompt suppose que le PROMPT 1 (Supabase Anonymous Auth) est déjà terminé.
+
+[OBJECTIF]
+- Exiger un JWT Supabase valide sur chaque requête.
+- Capper la taille des inputs.
+- Rate-limiter par utilisateur via une table api_usage.
+- Logger les erreurs proprement (plus de catch vide).
+
+[ÉTAPES]
+
+1. Créer supabase/migration-api-usage.sql :
+CREATE TABLE IF NOT EXISTS api_usage (
+id BIGSERIAL PRIMARY KEY,
+user_id TEXT NOT NULL,
+endpoint TEXT NOT NULL CHECK (endpoint IN ('chat', 'ocr')),
+created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_api_usage_user_endpoint_date
+ON api_usage(user_id, endpoint, created_at DESC);
+ALTER TABLE api_usage ENABLE ROW LEVEL SECURITY;
+-- Aucune policy client : seul service_role (edge functions) écrit ici.
+
+2. Réécrire supabase/functions/chat/index.ts. Garder l'import serve + la
+   constante ANTHROPIC_API_URL/VERSION/MODEL. Ajouter :
+
+   a) En haut, importer createClient :
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+   b) Helpers à factoriser en haut du fichier :
+  const forbidden = () => new Response(
+    JSON.stringify({ error: 'Authentification requise' }),
+    { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+  );
+  const badRequest = (msg = 'Requête invalide') => new Response(
+    JSON.stringify({ error: msg }),
+    { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+  );
+  const tooMany = () => new Response(
+    JSON.stringify({ error: 'Limite quotidienne atteinte. Réessayez demain.' }),
+    { status: 429, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+  );
+
+   c) Dans le handler, AVANT le fetch Anthropic, ajouter :
+  // 1. Auth check
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) return forbidden();
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const sb = createClient(supabaseUrl, serviceKey);
+
+  const jwt = authHeader.replace('Bearer ', '');
+  const { data: { user }, error: userErr } = await sb.auth.getUser(jwt);
+  if (userErr || !user) return forbidden();
+
+  // 2. Input validation
+  const body = await req.json() as ChatRequestBody;
+  if (!Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > 30) {
+    return badRequest('Nombre de messages invalide (1-30)');
+  }
+  for (const m of body.messages) {
+    if (typeof m.content !== 'string' || m.content.length > 4000) {
+      return badRequest('Message trop long ou invalide');
+    }
+    if (m.role !== 'user' && m.role !== 'assistant') {
+      return badRequest('Rôle invalide');
+    }
+  }
+  if (body.system && body.system.length > 8000) {
+    return badRequest('System prompt trop long');
+  }
+  const maxTokens = Math.min(body.max_tokens ?? MAX_TOKENS, 2048);
+
+  // 3. Rate limit (50 req chat / 24h / user)
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count } = await sb
+    .from('api_usage')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('endpoint', 'chat')
+    .gte('created_at', since);
+  if ((count ?? 0) >= 50) return tooMany();
+
+   d) Après le fetch Anthropic et avant le return, logger l'usage :
+  await sb.from('api_usage').insert({ user_id: user.id, endpoint: 'chat' });
+
+   e) Remplacer le `} catch {` vide par :
+  } catch (err) {
+    console.error('[chat] unhandled error:', err);
+    return new Response(
+      JSON.stringify({ error: 'Erreur interne du serveur' }),
+      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+    );
+  }
+
+3. Appliquer le même traitement à supabase/functions/ocr/index.ts :
+   - Mêmes helpers, même auth check.
+   - Validation : `body.imageBase64` est une string, et :
+ if (typeof body.imageBase64 !== 'string') return badRequest('Image manquante');
+ // base64 est ~33% plus gros que les bytes réels
+ if (body.imageBase64.length * 0.75 > 5 * 1024 * 1024) {
+   return badRequest('Image trop volumineuse (max 5 Mo)');
+ }
+   - Rate limit : 100 req ocr / 24h / user.
+   - Insert dans api_usage avec endpoint='ocr'.
+   - Catch logué proprement.
+
+4. lib/anthropic.ts côté client — Vérifier que l'appel utilise
+   `supabase.functions.invoke('chat', { body: ... })` (invoke ajoute
+   automatiquement l'Authorization avec le JWT de session). Sinon, le migrer.
+
+5. lib/ocr.ts ou lib/visionScan.ts côté client — Idem : passer par
+   `supabase.functions.invoke('ocr', ...)`.
+
+6. Gérer le 429 côté client dans les deux libs : si le status est 429,
+   throw une erreur typée `RateLimitError` que l'UI affiche comme :
+   "Vous avez atteint votre limite quotidienne. Réessayez demain."
+   (Et qui pourra plus tard servir de hook pour pousser vers Premium.)
+
+[VÉRIFICATIONS]
+- `pnpm typecheck` passe.
+- Test manuel : curl sur l'endpoint chat SANS Authorization → 401.
+- Test manuel : curl avec body.messages.length = 31 → 400.
+- Après 50 appels chat depuis le même user → 51ème = 429.
+
+[ACTIONS MANUELLES — à faire après le commit]
+- `supabase secrets set SUPABASE_SERVICE_ROLE_KEY=eyJ...`
+  (Récupérer dans Dashboard → Project Settings → API → service_role key.)
+- `supabase db push` (applique la migration api_usage).
+- `supabase functions deploy chat` (SANS --no-verify-jwt).
+- `supabase functions deploy ocr` (SANS --no-verify-jwt).

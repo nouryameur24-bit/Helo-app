@@ -1,0 +1,26 @@
+# Flow 6 — Shelf scan entry point
+#
+# Validates that the shelf scan can be opened from the Shelf tab
+# and from the home shortcut, and that the camera screen renders.
+appId: com.heloapp.helo
+name: "06 — Shelf scan entry"
+tags:
+  - shelf
+---
+- launchApp
+- tapOn:
+    text: "Placard|Shelf"
+    optional: true
+- assertVisible:
+    text: "Scanner une étagère|Mon Placard"
+- tapOn:
+    text: "Scanner une étagère"
+    optional: true
+- tapOn:
+    text: "Allow|OK|Autoriser"
+    optional: true
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+- assertVisible:
+    text: "Mon Placard|Ma Liste"

@@ -1,0 +1,89 @@
+# Flow 10 — Profile menu deep links
+#
+# Opens every menu entry from the profile tab to confirm none
+# leads to a dead route or crash. Each entry returns to profile
+# via the back button.
+appId: com.heloapp.helo
+name: "10 — Profile menu deep links"
+tags:
+  - critical
+  - navigation
+---
+- launchApp
+- tapOn:
+    text: "Profil"
+    optional: true
+- assertVisible:
+    text: "Mon profil"
+
+# Mon profil → placeholder screen
+- tapOn:
+    text: "Mon profil"
+- assertVisible:
+    text: "Fonctionnalité bientôt disponible.*|Mon profil"
+- tapOn:
+    text: "Retour"
+- assertVisible:
+    text: "Notifications"
+
+# Notifications
+- tapOn:
+    text: "Notifications"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+
+# Méthodologie
+- tapOn:
+    text: "Méthodologie"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+
+# CGU
+- tapOn:
+    text: "CGU"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+
+# Confidentialité
+- tapOn:
+    text: "Confidentialité"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+
+# Premium → must land on /paywall (alias)
+- tapOn:
+    text: "Hēlo Premium"
+- assertVisible:
+    text: ".*Premium.*|.*essai.*|.*mois.*"
+- back
+
+# Guide
+- tapOn:
+    text: "Guide des fonctionnalités"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+
+# Ma Nutrition
+- tapOn:
+    text: "Ma Nutrition"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+
+# Mon Environnement (home-score)
+- tapOn:
+    text: "Mon Environnement"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+
+# Communauté
+- tapOn:
+    text: "Communauté"
+- assertNotVisible:
+    text: "Erreur.*"

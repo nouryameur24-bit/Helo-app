@@ -1,0 +1,21 @@
+# Flow 9 — Comparator with 0 products
+#
+# Opens /compare without any pre-filled slot and asserts the empty
+# state renders correctly (two empty slots, no crash).
+appId: com.heloapp.helo
+name: "09 — Comparator empty state"
+tags:
+  - compare
+---
+- launchApp
+- tapOn:
+    text: "Comparer deux produits"
+    optional: true
+# Or via deep link from home grid
+- assertVisible:
+    text: "Comparer|Produit A|Produit B|Scanner"
+- assertNotVisible:
+    text: "Erreur.*"
+- back
+- assertVisible:
+    text: "Bonjour.*|Glow Score|Scanner.*"

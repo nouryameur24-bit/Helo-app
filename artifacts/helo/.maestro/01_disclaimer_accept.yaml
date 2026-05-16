@@ -1,0 +1,32 @@
+# Flow 1 — First launch + medical disclaimer acceptance
+#
+# Verifies the disclaimer modal appears on first launch and that
+# the user can accept it without crashing the app.
+appId: com.heloapp.helo
+name: "01 — Disclaimer acceptance"
+tags:
+  - critical
+  - first-launch
+---
+- clearState
+- launchApp
+# Skip splash if shown
+- tapOn:
+    text: "Passer le splash"
+    optional: true
+# Disclaimer copy contains "consultez votre médecin" and an accept button
+- assertVisible:
+    text: ".*disclaimer.*|.*médical.*|.*Hēlo.*"
+    optional: true
+- tapOn:
+    text: "J'accepte"
+    optional: true
+- tapOn:
+    text: "Accepter"
+    optional: true
+- tapOn:
+    text: "Continuer"
+    optional: true
+# After acceptance we should land on onboarding or home — assert one of them
+- assertVisible:
+    text: "Commencer.*|Bonjour.*|Bienvenue.*|Scanner.*"

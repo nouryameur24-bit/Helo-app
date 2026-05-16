@@ -1,0 +1,27 @@
+# Flow 5 — OCR review screen reachability
+#
+# Real OCR needs a captured image, which Maestro can't synthesise
+# without a fixture. This flow asserts the OCR mode is reachable
+# from the scan tab and the placeholder UI renders.
+appId: com.heloapp.helo
+name: "05 — OCR mode reachable"
+tags:
+  - scan
+  - ocr
+---
+- launchApp
+- tapOn:
+    text: "Scanner"
+    index: 0
+    optional: true
+- tapOn:
+    text: "Ingrédients"
+    optional: true
+- assertVisible:
+    text: "Photographier.*|Photographiez.*"
+# Tapping the camera button should not crash; we only assert no error toast
+- tapOn:
+    text: "Photographier la composition"
+    optional: true
+- assertNotVisible:
+    text: "Erreur.*"

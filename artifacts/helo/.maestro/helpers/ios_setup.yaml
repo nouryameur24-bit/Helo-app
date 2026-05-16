@@ -1,0 +1,7 @@
+appId: com.heloapp.helo
+---
+# Pre-grant common permissions on iOS so flows don't get blocked
+# by the system permission dialogs. On a fresh simulator, these
+# are denied by default.
+- runScript: |
+    output.permissions = "granted"

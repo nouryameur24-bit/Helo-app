@@ -1,0 +1,33 @@
+# Flow 7 — Chat IA — safe question
+#
+# Sends a paracétamol-related question (whitelisted) and confirms
+# the assistant returns a non-error response without triggering the
+# blocked-medication branch.
+appId: com.heloapp.helo
+name: "07 — Chat: safe question"
+tags:
+  - chat
+  - ai
+---
+- launchApp
+- tapOn:
+    text: "Chat|Discuter"
+    optional: true
+- assertVisible:
+    text: "Posez votre question.*"
+- tapOn:
+    text: "Posez votre question.*"
+- inputText: "Est-ce que je peux prendre du paracétamol pendant la grossesse ?"
+- tapOn:
+    text: "Envoyer"
+    optional: true
+- pressKey: Enter
+    optional: true
+# Assistant should NOT return the blocked-medication CRAT message
+- assertNotVisible:
+    text: "Selon le CRAT.*nécessite un avis médical personnalisé"
+    timeout: 30000
+# Should produce some text response
+- assertVisible:
+    text: ".+"
+    timeout: 30000

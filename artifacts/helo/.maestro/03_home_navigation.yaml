@@ -1,0 +1,47 @@
+# Flow 3 — Bottom-tab navigation
+#
+# Cycles through every tab (Home, Scan, Shelf, Chat, Profile) and
+# confirms each renders without crashing.
+appId: com.heloapp.helo
+name: "03 — Tab navigation"
+tags:
+  - critical
+  - navigation
+---
+- launchApp
+- assertVisible:
+    text: "Bonjour.*|Glow Score|Scanner.*"
+# Scan tab
+- tapOn:
+    id: ".*scan.*"
+    optional: true
+- tapOn:
+    text: "Scanner"
+    index: 0
+    optional: true
+- assertVisible:
+    text: "Code-barres|Photographier.*|Ingrédients"
+# Shelf tab (Mon Placard)
+- tapOn:
+    text: "Placard|Shelf"
+    optional: true
+- assertVisible:
+    text: "Mon Placard|Ma Liste|Scanner une étagère"
+# Chat tab
+- tapOn:
+    text: "Chat|Discuter"
+    optional: true
+- assertVisible:
+    text: "Posez votre question.*|Hēlo|Bonjour"
+# Profile tab
+- tapOn:
+    text: "Profil"
+    optional: true
+- assertVisible:
+    text: "Mon profil|Notifications|CGU|Méthodologie"
+# Back home
+- tapOn:
+    text: "Accueil|Home"
+    optional: true
+- assertVisible:
+    text: "Bonjour.*|Glow Score"

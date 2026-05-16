@@ -1,0 +1,37 @@
+# Flow 4 — Barcode scan UI
+#
+# Cannot exercise a real barcode read in CI (no camera feed), so
+# this flow validates the scan-tab UI: mode chips render, the
+# shutter button is present, and the camera permission screen
+# (if shown) doesn't crash.
+appId: com.heloapp.helo
+name: "04 — Scan tab UI"
+tags:
+  - critical
+  - scan
+---
+- launchApp
+- tapOn:
+    text: "Scanner"
+    index: 0
+    optional: true
+- assertVisible:
+    text: "Code-barres"
+- assertVisible:
+    text: "Ingrédients|Photographier.*"
+# Allow camera if iOS prompt appears
+- tapOn:
+    text: "Allow|OK|Autoriser"
+    optional: true
+# Switch mode chip
+- tapOn:
+    text: "Ingrédients"
+    optional: true
+- assertVisible:
+    text: "Photographiez la liste d'ingrédients|Photographier"
+# Switch back to barcode
+- tapOn:
+    text: "Code-barres"
+    optional: true
+- assertVisible:
+    text: "Code-barres"

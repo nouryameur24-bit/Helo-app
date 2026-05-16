@@ -1,0 +1,42 @@
+# Flow 2 — Onboarding: role + profile + interests
+#
+# Walks through the 3-step onboarding (role selection, profile,
+# partner interests) and confirms we land on the home tab.
+appId: com.heloapp.helo
+name: "02 — Onboarding flow"
+tags:
+  - critical
+  - onboarding
+---
+- clearState
+- launchApp
+- tapOn:
+    text: "Passer le splash"
+    optional: true
+- tapOn:
+    text: "J'accepte"
+    optional: true
+# Onboarding step 1 — role
+- tapOn:
+    text: "Commencer.*"
+    optional: true
+- tapOn:
+    text: "Future maman|Maman|Enceinte"
+    optional: true
+- tapOn:
+    text: "Suivant"
+    optional: true
+# Onboarding step 2 — profile (trimester / due date)
+- tapOn:
+    text: "1er trimestre|2ème trimestre|3ème trimestre"
+    optional: true
+- tapOn:
+    text: "Suivant|Continuer"
+    optional: true
+# Final step — interests
+- tapOn:
+    text: "Suivant|Terminer|Commencer ✨"
+    optional: true
+# Should land on home
+- assertVisible:
+    text: "Bonjour.*|Glow Score|Scanner.*"

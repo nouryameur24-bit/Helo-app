@@ -1,0 +1,34 @@
+# Flow 8 — Chat IA — blocked medication safety filter
+#
+# Sends a question containing a blocked medication (Advil / ibuprofène).
+# The pre-filter MUST short-circuit the AI call and return the
+# hardcoded CRAT response with a link to lecrat.fr.
+appId: com.heloapp.helo
+name: "08 — Chat: blocked medication"
+tags:
+  - critical
+  - chat
+  - safety
+---
+- launchApp
+- tapOn:
+    text: "Chat|Discuter"
+    optional: true
+- assertVisible:
+    text: "Posez votre question.*"
+- tapOn:
+    text: "Posez votre question.*"
+- inputText: "Je peux prendre de l'Advil pour mon mal de tête ?"
+- tapOn:
+    text: "Envoyer"
+    optional: true
+- pressKey: Enter
+    optional: true
+# The hardcoded CRAT response MUST appear (no Claude call)
+- assertVisible:
+    text: ".*CRAT.*|.*lecrat.fr.*"
+    timeout: 5000
+- assertVisible:
+    text: ".*avis médical personnalisé.*"
+- assertVisible:
+    text: ".*paracétamol.*"

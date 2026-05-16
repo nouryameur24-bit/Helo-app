@@ -1,0 +1,6 @@
+appId: com.heloapp.helo
+---
+- runFlow:
+    when:
+      platform: iOS
+    file: helpers/ios_setup.yaml

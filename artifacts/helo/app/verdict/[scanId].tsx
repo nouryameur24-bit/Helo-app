@@ -25,6 +25,8 @@ import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
 
 import { LoadingScreen, ScoreCircle, VerdictLabel, Toast } from '@/components/verdict/VerdictAnimations';
+import { VellumTexture } from '@/components/verdict/VellumTexture';
+import { getContextualQuote } from '@/lib/contextualQuotes';
 import { CircleShareRow } from '@/components/verdict/CircleShareRow';
 import { IngredientsSection } from '@/components/verdict/IngredientsSection';
 import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
@@ -405,6 +407,8 @@ export default function VerdictScreen() {
           colors={[verdictBgColor, Colors.background]}
           style={styles.hero}
         >
+          {/* Texture papier vélin (~5% opacité) — Moment 1 brief v1.1 */}
+          <VellumTexture />
           <TouchableOpacity
             style={[styles.backRow, { marginTop: (Platform.OS === 'web' ? 67 : insets.top) + Spacing.sm }]}
             onPress={() => router.back()}
@@ -419,6 +423,7 @@ export default function VerdictScreen() {
             <ScoreCircle
               score={glowScore}
               color={verdictColor}
+              verdict={displayVerdict?.verdict ?? verdict.verdict}
               onAnimDone={() => setLabelVisible(true)}
             />
             <VerdictLabel
@@ -426,18 +431,42 @@ export default function VerdictScreen() {
               color={verdictColor}
               visible={labelVisible}
             />
-            {labelVisible && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: Spacing.sm, paddingHorizontal: Spacing.lg }}>
-                <Feather name="info" size={11} color={Colors.textTertiary} />
-                <ThemedText
-                  variant="bodySmall"
-                  color="textTertiary"
-                  style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 11 }}
-                >
-                  {getSourceAttribution(product.source)}
-                </ThemedText>
-              </View>
-            )}
+            {labelVisible && (() => {
+              const quote = getContextualQuote(
+                phase,
+                (displayVerdict?.verdict ?? verdict.verdict) as 'safe' | 'caution' | 'danger',
+              );
+              return (
+                <>
+                  <View style={{ marginTop: Spacing.md, paddingHorizontal: Spacing.lg }}>
+                    <ThemedText
+                      variant="bodyMedium"
+                      color="textSecondary"
+                      style={{ textAlign: 'center', fontStyle: 'italic', lineHeight: 20 }}
+                    >
+                      « {quote.text} »
+                    </ThemedText>
+                    <ThemedText
+                      variant="labelSmall"
+                      color="textTertiary"
+                      style={{ textAlign: 'center', marginTop: 4, letterSpacing: 0.5 }}
+                    >
+                      — Selon le {quote.source}
+                    </ThemedText>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: Spacing.sm, paddingHorizontal: Spacing.lg }}>
+                    <Feather name="info" size={11} color={Colors.textTertiary} />
+                    <ThemedText
+                      variant="bodySmall"
+                      color="textTertiary"
+                      style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 11 }}
+                    >
+                      {getSourceAttribution(product.source)}
+                    </ThemedText>
+                  </View>
+                </>
+              );
+            })()}
           </View>
 
           <View style={styles.productRow}>

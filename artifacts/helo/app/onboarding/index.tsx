@@ -30,6 +30,7 @@ import { IllustrationCommunity } from "@/components/illustrations/IllustrationCo
 import { IllustrationGlowScore } from "@/components/illustrations/IllustrationGlowScore";
 import { IllustrationScan } from "@/components/illustrations/IllustrationScan";
 import { IllustrationTrimester } from "@/components/illustrations/IllustrationTrimester";
+import { IllustrationTrimesterAnimated } from "@/components/illustrations/IllustrationTrimesterAnimated";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { Colors, Radius, Spacing } from "@/constants/theme";
 
@@ -163,7 +164,13 @@ function SlideCard({
         entering={FadeIn.delay(40).duration(400).easing(Easing.out(Easing.cubic))}
         style={styles.illustrationWrap}
       >
-        <AnimatedIllustration Illustration={Illustration} isActive={isActive} />
+        {item.key === "trimester" ? (
+          // Moment 2 (brief v1.1) — variante animée : apparition séquentielle,
+          // highlight cyclé T1→T2→T3, particules dorées flottantes.
+          <IllustrationTrimesterAnimated size={230} isActive={isActive} />
+        ) : (
+          <AnimatedIllustration Illustration={Illustration} isActive={isActive} />
+        )}
       </Animated.View>
 
       <Animated.View

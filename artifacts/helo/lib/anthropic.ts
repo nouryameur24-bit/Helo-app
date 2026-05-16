@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logError } from '@/lib/logger';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { RateLimitError, extractFunctionStatus } from '@/lib/errors';
 
 export interface ChatMessage {
   id: string;
@@ -228,6 +229,14 @@ export async function sendMessage(
     });
 
     if (error) {
+      const status = await extractFunctionStatus(error);
+      if (status === 429) {
+        throw new RateLimitError();
+      }
+      if (status === 401) {
+        logError('anthropic.sendMessage.unauthorized', error);
+        return "Votre session a expiré. Redémarrez l'application.";
+      }
       logError('anthropic.sendMessage.edgeFunction', error);
       return "Une erreur est survenue. Veuillez réessayer dans quelques instants.";
     }
@@ -237,6 +246,7 @@ export async function sendMessage(
     if (!text) return "Désolée, je n'ai pas pu générer une réponse. Réessayez.";
     return text;
   } catch (e) {
+    if (e instanceof RateLimitError) throw e;
     logError('anthropic.sendMessage.network', e);
     return "Impossible de joindre l'assistant. Vérifiez votre connexion internet.";
   }

@@ -33,6 +33,7 @@ import {
   saveChatHistory,
   sendMessage,
 } from '@/lib/anthropic';
+import { isRateLimitError } from '@/lib/errors';
 import {
   canChatFree,
   FREE_CHAT_LIMIT,
@@ -167,7 +168,21 @@ export default function ChatScreen() {
       setChatCount(newCount);
     }
 
-    const reply = await sendMessage(messages, question);
+    let reply: string;
+    try {
+      reply = await sendMessage(messages, question);
+    } catch (err) {
+      setIsTyping(false);
+      if (isRateLimitError(err)) {
+        Alert.alert(
+          'Limite quotidienne atteinte',
+          'Vous avez atteint votre limite quotidienne de chat. Réessayez demain.',
+        );
+      } else {
+        Alert.alert('Erreur', "Une erreur est survenue. Réessayez dans quelques instants.");
+      }
+      return;
+    }
 
     const aiMsg: ChatMessage = {
       id: `a_${Date.now()}`,

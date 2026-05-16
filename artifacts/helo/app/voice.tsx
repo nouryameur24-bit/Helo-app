@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
 import { sendMessage } from '@/lib/anthropic';
+import { isRateLimitError } from '@/lib/errors';
 import { canVoiceFree, FREE_VOICE_LIMIT, getDailyVoiceCount, incrementVoiceCount } from '@/lib/voiceLimit';
 
 import PulsingCircle, { type VoicePhase } from '@/components/voice/PulsingCircle';
@@ -126,8 +127,9 @@ export default function VoiceScreen() {
       const response = await sendMessage([], question);
       setAiResponse(response);
       speakResponse(response);
-    } catch {
+    } catch (err) {
       setPhase('error');
+      if (isRateLimitError(err)) setLimitReached(true);
       setTimeout(() => setPhase('idle'), 3000);
     }
   }, [isPremium, speakResponse]);

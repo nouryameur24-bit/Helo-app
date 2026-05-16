@@ -8,6 +8,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { RateLimitError, extractFunctionStatus } from '@/lib/errors';
 
 // ─── Main OCR call ────────────────────────────────────────────────────────────
 /**
@@ -29,6 +30,8 @@ export async function processOCRImage(base64: string): Promise<string> {
   });
 
   if (error) {
+    const status = await extractFunctionStatus(error);
+    if (status === 429) throw new RateLimitError();
     throw new Error(`OCR edge function error: ${error.message}`);
   }
 

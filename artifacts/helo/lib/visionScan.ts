@@ -8,6 +8,7 @@
 import type { ProductData } from '@/types';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { logError } from '@/lib/logger';
+import { RateLimitError, extractFunctionStatus } from '@/lib/errors';
 
 interface VisionResponse {
   product_name: string;
@@ -62,6 +63,8 @@ async function invokeChatVision(base64Image: string, prompt: string): Promise<st
   });
 
   if (error) {
+    const status = await extractFunctionStatus(error);
+    if (status === 429) throw new RateLimitError();
     if (__DEV__) console.error('[Hēlo VisionScan] Edge function error:', error);
     throw new Error("Erreur lors de l'identification visuelle. Réessayez.");
   }

@@ -603,7 +603,14 @@ export default function HomeScreen() {
 
           <Card padding={Spacing.xl} style={styles.glowCard}>
             <View style={styles.glowCircleRow}>
-              <GlowScoreCircle score={score} size="large" animated empty={total === 0} />
+              <GlowScoreCircle
+                score={score}
+                size="large"
+                animated
+                empty={total === 0}
+                breakdown={total > 0 ? { safe: countSafe, caution: countCaution, danger: countDanger } : undefined}
+                breathing={total > 0}
+              />
             </View>
             <ThemedText
               variant="bodyMedium"

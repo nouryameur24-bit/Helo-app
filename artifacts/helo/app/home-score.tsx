@@ -343,7 +343,21 @@ export default function HomeScoreScreen() {
         {/* Global score hero */}
         <Animated.View entering={FadeInDown.delay(80).duration(400)}>
           <View style={styles.heroCard}>
-            <GlowScoreCircle score={globalScore} size="large" animated />
+            <GlowScoreCircle
+              score={globalScore}
+              size="large"
+              animated
+              breakdown={(() => {
+                const all = roomProducts.flat();
+                if (all.length === 0) return undefined;
+                return {
+                  safe: all.filter((p) => p.verdict === 'safe').length,
+                  caution: all.filter((p) => p.verdict === 'caution').length,
+                  danger: all.filter((p) => p.verdict === 'danger').length,
+                };
+              })()}
+              breathing={globalScore > 0}
+            />
             <View style={{ flex: 1, gap: Spacing.sm }}>
               <ThemedText variant="headlineLarge" color="textPrimary">
                 {homeSummary(globalScore)}

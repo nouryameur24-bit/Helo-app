@@ -38,7 +38,8 @@
       "expo-router",
       "expo-camera",
       "expo-image-picker",
-      "expo-notifications"
+      "expo-notifications",
+      "@sentry/react-native/expo"
     ]
   }
 }

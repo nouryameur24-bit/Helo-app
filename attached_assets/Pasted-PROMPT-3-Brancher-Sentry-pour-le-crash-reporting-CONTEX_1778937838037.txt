@@ -1,0 +1,74 @@
+PROMPT 3 — Brancher Sentry pour le crash reporting
+[CONTEXTE]
+lib/logger.ts contient un commentaire "ready to be wired to Sentry" mais
+Sentry n'est pas branché. En prod, tous les crashs et erreurs sont perdus.
+Avant TestFlight, c'est à brancher.
+
+[OBJECTIF]
+Wire @sentry/react-native dans lib/logger.ts et initialiser au démarrage.
+
+[ÉTAPES]
+
+1. Installer la dépendance :
+pnpm add @sentry/react-native
+
+2. Créer lib/sentry.ts :
+import * as Sentry from '@sentry/react-native';
+export function initSentry(): void {
+const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (!dsn) {
+if (DEV) console.warn('[Sentry] DSN absent, monitoring désactivé');
+return;
+}
+Sentry.init({
+dsn,
+enableInExpoDevelopment: false,
+debug: DEV,
+tracesSampleRate: 0.2,
+});
+}
+export { Sentry };
+
+3. app/_layout.tsx — Ajouter en haut du fichier (en dehors du composant) :
+import { initSentry, Sentry } from '@/lib/sentry';
+initSentry();
+   Et wrapper l'export default :
+export default Sentry.wrap(RootLayout);
+
+4. lib/logger.ts — Modifier `logError` pour forwarder à Sentry en prod :
+import { Sentry } from '@/lib/sentry';
+export function logError(context: string, err: unknown, extra?: LogExtra): void {
+const message = err instanceof Error ? err.message : String(err);
+const stack = err instanceof Error ? err.stack : undefined;
+ if (!isProd()) {
+   console.warn(`[${context}]`, message, extra ?? '', stack ? `\n${stack}` : '');
+   return;
+ }
+
+ Sentry.captureException(err instanceof Error ? err : new Error(message), {
+   tags: { context },
+   extra,
+ });
+}
+   Ne pas toucher à logWarn / logInfo.
+
+5. app.json — Ajouter le plugin Sentry à la liste plugins :
+"plugins": [
+"expo-router",
+"expo-camera",
+"expo-image-picker",
+"expo-notifications",
+"@sentry/react-native/expo"
+]
+
+[VÉRIFICATIONS]
+- `pnpm typecheck` passe.
+- En dev sans DSN configuré → warning console, app fonctionne.
+- Le build EAS ne casse pas sur le plugin.
+
+[ACTIONS MANUELLES]
+- Créer un compte Sentry (gratuit jusqu'à 5k erreurs/mois).
+- Créer un projet React Native, récupérer le DSN.
+- Ajouter `EXPO_PUBLIC_SENTRY_DSN=https://...` dans .env et dans les secrets EAS.
+- Pour les sourcemaps automatiques : `pnpm dlx @sentry/wizard@latest -i reactNative`
+  (à lancer une fois, en local).

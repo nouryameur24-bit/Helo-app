@@ -9,6 +9,9 @@ config.resolver = config.resolver ?? {};
 config.resolver.blockList = [
   /zxing-wasm_tmp_.*/,
   /node_modules\/.*\/zxing-wasm_tmp_.*/,
+  // Sentry's replay package writes/removes tmp dirs that crash Metro's watcher.
+  /replay_tmp_.*/,
+  /node_modules\/.*\/replay_tmp_.*/,
 ];
 
 // Also increase the watcher timeout to handle slow installs

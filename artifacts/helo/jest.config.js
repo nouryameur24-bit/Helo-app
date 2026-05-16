@@ -16,6 +16,8 @@ const config = {
     }],
   },
   moduleNameMapper: {
+    // More specific aliases must come BEFORE the catch-all `^@/(.*)$`.
+    '^@/lib/sentry$': '<rootDir>/__tests__/mocks/sentry.ts',
     '^@/(.*)$': '<rootDir>/$1',
     // Mock native modules that can't run in Node
     '^react-native$': '<rootDir>/__tests__/mocks/react-native.ts',

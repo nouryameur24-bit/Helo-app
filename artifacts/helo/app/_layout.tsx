@@ -27,6 +27,10 @@ import { useTrimester } from "@/hooks/useTrimester";
 import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifications";
 import { downloadIngredientsDB } from "@/lib/offline";
 import { configurePurchases, PREMIUM_KEY } from "@/lib/purchases";
+import { initSentry, Sentry } from "@/lib/sentry";
+
+// Init Sentry as early as possible so module-load errors are captured.
+initSentry();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -224,7 +228,7 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -274,3 +278,5 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);

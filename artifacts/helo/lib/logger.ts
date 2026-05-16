@@ -2,13 +2,15 @@
  * Centralized error logger.
  *
  * In development → console.warn with context.
- * In production → ready to be wired to Sentry / Crashlytics / Bugsnag.
+ * In production → forwarded to Sentry (when EXPO_PUBLIC_SENTRY_DSN is set).
  *
  * Usage:
  *   } catch (err) {
  *     logError('anthropic.sendMessage', err, { question });
  *   }
  */
+
+import { Sentry } from '@/lib/sentry';
 
 type LogExtra = Record<string, unknown>;
 
@@ -27,15 +29,12 @@ export function logError(context: string, err: unknown, extra?: LogExtra): void 
     return;
   }
 
-  // Production: forward to remote logger when configured.
-  // To enable Sentry, install @sentry/react-native and uncomment:
-  //
-  //   import * as Sentry from '@sentry/react-native';
-  //   Sentry.captureException(err, { tags: { context }, extra });
-  //
-  // For now, keep a minimal trace so EAS logs / TestFlight crashes still capture context.
-  // eslint-disable-next-line no-console
-  console.warn(`[${context}] ${message}`, extra ?? '');
+  // Production — forward to Sentry. If Sentry was not initialized (no DSN),
+  // captureException is a no-op, so nothing breaks.
+  Sentry.captureException(err instanceof Error ? err : new Error(message), {
+    tags: { context },
+    extra,
+  });
 }
 
 export function logWarn(context: string, message: string, extra?: LogExtra): void {

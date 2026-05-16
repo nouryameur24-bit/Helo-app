@@ -80,7 +80,7 @@ const SLIDES: Slide[] = [
     key: "community",
     title: "Ensemble, c'est mieux",
     subtitle:
-      "Rejoignez des milliers de futures mamans qui font les meilleurs choix pour leur bébé.",
+      "L'app pensée avec et pour les futures mamans, pour faire les meilleurs choix pour votre bébé.",
     Illustration: IllustrationCommunity,
     gradientFrom: "#FFFAF5",
     gradientTo: "#F3EEF9",

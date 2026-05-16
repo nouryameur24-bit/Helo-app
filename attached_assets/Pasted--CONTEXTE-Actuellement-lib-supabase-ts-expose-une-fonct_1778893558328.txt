@@ -1,0 +1,75 @@
+[CONTEXTE]
+Actuellement, lib/supabase.ts expose une fonction getAuthedClient(userId) qui
+crée un client Supabase avec un header HTTP custom 'x-app-user-id'. Les policies
+RLS dans supabase/rls-policies.sql utilisent
+COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+pour identifier l'utilisateur.
+
+C'est une faille critique : n'importe quel client peut forger le header avec
+n'importe quel UUID pour usurper un autre utilisateur et accéder à ses données
+(scan_history, shopping_list, profiles, partner_links).
+
+[OBJECTIF]
+Remplacer ce système par Supabase Anonymous Auth, en gardant l'UX invisible
+(aucun écran de login utilisateur).
+
+[ÉTAPES]
+
+1. lib/supabase.ts — Réécrire le module :
+   - Garder uniquement l'export `supabase` (le client unique avec AsyncStorage).
+   - SUPPRIMER entièrement la fonction `getAuthedClient`.
+   - Ajouter une fonction async `ensureAnonymousSession(): Promise<string>` qui :
+     * Appelle `supabase.auth.getSession()`.
+     * Si la session existe, retourne `session.user.id`.
+     * Sinon, appelle `supabase.auth.signInAnonymously()` et retourne le user.id.
+     * Si l'appel échoue, throw une erreur explicite (la traiter en amont).
+
+2. hooks/useProfile.ts — Remplacer la génération client-side d'UUID :
+   - Au début de `refresh()`, appeler `const userId = await ensureAnonymousSession()`.
+   - SUPPRIMER les références à `USER_ID_KEY = '@helo_user_id'`, `generateUUID()`,
+     et `AsyncStorage.setItem(USER_ID_KEY, ...)`.
+   - Le `userId` du state vient désormais exclusivement de la session Supabase.
+
+3. app/_layout.tsx — Supprimer toute lecture directe de
+   `AsyncStorage.getItem("@helo_user_id")`. Utiliser useProfile() ou
+   ensureAnonymousSession() à la place.
+
+4. lib/circleUtils.ts — Pour CHAQUE fonction exportée (createCircle, getCircle,
+   joinCircle, et toutes les autres) :
+   - Supprimer le paramètre `userId` de la signature.
+   - Remplacer `const db = getAuthedClient(userId)` par directement `supabase`.
+   - À l'intérieur, récupérer l'utilisateur via :
+     ```
+     const { data: { user } } = await supabase.auth.getUser();
+     if (!user) throw new Error('Not authenticated');
+     ```
+   - Utiliser `user.id` partout où l'ancien `userId` était utilisé.
+
+5. lib/notifications.ts — Même traitement que circleUtils.ts pour
+   sendCircleScanNotification, sendCircleWeekNotification, et toutes les autres.
+
+6. hooks/useCircle.ts — Supprimer l'import et l'usage de `getAuthedClient`.
+   Utiliser `supabase` directement.
+
+7. supabase/rls-policies.sql — Pour CHAQUE policy, remplacer :
+       user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+   par :
+       user_id = auth.uid()::text
+   Faire ça pour TOUTES les tables : scan_history, shopping_list, profiles,
+   partner_links, community_submissions, et toute autre table avec une policy
+   référençant x-app-user-id.
+
+[VÉRIFICATIONS — à faire après les changements]
+- `grep -r "x-app-user-id" .` → zéro résultat dans app/, components/, lib/, hooks/, supabase/.
+- `grep -r "getAuthedClient" .` → zéro résultat.
+- `grep -r "@helo_user_id" .` → zéro résultat.
+- `pnpm typecheck` passe.
+- `pnpm test` passe.
+
+[NOTES IMPORTANTES]
+- L'app n'a pas encore d'utilisateurs en prod : AUCUNE migration de données.
+- Les sessions anonymes persistent automatiquement via AsyncStorage
+  (déjà configuré dans createClient).
+- Actions manuelles (que tu dois faire toi-même après ce commit) :
+    a) Supabase Dashboard → Authentication → Providers → Enable "Anonymous Sign-Ins".
+    b) `supabase db push` pour appliquer les nouvelles policies RLS.

@@ -40,7 +40,6 @@ export function CircleShareRow({
     try {
       await postScanToCircle({
         circleId,
-        userId,
         firstName: senderName,
         productName: product.name,
         verdict: scanVerdict,
@@ -51,7 +50,6 @@ export function CircleShareRow({
         productName: product.name,
         verdict: scanVerdict,
         circleId,
-        senderUserId: userId,
       }).catch(() => {});
     } catch {
       setSharedToCircle(false);

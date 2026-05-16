@@ -1,31 +1,20 @@
 /**
  * useProfile — Profil utilisateur avec synchronisation Supabase.
  *
- * Source de vérité : AsyncStorage (local) réconcilié avec la table `profiles` Supabase.
- * En l'absence de Supabase (mode dev / hors-ligne), fonctionne entièrement en local.
+ * Source de vérité du userId : session Supabase Anonymous Auth (persistée
+ * via AsyncStorage par le client Supabase). Le rôle utilisateur et le lien
+ * partenaire sont gérés en local via AsyncStorage.
  *
  * Gère deux rôles : 'pregnant' (enceinte) et 'partner' (co-parent).
  * Pour le rôle 'partner', résout automatiquement le profil de la mère liée
  * via la table `partner_links` afin d'afficher son trimestre correct.
- *
- * Exports nommés complémentaires : getOrCreateUserId, setUserRole, getUserId, getLinkedUserId
- * — utilisables hors contexte React (ex. dans les workers ou les Edge Functions).
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, ensureAnonymousSession } from '@/lib/supabase';
 import type { ProfileState, UserRole } from '@/types';
 
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-const USER_ID_KEY = '@helo_user_id';
 const USER_ROLE_KEY = '@helo_user_role';
 const LINKED_USER_ID_KEY = '@helo_linked_user_id';
 
@@ -47,11 +36,7 @@ export function useProfile() {
 
   const refresh = useCallback(async () => {
     try {
-      let userId = await AsyncStorage.getItem(USER_ID_KEY);
-      if (!userId) {
-        userId = generateUUID();
-        await AsyncStorage.setItem(USER_ID_KEY, userId);
-      }
+      const userId = await ensureAnonymousSession();
 
       const roleRaw = await AsyncStorage.getItem(USER_ROLE_KEY);
       const role: UserRole = roleRaw === 'partner' ? 'partner' : 'pregnant';
@@ -160,13 +145,13 @@ export function useProfile() {
   return { ...state, refresh };
 }
 
+/**
+ * Garantit l'existence d'une session Supabase anonyme et retourne l'user.id.
+ * Réexport de `ensureAnonymousSession` pour compatibilité ascendante avec
+ * les écrans d'onboarding.
+ */
 export async function getOrCreateUserId(): Promise<string> {
-  let userId = await AsyncStorage.getItem(USER_ID_KEY);
-  if (!userId) {
-    userId = generateUUID();
-    await AsyncStorage.setItem(USER_ID_KEY, userId);
-  }
-  return userId;
+  return ensureAnonymousSession();
 }
 
 export async function setUserRole(role: UserRole, linkedUserId?: string) {
@@ -178,8 +163,10 @@ export async function setUserRole(role: UserRole, linkedUserId?: string) {
   }
 }
 
+/** Retourne l'user.id de la session Supabase active, ou null si non authentifié. */
 export async function getUserId(): Promise<string | null> {
-  return AsyncStorage.getItem(USER_ID_KEY);
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.user?.id ?? null;
 }
 
 export async function getLinkedUserId(): Promise<string | null> {

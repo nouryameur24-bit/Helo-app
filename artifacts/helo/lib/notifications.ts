@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-import { supabase, getAuthedClient, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 export const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
 
@@ -348,7 +348,6 @@ export async function sendCircleScanNotification(params: {
   productName: string;
   verdict: string;
   circleId: string;
-  senderUserId: string;
 }): Promise<void> {
   if (!isSupabaseConfigured) return;
 
@@ -359,13 +358,15 @@ export async function sendCircleScanNotification(params: {
   const body = `${params.senderFirstName} a scanné ${params.productName} — ${verdictLabel}`;
 
   try {
-    const db = getAuthedClient(params.senderUserId);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const senderUserId = user.id;
 
-    const { data: members } = await db
+    const { data: members } = await supabase
       .from('circle_members')
       .select('user_id')
       .eq('circle_id', params.circleId)
-      .neq('user_id', params.senderUserId);
+      .neq('user_id', senderUserId);
 
     if (!members || members.length === 0) return;
 
@@ -392,7 +393,6 @@ export async function sendCircleWeekNotification(params: {
   memberFirstName: string;
   weekNumber: number;
   circleId: string;
-  memberUserId: string;
 }): Promise<void> {
   if (!isSupabaseConfigured) return;
 
@@ -400,13 +400,15 @@ export async function sendCircleWeekNotification(params: {
   const body = `${params.memberFirstName} entre dans sa ${params.weekNumber}ème semaine !`;
 
   try {
-    const db = getAuthedClient(params.memberUserId);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const memberUserId = user.id;
 
-    const { data: members } = await db
+    const { data: members } = await supabase
       .from('circle_members')
       .select('user_id')
       .eq('circle_id', params.circleId)
-      .neq('user_id', params.memberUserId);
+      .neq('user_id', memberUserId);
 
     if (!members || members.length === 0) return;
 

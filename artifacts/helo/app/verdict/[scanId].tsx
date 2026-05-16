@@ -117,7 +117,7 @@ export default function VerdictScreen() {
 
   useEffect(() => {
     if (!userId) return;
-    getCircle(userId).then((data) => {
+    getCircle().then((data) => {
       setCircleId(data?.circle?.id ?? null);
     }).catch(() => {});
   }, [userId]);

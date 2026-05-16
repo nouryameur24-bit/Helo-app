@@ -74,13 +74,13 @@ END $$;
 
 -- ============================================================
 -- APP USER ID HELPER
--- Extracts the calling app user_id from the `x-app-user-id` request header.
--- Set by the application via getAuthedClient(userId) which injects the header
--- in global.headers of the Supabase JS client.
+-- Returns the authenticated user's id from Supabase Anonymous Auth (auth.uid()).
+-- Replaces the previous forgeable `x-app-user-id` request header approach.
+-- All circle RLS policies and SECURITY DEFINER RPCs use this helper.
 -- ============================================================
 CREATE OR REPLACE FUNCTION app_user_id() RETURNS TEXT AS $$
 BEGIN
-  RETURN NULLIF(current_setting('request.headers', true)::json->>'x-app-user-id', '');
+  RETURN auth.uid()::text;
 EXCEPTION
   WHEN OTHERS THEN RETURN NULL;
 END;

@@ -8,6 +8,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { router, Stack } from "expo-router";
+import { ensureAnonymousSession } from "@/lib/supabase";
 import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
@@ -243,7 +244,7 @@ export default function RootLayout() {
           redirected.current = true;
           router.replace("/onboarding");
         } else {
-          const userId = await AsyncStorage.getItem("@helo_user_id");
+          const userId = await ensureAnonymousSession().catch(() => null);
           if (userId) {
             registerPushToken(userId).catch(() => {});
           }

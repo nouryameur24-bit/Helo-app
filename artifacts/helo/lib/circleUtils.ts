@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getAuthedClient, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_CIRCLE_MEMBERS = 8;
@@ -64,7 +64,14 @@ async function checkIsPremium(): Promise<boolean> {
   }
 }
 
-export async function createCircle(userId: string, firstName: string): Promise<Circle> {
+/** Récupère l'utilisateur authentifié de la session Supabase. Throw si absent. */
+async function requireUserId(): Promise<string> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  return user.id;
+}
+
+export async function createCircle(firstName: string): Promise<Circle> {
   if (!isSupabaseConfigured) {
     throw new Error('Supabase non configuré');
   }
@@ -74,18 +81,18 @@ export async function createCircle(userId: string, firstName: string): Promise<C
     throw new Error('PREMIUM_REQUIRED');
   }
 
-  const existing = await getCircle(userId);
+  const userId = await requireUserId();
+
+  const existing = await getCircle();
   if (existing) {
     throw new Error('Vous avez déjà un cercle.');
   }
-
-  const db = getAuthedClient(userId);
 
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < 5; attempt++) {
     const invite_code = generateInviteCode();
 
-    const { data: circleData, error: circleError } = await db
+    const { data: circleData, error: circleError } = await supabase
       .from('circles')
       .insert({ invite_code, owner_id: userId, name: 'Mon Cercle' })
       .select()
@@ -99,7 +106,7 @@ export async function createCircle(userId: string, firstName: string): Promise<C
       throw new Error(circleError.message);
     }
 
-    const { error: memberError } = await db.from('circle_members').insert({
+    const { error: memberError } = await supabase.from('circle_members').insert({
       circle_id: circleData.id,
       user_id: userId,
       first_name: firstName,
@@ -113,15 +120,15 @@ export async function createCircle(userId: string, firstName: string): Promise<C
   throw lastError ?? new Error('Impossible de créer le cercle.');
 }
 
-export async function joinCircle(userId: string, firstName: string, code: string): Promise<Circle> {
+export async function joinCircle(firstName: string, code: string): Promise<Circle> {
   if (!isSupabaseConfigured) {
     throw new Error('Supabase non configuré');
   }
 
-  const db = getAuthedClient(userId);
+  const userId = await requireUserId();
 
   // Enforce single-circle-per-user constraint
-  const { data: existingMembership } = await db
+  const { data: existingMembership } = await supabase
     .from('circle_members')
     .select('circle_id')
     .eq('user_id', userId)
@@ -132,7 +139,7 @@ export async function joinCircle(userId: string, firstName: string, code: string
   }
 
   // Use the SECURITY DEFINER RPC so invite code lookup + member count works before membership
-  const { data: circleRows, error: findError } = await db.rpc('find_circle_by_invite_code', {
+  const { data: circleRows, error: findError } = await supabase.rpc('find_circle_by_invite_code', {
     p_invite_code: code.trim().toUpperCase(),
   });
 
@@ -146,7 +153,7 @@ export async function joinCircle(userId: string, firstName: string, code: string
     throw new Error('Ce cercle est complet (8 membres maximum).');
   }
 
-  const { error: joinError } = await db.from('circle_members').insert({
+  const { error: joinError } = await supabase.from('circle_members').insert({
     circle_id: circleRow.id,
     user_id: userId,
     first_name: firstName,
@@ -167,12 +174,12 @@ export async function joinCircle(userId: string, firstName: string, code: string
   return { id, name, invite_code, owner_id, created_at } as Circle;
 }
 
-export async function getCircle(userId: string): Promise<CircleData | null> {
+export async function getCircle(): Promise<CircleData | null> {
   if (!isSupabaseConfigured) return null;
 
-  const db = getAuthedClient(userId);
+  const userId = await requireUserId();
 
-  const { data: memberRow } = await db
+  const { data: memberRow } = await supabase
     .from('circle_members')
     .select('circle_id')
     .eq('user_id', userId)
@@ -180,7 +187,7 @@ export async function getCircle(userId: string): Promise<CircleData | null> {
 
   if (!memberRow?.circle_id) return null;
 
-  const { data: circle, error: circleError } = await db
+  const { data: circle, error: circleError } = await supabase
     .from('circles')
     .select('*')
     .eq('id', memberRow.circle_id)
@@ -188,7 +195,7 @@ export async function getCircle(userId: string): Promise<CircleData | null> {
 
   if (circleError || !circle) return null;
 
-  const { data: members } = await db
+  const { data: members } = await supabase
     .from('circle_members')
     .select('*')
     .eq('circle_id', circle.id)
@@ -200,21 +207,21 @@ export async function getCircle(userId: string): Promise<CircleData | null> {
   };
 }
 
-export async function leaveCircle(userId: string, circleId: string): Promise<void> {
+export async function leaveCircle(circleId: string): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const db = getAuthedClient(userId);
+  const userId = await requireUserId();
 
-  const { data: circle } = await db
+  const { data: circle } = await supabase
     .from('circles')
     .select('owner_id')
     .eq('id', circleId)
     .maybeSingle();
 
   if (circle?.owner_id === userId) {
-    await db.from('circles').delete().eq('id', circleId);
+    await supabase.from('circles').delete().eq('id', circleId);
   } else {
-    await db
+    await supabase
       .from('circle_members')
       .delete()
       .eq('circle_id', circleId)
@@ -224,14 +231,13 @@ export async function leaveCircle(userId: string, circleId: string): Promise<voi
 
 export async function postMessage(
   circleId: string,
-  userId: string,
   firstName: string,
   text: string,
 ): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const db = getAuthedClient(userId);
-  const { error } = await db.from('circle_feed').insert({
+  const userId = await requireUserId();
+  const { error } = await supabase.from('circle_feed').insert({
     circle_id: circleId,
     user_id: userId,
     first_name: firstName,
@@ -244,17 +250,16 @@ export async function postMessage(
 
 export async function postScanToCircle(params: {
   circleId: string;
-  userId: string;
   firstName: string;
   productName: string;
   verdict: 'safe' | 'caution' | 'danger';
 }): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const db = getAuthedClient(params.userId);
-  const { error } = await db.from('circle_feed').insert({
+  const userId = await requireUserId();
+  const { error } = await supabase.from('circle_feed').insert({
     circle_id: params.circleId,
-    user_id: params.userId,
+    user_id: userId,
     first_name: params.firstName,
     type: 'scan',
     product_name: params.productName,
@@ -266,15 +271,14 @@ export async function postScanToCircle(params: {
 
 export async function toggleReaction(
   entryId: string,
-  userId: string,
   emoji: string,
 ): Promise<void> {
   if (!isSupabaseConfigured) return;
 
-  const db = getAuthedClient(userId);
+  const userId = await requireUserId();
 
   // Use the atomic SECURITY DEFINER RPC to avoid read-modify-write races
-  const { error } = await db.rpc('toggle_circle_reaction', {
+  const { error } = await supabase.rpc('toggle_circle_reaction', {
     p_entry_id: entryId,
     p_user_id: userId,
     p_emoji: emoji,
@@ -285,13 +289,11 @@ export async function toggleReaction(
 
 export async function getCircleFeed(
   circleId: string,
-  userId: string,
   limit = 50,
 ): Promise<CircleFeedEntry[]> {
   if (!isSupabaseConfigured) return [];
 
-  const db = getAuthedClient(userId);
-  const { data } = await db
+  const { data } = await supabase
     .from('circle_feed')
     .select('*')
     .eq('circle_id', circleId)
@@ -360,21 +362,21 @@ export function computeCircleGlowScore(
 }
 
 export async function checkAndSendWeekMilestoneNotification(params: {
-  userId: string;
   firstName: string;
   currentWeek: number;
 }): Promise<void> {
   if (!isSupabaseConfigured || !params.currentWeek || params.currentWeek < 1) return;
 
-  const storageKey = `@helo_circle_week_notified_${params.userId}`;
-
   try {
+    const userId = await requireUserId();
+    const storageKey = `@helo_circle_week_notified_${userId}`;
+
     const lastNotifiedRaw = await AsyncStorage.getItem(storageKey);
     const lastNotifiedWeek = lastNotifiedRaw ? parseInt(lastNotifiedRaw, 10) : 0;
 
     if (lastNotifiedWeek === params.currentWeek) return;
 
-    const data = await getCircle(params.userId);
+    const data = await getCircle();
     if (!data) return;
 
     await AsyncStorage.setItem(storageKey, String(params.currentWeek));
@@ -384,7 +386,6 @@ export async function checkAndSendWeekMilestoneNotification(params: {
       memberFirstName: params.firstName,
       weekNumber: params.currentWeek,
       circleId: data.circle.id,
-      memberUserId: params.userId,
     });
   } catch {
     // Notification delivery failure — circle still created, user can enable notifications later

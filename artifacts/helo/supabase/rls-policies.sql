@@ -30,28 +30,28 @@ DROP POLICY IF EXISTS "scan_history_select_owner" ON scan_history;
 CREATE POLICY "scan_history_select_owner"
   ON scan_history FOR SELECT
   USING (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "scan_history_insert_owner" ON scan_history;
 CREATE POLICY "scan_history_insert_owner"
   ON scan_history FOR INSERT
   WITH CHECK (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "scan_history_update_owner" ON scan_history;
 CREATE POLICY "scan_history_update_owner"
   ON scan_history FOR UPDATE
   USING (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "scan_history_delete_owner" ON scan_history;
 CREATE POLICY "scan_history_delete_owner"
   ON scan_history FOR DELETE
   USING (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 -- ─── Shopping List (owner only) ──────────────────────────────────────────────
@@ -59,28 +59,28 @@ DROP POLICY IF EXISTS "shopping_list_select_owner" ON shopping_list;
 CREATE POLICY "shopping_list_select_owner"
   ON shopping_list FOR SELECT
   USING (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "shopping_list_insert_owner" ON shopping_list;
 CREATE POLICY "shopping_list_insert_owner"
   ON shopping_list FOR INSERT
   WITH CHECK (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "shopping_list_update_owner" ON shopping_list;
 CREATE POLICY "shopping_list_update_owner"
   ON shopping_list FOR UPDATE
   USING (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "shopping_list_delete_owner" ON shopping_list;
 CREATE POLICY "shopping_list_delete_owner"
   ON shopping_list FOR DELETE
   USING (
-    user_id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 -- ─── Community Submissions ───────────────────────────────────────────────────
@@ -96,7 +96,7 @@ DROP POLICY IF EXISTS "community_submissions_select_own" ON community_submission
 CREATE POLICY "community_submissions_select_own"
   ON community_submissions FOR SELECT
   USING (
-    submitted_by = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "community_submissions_insert_any" ON community_submissions;
@@ -108,29 +108,46 @@ CREATE POLICY "community_submissions_insert_any"
 -- No DELETE via anon
 
 -- ─── Profiles (owner only) ───────────────────────────────────────────────────
+-- Profiles: owner can read/write own row. Linked partners can also read the
+-- mother's profile (for trimester display) — enforced via partner_links lookup.
 DROP POLICY IF EXISTS "profiles_select_owner" ON profiles;
 CREATE POLICY "profiles_select_owner"
   ON profiles FOR SELECT
   USING (
-    id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
+    OR user_id IN (
+      SELECT pregnant_user_id FROM partner_links
+      WHERE partner_user_id = auth.uid()::text
+    )
+    OR user_id IN (
+      SELECT partner_user_id FROM partner_links
+      WHERE pregnant_user_id = auth.uid()::text
+    )
   );
 
 DROP POLICY IF EXISTS "profiles_insert_owner" ON profiles;
 CREATE POLICY "profiles_insert_owner"
   ON profiles FOR INSERT
   WITH CHECK (
-    id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
   );
 
 DROP POLICY IF EXISTS "profiles_update_owner" ON profiles;
 CREATE POLICY "profiles_update_owner"
   ON profiles FOR UPDATE
   USING (
-    id = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+    user_id = auth.uid()::text
+  );
+
+DROP POLICY IF EXISTS "profiles_delete_owner" ON profiles;
+CREATE POLICY "profiles_delete_owner"
+  ON profiles FOR DELETE
+  USING (
+    user_id = auth.uid()::text
   );
 
 -- ─── Partner Links (both sides can read) ─────────────────────────────────────
--- Assumes table: partner_links(id, user_id_a, user_id_b, created_at)
+-- Schema: partner_links(id, pregnant_user_id, partner_user_id, linked_at)
 
 DO $$ BEGIN
   IF EXISTS (SELECT FROM pg_tables WHERE tablename = 'partner_links') THEN
@@ -140,16 +157,24 @@ DO $$ BEGIN
     CREATE POLICY "partner_links_select_participant"
       ON partner_links FOR SELECT
       USING (
-        user_id_a = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
-        OR
-        user_id_b = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+        pregnant_user_id = auth.uid()::text
+        OR partner_user_id = auth.uid()::text
       );
 
     DROP POLICY IF EXISTS "partner_links_insert_participant" ON partner_links;
     CREATE POLICY "partner_links_insert_participant"
       ON partner_links FOR INSERT
       WITH CHECK (
-        user_id_a = COALESCE(auth.uid()::text, current_setting('request.headers', true)::json->>'x-app-user-id')
+        pregnant_user_id = auth.uid()::text
+        OR partner_user_id = auth.uid()::text
+      );
+
+    DROP POLICY IF EXISTS "partner_links_delete_participant" ON partner_links;
+    CREATE POLICY "partner_links_delete_participant"
+      ON partner_links FOR DELETE
+      USING (
+        pregnant_user_id = auth.uid()::text
+        OR partner_user_id = auth.uid()::text
       );
   END IF;
 END $$;

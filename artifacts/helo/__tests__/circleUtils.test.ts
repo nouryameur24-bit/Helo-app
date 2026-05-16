@@ -9,8 +9,13 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 jest.mock('../lib/supabase', () => ({
   isSupabaseConfigured: false,
-  getAuthedClient: jest.fn(() => null),
+  ensureAnonymousSession: jest.fn().mockResolvedValue('test-user-id'),
   supabase: {
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } } }),
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      signInAnonymously: jest.fn().mockResolvedValue({ data: { user: { id: 'test-user-id' } }, error: null }),
+    },
     from: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
       insert: jest.fn().mockReturnThis(),

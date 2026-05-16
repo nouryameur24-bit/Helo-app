@@ -5,19 +5,14 @@
  * En cas d'échec réseau, repli sur le cache local (AsyncStorage) pour éviter
  * un écran vide — les données peuvent avoir quelques minutes de retard.
  *
- * Fonctionnalités :
- *  - sendMessage() : envoie un message textuel dans le feed
- *  - shareScan()   : partage un résultat de scan (produit + verdict) avec le cercle
- *  - react()       : ajoute/retire un emoji-réaction sur une entrée du feed
- *  - Défi hebdomadaire : calcule le WeeklyChallenge du cercle (glowScore collectif)
- *
- * Cache : clés `@helo_circle_cache` et `@helo_circle_feed_cache`.
- * Optimistic UI : les réactions sont appliquées localement avant la confirmation serveur.
+ * L'identification de l'utilisateur passe désormais par la session Supabase
+ * Anonymous Auth (cf. lib/supabase.ts → ensureAnonymousSession). Les fonctions
+ * de circleUtils récupèrent l'user.id via supabase.auth.getUser().
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
-import { getAuthedClient, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
   getCircle,
   getCircleFeed,
@@ -109,12 +104,11 @@ export function useCircle(userId: string, firstName: string): UseCircleReturn {
     error: null,
   });
 
-  const authedClient = useMemo(() => (userId ? getAuthedClient(userId) : null), [userId]);
   const realtimeChannel = useRef<any>(null);
 
   const loadFeed = useCallback(async (circleId: string, members: CircleMember[]) => {
     try {
-      const entries = await getCircleFeed(circleId, userId, 50);
+      const entries = await getCircleFeed(circleId, 50);
       const score = computeCircleGlowScore(members, entries);
       const challenge = getWeeklyChallenge(members, entries);
       await saveCachedFeed(entries);
@@ -128,14 +122,14 @@ export function useCircle(userId: string, firstName: string): UseCircleReturn {
     } catch {
       // Feed load failed — stay with current state
     }
-  }, [userId]);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!userId) return;
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const data = await getCircle(userId);
+      const data = await getCircle();
 
       if (!data) {
         // No circle — clear cache
@@ -155,7 +149,7 @@ export function useCircle(userId: string, firstName: string): UseCircleReturn {
 
       await saveCachedCircle(data);
 
-      const entries = await getCircleFeed(data.circle.id, userId, 50);
+      const entries = await getCircleFeed(data.circle.id, 50);
       await saveCachedFeed(entries);
 
       const score = computeCircleGlowScore(data.members, entries);
@@ -197,16 +191,16 @@ export function useCircle(userId: string, firstName: string): UseCircleReturn {
 
   useEffect(() => {
     if (!isSupabaseConfigured || Platform.OS === 'web') return;
-    if (!state.circleData?.circle.id || !authedClient) return;
+    if (!state.circleData?.circle.id) return;
 
     const circleId = state.circleData.circle.id;
 
     if (realtimeChannel.current) {
-      authedClient.removeChannel(realtimeChannel.current);
+      supabase.removeChannel(realtimeChannel.current);
       realtimeChannel.current = null;
     }
 
-    const channel = authedClient
+    const channel = supabase
       .channel(`circle_feed:${circleId}`)
       .on(
         'postgres_changes',
@@ -239,19 +233,19 @@ export function useCircle(userId: string, firstName: string): UseCircleReturn {
     realtimeChannel.current = channel;
 
     return () => {
-      if (realtimeChannel.current && authedClient) {
-        authedClient.removeChannel(realtimeChannel.current);
+      if (realtimeChannel.current) {
+        supabase.removeChannel(realtimeChannel.current);
         realtimeChannel.current = null;
       }
     };
-  }, [state.circleData?.circle.id, authedClient, loadFeed, refresh]);
+  }, [state.circleData, loadFeed, refresh]);
 
   const sendMessage = useCallback(
     async (text: string) => {
       if (state.isOffline) throw new Error('Hors ligne — message non envoyé');
       const circleId = state.circleData?.circle.id;
       if (!circleId || !userId) return;
-      await postMessage(circleId, userId, firstName, text);
+      await postMessage(circleId, firstName, text);
       if (state.circleData) {
         await loadFeed(circleId, state.circleData.members);
       }
@@ -264,7 +258,7 @@ export function useCircle(userId: string, firstName: string): UseCircleReturn {
       if (state.isOffline) throw new Error('Hors ligne — partage impossible');
       const circleId = state.circleData?.circle.id;
       if (!circleId || !userId) return;
-      await postScanToCircle({ circleId, userId, firstName, productName, verdict });
+      await postScanToCircle({ circleId, firstName, productName, verdict });
       if (state.circleData) {
         await loadFeed(circleId, state.circleData.members);
       }
@@ -275,13 +269,13 @@ export function useCircle(userId: string, firstName: string): UseCircleReturn {
   const react = useCallback(
     async (entryId: string, emoji: string) => {
       if (state.isOffline) return;
-      await toggleReaction(entryId, userId, emoji);
+      await toggleReaction(entryId, emoji);
       const circleId = state.circleData?.circle.id;
       if (circleId && state.circleData) {
         await loadFeed(circleId, state.circleData.members);
       }
     },
-    [state.circleData, state.isOffline, userId, loadFeed],
+    [state.circleData, state.isOffline, loadFeed],
   );
 
   return {

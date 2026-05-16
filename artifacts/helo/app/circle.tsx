@@ -57,7 +57,7 @@ export default function CircleScreen() {
     if (!isPremium) { requirePremium('circle'); return; }
     setIsCreating(true);
     try {
-      await createCircle(userId, firstName || 'Anonyme');
+      await createCircle(firstName || 'Anonyme');
       await refresh();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -69,7 +69,7 @@ export default function CircleScreen() {
     if (!joiningCode.trim()) return;
     setIsJoining(true);
     try {
-      await joinCircle(userId, firstName || 'Anonyme', joiningCode.trim());
+      await joinCircle(firstName || 'Anonyme', joiningCode.trim());
       setShowJoinInput(false);
       setJoiningCode('');
       await refresh();
@@ -87,7 +87,7 @@ export default function CircleScreen() {
       [
         { text: 'Annuler', style: 'cancel' },
         { text: isOwner ? 'Supprimer' : 'Quitter', style: 'destructive', onPress: async () => {
-          try { await leaveCircle(userId, circle.id); await refresh(); }
+          try { await leaveCircle(circle.id); await refresh(); }
           catch (err) { Alert.alert('Erreur', err instanceof Error ? err.message : 'Erreur'); }
         }},
       ],

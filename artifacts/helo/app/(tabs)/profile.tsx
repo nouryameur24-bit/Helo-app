@@ -121,14 +121,14 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!userId || isPartner) return;
-    getCircle(userId).then(setCircleData).catch(() => setCircleData(null));
+    getCircle().then(setCircleData).catch(() => setCircleData(null));
   }, [userId, isPartner]);
 
   useEffect(() => {
     if (!userId || isPartner || !firstName) return;
     const week = computeWeekFromDueDate(dueDate);
     if (week && week >= 1 && week <= 42) {
-      checkAndSendWeekMilestoneNotification({ userId, firstName, currentWeek: week }).catch(() => {});
+      checkAndSendWeekMilestoneNotification({ firstName, currentWeek: week }).catch(() => {});
     }
   }, [userId, isPartner, firstName, dueDate]);
 
@@ -513,8 +513,8 @@ export default function ProfileScreen() {
                       if (!isPremium) { requirePremium('circle'); return; }
                       setIsCreatingCircle(true);
                       try {
-                        await createCircle(userId, firstName || 'Anonyme');
-                        const data = await getCircle(userId);
+                        await createCircle(firstName || 'Anonyme');
+                        const data = await getCircle();
                         setCircleData(data);
                         router.push(ROUTES.circle);
                       } catch (err) {
@@ -575,8 +575,8 @@ export default function ProfileScreen() {
                 if (!joinCode.trim() || isJoining) return;
                 setIsJoining(true);
                 try {
-                  await joinCircle(userId, firstName || 'Anonyme', joinCode.trim());
-                  const data = await getCircle(userId);
+                  await joinCircle(firstName || 'Anonyme', joinCode.trim());
+                  const data = await getCircle();
                   setCircleData(data);
                   setShowJoinModal(false);
                   setJoinCode('');

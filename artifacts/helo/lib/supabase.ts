@@ -19,22 +19,28 @@ export const isSupabaseConfigured =
   supabaseUrl.length > 0 && supabaseAnonKey.length > 0;
 
 /**
- * Returns a Supabase client that passes the app-level user ID as a custom
- * request header so that RLS policies can identify the calling user.
- * This client should be used for all circle read/write operations.
+ * Garantit qu'une session Supabase (anonyme) existe et renvoie l'user.id.
+ * - Si une session est déjà présente (persistée dans AsyncStorage), la retourne.
+ * - Sinon, déclenche `signInAnonymously()` pour en créer une.
+ *
+ * Doit être appelé avant toute requête authentifiée. Throw si l'opération
+ * échoue (ex: anonymous sign-ins désactivés dans le dashboard Supabase).
  */
-export function getAuthedClient(userId: string) {
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      storage: AsyncStorage,
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
-    global: {
-      headers: {
-        'x-app-user-id': userId,
-      },
-    },
-  });
+export async function ensureAnonymousSession(): Promise<string> {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) {
+    throw new Error(`Supabase session error: ${sessionError.message}`);
+  }
+  if (session?.user) {
+    return session.user.id;
+  }
+
+  const { data, error } = await supabase.auth.signInAnonymously();
+  if (error || !data.user) {
+    throw new Error(
+      `Anonymous sign-in failed: ${error?.message ?? 'no user returned'}. ` +
+      'Vérifiez que "Anonymous Sign-Ins" est activé dans Supabase Dashboard → Authentication → Providers.',
+    );
+  }
+  return data.user.id;
 }

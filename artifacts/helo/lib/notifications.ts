@@ -308,8 +308,8 @@ export async function registerPushToken(userId: string): Promise<void> {
       await supabase
         .from('profiles')
         .upsert(
-          { user_id: userId, push_token: pushToken, updated_at: new Date().toISOString() },
-          { onConflict: 'user_id' },
+          { id: userId, push_token: pushToken, updated_at: new Date().toISOString() },
+          { onConflict: 'id' },
         );
     }
   } catch (err) {
@@ -374,7 +374,7 @@ export async function sendCircleScanNotification(params: {
     const { data: profiles } = await supabase
       .from('profiles')
       .select('push_token')
-      .in('user_id', memberIds);
+      .in('id', memberIds);
 
     const pushPromises = (profiles ?? []).map(async (p: { push_token: string | null }) => {
       const token = p.push_token;
@@ -416,7 +416,7 @@ export async function sendCircleWeekNotification(params: {
     const { data: profiles } = await supabase
       .from('profiles')
       .select('push_token')
-      .in('user_id', memberIds);
+      .in('id', memberIds);
 
     const pushPromises = (profiles ?? []).map(async (p: { push_token: string | null }) => {
       const token = p.push_token;
@@ -444,7 +444,7 @@ export async function sendShelfAddNotification(params: {
       const { data: recipientProfile } = await supabase
         .from('profiles')
         .select('push_token')
-        .eq('user_id', params.recipientUserId)
+        .eq('id', params.recipientUserId)
         .maybeSingle();
 
       const pushToken = recipientProfile?.push_token;

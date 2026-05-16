@@ -56,7 +56,7 @@ export function useProfile() {
         const { data: profileRow } = await supabase
           .from('profiles')
           .select('*')
-          .eq('user_id', userId)
+          .eq('id', userId)
           .maybeSingle();
 
         if (profileRow) {
@@ -87,7 +87,7 @@ export function useProfile() {
             const { data: motherProfile } = await supabase
               .from('profiles')
               .select('first_name, trimester, due_date')
-              .eq('user_id', resolvedLinkedUserId)
+              .eq('id', resolvedLinkedUserId)
               .maybeSingle();
 
             if (motherProfile) {

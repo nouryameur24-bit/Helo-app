@@ -21,7 +21,7 @@ export async function upsertProfile(params: {
   if (!isSupabaseConfigured) return;
 
   const row: Record<string, unknown> = {
-    user_id: params.userId,
+    id: params.userId,
   };
 
   if (params.firstName !== undefined) row.first_name = params.firstName;
@@ -30,7 +30,7 @@ export async function upsertProfile(params: {
   if (params.partnerCode !== undefined) row.partner_code = params.partnerCode;
   if (params.pushToken !== undefined) row.push_token = params.pushToken;
 
-  const { error } = await supabase.from('profiles').upsert(row, { onConflict: 'user_id' });
+  const { error } = await supabase.from('profiles').upsert(row, { onConflict: 'id' });
   if (error) throw new Error(error.message);
 }
 
@@ -46,12 +46,12 @@ export async function lookupPartnerCode(code: string): Promise<{ userId: string;
   if (!isSupabaseConfigured) return null;
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id, first_name')
+    .select('id, first_name')
     .eq('partner_code', code.toUpperCase())
     .maybeSingle();
 
   if (error || !data) return null;
-  return { userId: data.user_id, firstName: data.first_name };
+  return { userId: data.id, firstName: data.first_name };
 }
 
 export async function linkPartner(pregnantUserId: string, partnerUserId: string): Promise<void> {

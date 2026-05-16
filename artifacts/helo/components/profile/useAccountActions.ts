@@ -14,7 +14,7 @@ export function useAccountActions(userId: string | null) {
 
       let supabaseData: Record<string, unknown> = {};
       if (isSupabaseConfigured && userId) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
         const { data: scans } = await supabase.from('scan_history').select('*').eq('user_id', userId);
         const { data: submissions } = await supabase.from('community_submissions').select('*').eq('user_id', userId);
         supabaseData = {
@@ -59,7 +59,7 @@ export function useAccountActions(userId: string | null) {
                         await supabase.from('community_submissions').delete().eq('user_id', userId);
                         await supabase.from('partner_links').delete().eq('pregnant_user_id', userId);
                         await supabase.from('partner_links').delete().eq('partner_user_id', userId);
-                        await supabase.from('profiles').delete().eq('user_id', userId);
+                        await supabase.from('profiles').delete().eq('id', userId);
                       }
                       router.replace('/onboarding');
                     } catch {

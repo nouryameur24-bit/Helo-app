@@ -84,8 +84,6 @@ export function AccountActions() {
           <Divider />
           <SettingRow icon="calendar" title="Ma Timeline de Grossesse" subtitle="Fresque visuelle de vos 40 semaines" onPress={() => router.push(ROUTES.timeline)} />
           <Divider />
-          <SettingRow icon="camera" title="Mode Miroir AR" subtitle="Halos colorés sur vos produits en temps réel" onPress={() => router.push(ROUTES.arMirror)} />
-          <Divider />
           <SettingRow icon="smartphone" title="Widget & Apple Watch" subtitle="Glow Score sur l'écran d'accueil" onPress={() => router.push(ROUTES.widgetPreview)} />
           <Divider />
           <SettingRow icon="book" title="Exporter mon journal" subtitle="Générer un PDF de votre journal de grossesse" onPress={() => exportJournalToPdf(firstName)} />

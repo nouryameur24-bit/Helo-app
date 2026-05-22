@@ -238,7 +238,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
   { key: 'timeline',     category: 'Ma Grossesse', route: '/timeline' },
   { key: 'journal',      category: 'Ma Grossesse', route: '/(tabs)/journal' },
   { key: 'memories',     category: 'Ma Grossesse', route: '/memories' },
-  { key: 'ar_mirror',    category: 'Ma Grossesse', route: '/ar-mirror' },
+  // { key: 'ar_mirror',    category: 'Ma Grossesse', route: '/ar-mirror' }, // hidden V1 — reactivate when visual recognition lands
 ];
 
 export const GUIDE_CATEGORIES: DiscoveryCategory[] = [

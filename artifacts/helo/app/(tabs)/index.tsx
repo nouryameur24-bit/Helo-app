@@ -446,14 +446,6 @@ export default function HomeScreen() {
                   route: '/scan-party',
                 },
                 {
-                  label: 'Miroir AR',
-                  subtitle: 'Scanner en direct',
-                  icon: 'aperture' as const,
-                  iconBg: '#F0F8F4',
-                  iconColor: Colors.safe,
-                  route: '/ar-mirror',
-                },
-                {
                   label: 'Widget Glow',
                   subtitle: 'Widget écran d\'accueil',
                   icon: 'watch' as const,

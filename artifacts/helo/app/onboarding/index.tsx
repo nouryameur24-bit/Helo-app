@@ -42,7 +42,7 @@ interface Slide {
   gradientTo: string;
   accentColor: string;
   sources?: string[]; // pour Slide 2 — badges sources
-  stats?: string; // "12 118 produits..."
+  stats?: string; // "16 799 produits..."
 }
 
 const SLIDES: Slide[] = [
@@ -62,13 +62,13 @@ const SLIDES: Slide[] = [
     key: "promise",
     title: "Hēlo te répond.\nEn 2 secondes.",
     subtitle:
-      "12 118 produits analysés. 5 000 ingrédients référencés.\nAdapté à ton trimestre.",
+      "16 799 produits analysés. 5 000 ingrédients référencés.\nAdapté à ton trimestre.",
     Illustration: IllustrationPromise,
     gradientFrom: "#FFFAF5",
     gradientTo: "#EDF7F0",
     accentColor: "#5BB97C",
     sources: ["CRAT", "ANSM", "EFSA", "SCCS"],
-    stats: "12 118 produits · 5 000 ingrédients",
+    stats: "16 799 produits · 5 000 ingrédients",
   },
 ];
 

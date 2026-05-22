@@ -42,7 +42,7 @@ export const DISCOVERIES: Record<DiscoveryKey, DiscoveryContent> = {
     icon: '📱',
     title: 'Scanner un code-barres',
     description:
-      "Pointez votre caméra vers le code-barres du produit. L'analyse est instantanée parmi nos 12 118 produits référencés.",
+      "Pointez votre caméra vers le code-barres du produit. L'analyse est instantanée parmi nos 16 799 produits référencés.",
     tip: "💡 Astuce : si le code-barres n'est pas trouvé, essayez le mode Photo",
   },
   ocr: {

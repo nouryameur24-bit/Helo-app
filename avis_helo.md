@@ -3,7 +3,7 @@
 
 ## Ce qui est très fort 💪
 
-- **La base de données** : 5 000 ingrédients sourcés CRAT/EFSA/COSING + 12 118 produits, c'est un vrai moat. Beaucoup d'apps "Yuka pregnancy" se contentent de scraper OFF.
+- **La base de données** : 5 000 ingrédients sourcés CRAT/EFSA/COSING + 16 799 produits, c'est un vrai moat. Beaucoup d'apps "Yuka pregnancy" se contentent de scraper OFF.
 - **L'attention au cadre légal** : disclaimer modal versionné, CGU, politique RGPD, méthodologie publique, et maintenant le filtre médicaments avec redirection CRAT — c'est la bonne posture pour éviter le statut de dispositif médical en France.
 - **L'architecture après refactor** : composants découpés (compare/, scan/, voice/, nutrition/...), 190 tests, 0 erreur TS, logger structuré, routes typées. C'est propre, c'est maintenable.
 - **Le design system** : cohérent (Plus Jakarta Sans, palette nude/or, Spacing/Radius/Shadows centralisés). Le positionnement "luxe et sereine" est tenu.

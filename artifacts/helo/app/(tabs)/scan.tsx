@@ -105,6 +105,11 @@ export default function ScanScreen() {
 
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
   const bottomInset = Platform.OS === 'web' ? 34 : insets.bottom;
+  // Tab bar is rendered with position:"absolute", so screen content extends
+  // underneath it. We must offset every bottom-anchored element by the tab
+  // bar's intrinsic height (49 on iOS/Android classic, 84 on web).
+  const TAB_BAR_H = Platform.OS === 'web' ? 84 : 49;
+  const bottomOffset = bottomInset + TAB_BAR_H;
 
   const { role, linkedFirstName, firstName: scanFirstName } = useProfile();
   const isPartner = role === 'partner';
@@ -366,21 +371,21 @@ export default function ScanScreen() {
 
       {/* ── OCR shutter ── */}
       {isOCRMode && (
-        <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
+        <View style={[styles.shutterWrapper, { bottom: bottomOffset + 90 }]}>
           <ShutterButton onPress={handleShutter} />
         </View>
       )}
 
       {/* ── Photo mode shutter ── */}
       {isPhotoMode && (
-        <View style={[styles.shutterWrapper, { bottom: bottomInset + 90 }]}>
+        <View style={[styles.shutterWrapper, { bottom: bottomOffset + 90 }]}>
           <ShutterButton onPress={handlePhotoCapture} />
         </View>
       )}
 
       {/* ── Menu mode UI ── */}
       {isMenuMode && (
-        <View style={[styles.menuPanel, { bottom: bottomInset + 78 }]}>
+        <View style={[styles.menuPanel, { bottom: bottomOffset + 78 }]}>
           {menuPhotos.length > 0 && (
             <View style={styles.menuThumbStrip}>
               {menuPhotos.map((photo, i) => (
@@ -433,7 +438,7 @@ export default function ScanScreen() {
 
       {/* ── Free scan counter ── */}
       {!isPremium && (
-        <View style={[styles.scanCounterWrap, { bottom: bottomInset + 132 }]} pointerEvents="none">
+        <View style={[styles.scanCounterWrap, { bottom: bottomOffset + 132 }]} pointerEvents="none">
           <View
             style={[
               styles.scanCounterPill,
@@ -474,7 +479,7 @@ export default function ScanScreen() {
       )}
 
       {/* ── Bottom mode chips ── */}
-      <View style={[styles.bottomBar, { paddingBottom: bottomInset + Spacing.lg }]}>
+      <View style={[styles.bottomBar, { paddingBottom: bottomOffset + Spacing.lg }]}>
         <View style={styles.chipsRow}>
           <ModeChip label="Code-barres" active={scanMode === 'barcode'} onPress={() => setScanMode('barcode')} />
           <ModeChip

@@ -37,6 +37,10 @@ export function VerdictBottomBar({
                 variant="primary"
                 fullWidth
                 onPress={() => {
+                  const flagged = verdict.flaggedIngredients
+                    .map((m) => m.ingredientName)
+                    .filter(Boolean)
+                    .join('|');
                   router.push({
                     pathname: '/alternatives',
                     params: {
@@ -44,6 +48,7 @@ export function VerdictBottomBar({
                       category: 'cosmetic',
                       productName: product.name,
                       productBrand: product.brand ?? '',
+                      flagged,
                     },
                   });
                 }}

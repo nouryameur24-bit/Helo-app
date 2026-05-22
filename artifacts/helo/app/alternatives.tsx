@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { usePremium } from '@/hooks/usePremium';
 import {
   AlternativeProduct,
   getAlternativesByBarcode,
@@ -79,51 +81,77 @@ function AlternativeCard({
   alt,
   onViewDetail,
   onAddToList,
+  locked,
+  onUnlock,
 }: {
   alt: AlternativeProduct;
   onViewDetail: () => void;
   onAddToList: () => void;
+  locked?: boolean;
+  onUnlock?: () => void;
 }) {
   return (
-    <Card style={{ ...styles.altCard, width: CARD_WIDTH }} variant="elevated" padding={0}>
-      <View style={styles.altImageContainer}>
-        <View style={styles.altImagePlaceholder}>
-          <Feather name="package" size={40} color={Colors.textTertiary} />
-        </View>
-      </View>
-
-      <View style={styles.altContent}>
-        <ThemedText variant="headlineMedium" numberOfLines={2}>
-          {alt.name}
-        </ThemedText>
-        <ThemedText variant="bodyMedium" color="textSecondary" numberOfLines={1}>
-          {alt.brand}
-        </ThemedText>
-
-        <View style={styles.altBadgeRow}>
-          <Badge variant="safe">Compatible ✓</Badge>
-          <Badge variant="accent">{alt.price_range}</Badge>
+    <View style={{ width: CARD_WIDTH }}>
+      <Card style={styles.altCard} variant="elevated" padding={0}>
+        <View style={styles.altImageContainer}>
+          <View style={styles.altImagePlaceholder}>
+            <Feather name="package" size={40} color={Colors.textTertiary} />
+          </View>
         </View>
 
-        <View style={styles.altPopularityRow}>
-          <Feather name="heart" size={14} color={Colors.danger} />
-          <ThemedText variant="bodySmall" color="textSecondary" style={{ marginLeft: 4 }}>
-            Choisi par {alt.popularity_count} mamans
+        <View style={styles.altContent}>
+          <ThemedText variant="headlineMedium" numberOfLines={2}>
+            {alt.name}
           </ThemedText>
-        </View>
+          <ThemedText variant="bodyMedium" color="textSecondary" numberOfLines={1}>
+            {alt.brand}
+          </ThemedText>
 
-        <Divider style={{ marginVertical: Spacing.md }} />
+          <View style={styles.altBadgeRow}>
+            <Badge variant="safe">Compatible ✓</Badge>
+            {alt.price_range ? <Badge variant="accent">{alt.price_range}</Badge> : null}
+          </View>
 
-        <View style={styles.altActions}>
-          <Button variant="ghost" onPress={onViewDetail}>
-            Voir le détail
-          </Button>
-          <Button variant="secondary" onPress={onAddToList}>
-            Ajouter à ma liste
-          </Button>
+          {alt.description_fr ? (
+            <ThemedText
+              variant="bodySmall"
+              color="textSecondary"
+              style={{ marginTop: Spacing.sm }}
+              numberOfLines={2}
+            >
+              {alt.description_fr}
+            </ThemedText>
+          ) : null}
+
+          <Divider style={{ marginVertical: Spacing.md }} />
+
+          <View style={styles.altActions}>
+            {alt.barcode ? (
+              <Button variant="ghost" onPress={onViewDetail}>
+                Voir le détail
+              </Button>
+            ) : null}
+            <Button variant="secondary" onPress={onAddToList}>
+              Ajouter à ma liste
+            </Button>
+          </View>
         </View>
-      </View>
-    </Card>
+      </Card>
+
+      {locked ? (
+        <BlurView intensity={28} tint="light" style={styles.lockOverlay}>
+          <View style={styles.lockBadge}>
+            <Feather name="lock" size={16} color={Colors.accent} />
+            <ThemedText variant="bodySmall" color="accent" style={{ marginLeft: 6 }}>
+              Premium
+            </ThemedText>
+          </View>
+          <Button variant="primary" onPress={onUnlock}>
+            Débloquer
+          </Button>
+        </BlurView>
+      ) : null}
+    </View>
   );
 }
 
@@ -250,7 +278,7 @@ function EmptyState({ category }: { category: string }) {
         Pas encore d'alternatives
       </ThemedText>
       <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.xl }}>
-        Nous n'avons pas encore trouvé d'alternatives vérifiées pour ce produit. Aidez la communauté en suggérant un produit sûr.
+        Pas d'alternative dans notre base. Scannez d'autres produits pour enrichir la communauté 🤍
       </ThemedText>
 
       {!showForm ? (
@@ -274,6 +302,7 @@ export default function AlternativesScreen() {
     category: string;
     productName: string;
     productBrand: string;
+    flagged: string;
   }>();
 
   const normalize = (v: string | string[] | undefined): string =>
@@ -283,7 +312,10 @@ export default function AlternativesScreen() {
   const category = normalize(params.category) || 'cosmetic';
   const productName = normalize(params.productName) || 'Produit';
   const productBrand = normalize(params.productBrand);
+  const flaggedRaw = normalize(params.flagged);
+  const flaggedNames = flaggedRaw ? flaggedRaw.split('|').filter(Boolean) : [];
 
+  const { isPremium } = usePremium();
   const insets = useSafeAreaInsets();
   const [alternatives, setAlternatives] = useState<AlternativeProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,11 +325,16 @@ export default function AlternativesScreen() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const results = await getAlternativesByBarcode(barcode, category, 2);
+      const results = await getAlternativesByBarcode(barcode, flaggedNames, 2);
       setAlternatives(results);
       setLoading(false);
     })();
-  }, [barcode, category]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barcode, flaggedRaw]);
+
+  const handleUnlock = useCallback(() => {
+    router.push('/paywall');
+  }, []);
 
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = e.nativeEvent.contentOffset.x;
@@ -369,17 +406,30 @@ export default function AlternativesScreen() {
               onScroll={handleScroll}
               scrollEventThrottle={16}
             >
-              {alternatives.map((alt) => (
-                <AlternativeCard
-                  key={alt.id}
-                  alt={alt}
-                  onViewDetail={() => handleViewDetail(alt.barcode)}
-                  onAddToList={handleAddToList}
-                />
-              ))}
+              {alternatives.map((alt, idx) => {
+                const locked = !isPremium && idx >= 1;
+                return (
+                  <AlternativeCard
+                    key={alt.id}
+                    alt={alt}
+                    locked={locked}
+                    onUnlock={handleUnlock}
+                    onViewDetail={() => handleViewDetail(alt.barcode)}
+                    onAddToList={handleAddToList}
+                  />
+                );
+              })}
             </ScrollView>
 
             <DotIndicators count={alternatives.length} activeIndex={activeIndex} />
+
+            {!isPremium && alternatives.length > 1 ? (
+              <View style={styles.unlockCta}>
+                <Button variant="primary" fullWidth onPress={handleUnlock}>
+                  Débloquer toutes les alternatives — Premium
+                </Button>
+              </View>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -487,6 +537,32 @@ const styles = StyleSheet.create({
   altActions: {
     gap: Spacing.sm,
     alignItems: 'center',
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.md,
+    backgroundColor: 'rgba(255, 250, 245, 0.45)',
+  },
+  lockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surface,
+    ...Shadows.soft,
+  },
+  unlockCta: {
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.xl,
   },
   dotsRow: {
     flexDirection: 'row',

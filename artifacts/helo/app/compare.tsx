@@ -224,7 +224,12 @@ export default function CompareScreen() {
                 <Button
                   variant="primary"
                   fullWidth
-                  onPress={() =>
+                  onPress={() => {
+                    const flagged = (worseSlot.matches ?? [])
+                      .filter((m) => m.riskLevel === 'danger' || m.riskLevel === 'caution')
+                      .map((m) => m.ingredientName)
+                      .filter(Boolean)
+                      .join('|');
                     router.push({
                       pathname: '/alternatives',
                       params: {
@@ -232,9 +237,10 @@ export default function CompareScreen() {
                         category: 'cosmetic',
                         productName: worseSlot.product.name,
                         productBrand: worseSlot.product.brand ?? '',
+                        flagged,
                       },
-                    })
-                  }
+                    });
+                  }}
                 >
                   Voir des alternatives →
                 </Button>

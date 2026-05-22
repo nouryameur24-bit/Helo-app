@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
   Dimensions,
+  Linking,
   Modal,
   Platform,
   StyleSheet,
@@ -44,10 +45,22 @@ export function CameraModal({ visible, onClose, onScan }: CameraModalProps) {
   );
 
   useEffect(() => {
-    if (visible && permission && !permission.granted) {
-      requestPermission();
+    // Only ask again if the OS will actually show a prompt. After a hard
+    // denial (canAskAgain=false) `requestPermission()` is a no-op and the
+    // user must be sent to Settings — see the noPermission branch below.
+    if (visible && permission && !permission.granted && permission.canAskAgain) {
+      requestPermission().catch((err) => swallow(err, 'CameraModal.requestPermission'));
     }
-  }, [visible, permission]);
+  }, [visible, permission, requestPermission]);
+
+  const permanentlyDenied = permission && !permission.granted && !permission.canAskAgain;
+  const handlePermissionCta = useCallback(() => {
+    if (permanentlyDenied) {
+      Linking.openSettings().catch((err) => swallow(err, 'CameraModal.openSettings'));
+    } else {
+      requestPermission().catch((err) => swallow(err, 'CameraModal.requestPermission'));
+    }
+  }, [permanentlyDenied, requestPermission]);
 
   if (!visible) return null;
 
@@ -74,12 +87,14 @@ export function CameraModal({ visible, onClose, onScan }: CameraModalProps) {
         ) : (
           <View style={cam.noPermission}>
             <Feather name="camera-off" size={40} color={Colors.textTertiary} />
-            <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: Spacing.md }}>
-              Autorisation caméra requise
+            <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: Spacing.md, paddingHorizontal: Spacing.xl, textAlign: 'center' }}>
+              {permanentlyDenied
+                ? "L'accès caméra est désactivé. Activez-le dans les réglages."
+                : 'Autorisation caméra requise'}
             </ThemedText>
-            <TouchableOpacity onPress={requestPermission} style={{ marginTop: Spacing.lg }}>
+            <TouchableOpacity onPress={handlePermissionCta} style={{ marginTop: Spacing.lg }}>
               <ThemedText variant="labelLarge" style={{ color: Colors.accent }}>
-                Autoriser
+                {permanentlyDenied ? 'Ouvrir les réglages' : 'Autoriser'}
               </ThemedText>
             </TouchableOpacity>
           </View>

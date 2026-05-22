@@ -284,7 +284,9 @@ export default function ScanScreen() {
 
   if (Platform.OS === 'web') return <WebPlaceholder />;
   if (!permission) return <View style={[styles.root, { backgroundColor: Colors.background }]} />;
-  if (!permission.granted) return <PermissionScreen onRequest={requestPermission} />;
+  if (!permission.granted) return (
+    <PermissionScreen onRequest={requestPermission} canAskAgain={permission.canAskAgain} />
+  );
 
   return (
     <View style={styles.root}>

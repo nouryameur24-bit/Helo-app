@@ -3,7 +3,8 @@
  */
 
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
+import { swallow } from '@/lib/swallow';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -60,10 +61,32 @@ export function SyncToast({ visible }: SyncToastProps) {
 // ─── PermissionScreen ─────────────────────────────────────────────────────────
 interface PermissionScreenProps {
   onRequest: () => void;
+  /**
+   * Whether the OS will still display the native permission prompt when
+   * `onRequest()` is called. From `useCameraPermissions()` →
+   * `PermissionResponse.canAskAgain`. When false (user tapped "Don't ask
+   * again" on Android or denied twice on iOS), tapping the in-app
+   * "Autoriser" button does nothing — we must instead deep-link to the OS
+   * settings, otherwise the user is stuck on a dead screen.
+   *
+   * Defaults to `true` to preserve the old behaviour for callers that
+   * haven't been updated yet.
+   */
+  canAskAgain?: boolean;
 }
 
-export function PermissionScreen({ onRequest }: PermissionScreenProps) {
+export function PermissionScreen({ onRequest, canAskAgain = true }: PermissionScreenProps) {
   const insets = useSafeAreaInsets();
+  const permanentlyDenied = !canAskAgain;
+
+  const handlePress = () => {
+    if (permanentlyDenied) {
+      Linking.openSettings().catch((err) => swallow(err, 'PermissionScreen.openSettings'));
+    } else {
+      onRequest();
+    }
+  };
+
   return (
     <View
       style={[
@@ -72,15 +95,19 @@ export function PermissionScreen({ onRequest }: PermissionScreenProps) {
       ]}
     >
       <View style={ui.permissionIcon}>
-        <Feather name="camera" size={40} color={Colors.accent} />
+        <Feather name={permanentlyDenied ? 'settings' : 'camera'} size={40} color={Colors.accent} />
       </View>
-      <Text style={ui.permissionTitle}>Accès à la caméra</Text>
+      <Text style={ui.permissionTitle}>
+        {permanentlyDenied ? 'Caméra désactivée' : 'Accès à la caméra'}
+      </Text>
       <Text style={ui.permissionBody}>
-        Hēlo a besoin d'accéder à votre caméra pour scanner vos produits
+        {permanentlyDenied
+          ? "L'accès caméra a été refusé. Activez-le depuis les réglages du téléphone pour scanner vos produits."
+          : "Hēlo a besoin d'accéder à votre caméra pour scanner vos produits"}
       </Text>
       <View style={{ width: '100%', paddingHorizontal: Spacing.xxl }}>
-        <Button variant="primary" fullWidth onPress={onRequest}>
-          Autoriser
+        <Button variant="primary" fullWidth onPress={handlePress}>
+          {permanentlyDenied ? 'Ouvrir les réglages' : 'Autoriser'}
         </Button>
       </View>
     </View>

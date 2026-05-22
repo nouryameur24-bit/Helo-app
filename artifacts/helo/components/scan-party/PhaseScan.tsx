@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { View, Pressable } from 'react-native';
+import { Linking, View, Pressable } from 'react-native';
+import { swallow } from '@/lib/swallow';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
@@ -93,14 +94,29 @@ function PhaseScan({ theme, results, onScanResult, onFinish, trimester }: PhaseS
 
   if (!permission) return <View style={{ flex: 1, backgroundColor: '#000' }} />;
   if (!permission.granted) {
+    const permanentlyDenied = !permission.canAskAgain;
+    const onCta = () => {
+      if (permanentlyDenied) {
+        Linking.openSettings().catch((err) => swallow(err, 'PhaseScan.openSettings'));
+      } else {
+        requestPermission().catch((err) => swallow(err, 'PhaseScan.requestPermission'));
+      }
+    };
     return (
       <View style={scan.permRoot}>
-        <Feather name="camera" size={48} color={Colors.accent} />
+        <Feather name={permanentlyDenied ? 'settings' : 'camera'} size={48} color={Colors.accent} />
         <ThemedText variant="headlineMedium" color="textPrimary" style={{ marginTop: Spacing.lg, textAlign: 'center' }}>
-          Accès caméra requis
+          {permanentlyDenied ? 'Caméra désactivée' : 'Accès caméra requis'}
         </ThemedText>
+        {permanentlyDenied && (
+          <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm, textAlign: 'center', paddingHorizontal: Spacing.xl }}>
+            Activez l&apos;accès caméra dans les réglages du téléphone pour lancer la Scan Party.
+          </ThemedText>
+        )}
         <View style={{ marginTop: Spacing.xl, width: '80%' }}>
-          <Button variant="primary" fullWidth onPress={requestPermission}>Autoriser</Button>
+          <Button variant="primary" fullWidth onPress={onCta}>
+            {permanentlyDenied ? 'Ouvrir les réglages' : 'Autoriser'}
+          </Button>
         </View>
       </View>
     );

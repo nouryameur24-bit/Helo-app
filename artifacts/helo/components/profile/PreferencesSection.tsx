@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
-import { Switch, View } from 'react-native';
+import { Pressable, Switch, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Card } from '@/components/ui/Card';
@@ -9,6 +10,9 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors } from '@/constants/theme';
 import { useBabyMode } from '@/hooks/useBabyMode';
 import { BREASTFEEDING_PALETTE, useBreastfeeding } from '@/hooks/useBreastfeeding';
+import { usePremium } from '@/hooks/usePremium';
+import { PREMIUM_KEY } from '@/lib/purchases';
+import { resetScanLimit } from '@/lib/scanLimit';
 import { useProfile } from './ProfileContext';
 
 import styles from './profileStyles';
@@ -23,6 +27,17 @@ export function PreferencesSection() {
     enableBreastfeeding,
     disableBreastfeeding,
   } = useBreastfeeding();
+  const { isPremium, refresh: refreshPremium } = usePremium();
+
+  const toggleDevPremium = React.useCallback(async (val: boolean) => {
+    await AsyncStorage.setItem(PREMIUM_KEY, val ? 'true' : 'false');
+    await refreshPremium();
+  }, [refreshPremium]);
+
+  const resetScansDev = React.useCallback(async () => {
+    await resetScanLimit();
+    await refreshPremium();
+  }, [refreshPremium]);
 
   React.useEffect(() => {
     if (isBreastfeeding && !babyMode) enableBabyMode();
@@ -86,6 +101,56 @@ export function PreferencesSection() {
           </View>
         </Card>
       </Animated.View>
+
+      {/* DEV — Premium toggle (visible uniquement en dev) */}
+      {__DEV__ ? (
+        <Animated.View entering={FadeInDown.delay(280).duration(500)}>
+          <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+            DEV
+          </ThemedText>
+          <Card padding={0} style={styles.settingGroup}>
+            <View style={styles.settingRow}>
+              <View style={[styles.settingIcon, { backgroundColor: '#FFF7DC' }]}>
+                <Feather name="star" size={18} color="#C9A96E" />
+              </View>
+              <View style={styles.settingContent}>
+                <ThemedText variant="labelLarge" color="textPrimary">Premium (dev)</ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">
+                  {isPremium ? 'Actif — accès à toutes les fonctionnalités' : 'Active Premium pour tester sans payer'}
+                </ThemedText>
+              </View>
+              <Switch
+                value={isPremium}
+                onValueChange={toggleDevPremium}
+                trackColor={{ false: Colors.borderLight, true: Colors.accent }}
+                thumbColor={isPremium ? Colors.accentDark : '#f4f3f4'}
+                accessibilityLabel="Premium dev"
+              />
+            </View>
+            <Pressable
+              onPress={resetScansDev}
+              style={({ pressed }) => [
+                styles.settingRow,
+                { borderTopWidth: 1, borderTopColor: Colors.borderLight, opacity: pressed ? 0.6 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Réinitialiser le compteur de scans"
+            >
+              <View style={[styles.settingIcon, { backgroundColor: '#FFF7DC' }]}>
+                <Feather name="refresh-ccw" size={18} color="#C9A96E" />
+              </View>
+              <View style={styles.settingContent}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Réinitialiser le compteur de scans
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">
+                  Remet à 0 le quota quotidien gratuit
+                </ThemedText>
+              </View>
+            </Pressable>
+          </Card>
+        </Animated.View>
+      ) : null}
     </>
   );
 }

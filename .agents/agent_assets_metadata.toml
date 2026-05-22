@@ -119,3 +119,9 @@ id = "S6o0u7D_xiaYF7lyfAW0N"
 uri = "file://avis_helo.md"
 type = "text"
 title = "Mon avis sur Hēlo"
+
+[[outputs]]
+id = "BveJkpPl6T2C1N3ErIwm2"
+uri = "file://mode_miroir_ar.md"
+type = "text"
+title = "Mode Miroir AR — explication"

@@ -49,3 +49,28 @@ export function initSentry(): void {
 }
 
 export { Sentry };
+
+/**
+ * Send a test event to Sentry, bypassing the __DEV__ gate.
+ * Used by the Profile DEV section to verify the dashboard wiring.
+ * Returns true if the event was sent, false if no DSN is configured.
+ */
+export function sendSentryTestEvent(): boolean {
+  const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN ?? FALLBACK_DSN;
+  if (!dsn) return false;
+
+  // Force-init (or re-init enabled) just for this test, regardless of __DEV__.
+  Sentry.init({
+    dsn,
+    enabled: true,
+    debug: __DEV__,
+    sendDefaultPii: true,
+  });
+  initialized = true;
+
+  const tag = new Date().toISOString();
+  Sentry.captureException(
+    new Error(`[Hēlo] Test event from Profile DEV — ${tag}`)
+  );
+  return true;
+}

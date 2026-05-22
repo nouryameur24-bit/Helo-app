@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
-import { Pressable, Switch, View } from 'react-native';
+import { Alert, Pressable, Switch, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Card } from '@/components/ui/Card';
@@ -13,6 +13,7 @@ import { BREASTFEEDING_PALETTE, useBreastfeeding } from '@/hooks/useBreastfeedin
 import { usePremium } from '@/hooks/usePremium';
 import { PREMIUM_KEY } from '@/lib/purchases';
 import { resetScanLimit } from '@/lib/scanLimit';
+import { sendSentryTestEvent } from '@/lib/sentry';
 import { useProfile } from './ProfileContext';
 
 import styles from './profileStyles';
@@ -38,6 +39,16 @@ export function PreferencesSection() {
     await resetScanLimit();
     await refreshPremium();
   }, [refreshPremium]);
+
+  const triggerSentryTest = React.useCallback(() => {
+    const ok = sendSentryTestEvent();
+    Alert.alert(
+      ok ? 'Test envoyé' : 'Sentry non configuré',
+      ok
+        ? 'Ouvre helo-54.sentry.io/issues — l\'événement devrait apparaître dans les 30 secondes.'
+        : 'Aucun DSN trouvé. Vérifie EXPO_PUBLIC_SENTRY_DSN.',
+    );
+  }, []);
 
   React.useEffect(() => {
     if (isBreastfeeding && !babyMode) enableBabyMode();
@@ -145,6 +156,27 @@ export function PreferencesSection() {
                 </ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary">
                   Remet à 0 le quota quotidien gratuit
+                </ThemedText>
+              </View>
+            </Pressable>
+            <Pressable
+              onPress={triggerSentryTest}
+              style={({ pressed }) => [
+                styles.settingRow,
+                { borderTopWidth: 1, borderTopColor: Colors.borderLight, opacity: pressed ? 0.6 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Envoyer un événement test à Sentry"
+            >
+              <View style={[styles.settingIcon, { backgroundColor: '#FFE8E8' }]}>
+                <Feather name="alert-triangle" size={18} color="#C27B7B" />
+              </View>
+              <View style={styles.settingContent}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Envoyer un test Sentry
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">
+                  Crée une fausse erreur visible sur le dashboard
                 </ThemedText>
               </View>
             </Pressable>

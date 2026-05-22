@@ -38,10 +38,10 @@ function mapRawToShelf(raw: RawShelfItem, index: number): ShelfProduct {
     verdict: (raw.verdict ?? 'safe') as ShelfProduct['verdict'],
     verdictLabel:
       raw.verdict === 'danger'
-        ? 'Déconseillé'
+        ? 'À éviter'
         : raw.verdict === 'caution'
         ? 'Vigilance'
-        : 'Sûr',
+        : 'Compatible',
     category: (raw.category ?? 'salle-de-bain') as ShelfCategory,
     verdictChanged: false,
   };
@@ -104,10 +104,10 @@ export function useShelfData(userId?: string | null) {
               verdict: (row.verdict_at_shelf_add ?? 'safe') as ShelfProduct['verdict'],
               verdictLabel:
                 row.verdict_at_shelf_add === 'danger'
-                  ? 'Déconseillé'
+                  ? 'À éviter'
                   : row.verdict_at_shelf_add === 'caution'
                   ? 'Vigilance'
-                  : 'Sûr',
+                  : 'Compatible',
               category: (row.shelf_category ?? 'salle-de-bain') as ShelfCategory,
               verdictChanged: false,
             };

@@ -40,7 +40,7 @@ export function verdictBg(v: VerdictKind): string {
 
 export function verdictLabel(v: VerdictKind): string {
   if (v === 'danger') return 'À éviter';
-  if (v === 'caution') return 'Précaution';
+  if (v === 'caution') return 'Vigilance';
   return 'Compatible';
 }
 

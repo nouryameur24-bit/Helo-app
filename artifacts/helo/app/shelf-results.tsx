@@ -65,10 +65,10 @@ function verdictColor(v: Verdict): string {
 
 function verdictLabel(v: Verdict): string {
   switch (v) {
-    case 'safe': return 'Sûr';
+    case 'safe': return 'Compatible';
     case 'caution': return 'Vigilance';
-    case 'danger': return 'Déconseillé';
-    default: return 'Non vérifié';
+    case 'danger': return 'À éviter';
+    default: return 'Non évalué';
   }
 }
 

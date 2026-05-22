@@ -19,8 +19,8 @@ export function getVerdictBg(v?: string): string {
 }
 
 export function getVerdictLabel(v?: string): string {
-  if (v === 'danger') return 'À éviter';
-  if (v === 'caution') return 'Précaution';
+  if (v === 'danger') return 'À éviter pendant ta grossesse';
+  if (v === 'caution') return 'Vigilance';
   return 'Compatible';
 }
 
@@ -40,7 +40,7 @@ export function getRiskVariant(r: RiskLevel): 'danger' | 'caution' | 'safe' | 'a
 
 export function getRiskBadgeLabel(r: RiskLevel): string {
   if (r === 'danger') return 'À éviter';
-  if (r === 'caution') return 'Précaution';
+  if (r === 'caution') return 'Vigilance';
   if (r === 'safe') return 'Compatible';
   return 'Aucun signal';
 }

@@ -76,16 +76,16 @@ describe('basket persistence', () => {
 });
 
 describe('verdictLabel', () => {
-  test('danger → Déconseillé', () => {
-    expect(verdictLabel('danger')).toBe('Déconseillé');
+  test('danger → À éviter', () => {
+    expect(verdictLabel('danger')).toBe('À éviter');
   });
 
   test('caution → Vigilance', () => {
     expect(verdictLabel('caution')).toBe('Vigilance');
   });
 
-  test('safe → Sûr', () => {
-    expect(verdictLabel('safe')).toBe('Sûr');
+  test('safe → Compatible', () => {
+    expect(verdictLabel('safe')).toBe('Compatible');
   });
 
 });

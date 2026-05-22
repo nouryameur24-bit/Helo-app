@@ -148,10 +148,10 @@ export default function HistoryScreen() {
               status: (row.verdict_at_shelf_add ?? 'safe') as ScanStatus,
               statusLabel:
                 row.verdict_at_shelf_add === 'danger'
-                  ? 'Déconseillé'
+                  ? 'À éviter'
                   : row.verdict_at_shelf_add === 'caution'
                   ? 'Vigilance'
-                  : 'Sûr',
+                  : 'Compatible',
               time: new Date(row.scanned_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
               date: row.scanned_at,
               ingredientCount: 0,
@@ -182,7 +182,7 @@ export default function HistoryScreen() {
         brand: i.brand ?? '',
         status: (i.verdict ?? 'safe') as ScanStatus,
         statusLabel:
-          i.verdict === 'danger' ? 'Déconseillé' : i.verdict === 'caution' ? 'Vigilance' : 'Sûr',
+          i.verdict === 'danger' ? 'À éviter' : i.verdict === 'caution' ? 'Vigilance' : 'Compatible',
         time: i.savedAt
           ? new Date(i.savedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
           : '',

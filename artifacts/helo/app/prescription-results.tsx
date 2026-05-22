@@ -23,10 +23,10 @@ import { prescriptionVerdict } from '@/lib/prescription';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function riskLabel(r: MedicationRisk): string {
   switch (r) {
-    case 'safe':    return 'Sûr';
-    case 'caution': return 'Précaution';
-    case 'danger':  return 'Danger';
-    default:        return 'Inconnu';
+    case 'safe':    return 'Compatible';
+    case 'caution': return 'Vigilance';
+    case 'danger':  return 'À éviter';
+    default:        return 'Non évalué';
   }
 }
 

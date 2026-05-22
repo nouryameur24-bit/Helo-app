@@ -53,7 +53,7 @@ const RISK_COLORS: Record<DishRisk, string> = {
 const RISK_LABELS: Record<DishRisk, string> = {
   safe: 'Compatible',
   caution: 'À vérifier',
-  danger: 'Déconseillé',
+  danger: 'À éviter',
 };
 
 const RISK_ICONS: Record<DishRisk, keyof typeof Feather.glyphMap> = {

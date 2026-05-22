@@ -46,9 +46,9 @@ export const VERDICT_EMOJI: Record<VerdictShort, string> = {
 };
 
 export const VERDICT_LABEL_FR: Record<VerdictShort, string> = {
-  safe: 'Sûr',
+  safe: 'Compatible',
   caution: 'Vigilance',
-  danger: 'Déconseillé',
+  danger: 'À éviter',
 };
 
 export function normaliseBounds(

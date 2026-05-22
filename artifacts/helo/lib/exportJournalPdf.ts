@@ -70,7 +70,7 @@ function buildShelfHtml(
       const verdictColor =
         item.verdict === 'danger' ? '#C27B7B' : item.verdict === 'caution' ? '#D4A853' : '#7CB69F';
       const verdictLabel =
-        item.verdict === 'danger' ? 'Déconseillé' : item.verdict === 'caution' ? 'Vigilance' : 'Sûr';
+        item.verdict === 'danger' ? 'À éviter' : item.verdict === 'caution' ? 'Vigilance' : 'Compatible';
       return `<li><span class="product-name">${escapeHtml(item.productName ?? 'Produit')}</span>${item.brand ? ` — ${escapeHtml(item.brand)}` : ''} <span style="color:${verdictColor};font-weight:600;">${verdictLabel}</span></li>`;
     })
     .join('');

@@ -53,7 +53,7 @@ export async function clearBasket(): Promise<void> {
 }
 
 export function verdictLabel(verdict: Verdict): string {
-  if (verdict === 'danger') return 'Déconseillé';
+  if (verdict === 'danger') return 'À éviter';
   if (verdict === 'caution') return 'Vigilance';
-  return 'Sûr';
+  return 'Compatible';
 }

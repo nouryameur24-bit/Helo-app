@@ -16,7 +16,7 @@ import {
   restorePurchases,
   type PlanId,
 } from '@/lib/purchases';
-import { canScanFree, getDailyScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
+import { consumeScanQuota, getDailyScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
 
 interface UsePremiumReturn {
   isPremium: boolean;
@@ -85,10 +85,14 @@ export function usePremium(): UsePremiumReturn {
     [isPremium],
   );
 
+  // Atomically check + consume one scan slot server-side (with offline fallback).
+  // Returns true if the scan is allowed (and a slot has been consumed),
+  // false if the user hit the cap (paywall is shown).
   const checkScanLimit = useCallback(async (): Promise<boolean> => {
     if (isPremium) return true;
-    const ok = await canScanFree();
-    if (!ok) {
+    const { allowed, remaining } = await consumeScanQuota();
+    setScanCount(FREE_SCAN_LIMIT - remaining);
+    if (!allowed) {
       router.push({ pathname: '/paywall', params: { trigger: 'scan_limit' } });
       return false;
     }

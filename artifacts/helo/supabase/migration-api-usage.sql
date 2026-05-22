@@ -13,7 +13,7 @@
 CREATE TABLE IF NOT EXISTS api_usage (
   id          BIGSERIAL PRIMARY KEY,
   user_id     TEXT NOT NULL,
-  endpoint    TEXT NOT NULL CHECK (endpoint IN ('chat', 'ocr')),
+  endpoint    TEXT NOT NULL CHECK (endpoint IN ('chat', 'ocr', 'scan', 'chat_emergency')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -33,7 +33,6 @@ import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { analyzeMenu } from '@/lib/restaurant';
-import { incrementScanCount } from '@/lib/scanLimit';
 import { onProductScanned } from '@/lib/pact';
 
 import {
@@ -168,12 +167,13 @@ export default function ScanScreen() {
       debounceTimer.current = setTimeout(() => { lastBarcode.current = null; }, DEBOUNCE_MS);
 
       if (!isPremium && !isOffline) {
+        // checkScanLimit atomically consumes one slot server-side (with local
+        // fallback when offline); no separate incrementScanCount needed.
         const allowed = await checkScanLimit();
         if (!allowed) {
           lastBarcode.current = null;
           return;
         }
-        await incrementScanCount();
       }
 
       onProductScanned(scanFirstName || '').catch(() => {});

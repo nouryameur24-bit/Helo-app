@@ -2,58 +2,45 @@
 
 ## 1. Gestion des clés API
 
-### État actuel (V1)
-Les clés API sont stockées dans des variables d'environnement `EXPO_PUBLIC_*`.
-Les variables `EXPO_PUBLIC_*` sont inlinées par Expo au moment du build et sont
-donc **visibles dans le bundle JavaScript de l'application**.
+### État actuel
+Les clés API sensibles (Anthropic, Google Vision) sont gérées **uniquement côté
+serveur** via les Supabase Edge Functions. Aucune de ces clés n'est exposée
+dans le bundle JavaScript de l'application.
 
-| Clé | Niveau de risque | Plan |
-|-----|-----------------|------|
-| `EXPO_PUBLIC_SUPABASE_URL` | Faible (URL publique) | OK côté client |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Faible (protégée par RLS) | OK côté client |
-| `EXPO_PUBLIC_GOOGLE_VISION_KEY` | **Élevé** | Migrer → Edge Function |
-| `EXPO_PUBLIC_ANTHROPIC_API_KEY` | **Élevé** | Migrer → Edge Function |
+| Clé | Côté | Niveau de risque |
+|-----|------|-----------------|
+| `EXPO_PUBLIC_SUPABASE_URL` | Client | Faible (URL publique) |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Client | Faible (protégée par RLS) |
+| `ANTHROPIC_API_KEY` | Serveur (Edge Function `chat`) | Jamais exposée |
+| `GOOGLE_VISION_KEY` | Serveur (Edge Function `ocr`) | Jamais exposée |
 
-### Plan de migration vers les Edge Functions
-
-#### Étape 1 — Déployer les Edge Functions
+### Configuration des secrets serveur
 
 ```bash
-# Depuis la racine Supabase
+# Déploiement des Edge Functions
 supabase functions deploy chat --no-verify-jwt
 supabase functions deploy ocr --no-verify-jwt
 
-# Configurer les secrets côté serveur (jamais dans le code)
+# Secrets côté serveur (jamais dans le code ni le bundle)
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 supabase secrets set GOOGLE_VISION_KEY=AIza...
 ```
 
-#### Étape 2 — Mettre à jour le client
-
-Dans `lib/anthropic.ts`, remplacer l'appel direct à Anthropic par :
+### Appel depuis le client
 
 ```typescript
-import { supabase } from '@/lib/supabase';
-
+// lib/anthropic.ts
 const { data, error } = await supabase.functions.invoke('chat', {
   body: { messages, system },
 });
-```
 
-Dans `lib/ocr.ts`, remplacer l'appel Google Vision par :
-
-```typescript
+// lib/ocr.ts
 const { data, error } = await supabase.functions.invoke('ocr', {
   body: { imageBase64, features: [{ type: 'DOCUMENT_TEXT_DETECTION' }] },
 });
 ```
 
-#### Étape 3 — Retirer les clés du client
-
-Supprimer `EXPO_PUBLIC_GOOGLE_VISION_KEY` et `EXPO_PUBLIC_ANTHROPIC_API_KEY`
-des fichiers `.env` et `app.json`.
-
-Les fichiers Edge Function sont déjà créés dans `supabase/functions/`.
+Les sources des Edge Functions sont dans `supabase/functions/`.
 
 ---
 

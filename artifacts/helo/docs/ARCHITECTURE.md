@@ -71,14 +71,15 @@ ingredients (id) ───────────── [matchIngredients() mat
 | Variable | Usage | Côté |
 |----------|-------|-------|
 | `EXPO_PUBLIC_SUPABASE_URL` | URL Supabase | Client |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Clé anon Supabase | Client |
-| `EXPO_PUBLIC_GOOGLE_VISION_KEY` | OCR ingrédients | ⚠️ Migrer vers Edge Function |
-| `EXPO_PUBLIC_ANTHROPIC_API_KEY` | Chat IA + Vision | ⚠️ Migrer vers Edge Function |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Clé anon Supabase (protégée par RLS) | Client |
 | `EXPO_PUBLIC_RC_KEY_IOS` | RevenueCat iOS | Client |
 | `EXPO_PUBLIC_RC_KEY_ANDROID` | RevenueCat Android | Client |
+| `GOOGLE_VISION_KEY` | OCR ingrédients | Serveur — Edge Function `ocr` |
+| `ANTHROPIC_API_KEY` | Chat IA + Vision | Serveur — Edge Function `chat` |
 
-Les clés Anthropic et Google Vision DOIVENT être migrées côté serveur (Edge Functions).
-Voir `docs/SECURITY.md` pour le plan de migration.
+Les clés Anthropic et Google Vision sont **uniquement côté serveur** via les
+Supabase Edge Functions, jamais exposées dans le bundle client.
+Voir `docs/SECURITY.md` pour les détails.
 
 ## Lancer le projet en développement
 

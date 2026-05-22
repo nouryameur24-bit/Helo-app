@@ -35,16 +35,14 @@ pnpm dev
 |---|---|
 | `EXPO_PUBLIC_SUPABASE_URL` | URL du projet Supabase |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Anon key (protégée par RLS) |
-| `EXPO_PUBLIC_ANTHROPIC_API_KEY` | Clé Anthropic (dev local uniquement — en prod, passer par l'Edge Function `chat`) |
-| `EXPO_PUBLIC_GOOGLE_VISION_KEY` | Clé Google Vision (dev local uniquement — en prod, passer par l'Edge Function `ocr`) |
-| `EXPO_PUBLIC_RC_KEY_IOS` | RevenueCat iOS |
-| `EXPO_PUBLIC_RC_KEY_ANDROID` | RevenueCat Android |
-| `EXPO_PUBLIC_SENTRY_DSN` | Sentry DSN |
+| `EXPO_PUBLIC_RC_KEY_IOS` | RevenueCat iOS (optionnel) |
+| `EXPO_PUBLIC_RC_KEY_ANDROID` | RevenueCat Android (optionnel) |
+| `EXPO_PUBLIC_SENTRY_DSN` | Sentry DSN (optionnel) |
 
 Secrets serveur (Supabase Edge Functions, jamais dans le bundle client) :
 
-- `ANTHROPIC_API_KEY`
-- `GOOGLE_VISION_KEY`
+- `ANTHROPIC_API_KEY` — utilisé par l'Edge Function `chat`
+- `GOOGLE_VISION_KEY` — utilisé par l'Edge Function `ocr`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 Configurés via :

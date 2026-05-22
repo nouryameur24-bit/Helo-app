@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
 import { IconButton } from '@/components/ui/IconButton';
+import { PulsingHelpButton } from '@/components/ui/PulsingHelpButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 import { useOffline } from '@/hooks/useOffline';
@@ -319,14 +320,14 @@ export default function ScanScreen() {
           {isOffline && <OfflineBadge />}
         </View>
         <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-          <IconButton
+          <PulsingHelpButton
             onPress={() => router.push(ROUTES.guide)}
-            backgroundColor="rgba(255,255,255,0.18)"
             size={40}
-            accessibilityLabel="Guide"
-          >
-            <Feather name="help-circle" size={18} color="#fff" />
-          </IconButton>
+            iconSize={18}
+            iconColor="#fff"
+            backgroundColor="rgba(255,255,255,0.18)"
+            haloColor="#FFFFFF"
+          />
           {scanMode === 'barcode' && (
             <IconButton
               onPress={() => router.push(ROUTES.basketScan)}

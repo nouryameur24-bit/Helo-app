@@ -39,6 +39,7 @@ import { PactWidget } from '@/components/PactWidget';
 import { PartnerHomeScreen } from '@/components/home/PartnerHomeScreen';
 import { styles } from '@/components/home/homeStyles';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
+import { PulsingHelpButton } from '@/components/ui/PulsingHelpButton';
 
 const WELCOME_FLAG = '@helo_show_welcome_overlay';
 
@@ -235,9 +236,7 @@ export default function HomeScreen() {
             <IconButton size={44} onPress={() => router.push('/search')} accessibilityLabel="Rechercher">
               <Feather name="search" size={20} color={Colors.textSecondary} />
             </IconButton>
-            <IconButton size={44} onPress={() => router.push(ROUTES.guide)} accessibilityLabel="Guide">
-              <Feather name="help-circle" size={20} color={Colors.textSecondary} />
-            </IconButton>
+            <PulsingHelpButton onPress={() => router.push(ROUTES.guide)} />
             <IconButton size={44} accessibilityLabel="Notifications">
               <Feather name="bell" size={20} color={Colors.textSecondary} />
             </IconButton>

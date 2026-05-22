@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 type ScanStatus = 'safe' | 'caution' | 'danger';
 
@@ -166,7 +167,7 @@ export default function HistoryScreen() {
     }
 
     try {
-      const raw = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
+      const raw = await AsyncStorage.getItem(STORAGE_KEYS.shelf) ?? '[]';
       const all = JSON.parse(raw) as Array<{
         barcode?: string;
         productName?: string;

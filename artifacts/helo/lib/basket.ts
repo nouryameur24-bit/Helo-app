@@ -7,6 +7,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Verdict } from '@/types';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export interface BasketItem {
   barcode: string;
@@ -23,7 +24,7 @@ export interface Basket {
   createdAt: string;
 }
 
-const BASKET_KEY = '@helo_basket';
+const BASKET_KEY = STORAGE_KEYS.basket;
 
 export async function saveBasket(items: BasketItem[]): Promise<void> {
   try {

@@ -19,6 +19,7 @@ import { ThemedText } from "@/components/ui/ThemedText";
 import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
 import { lookupPartnerCode, linkPartner } from "@/lib/partnerUtils";
 import { getOrCreateUserId, setUserRole } from "@/hooks/useProfile";
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const CODE_LENGTH = 6;
 
@@ -108,10 +109,10 @@ export default function PartnerCodeScreen() {
       }
 
       await setUserRole("partner", result.userId);
-      await AsyncStorage.setItem("@helo_linked_first_name", result.firstName);
-      await AsyncStorage.setItem("@helo_linked_user_id", result.userId);
+      await AsyncStorage.setItem(STORAGE_KEYS.linkedFirstName, result.firstName);
+      await AsyncStorage.setItem(STORAGE_KEYS.linkedUserId, result.userId);
       if (myFirstName.trim()) {
-        await AsyncStorage.setItem("@helo_partner_first_name", myFirstName.trim());
+        await AsyncStorage.setItem(STORAGE_KEYS.partnerFirstName, myFirstName.trim());
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

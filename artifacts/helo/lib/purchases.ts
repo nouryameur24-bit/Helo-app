@@ -14,8 +14,9 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Config } from '@/lib/config';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-export const PREMIUM_KEY = '@helo_is_premium';
+export const PREMIUM_KEY = STORAGE_KEYS.isPremium;
 
 // ─── Product / Entitlement IDs ────────────────────────────────────────────────
 // These must match what you configure in the RevenueCat dashboard.

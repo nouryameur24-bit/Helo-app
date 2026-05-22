@@ -2,13 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { IngredientData, MatchResult, Phase, ProductData, RiskLevel, Trimester, VerdictResult } from '@/types';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
-const INGREDIENTS_DB_KEY = '@helo_ingredients_db';
-const OFFLINE_CACHE_KEY = '@helo_offline_cache';
-const OFFLINE_QUEUE_KEY = '@helo_offline_queue';
-const LAST_SYNC_KEY = '@helo_last_sync';
+const INGREDIENTS_DB_KEY = STORAGE_KEYS.ingredientsDb;
+const OFFLINE_CACHE_KEY = STORAGE_KEYS.offlineCache;
+const OFFLINE_QUEUE_KEY = STORAGE_KEYS.offlineQueue;
+const LAST_SYNC_KEY = STORAGE_KEYS.lastSync;
 
 const LRU_MAX = 500;
 

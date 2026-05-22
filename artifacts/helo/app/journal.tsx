@@ -17,6 +17,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Card } from '@/components/ui/Card';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
 import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
@@ -132,7 +133,7 @@ export default function JournalScreen() {
 
   const loadEntries = useCallback(async () => {
     try {
-      const raw = await AsyncStorage.getItem('journal_entries');
+      const raw = await AsyncStorage.getItem(STORAGE_KEYS.journalEntries);
       const parsed: JournalEntry[] = raw ? JSON.parse(raw) : [];
       parsed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setEntries(parsed);

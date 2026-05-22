@@ -20,6 +20,7 @@ import type { ShelfProduct, ShelfCategory } from '@/components/shelf/ShelfCard';
 import { calculateGlowScore } from '@/lib/glowscore';
 import { calculateTrimester } from '@/lib/trimester';
 import { syncWidgetData, reloadWidgets } from '@/lib/widgetStorage';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 type RawShelfItem = {
   barcode?: string;
@@ -51,7 +52,7 @@ function mapRawToShelf(raw: RawShelfItem, index: number): ShelfProduct {
 async function syncWidgetFromShelf(products: ShelfProduct[]): Promise<void> {
   try {
     const { score } = calculateGlowScore(products);
-    const profileRaw = await AsyncStorage.getItem('user_profile');
+    const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
     let weekOfPregnancy = 20;
     let trimester = 2;
     if (profileRaw) {
@@ -121,7 +122,7 @@ export function useShelfData(userId?: string | null) {
     }
 
     try {
-      const raw = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
+      const raw = await AsyncStorage.getItem(STORAGE_KEYS.shelf) ?? '[]';
       const all: RawShelfItem[] = JSON.parse(raw);
       const filtered = all.filter((i) => !i.userId || i.userId === userId);
       const items = filtered.map(mapRawToShelf);

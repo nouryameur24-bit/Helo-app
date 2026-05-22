@@ -1,5 +1,6 @@
 import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { router } from 'expo-router';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -347,7 +348,7 @@ export default function TimelineScreen() {
         } catch (err) { swallow(err); }
       }
 
-      const journalRaw = await AsyncStorage.getItem('journal_entries');
+      const journalRaw = await AsyncStorage.getItem(STORAGE_KEYS.journalEntries);
       const journalEntries: Array<{ mood: string; weekOfPregnancy: number | null; note: string }> = journalRaw ? JSON.parse(journalRaw) : [];
 
       const weekRows = weeks.map((w) => {

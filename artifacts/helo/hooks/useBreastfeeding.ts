@@ -14,10 +14,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchProductByBarcode, matchIngredients, getVerdict } from '@/lib/productLookup';
 import type { ScanCache } from '@/types';
+import { STORAGE_KEYS, scanCacheKey } from '@/lib/storageKeys';
 
-const BREASTFEEDING_KEY = '@helo_breastfeeding_mode';
-const SHELF_KEY = '@helo_shelf';
-const SCAN_CACHE_PREFIX = '@helo_scan_cache_';
+const BREASTFEEDING_KEY = STORAGE_KEYS.breastfeedingMode;
+const SHELF_KEY = STORAGE_KEYS.shelf;
 
 export const BREASTFEEDING_PALETTE = {
   accent: '#D4A0B0',
@@ -49,7 +49,7 @@ async function recalculateShelfForBreastfeeding(): Promise<number> {
 
     for (const item of shelf) {
       if (!item.barcode) continue;
-      const cacheKey = `${SCAN_CACHE_PREFIX}${item.barcode}`;
+      const cacheKey = scanCacheKey(item.barcode);
       try {
         const cacheRaw = await AsyncStorage.getItem(cacheKey);
         let cache: ScanCache | null = cacheRaw ? JSON.parse(cacheRaw) : null;

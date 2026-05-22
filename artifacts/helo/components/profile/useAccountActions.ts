@@ -3,13 +3,14 @@ import { Alert, Share } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export function useAccountActions(userId: string | null) {
   const router = useRouter();
 
   const handleExportData = async () => {
     try {
-      const profileRaw = await AsyncStorage.getItem('user_profile');
+      const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
       const localProfile = profileRaw ? JSON.parse(profileRaw) : {};
 
       let supabaseData: Record<string, unknown> = {};

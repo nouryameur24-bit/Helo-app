@@ -11,8 +11,9 @@ import { Card } from '@/components/ui/Card';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const CHECKLIST_KEY = '@helo_partner_checklist';
+const CHECKLIST_KEY = STORAGE_KEYS.partnerChecklist;
 
 export interface CheckItem {
   id: string;

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export default function PartnerWelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -24,13 +25,13 @@ export default function PartnerWelcomeScreen() {
 
   useEffect(() => {
     const load = async () => {
-      const linked = await AsyncStorage.getItem('@helo_linked_first_name');
+      const linked = await AsyncStorage.getItem(STORAGE_KEYS.linkedFirstName);
       if (linked) setPartnerName(linked);
-      const partnerOwn = await AsyncStorage.getItem('@helo_partner_first_name');
+      const partnerOwn = await AsyncStorage.getItem(STORAGE_KEYS.partnerFirstName);
       if (partnerOwn) {
         setMyName(partnerOwn);
       } else {
-        const profile = await AsyncStorage.getItem('user_profile');
+        const profile = await AsyncStorage.getItem(STORAGE_KEYS.profile);
         if (profile) {
           try {
             const parsed = JSON.parse(profile);

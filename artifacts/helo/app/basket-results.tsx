@@ -23,8 +23,9 @@ import { calculateGlowScore } from '@/lib/glowscore';
 import { calculateTrimester } from '@/lib/trimester';
 import { syncWidgetData, reloadWidgets } from '@/lib/widgetStorage';
 import type { Verdict } from '@/types';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const SHELF_KEY = '@helo_shelf';
+const SHELF_KEY = STORAGE_KEYS.shelf;
 
 const VERDICT_COLORS: Record<Verdict, string> = {
   safe: Colors.safe,
@@ -159,7 +160,7 @@ export default function BasketResultsScreen() {
             verdictChanged: false,
           })),
         );
-        const profileRaw = await AsyncStorage.getItem('user_profile');
+        const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
         let weekOfPregnancy = 20;
         let trimesterNum = 2;
         if (profileRaw) {

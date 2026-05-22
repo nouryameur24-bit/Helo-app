@@ -20,8 +20,9 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ui/ThemedText";
 import { Colors, Radius, Spacing } from "@/constants/theme";
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const WELCOME_FLAG = "@helo_show_welcome_overlay";
+const WELCOME_FLAG = STORAGE_KEYS.showWelcomeOverlay;
 
 export default function FirstScanScreen() {
   const insets = useSafeAreaInsets();

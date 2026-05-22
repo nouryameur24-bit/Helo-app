@@ -27,6 +27,7 @@ import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
 import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
 import type { ProductData, MatchResult, VerdictResult } from '@/types';
+import { STORAGE_KEYS, ocrResultKey } from '@/lib/storageKeys';
 
 const CATEGORIES = ['Cosmétique', 'Soin corps', 'Cheveux', 'Maquillage', 'Autre'] as const;
 type Category = typeof CATEGORIES[number];
@@ -164,7 +165,7 @@ export default function OcrReviewScreen() {
         if (isBF) {
           phase = 'breastfeeding';
         } else {
-          const raw = await AsyncStorage.getItem('user_profile');
+          const raw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
           if (raw) {
             const p = JSON.parse(raw);
             if (p.trimester) phase = p.trimester as Phase;
@@ -194,7 +195,7 @@ export default function OcrReviewScreen() {
 
       // Persist to AsyncStorage
       const id = `${Date.now()}`;
-      const key = `@helo_ocr_${id}`;
+      const key = ocrResultKey(id);
       await AsyncStorage.setItem(key, JSON.stringify({
         product,
         matches: matchesArr,

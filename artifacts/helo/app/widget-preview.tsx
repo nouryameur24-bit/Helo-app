@@ -16,6 +16,7 @@ import MediumWidgetPreview from '@/components/widget-preview/MediumWidgetPreview
 import StepRow from '@/components/widget-preview/StepRow';
 import styles from '@/components/widget-preview/widgetPreviewStyles';
 import { glowColor, glowLabel } from '@/components/widget-preview/widgetHelpers';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export default function WidgetPreviewScreen() {
   const insets = useSafeAreaInsets();
@@ -28,8 +29,8 @@ export default function WidgetPreviewScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const weekRaw = await AsyncStorage.getItem('@helo_last_trimester');
-        const shelfRaw = await AsyncStorage.getItem('@helo_shelf');
+        const weekRaw = await AsyncStorage.getItem(STORAGE_KEYS.lastTrimester);
+        const shelfRaw = await AsyncStorage.getItem(STORAGE_KEYS.shelf);
         if (shelfRaw) {
           const shelf = JSON.parse(shelfRaw);
           if (Array.isArray(shelf) && shelf.length > 0) {
@@ -41,7 +42,7 @@ export default function WidgetPreviewScreen() {
           const t = parseInt(weekRaw, 10);
           if (!isNaN(t)) setTrimester(Math.min(3, Math.max(1, t)));
         }
-        const wRaw = await AsyncStorage.getItem('@helo_week_of_pregnancy');
+        const wRaw = await AsyncStorage.getItem(STORAGE_KEYS.weekOfPregnancy);
         if (wRaw) {
           const w = parseInt(wRaw, 10);
           if (!isNaN(w)) setWeek(w);

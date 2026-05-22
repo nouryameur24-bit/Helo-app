@@ -30,12 +30,12 @@ import { calculateGlowScore } from '@/lib/glowscore';
 import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
 import type { ShelfProduct, ShelfCategory } from '@/components/shelf/ShelfCard';
+import { STORAGE_KEYS, roomCelebratedKey } from '@/lib/storageKeys';
 
 const { width: W, height: H } = Dimensions.get('window');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const HOME_BADGE_KEY = '@helo_home_badge_unlocked';
-const ROOM_CELEBRATED_PREFIX = '@helo_room_celebrated_';
+const HOME_BADGE_KEY = STORAGE_KEYS.homeBadgeUnlocked;
 
 const CONFETTI_COLORS = ['#C9A96E', '#E8D5B0', '#F5C842', '#FFD700', '#FFF8E1', '#D4AF6E'];
 const PARTICLE_COUNT = 20;
@@ -277,7 +277,7 @@ export default function HomeScoreScreen() {
         if (roomProducts[i].length === 0) continue;
 
         if (score.score === 100 && !celebratedRef.current.has(room.id)) {
-          const key = `${ROOM_CELEBRATED_PREFIX}${room.id}`;
+          const key = roomCelebratedKey(room.id);
           const already = await AsyncStorage.getItem(key);
           if (already !== 'true') {
             await AsyncStorage.setItem(key, 'true');

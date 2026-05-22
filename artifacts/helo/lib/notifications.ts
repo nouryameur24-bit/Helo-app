@@ -4,8 +4,9 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-export const NOTIFICATION_SETTINGS_KEY = 'notification_settings';
+export const NOTIFICATION_SETTINGS_KEY = STORAGE_KEYS.notificationSettings;
 
 export type NotificationType =
   | 'weekly_brief'
@@ -160,7 +161,7 @@ export async function saveNotificationSettings(settings: NotificationSettings): 
   await AsyncStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
 }
 
-const WEEKLY_CAP_KEY = 'notification_weekly_cap';
+const WEEKLY_CAP_KEY = STORAGE_KEYS.notificationWeeklyCap;
 
 interface WeeklyCap {
   weekStart: number;

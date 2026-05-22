@@ -21,11 +21,11 @@ import { fetchProductByBarcode, matchIngredients, getVerdict } from '@/lib/produ
 import { calculateTrimester, getTrimesterPalette, TrimesterInfo, TrimesterPalette } from '@/lib/trimester';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { ScanCache, Trimester } from '@/types';
+import { STORAGE_KEYS, scanCacheKey } from '@/lib/storageKeys';
 
-const LAST_TRIMESTER_KEY = '@helo_last_trimester';
-const SHELF_KEY = '@helo_shelf';
-const SCAN_CACHE_PREFIX = '@helo_scan_cache_';
-const BF_SUGGESTION_KEY = '@helo_bf_suggestion_dismissed';
+const LAST_TRIMESTER_KEY = STORAGE_KEYS.lastTrimester;
+const SHELF_KEY = STORAGE_KEYS.shelf;
+const BF_SUGGESTION_KEY = STORAGE_KEYS.bfSuggestionDismissed;
 
 interface UseTrimesterReturn extends TrimesterInfo {
   trimesterPalette: TrimesterPalette;
@@ -61,7 +61,7 @@ export function useTrimester(): UseTrimesterReturn {
   useEffect(() => {
     const run = async () => {
       try {
-        const profileRaw = await AsyncStorage.getItem('user_profile');
+        const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
         if (!profileRaw) return;
 
         const profile = JSON.parse(profileRaw);
@@ -136,7 +136,7 @@ async function recalculateShelfVerdicts(newTrimester: Trimester): Promise<number
     for (const item of shelf) {
       if (!item.barcode) continue;
 
-      const cacheKey = `${SCAN_CACHE_PREFIX}${item.barcode}`;
+      const cacheKey = scanCacheKey(item.barcode);
 
       try {
         const cacheRaw = await AsyncStorage.getItem(cacheKey);

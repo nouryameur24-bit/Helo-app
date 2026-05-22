@@ -6,6 +6,7 @@
 // `hooks/useFeatureDiscovery.ts` for the rendering + control surface.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { featureDiscoveryKey } from '@/lib/storageKeys';
 
 export type DiscoveryKey =
   // Scanner modes
@@ -168,7 +169,7 @@ export const DISCOVERIES: Record<DiscoveryKey, DiscoveryContent> = {
   },
 };
 
-const storageKey = (key: DiscoveryKey) => `@helo_discovery_${key}`;
+const storageKey = (key: DiscoveryKey): string => featureDiscoveryKey(key);
 
 export async function hasSeenDiscovery(key: DiscoveryKey): Promise<boolean> {
   try {

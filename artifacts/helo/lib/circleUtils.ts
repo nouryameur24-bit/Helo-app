@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { STORAGE_KEYS, circleWeekNotifiedKey } from '@/lib/storageKeys';
 
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const MAX_CIRCLE_MEMBERS = 8;
@@ -57,7 +58,7 @@ function generateInviteCode(): string {
 
 async function checkIsPremium(): Promise<boolean> {
   try {
-    const raw = await AsyncStorage.getItem('@helo_is_premium');
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.isPremium);
     return raw === 'true';
   } catch {
     return false;
@@ -369,7 +370,7 @@ export async function checkAndSendWeekMilestoneNotification(params: {
 
   try {
     const userId = await requireUserId();
-    const storageKey = `@helo_circle_week_notified_${userId}`;
+    const storageKey = circleWeekNotifiedKey(userId);
 
     const lastNotifiedRaw = await AsyncStorage.getItem(storageKey);
     const lastNotifiedWeek = lastNotifiedRaw ? parseInt(lastNotifiedRaw, 10) : 0;

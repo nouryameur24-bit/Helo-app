@@ -30,6 +30,7 @@ import TipPill from '@/components/nutrition/TipPill';
 
 import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
 import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
+import { STORAGE_KEYS } from '@/lib/storageKeys';
   
 
 interface ShelfItem { productName?: string; category?: string; savedAt?: number; }
@@ -60,7 +61,7 @@ function phaseEmoji(key: string): string {
 
 async function loadRecentCuisineScans(): Promise<ShelfItem[]> {
   try {
-    const raw = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.shelf) ?? '[]';
     const all: ShelfItem[] = JSON.parse(raw);
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
     return all.filter((item) => item.category === 'cuisine' && (!item.savedAt || item.savedAt > cutoff));

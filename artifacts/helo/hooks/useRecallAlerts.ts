@@ -24,9 +24,10 @@ import {
   type RecallMatch,
   type RappelConsoRecord,
 } from '@/lib/rappelConso';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const LAST_CHECK_KEY = '@helo_recall_last_check';
-const ACTIVE_ALERT_KEY = '@helo_recall_active_alert';
+const LAST_CHECK_KEY = STORAGE_KEYS.recallLastCheck;
+const ACTIVE_ALERT_KEY = STORAGE_KEYS.recallActiveAlert;
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 1 day
 
 interface RawShelfItem {
@@ -53,10 +54,10 @@ export function useRecallAlerts(isPremium: boolean) {
   const removeFromShelf = useCallback(
     async (barcode?: string) => {
       try {
-        const raw = (await AsyncStorage.getItem('@helo_shelf')) ?? '[]';
+        const raw = (await AsyncStorage.getItem(STORAGE_KEYS.shelf)) ?? '[]';
         const shelf: RawShelfItem[] = JSON.parse(raw);
         const updated = shelf.filter((i) => i.barcode !== barcode);
-        await AsyncStorage.setItem('@helo_shelf', JSON.stringify(updated));
+        await AsyncStorage.setItem(STORAGE_KEYS.shelf, JSON.stringify(updated));
         // Sync widget after removal
         try {
           const { score } = calculateGlowScore(
@@ -70,7 +71,7 @@ export function useRecallAlerts(isPremium: boolean) {
               verdictChanged: false,
             })),
           );
-          const profileRaw = await AsyncStorage.getItem('user_profile');
+          const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
           let weekOfPregnancy = 20;
           let trimesterNum = 2;
           if (profileRaw) {
@@ -110,7 +111,7 @@ export function useRecallAlerts(isPremium: boolean) {
 
       setChecking(true);
 
-      const shelfRaw = (await AsyncStorage.getItem('@helo_shelf')) ?? '[]';
+      const shelfRaw = (await AsyncStorage.getItem(STORAGE_KEYS.shelf)) ?? '[]';
       const shelf: RawShelfItem[] = JSON.parse(shelfRaw);
 
       if (shelf.length === 0) {

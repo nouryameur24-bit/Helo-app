@@ -60,6 +60,7 @@ import { ModeChip, ShutterButton } from '@/components/scan/ScanControls';
 
 import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
 import { useFeatureDiscovery } from '@/hooks/useFeatureDiscovery';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 import {
   OfflineBadge,
   PermissionScreen,
@@ -67,7 +68,7 @@ import {
   WebPlaceholder,
 } from '@/components/scan/ScanStatusUI';
 
-const MENU_RESULT_KEY = '@helo_menu_result';
+const MENU_RESULT_KEY = STORAGE_KEYS.menuResult;
 
 // Route-param signal: when verdict's "Photographier la composition" CTA is
 // tapped it navigates to `/(tabs)/scan?ghostMode=1&ghostBarcode=...`. On the

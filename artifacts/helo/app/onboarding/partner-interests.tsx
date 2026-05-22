@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const PARTNER_INTERESTS = [
   { id: 'sante', label: 'Santé & nutrition', emoji: '🥗' },
@@ -22,7 +23,7 @@ const PARTNER_INTERESTS = [
   { id: 'maison', label: 'Préparer la maison', emoji: '🏠' },
 ];
 
-const PARTNER_INTERESTS_KEY = '@helo_partner_interests';
+const PARTNER_INTERESTS_KEY = STORAGE_KEYS.partnerInterests;
 
 export default function PartnerInterestsScreen() {
   const insets = useSafeAreaInsets();

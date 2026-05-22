@@ -12,6 +12,7 @@ import { logError } from '@/lib/logger';
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { RateLimitError, extractFunctionStatus } from '@/lib/errors';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export interface ChatMessage {
   id: string;
@@ -20,7 +21,7 @@ export interface ChatMessage {
   timestamp: number;
 }
 
-const CHAT_HISTORY_KEY = '@helo_chat_history';
+const CHAT_HISTORY_KEY = STORAGE_KEYS.chatHistory;
 const MAX_HISTORY = 20;
 
 // ─── History persistence ──────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ export async function clearChatHistory(): Promise<void> {
 // ─── System prompt ────────────────────────────────────────────────────────────
 
 async function buildSystemPrompt(): Promise<string> {
-  const trimesterRaw = await AsyncStorage.getItem('@helo_last_trimester').catch((err) => {
+  const trimesterRaw = await AsyncStorage.getItem(STORAGE_KEYS.lastTrimester).catch((err) => {
     logError('anthropic.buildSystemPrompt.readTrimester', err);
     return null;
   });

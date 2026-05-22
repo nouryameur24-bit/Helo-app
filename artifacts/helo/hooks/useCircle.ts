@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 import {
   getCircle,
   getCircleFeed,
@@ -28,8 +29,8 @@ import {
   type WeeklyChallenge,
 } from '@/lib/circleUtils';
 
-const CIRCLE_CACHE_KEY = '@helo_circle_cache';
-const FEED_CACHE_KEY = '@helo_circle_feed_cache';
+const CIRCLE_CACHE_KEY = STORAGE_KEYS.circleCache;
+const FEED_CACHE_KEY = STORAGE_KEYS.circleFeedCache;
 
 interface UseCircleState {
   isLoading: boolean;

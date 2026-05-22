@@ -31,8 +31,9 @@ import { Button } from '@/components/ui/Button';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 import { identifyProduct } from '@/lib/visionScan';
 import { matchIngredients, getVerdict } from '@/lib/productLookup';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const PHOTO_SCAN_KEY = '@helo_photo_scan_result';
+const PHOTO_SCAN_KEY = STORAGE_KEYS.photoScanResult;
 
 function PulsingLoader() {
   const scale = useSharedValue(1);

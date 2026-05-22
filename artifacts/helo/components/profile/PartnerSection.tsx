@@ -16,6 +16,7 @@ import { regeneratePartnerCode, unlinkPartner } from '@/lib/partnerUtils';
 
 import { PartnerCodeChip, SettingRow } from './SettingRow';
 import styles from './profileStyles';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export function PartnerSection() {
   const router = useRouter();
@@ -65,11 +66,11 @@ export function PartnerSection() {
             try {
               const newCode = await regeneratePartnerCode(userId);
               setLocalPartnerCode(newCode);
-              const profileRaw = await AsyncStorage.getItem('user_profile');
+              const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
               if (profileRaw) {
                 const profile = JSON.parse(profileRaw);
                 profile.partnerCode = newCode;
-                await AsyncStorage.setItem('user_profile', JSON.stringify(profile));
+                await AsyncStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
               }
               await refresh();
             } catch {
@@ -96,8 +97,8 @@ export function PartnerSection() {
             try {
               await unlinkPartner({ userId, role });
               await setUserRole('pregnant');
-              await AsyncStorage.removeItem('@helo_linked_user_id');
-              await AsyncStorage.removeItem('@helo_linked_first_name');
+              await AsyncStorage.removeItem(STORAGE_KEYS.linkedUserId);
+              await AsyncStorage.removeItem(STORAGE_KEYS.linkedFirstName);
               await refresh();
               if (isPartner) router.replace('/onboarding/role');
             } catch {

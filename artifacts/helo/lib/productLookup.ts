@@ -10,6 +10,7 @@ import type {
   RiskLevel,
   VerdictResult,
 } from '@/types';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const OFF_API_BASE = 'https://world.openfoodfacts.org/api/v2/product';
 const OBF_API_BASE = 'https://world.openbeautyfacts.org/api/v2/product';
@@ -455,7 +456,7 @@ export async function matchIngredients(
 
   // Once fetched from Supabase, persist locally so future scans skip this query
   AsyncStorage.setItem(
-    '@helo_ingredients_db',
+    STORAGE_KEYS.ingredientsDb,
     JSON.stringify({ ingredients: dbIngredients, downloadedAt: Date.now() }),
   ).catch((err) => {
     logError('productLookup.cacheWrite', err);

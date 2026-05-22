@@ -12,8 +12,9 @@ import { swallow } from '@/lib/swallow';
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-export const BABY_MODE_KEY = '@helo_baby_mode';
+export const BABY_MODE_KEY = STORAGE_KEYS.babyMode;
 
 export const BABY_CATEGORIES = [
   'couches',

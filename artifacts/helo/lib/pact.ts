@@ -7,12 +7,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { scheduleNotification } from '@/lib/notifications';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
-export const PACT_KEY = '@helo_pact';
-export const LAST_SCAN_DATE_KEY = '@helo_last_scan_date';
-export const PACT_BADGES_KEY = '@helo_pact_badges';
+export const PACT_KEY = STORAGE_KEYS.pact;
+export const LAST_SCAN_DATE_KEY = STORAGE_KEYS.lastScanDate;
+export const PACT_BADGES_KEY = STORAGE_KEYS.pactBadges;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

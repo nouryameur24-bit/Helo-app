@@ -27,11 +27,12 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
 import type { DishCourse, DishResult, DishRisk, MenuAnalysis } from '@/lib/restaurant';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const RESTAURANT_USED_KEY = '@helo_restaurant_used';
-const MENU_RESULT_KEY = '@helo_menu_result';
+const RESTAURANT_USED_KEY = STORAGE_KEYS.restaurantUsed;
+const MENU_RESULT_KEY = STORAGE_KEYS.menuResult;
 
 const RESTAURANT_DISCLAIMER =
   'Cette analyse est indicative et basée sur la reconnaissance de texte. Les compositions exactes des plats peuvent varier. Consultez toujours votre médecin ou sage-femme pour des conseils personnalisés. N\'hésitez pas à interroger le personnel du restaurant.';

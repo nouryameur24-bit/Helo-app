@@ -27,10 +27,11 @@ import {
   scheduleNotification,
   ScheduleOptions,
 } from '@/lib/notifications';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export type PermissionStatus = 'granted' | 'denied' | 'undetermined';
 
-const PERMISSION_ASKED_KEY = 'notification_permission_asked';
+const PERMISSION_ASKED_KEY = STORAGE_KEYS.notificationPermissionAsked;
 
 let globalTapListenerSubscription: Notifications.EventSubscription | null = null;
 

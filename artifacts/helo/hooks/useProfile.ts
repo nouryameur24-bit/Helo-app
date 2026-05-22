@@ -14,9 +14,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { supabase, isSupabaseConfigured, ensureAnonymousSession } from '@/lib/supabase';
 import type { ProfileState, UserRole } from '@/types';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const USER_ROLE_KEY = '@helo_user_role';
-const LINKED_USER_ID_KEY = '@helo_linked_user_id';
+const USER_ROLE_KEY = STORAGE_KEYS.userRole;
+const LINKED_USER_ID_KEY = STORAGE_KEYS.linkedUserId;
 
 export function useProfile() {
   const [state, setState] = useState<ProfileState>({
@@ -42,14 +43,14 @@ export function useProfile() {
       const role: UserRole = roleRaw === 'partner' ? 'partner' : 'pregnant';
       let linkedUserId: string | null = await AsyncStorage.getItem(LINKED_USER_ID_KEY);
 
-      const profileRaw = await AsyncStorage.getItem('user_profile');
+      const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
       const localProfile = profileRaw ? JSON.parse(profileRaw) : null;
 
       let partnerCode: string | null = localProfile?.partnerCode ?? null;
       let trimester: number | null = localProfile?.trimester ?? null;
       let dueDate: string | null = localProfile?.dueDate ?? null;
       let firstName: string = localProfile?.firstName ?? '';
-      const cachedLinkedFirstName = await AsyncStorage.getItem('@helo_linked_first_name');
+      const cachedLinkedFirstName = await AsyncStorage.getItem(STORAGE_KEYS.linkedFirstName);
       let linkedFirstName: string | null = cachedLinkedFirstName;
 
       if (isSupabaseConfigured) {
@@ -95,7 +96,7 @@ export function useProfile() {
               trimester = motherProfile.trimester ?? trimester;
               dueDate = motherProfile.due_date ?? dueDate;
               if (linkedFirstName) {
-                await AsyncStorage.setItem('@helo_linked_first_name', linkedFirstName);
+                await AsyncStorage.setItem(STORAGE_KEYS.linkedFirstName, linkedFirstName);
               }
             }
           }

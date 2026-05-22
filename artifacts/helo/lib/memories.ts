@@ -3,8 +3,9 @@ import * as Notifications from 'expo-notifications';
 
 import type { JournalEntry } from '@/app/journal';
 import type { Trimester } from '@/types';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-export const CAPSULES_KEY = 'memory_capsules';
+export const CAPSULES_KEY = STORAGE_KEYS.memoryCapsules;
 
 export type CapsuleTrimester = Trimester | 'manual';
 
@@ -79,7 +80,7 @@ export async function compileCapsuleData(): Promise<CapsuleData> {
   // Offline scan cache
   let scans: LRUCacheEntry[] = [];
   try {
-    const raw = await AsyncStorage.getItem('@helo_offline_cache');
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.offlineCache);
     if (raw) {
       const cache: LRUCache = JSON.parse(raw);
       scans = Object.values(cache.entries ?? {});
@@ -91,7 +92,7 @@ export async function compileCapsuleData(): Promise<CapsuleData> {
   // Glow score history
   let avgGlowScore = 0;
   try {
-    const raw = await AsyncStorage.getItem('@helo_glow');
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.glow);
     if (raw) {
       const glowData: { history?: Array<{ score: number }> } = JSON.parse(raw);
       const history = glowData.history ?? [];
@@ -133,7 +134,7 @@ export async function compileCapsuleData(): Promise<CapsuleData> {
   // Journal entries
   let journalEntries: JournalEntry[] = [];
   try {
-    const raw = await AsyncStorage.getItem('journal_entries');
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.journalEntries);
     if (raw) journalEntries = JSON.parse(raw) as JournalEntry[];
   } catch {
     /* ignore */
@@ -142,7 +143,7 @@ export async function compileCapsuleData(): Promise<CapsuleData> {
   // Circle messages
   let circleMessages = 0;
   try {
-    const raw = await AsyncStorage.getItem('@helo_circle_feed');
+    const raw = await AsyncStorage.getItem(STORAGE_KEYS.circleFeed);
     if (raw) {
       const feed = JSON.parse(raw);
       circleMessages = Array.isArray(feed) ? feed.length : 0;

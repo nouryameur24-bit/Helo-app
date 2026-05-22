@@ -63,6 +63,7 @@ import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { MatchResult, Phase, VerdictResult } from '@/types';
+import { STORAGE_KEYS, ocrResultKey } from '@/lib/storageKeys';
 
 export default function VerdictScreen() {
   const { scanId, ghostThanks, ghostBarcode: ghostBarcodeParam } = useLocalSearchParams<{
@@ -141,7 +142,7 @@ export default function VerdictScreen() {
         setPhase(profileTrimester as Phase);
         phaseRef.current = profileTrimester as Phase;
       } else {
-        AsyncStorage.getItem('user_profile').then((raw) => {
+        AsyncStorage.getItem(STORAGE_KEYS.profile).then((raw) => {
           if (raw) {
             const p = JSON.parse(raw);
             if (p.trimester) {
@@ -160,7 +161,7 @@ export default function VerdictScreen() {
     if (barcode.startsWith('ocr_')) {
       setIsOCRMode(true);
       const id = barcode.slice(4);
-      AsyncStorage.getItem(`@helo_ocr_${id}`).then((raw) => {
+      AsyncStorage.getItem(ocrResultKey(id)).then((raw) => {
         if (raw) {
           const data = JSON.parse(raw);
           setDirectResult(data.product, data.matches, data.verdict);
@@ -171,7 +172,7 @@ export default function VerdictScreen() {
 
     if (barcode === 'photo-scan') {
       setIsPhotoMode(true);
-      AsyncStorage.getItem('@helo_photo_scan_result').then((raw) => {
+      AsyncStorage.getItem(STORAGE_KEYS.photoScanResult).then((raw) => {
         if (raw) {
           const data = JSON.parse(raw);
           setDirectResult(data.product, data.matches, data.verdict);
@@ -241,7 +242,7 @@ export default function VerdictScreen() {
     const productName = product?.name ?? 'Produit';
 
     try {
-      const existing = await AsyncStorage.getItem('@helo_shelf') ?? '[]';
+      const existing = await AsyncStorage.getItem(STORAGE_KEYS.shelf) ?? '[]';
       const shelf = JSON.parse(existing);
       shelf.push({
         barcode,
@@ -253,7 +254,7 @@ export default function VerdictScreen() {
         userId: shelfUserId,
         ...(isBabyMode ? { baby_product: true } : {}),
       });
-      await AsyncStorage.setItem('@helo_shelf', JSON.stringify(shelf));
+      await AsyncStorage.setItem(STORAGE_KEYS.shelf, JSON.stringify(shelf));
       try {
         const { score } = calculateGlowScore(
           shelf.map((i: { verdict?: string }, idx: number) => ({
@@ -266,7 +267,7 @@ export default function VerdictScreen() {
             verdictChanged: false,
           })),
         );
-        const profileRaw = await AsyncStorage.getItem('user_profile');
+        const profileRaw = await AsyncStorage.getItem(STORAGE_KEYS.profile);
         let weekOfPregnancy = 20;
         let trimesterNum = 2;
         if (profileRaw) {

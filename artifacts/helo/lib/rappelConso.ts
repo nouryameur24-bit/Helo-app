@@ -1,10 +1,11 @@
 import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const BASE_URL =
   'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/rappelconso-v2-gtin-trie/records';
 
-const RECALL_CACHE_KEY = '@helo_recall_cache';
+const RECALL_CACHE_KEY = STORAGE_KEYS.recallCache;
 const RECALL_CACHE_TTL = 6 * 60 * 60 * 1000; // 6h
 
 export interface RappelConsoRecord {

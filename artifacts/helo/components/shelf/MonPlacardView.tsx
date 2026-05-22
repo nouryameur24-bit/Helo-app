@@ -19,6 +19,7 @@ import { getBabyMode } from '@/hooks/useBabyMode';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ShelfCategory } from '@/components/shelf/ShelfCard';
 import type { VerdictFilter } from '@/components/shelf/FilterSheet';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 type ShelfHistoryVerdict = 'safe' | 'caution' | 'danger' | 'unknown';
 
@@ -69,7 +70,7 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
 
   useEffect(() => {
     if (!isBabyMode) return;
-    AsyncStorage.getItem('@helo_shelf').then((raw) => {
+    AsyncStorage.getItem(STORAGE_KEYS.shelf).then((raw) => {
       if (!raw) return;
       const all: LocalShelfItem[] = JSON.parse(raw);
       setBabyProducts(all.filter((item) => item.baby_product === true));

@@ -7,8 +7,9 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const LIMIT_KEY = '@helo_chat_limit';
+const LIMIT_KEY = STORAGE_KEYS.chatLimit;
 export const FREE_CHAT_LIMIT = 5;
 
 interface ChatLimitData {

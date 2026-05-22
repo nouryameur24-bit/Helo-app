@@ -18,8 +18,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '@/lib/supabase';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const LIMIT_KEY = '@helo_scan_limit';
+const LIMIT_KEY = STORAGE_KEYS.scanLimit;
 export const FREE_SCAN_LIMIT = 5;
 
 interface ScanLimitData {

@@ -25,6 +25,7 @@ import { ThemedText } from "@/components/ui/ThemedText";
 import { IllustrationTrimester } from "@/components/illustrations/IllustrationTrimester";
 import { IllustrationCommunity } from "@/components/illustrations/IllustrationCommunity";
 import { Colors, Radius, Spacing } from "@/constants/theme";
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 type Role = "pregnant" | "partner";
 
@@ -144,7 +145,7 @@ export default function RoleSelectionScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelected(role);
 
-    await AsyncStorage.setItem("@helo_user_role", role);
+    await AsyncStorage.setItem(STORAGE_KEYS.userRole, role);
 
     setTimeout(() => {
       if (role === "pregnant") {

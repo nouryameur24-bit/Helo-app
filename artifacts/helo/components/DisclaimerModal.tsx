@@ -14,8 +14,9 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { logError } from '@/lib/logger';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const STORAGE_KEY = 'disclaimer_accepted_version';
+const STORAGE_KEY = STORAGE_KEYS.disclaimerAcceptedVersion;
 const CURRENT_VERSION = '1.0.0';
 
 export function DisclaimerModal() {
@@ -25,7 +26,7 @@ export function DisclaimerModal() {
   useEffect(() => {
     const check = async () => {
       try {
-        const onboardingCompleted = await AsyncStorage.getItem('onboarding_completed');
+        const onboardingCompleted = await AsyncStorage.getItem(STORAGE_KEYS.onboardingCompleted);
         if (!onboardingCompleted) return;
 
         const acceptedVersion = await AsyncStorage.getItem(STORAGE_KEY);
@@ -44,7 +45,7 @@ export function DisclaimerModal() {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, CURRENT_VERSION);
       // Backwards compat with previous boolean key
-      await AsyncStorage.setItem('disclaimer_accepted', 'true');
+      await AsyncStorage.setItem(STORAGE_KEYS.disclaimerAccepted, 'true');
 
       if (isSupabaseConfigured) {
         const { data: { user } } = await supabase.auth.getUser();

@@ -16,8 +16,9 @@ import ProductCard from '@/components/search/ProductCard';
 import TopSafeCarousel from '@/components/search/TopSafeCarousel';
 import PremiumOverlay from '@/components/search/PremiumOverlay';
 import { scr, empty, CATEGORIES, type Product } from '@/components/search/searchStyles';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const PREMIUM_KEY = '@helo_is_premium';
+const PREMIUM_KEY = STORAGE_KEYS.isPremium;
 const SEARCH_MIN_CHARS = 3;
 const DEBOUNCE_MS = 300;
 

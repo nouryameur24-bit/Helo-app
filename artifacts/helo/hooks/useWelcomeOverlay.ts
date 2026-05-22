@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { swallow } from '@/lib/swallow';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const WELCOME_FLAG = '@helo_show_welcome_overlay';
+const WELCOME_FLAG = STORAGE_KEYS.showWelcomeOverlay;
 
 /**
  * Reads the one-shot AsyncStorage flag set after onboarding and exposes the

@@ -1,4 +1,5 @@
 import { Colors } from '@/constants/theme';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export type Phase = 'config' | 'scan' | 'summary' | 'export';
 export type Theme = 'salle-de-bain' | 'frigo' | 'maquillage' | 'libre';
@@ -24,5 +25,5 @@ export const VERDICT_CONFIG: Record<VerdictType, { label: string; color: string;
   danger:  { label: 'À ÉVITER',    color: Colors.danger,  bg: Colors.dangerBg  },
 };
 
-export const PARTY_USED_KEY = '@helo_scan_party_used';
+export const PARTY_USED_KEY = STORAGE_KEYS.scanPartyUsed;
 export const DEBOUNCE_MS = 3000;

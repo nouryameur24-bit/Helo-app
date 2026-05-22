@@ -17,6 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Card } from '@/components/ui/Card';
 import { logError } from '@/lib/logger';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -86,7 +87,7 @@ export default function JournalEntryScreen() {
     if (saving) return;
     setSaving(true);
     try {
-      const raw = await AsyncStorage.getItem('journal_entries');
+      const raw = await AsyncStorage.getItem(STORAGE_KEYS.journalEntries);
       const existing: JournalEntry[] = raw ? JSON.parse(raw) : [];
 
       const entry: JournalEntry = {
@@ -99,7 +100,7 @@ export default function JournalEntryScreen() {
       };
 
       existing.push(entry);
-      await AsyncStorage.setItem('journal_entries', JSON.stringify(existing));
+      await AsyncStorage.setItem(STORAGE_KEYS.journalEntries, JSON.stringify(existing));
       router.back();
     } catch (err) {
       logError('journalEntry.save', err);

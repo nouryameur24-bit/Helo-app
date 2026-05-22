@@ -31,10 +31,11 @@ import { ShelfScanShareCard } from '@/components/share/ShelfScanShareCard';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { ShelfDetectedProduct } from '@/lib/visionScan';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const { width: W } = Dimensions.get('window');
 const PHOTO_HEIGHT = W * (9 / 16);
-const SHELF_KEY = '@helo_shelf';
+const SHELF_KEY = STORAGE_KEYS.shelf;
 
 const ROOMS = [
   'Salle de bain',

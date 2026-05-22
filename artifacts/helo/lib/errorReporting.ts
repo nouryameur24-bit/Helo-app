@@ -15,8 +15,9 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const ERROR_LOG_KEY = '@helo_error_log';
+const ERROR_LOG_KEY = STORAGE_KEYS.errorLog;
 const MAX_ERRORS = 50;
 
 export interface ErrorReport {

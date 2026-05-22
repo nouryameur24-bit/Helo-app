@@ -33,8 +33,8 @@ import type {
   ScanCache,
   VerdictResult,
 } from '@/types';
+import { scanCacheKey } from '@/lib/storageKeys';
 
-const CACHE_PREFIX = '@helo_scan_cache_';
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface ScanState {
@@ -55,11 +55,11 @@ interface UseScanReturn extends ScanState {
 
 async function readCache(barcode: string): Promise<ScanCache | null> {
   try {
-    const raw = await AsyncStorage.getItem(`${CACHE_PREFIX}${barcode}`);
+    const raw = await AsyncStorage.getItem(scanCacheKey(barcode));
     if (!raw) return null;
     const cache: ScanCache = JSON.parse(raw);
     if (Date.now() - cache.cachedAt > CACHE_TTL_MS) {
-      await AsyncStorage.removeItem(`${CACHE_PREFIX}${barcode}`);
+      await AsyncStorage.removeItem(scanCacheKey(barcode));
       return null;
     }
     return cache;
@@ -71,7 +71,7 @@ async function readCache(barcode: string): Promise<ScanCache | null> {
 async function writeCache(barcode: string, data: Omit<ScanCache, 'barcode' | 'cachedAt'>): Promise<void> {
   try {
     const cache: ScanCache = { barcode, cachedAt: Date.now(), ...data };
-    await AsyncStorage.setItem(`${CACHE_PREFIX}${barcode}`, JSON.stringify(cache));
+    await AsyncStorage.setItem(scanCacheKey(barcode), JSON.stringify(cache));
   } catch {
     // Non-blocking — cache write failure is silent
   }

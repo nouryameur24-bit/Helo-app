@@ -26,10 +26,11 @@ import { calculateTrimester } from '@/lib/trimester';
 import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
 import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const { width: W } = Dimensions.get('window');
 const SLIDE_COUNT = 3;
-const PARTNER_BRIEF_KEY = '@helo_partner_brief_week';
+const PARTNER_BRIEF_KEY = STORAGE_KEYS.partnerBriefWeek;
 
 function ProgressBar({ current }: { current: number }) {
   return (

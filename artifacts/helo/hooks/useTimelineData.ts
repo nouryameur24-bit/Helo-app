@@ -16,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { getEventsForWeek, type PregnancyEvent } from '@/constants/pregnancyEvents';
 import { useProfile } from '@/hooks/useProfile';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 export interface WeekData {
   week: number;
@@ -61,7 +62,7 @@ export function useTimelineData() {
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const journalRaw = await AsyncStorage.getItem('journal_entries');
+      const journalRaw = await AsyncStorage.getItem(STORAGE_KEYS.journalEntries);
       const journalEntries: Array<{
         id: string;
         date: string;
@@ -71,7 +72,7 @@ export function useTimelineData() {
         weekOfPregnancy: number | null;
       }> = journalRaw ? JSON.parse(journalRaw) : [];
 
-      const shelfRaw = await AsyncStorage.getItem('@helo_shelf');
+      const shelfRaw = await AsyncStorage.getItem(STORAGE_KEYS.shelf);
       const shelfItems: Array<{
         id: string;
         verdict?: string;

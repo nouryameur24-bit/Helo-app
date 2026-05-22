@@ -39,11 +39,12 @@ import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const { width: W, height: H } = Dimensions.get('window');
 const SLIDE_COUNT = 5;
 
-const BRIEF_READ_KEY = '@helo_last_brief_read';
+const BRIEF_READ_KEY = STORAGE_KEYS.lastBriefRead;
 
 
 const FEATURED_PRODUCT = {

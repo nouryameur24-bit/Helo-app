@@ -24,6 +24,7 @@ import styles from '@/components/ar-mirror/arMirrorStyles';
 import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
 import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
   
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 import {
   BARCODE_TYPES,
   FADE_START_MS,
@@ -66,7 +67,7 @@ export default function ARMirrorScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem('@helo_offline_cache');
+        const raw = await AsyncStorage.getItem(STORAGE_KEYS.offlineCache);
         if (!raw) return;
         const parsed = JSON.parse(raw) as {
           entries: Record<string, { barcode: string; product: ProductData; verdict: VerdictResult }>;

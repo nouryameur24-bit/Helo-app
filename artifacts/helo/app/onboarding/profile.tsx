@@ -27,6 +27,7 @@ import { GENERAL_DISCLAIMER } from "@/constants/disclaimers";
 import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
 import { getOrCreateUserId } from "@/hooks/useProfile";
 import { upsertProfile, generatePartnerCode } from "@/lib/partnerUtils";
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 import {
   firstNameSchema,
   formatDueDateInput,
@@ -158,7 +159,7 @@ export default function ProfileSetupScreen() {
       // ── 1. Save locally first — this is the source of truth ──────────────────
       await AsyncStorage.multiSet([
         ["onboarding_completed", "true"],
-        ["user_profile", JSON.stringify(profile)],
+        [STORAGE_KEYS.profile, JSON.stringify(profile)],
       ]);
 
       // ── 2. Navigate immediately — app works offline ───────────────────────────

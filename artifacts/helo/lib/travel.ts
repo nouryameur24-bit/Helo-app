@@ -8,8 +8,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { logError } from '@/lib/logger';
+import { STORAGE_KEYS, travelBriefingKey } from '@/lib/storageKeys';
 
-const TRAVEL_BRIEFINGS_INDEX_KEY = '@helo_travel_briefings_index';
+const TRAVEL_BRIEFINGS_INDEX_KEY = STORAGE_KEYS.travelBriefingsIndex;
 const MAX_BRIEFINGS = 5;
 
 export interface TravelBriefingSection {
@@ -58,7 +59,7 @@ export interface TravelBriefingMeta {
 function getBriefingStorageKey(country: string, departureDate: string): string {
   const normalized = country.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
   const dateNorm = departureDate.replace(/-/g, '');
-  return `@helo_travel_${normalized}_${dateNorm}`;
+  return travelBriefingKey(`${normalized}_${dateNorm}`);
 }
 
 export async function loadTravelBriefingsIndex(): Promise<TravelBriefingMeta[]> {
@@ -224,7 +225,7 @@ export async function generateTravelBriefing(
   departureDate: string,
   returnDate: string,
 ): Promise<TravelBriefing> {
-  const trimesterRaw = await AsyncStorage.getItem('@helo_last_trimester').catch((err) => {
+  const trimesterRaw = await AsyncStorage.getItem(STORAGE_KEYS.lastTrimester).catch((err) => {
     logError('travel.generateBriefing.readTrimester', err);
     return null;
   });

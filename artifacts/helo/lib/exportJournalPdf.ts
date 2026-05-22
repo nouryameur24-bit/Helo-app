@@ -3,6 +3,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Alert, Platform } from 'react-native';
 import type { JournalEntry } from '@/app/journal';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 function escapeHtml(str: string): string {
   return str
@@ -118,11 +119,11 @@ export async function exportJournalToPdf(firstName?: string | null): Promise<voi
       return;
     }
 
-    const journalRaw = await AsyncStorage.getItem('journal_entries');
+    const journalRaw = await AsyncStorage.getItem(STORAGE_KEYS.journalEntries);
     const journalEntries: JournalEntry[] = journalRaw ? JSON.parse(journalRaw) : [];
     journalEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const shelfRaw = await AsyncStorage.getItem('@helo_shelf');
+    const shelfRaw = await AsyncStorage.getItem(STORAGE_KEYS.shelf);
     const shelfItems: Array<{ productName?: string; brand?: string; verdict?: string }> = shelfRaw
       ? JSON.parse(shelfRaw)
       : [];

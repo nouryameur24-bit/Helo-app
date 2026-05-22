@@ -33,7 +33,6 @@ const FEATURES: Feature[] = [
   { label: 'Alternatives sûres',          free: false, premium: true  },
   { label: 'Recherche par nom',           free: false, premium: true  },
   { label: 'OCR — photo ingrédients',     free: false, premium: true  },
-  { label: 'Scan Party',                  free: false, premium: true  },
   { label: 'Placard illimité',            free: false, premium: true  },
   { label: 'Mode hors ligne',             free: false, premium: true  },
   { label: 'Badge Premium ✦',            free: false, premium: true  },

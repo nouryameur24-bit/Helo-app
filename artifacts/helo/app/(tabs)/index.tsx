@@ -421,29 +421,12 @@ export default function HomeScreen() {
                   premium: true,
                 },
                 {
-                  label: 'Vocal',
-                  subtitle: 'Question IA par voix',
-                  icon: 'mic' as const,
-                  iconBg: '#F0E8FF',
-                  iconColor: '#8B6BDB',
-                  route: '/voice',
-                  badge: '3/j',
-                },
-                {
                   label: 'Timeline',
                   subtitle: 'Semaine par semaine',
                   icon: 'calendar' as const,
                   iconBg: '#E8F5EE',
                   iconColor: Colors.safe,
                   route: '/timeline',
-                },
-                {
-                  label: 'Scan Partie',
-                  subtitle: 'Scanner en groupe',
-                  icon: 'users' as const,
-                  iconBg: '#FFF5E0',
-                  iconColor: Colors.accentDark,
-                  route: '/scan-party',
                 },
                 {
                   label: 'Widget Glow',
@@ -471,7 +454,7 @@ export default function HomeScreen() {
                 </View>
                 <ThemedText variant="labelLarge" color="textPrimary">{f.label}</ThemedText>
                 <Text style={styles.featureCellSubtitle}>{f.subtitle}</Text>
-                {'badge' in f && f.badge && (
+                {'badge' in f && typeof f.badge === 'string' && (
                   <View style={styles.featureCellBadge}>
                     <ThemedText style={styles.featureCellBadgeText}>{f.badge}</ThemedText>
                   </View>

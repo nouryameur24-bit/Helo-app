@@ -220,7 +220,7 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
   { key: 'barcode',      category: 'Scanner',      route: '/(tabs)/scan' },
   { key: 'ocr',          category: 'Scanner',      route: '/(tabs)/scan' },
   { key: 'photo',        category: 'Scanner',      route: '/(tabs)/scan' },
-  { key: 'voice',        category: 'Scanner',      route: '/voice' },
+  // { key: 'voice',        category: 'Scanner',      route: '/voice' }, // hidden V1 — reactivate when usage justifies
   { key: 'basket',       category: 'Scanner',      route: '/basket-scan' },
   { key: 'shelf',        category: 'Scanner',      route: '/shelf-scan' },
   { key: 'prescription', category: 'Scanner',      route: '/prescription-scan' },

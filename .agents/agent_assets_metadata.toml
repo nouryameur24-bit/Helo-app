@@ -125,3 +125,9 @@ id = "BveJkpPl6T2C1N3ErIwm2"
 uri = "file://mode_miroir_ar.md"
 type = "text"
 title = "Mode Miroir AR — explication"
+
+[[outputs]]
+id = "QBuMib_Vzfip5HldoFo7C"
+uri = "file://helo_audit_complet.md"
+type = "text"
+title = "Hēlo — audit complet & analyse business"

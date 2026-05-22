@@ -26,11 +26,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { IllustrationCommunity } from "@/components/illustrations/IllustrationCommunity";
-import { IllustrationGlowScore } from "@/components/illustrations/IllustrationGlowScore";
-import { IllustrationScan } from "@/components/illustrations/IllustrationScan";
-import { IllustrationTrimester } from "@/components/illustrations/IllustrationTrimester";
-import { IllustrationTrimesterAnimated } from "@/components/illustrations/IllustrationTrimesterAnimated";
+import { IllustrationMoment } from "@/components/illustrations/IllustrationMoment";
+import { IllustrationPromise } from "@/components/illustrations/IllustrationPromise";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { Colors, Radius, Spacing } from "@/constants/theme";
 
@@ -44,48 +41,34 @@ interface Slide {
   gradientFrom: string;
   gradientTo: string;
   accentColor: string;
+  sources?: string[]; // pour Slide 2 — badges sources
+  stats?: string; // "12 118 produits..."
 }
 
 const SLIDES: Slide[] = [
+  // ── Slide 1 — THE MOMENT (hook émotionnel) ────────────────────────────────
   {
-    key: "scan",
-    title: "Scannez en toute sérénité",
+    key: "moment",
+    title: "23h47.\nTu lis l'étiquette.\nTu doutes.",
     subtitle:
-      "Cosmétiques, alimentation, médicaments — vérifiez instantanément ce qui est adapté à votre grossesse.",
-    Illustration: IllustrationScan,
+      "Chaque jour, des centaines de produits.\nDes questions que personne ne peut répondre à 3h du matin.",
+    Illustration: IllustrationMoment,
     gradientFrom: "#FFFAF5",
-    gradientTo: "#FFF0DC",
-    accentColor: Colors.accent,
+    gradientTo: "#FFE9C9",
+    accentColor: Colors.accentDark,
   },
+  // ── Slide 2 — THE PROMISE (révélation solution) ───────────────────────────
   {
-    key: "trimester",
-    title: "Adapté à votre trimestre",
+    key: "promise",
+    title: "Hēlo te répond.\nEn 2 secondes.",
     subtitle:
-      "Les recommandations évoluent avec vous. Hēlo ajuste automatiquement chaque évaluation.",
-    Illustration: IllustrationTrimester,
+      "12 118 produits analysés. 5 000 ingrédients référencés.\nAdapté à ton trimestre.",
+    Illustration: IllustrationPromise,
     gradientFrom: "#FFFAF5",
     gradientTo: "#EDF7F0",
     accentColor: "#5BB97C",
-  },
-  {
-    key: "glow",
-    title: "Votre Glow Score",
-    subtitle:
-      "Découvrez votre score global de sérénité et partagez-le avec vos proches.",
-    Illustration: IllustrationGlowScore,
-    gradientFrom: "#FFFAF5",
-    gradientTo: "#FFF3E8",
-    accentColor: Colors.accentDark,
-  },
-  {
-    key: "community",
-    title: "Ensemble, c'est mieux",
-    subtitle:
-      "L'app pensée avec et pour les futures mamans, pour faire les meilleurs choix pour votre bébé.",
-    Illustration: IllustrationCommunity,
-    gradientFrom: "#FFFAF5",
-    gradientTo: "#F3EEF9",
-    accentColor: "#9B77C8",
+    sources: ["CRAT", "ANSM", "EFSA", "SCCS"],
+    stats: "12 118 produits · 5 000 ingrédients",
   },
 ];
 
@@ -164,13 +147,7 @@ function SlideCard({
         entering={FadeIn.delay(40).duration(400).easing(Easing.out(Easing.cubic))}
         style={styles.illustrationWrap}
       >
-        {item.key === "trimester" ? (
-          // Moment 2 (brief v1.1) — variante animée : apparition séquentielle,
-          // highlight cyclé T1→T2→T3, particules dorées flottantes.
-          <IllustrationTrimesterAnimated size={230} isActive={isActive} />
-        ) : (
-          <AnimatedIllustration Illustration={Illustration} isActive={isActive} />
-        )}
+        <AnimatedIllustration Illustration={Illustration} isActive={isActive} />
       </Animated.View>
 
       <Animated.View
@@ -194,6 +171,26 @@ function SlideCard({
         >
           {item.subtitle}
         </ThemedText>
+
+        {/* Slide 2 — stats chiffrées (proof point) */}
+        {item.stats && (
+          <ThemedText variant="labelLarge" style={styles.statsLine}>
+            {item.stats}
+          </ThemedText>
+        )}
+
+        {/* Slide 2 — badges sources scientifiques (texte uniquement, pas de logos tiers) */}
+        {item.sources && (
+          <View style={styles.sourcesRow}>
+            {item.sources.map((src) => (
+              <View key={src} style={styles.sourceBadge}>
+                <ThemedText variant="labelSmall" style={styles.sourceBadgeText}>
+                  {src}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        )}
       </Animated.View>
     </LinearGradient>
   );
@@ -552,6 +549,33 @@ const styles = StyleSheet.create({
   slideSubtitle: {
     textAlign: "center",
     lineHeight: 26,
+  },
+  statsLine: {
+    textAlign: "center",
+    marginTop: Spacing.md,
+    color: Colors.accentDark,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  sourcesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: Spacing.lg,
+  },
+  sourceBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.accent + "55",
+  },
+  sourceBadgeText: {
+    color: Colors.accentDark,
+    fontWeight: "700",
+    letterSpacing: 0.4,
   },
 
   // ── Bottom bar ──────────────────────────────────────────────────────────────

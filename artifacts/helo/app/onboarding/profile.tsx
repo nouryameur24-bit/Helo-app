@@ -55,6 +55,10 @@ function parseDateInput(raw: string): Date | null {
   if (!d || !m || !y || y < 2024 || y > 2027) return null;
   const date = new Date(y, m - 1, d);
   if (isNaN(date.getTime())) return null;
+  // Round-trip check : empêche 31/02 → 03/03 (rollover JS silencieux).
+  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) {
+    return null;
+  }
   return date;
 }
 
@@ -63,6 +67,28 @@ const TRIMESTER_LABELS: Record<number, string> = {
   2: "2e trimestre",
   3: "3e trimestre",
 };
+
+// Taille du bébé par semaine — pour le bloc preview personnalisé du nouvel onboarding.
+function babyFruitForWeek(week: number): { name: string; emoji: string; article: string } {
+  if (week <= 7)  return { name: 'myrtille',  emoji: '🫐', article: 'e' };
+  if (week <= 10) return { name: 'fraise',    emoji: '🍓', article: 'e' };
+  if (week <= 13) return { name: 'prune',     emoji: '🟣', article: 'e' };
+  if (week <= 16) return { name: 'avocat',    emoji: '🥑', article: '' };
+  if (week <= 19) return { name: 'mangue',    emoji: '🥭', article: 'e' };
+  if (week <= 22) return { name: 'banane',    emoji: '🍌', article: 'e' };
+  if (week <= 26) return { name: 'aubergine', emoji: '🍆', article: 'e' };
+  if (week <= 30) return { name: 'noix de coco', emoji: '🥥', article: 'e' };
+  if (week <= 34) return { name: 'ananas',    emoji: '🍍', article: '' };
+  if (week <= 37) return { name: 'melon',     emoji: '🍈', article: '' };
+  return            { name: 'pastèque',  emoji: '🍉', article: 'e' };
+}
+
+const AVOID_LIST = [
+  'Rétinol',
+  'Acide salicylique haute concentration',
+  'Listeria (fromages au lait cru)',
+  'Mercure (gros poissons)',
+];
 
 const TRIMESTER_BADGE: Record<number, "accent" | "safe" | "caution"> = {
   1: "caution",
@@ -137,7 +163,8 @@ export default function ProfileSetupScreen() {
 
       // ── 2. Navigate immediately — app works offline ───────────────────────────
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace("/(tabs)");
+      // Slide 5 du nouvel onboarding : invitation au premier scan avant le home.
+      router.replace("/onboarding/first-scan");
 
       // ── 3. Sync to Supabase in the background (non-blocking) ─────────────────
       getOrCreateUserId().then((userId) => {
@@ -275,6 +302,33 @@ export default function ProfileSetupScreen() {
             <ThemedText variant="bodySmall" style={{ color: Colors.danger, marginTop: 6 }}>
               Date invalide. Format : JJ/MM/AAAA
             </ThemedText>
+          )}
+
+          {/* Personalized preview — apparaît une fois la date validée */}
+          {trimesterInfo && parsedDate && (
+            <Animated.View entering={FadeInDown.duration(300)} style={previewStyles.card}>
+              <ThemedText variant="bodyLarge" color="textPrimary" style={previewStyles.headline}>
+                {(() => {
+                  const wks = Math.max(1, 40 - trimesterInfo.weeksLeft);
+                  const fruit = babyFruitForWeek(wks);
+                  return `À ${wks} semaines, ton bébé a la taille d'un${fruit.article} ${fruit.name} ${fruit.emoji}`;
+                })()}
+              </ThemedText>
+              <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm }}>
+                Voici ce qu'on va éviter ensemble :
+              </ThemedText>
+              <View style={{ gap: 6, marginTop: Spacing.sm }}>
+                {AVOID_LIST.map((item) => (
+                  <View key={item} style={previewStyles.avoidRow}>
+                    <View style={previewStyles.avoidDot} />
+                    <ThemedText variant="bodyMedium" color="textPrimary">{item}</ThemedText>
+                  </View>
+                ))}
+              </View>
+              <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: Spacing.md, fontStyle: 'italic' }}>
+                Hēlo détecte tout ça automatiquement.
+              </ThemedText>
+            </Animated.View>
           )}
         </Animated.View>
 
@@ -440,5 +494,31 @@ const styles = StyleSheet.create({
   disclaimer: {
     lineHeight: 18,
     textAlign: "center",
+  },
+});
+
+const previewStyles = StyleSheet.create({
+  card: {
+    marginTop: Spacing.lg,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.accentLight,
+    borderWidth: 1,
+    borderColor: Colors.accent + '33',
+  },
+  headline: {
+    fontWeight: '600',
+    lineHeight: 24,
+  },
+  avoidRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  avoidDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.danger,
   },
 });

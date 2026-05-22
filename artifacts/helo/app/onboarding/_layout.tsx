@@ -17,6 +17,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="partner-code" />
       <Stack.Screen name="partner-welcome" />
       <Stack.Screen name="partner-interests" />
+      <Stack.Screen name="first-scan" />
     </Stack>
   );
 }

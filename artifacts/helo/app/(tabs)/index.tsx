@@ -1,7 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ROUTES } from '@/types/routes';
 import { router, type Href } from 'expo-router';
-import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Dimensions,
   Platform,
@@ -37,6 +38,9 @@ import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 import { PactWidget } from '@/components/PactWidget';
 import { PartnerHomeScreen } from '@/components/home/PartnerHomeScreen';
 import { styles } from '@/components/home/homeStyles';
+import { WelcomeOverlay } from '@/components/WelcomeOverlay';
+
+const WELCOME_FLAG = '@helo_show_welcome_overlay';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -145,12 +149,30 @@ export default function HomeScreen() {
   const [glowShareVisible, setGlowShareVisible] = useState(false);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
 
+  // ── Post-onboarding "wow" overlay (déclenché par le flag AsyncStorage) ──
+  const [showWelcome, setShowWelcome] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem(WELCOME_FLAG).then((flag) => {
+      if (flag === '1') setShowWelcome(true);
+    }).catch(() => {});
+  }, []);
+  // Memoized pour éviter de relancer le timer auto-dismiss du WelcomeOverlay
+  // à chaque re-render du Home (hooks profile/shelf déclenchent souvent).
+  const dismissWelcome = useCallback(() => {
+    setShowWelcome(false);
+    AsyncStorage.removeItem(WELCOME_FLAG).catch(() => {});
+  }, []);
+
   if (isPartner) {
     return <PartnerHomeScreen />;
   }
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
+      {showWelcome && (
+        <WelcomeOverlay firstName={firstName} onDismiss={dismissWelcome} />
+      )}
+
       <BreastfeedingTransition
         visible={showBFTransition}
         changedProductsCount={bfChangedCount}

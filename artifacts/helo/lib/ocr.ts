@@ -58,17 +58,44 @@ export function cleanOCRText(rawText: string): string {
   return rawText
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
+    // ── INCI OCR fixes ──────────────────────────────────────────────────────
     .replace(/\bAOUA\b/gi, 'AQUA')
     .replace(/\bAQOA\b/gi, 'AQUA')
     .replace(/\bEAU\s*\/\s*WATER\b/gi, 'AQUA')
     .replace(/(?<=[A-Z])0(?=[A-Z])/g, 'O')
     .replace(/\b1(?=[A-Z])/g, 'I')
+    // ── Percentages & numeric noise ─────────────────────────────────────────
     .replace(/\b\d+[.,]\d+\s*%/g, '')
     .replace(/\b\d+\s*%/g, '')
+    // ── Batch numbers / lot codes (5+ digit sequences, often with letters) ──
+    .replace(/\b[A-Z]?\d{5,}[A-Z0-9]*\b/g, '')
+    .replace(/\bLOT[:\s]*[A-Z0-9]+\b/gi, '')
+    .replace(/\bBATCH[:\s]*[A-Z0-9]+\b/gi, '')
+    // ── French postal codes + addresses ─────────────────────────────────────
+    .replace(/\b\d{5}\s+[A-ZÉÈÊËÀÂÄÔÖÙÛÜÇ][A-Za-zÀ-ÿ\-' ]+/g, '')
+    .replace(/\bBP\s*\d+\b/gi, '')
+    .replace(/\b\d+\s*(rue|avenue|av\.?|bd|boulevard|impasse|place|allée|chemin|route)\s+[^,.\n]+/gi, '')
+    .replace(/\bCEDEX\s*\d*\b/gi, '')
+    .replace(/\bLevallois[-\s]?Perret\b/gi, '')
+    // ── Customer service / corporate boilerplate ────────────────────────────
+    .replace(/\bservice\s+(consommateurs?|client[èe]le|conso)\b[^.\n]*/gi, '')
+    .replace(/\bN°\s*(vert|cristal|indigo|azur)[^.\n]*/gi, '')
+    .replace(/\b(tél|tel|fax|email|e-mail|mail|www|http[s]?:\/\/)[^\s]*[^.\n]*/gi, '')
+    .replace(/\b\d{2}[\s.-]?\d{2}[\s.-]?\d{2}[\s.-]?\d{2}[\s.-]?\d{2}\b/g, '')
+    .replace(/\bfabriqu[ée]\s+(en|au|aux)\s+[A-Za-zÀ-ÿ\-' ]+/gi, '')
+    .replace(/\bmade\s+in\s+[A-Za-z\-' ]+/gi, '')
+    .replace(/\b(à\s+conserver|conserver\s+à|à\s+utiliser|utiliser\s+avant|date\s+de\s+p[ée]remption|DLUO|DLC|PAO)\b[^.\n]*/gi, '')
+    .replace(/\b\d+\s*M\b/g, '') // PAO marker like "12M"
+    // ── App UI artifacts that may leak from screenshots ─────────────────────
+    .replace(/\b(Écrire\s+un\s+message|Ecrire\s+un\s+message|Retour|Annuler|Valider|Suivant|Pr[ée]c[ée]dent)\b/gi, '')
+    .replace(/\bproduits?\s+de\s+(salle\s+de\s+bain|cuisine|cosm[ée]tique)s?\b/gi, '')
+    // ── Strip "ingredients:" label, normalise whitespace/commas ─────────────
     .replace(/ingr[eé]dients?\s*:?\s*/gi, '')
+    .replace(/\s*,\s*,+\s*/g, ', ')
     .replace(/\s*,\s*/g, ', ')
     .replace(/\n+/g, ' ')
     .replace(/\s{2,}/g, ' ')
+    .replace(/^[,\s]+|[,\s]+$/g, '')
     .trim();
 }
 

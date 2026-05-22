@@ -101,8 +101,6 @@ export default function OcrReviewScreen() {
   const insets = useSafeAreaInsets();
 
   const [ocrText, setOcrText] = useState('');
-  const [productName, setProductName] = useState('');
-  const [brand, setBrand] = useState('');
   const [category, setCategory] = useState<Category>('Cosmétique');
   const [ocrLoading, setOcrLoading] = useState(true);
   const [ocrWarning, setOcrWarning] = useState<string | null>(null);
@@ -180,11 +178,13 @@ export default function OcrReviewScreen() {
       const matchesArr = await matchIngredients(ingredients, phase);
       const verdictResult = getVerdict(matchesArr);
 
-      // Build a fake ProductData from user inputs
+      // Ghost Capture: deliver the verdict FIRST with a placeholder name.
+      // The user is invited to optionally add name/brand on the verdict screen
+      // (contribution card) after she has received the value she came for.
       const product: ProductData = {
         barcode: `ocr_${Date.now()}`,
-        name: productName.trim() || 'Produit analysé par OCR',
-        brand: brand.trim() || undefined,
+        name: 'Produit scanné',
+        brand: undefined,
         imageUrl: uri || undefined,
         ingredientsList: ingredients,
         categories: [category],
@@ -203,10 +203,17 @@ export default function OcrReviewScreen() {
         savedAt: Date.now(),
       }));
 
-      // Navigate to verdict with ocr_ prefix; pass ghostThanks param so the
-      // verdict screen renders the "merci" toast over its content.
+      // Navigate to verdict with ocr_ prefix; pass ghostThanks=1 + the original
+      // ghostBarcode so the verdict screen can render the "merci" toast and
+      // (after 1s) the contribution card that updates the same DB row.
       const verdictPath = `/verdict/${encodeURIComponent(`ocr_${id}`)}`;
-      router.replace(ghostBarcode ? `${verdictPath}?ghostThanks=1` : verdictPath);
+      if (ghostBarcode) {
+        router.replace(
+          `${verdictPath}?ghostThanks=1&ghostBarcode=${encodeURIComponent(ghostBarcode)}`,
+        );
+      } else {
+        router.replace(verdictPath);
+      }
 
       // ── Ghost Capture: background save (fire-and-forget) ──────────────────
       if (ghostBarcode) {
@@ -303,35 +310,6 @@ export default function OcrReviewScreen() {
           </ThemedText>
         </View>
 
-        {/* Product name */}
-        <View style={styles.fieldGroup}>
-          <ThemedText variant="labelLarge" style={styles.fieldLabel}>Nom du produit</ThemedText>
-          <TextInput
-            style={styles.textInput}
-            value={productName}
-            onChangeText={setProductName}
-            placeholder="Ex: Crème hydratante Nivea"
-            placeholderTextColor={Colors.textTertiary}
-            returnKeyType="next"
-          />
-        </View>
-
-        {/* Brand */}
-        <View style={styles.fieldGroup}>
-          <ThemedText variant="labelLarge" style={styles.fieldLabel}>
-            Marque{' '}
-            <ThemedText variant="bodySmall" color="textTertiary">(optionnel)</ThemedText>
-          </ThemedText>
-          <TextInput
-            style={styles.textInput}
-            value={brand}
-            onChangeText={setBrand}
-            placeholder="Ex: Nivea, L'Oréal…"
-            placeholderTextColor={Colors.textTertiary}
-            returnKeyType="done"
-          />
-        </View>
-
         {/* Category */}
         <View style={styles.fieldGroup}>
           <ThemedText variant="labelLarge" style={styles.fieldLabel}>Catégorie</ThemedText>
@@ -356,17 +334,8 @@ export default function OcrReviewScreen() {
           disabled={!ocrText.trim() || analysing}
           loading={analysing}
         >
-          {ghostBarcode ? 'Analyser & Contribuer' : 'Analyser les ingrédients'}
+          {analysing ? 'Analyse en cours…' : 'Analyser →'}
         </Button>
-        {ghostBarcode ? (
-          <ThemedText
-            variant="bodySmall"
-            color="textTertiary"
-            style={{ textAlign: 'center', marginTop: Spacing.sm }}
-          >
-            En analysant, vous aidez anonymement la communauté Hēlo 🤝
-          </ThemedText>
-        ) : null}
       </View>
     </KeyboardAvoidingView>
   );

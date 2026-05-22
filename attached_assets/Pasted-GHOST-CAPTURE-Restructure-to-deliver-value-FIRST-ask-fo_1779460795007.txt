@@ -1,0 +1,115 @@
+GHOST CAPTURE — Restructure to deliver value FIRST, ask for info LATER.
+
+NEW FLOW PRINCIPLE: User gets their verdict first, contributes optionally after.
+
+PART 1 — CLEAN OCR TEXT (same as before):
+
+In app/ocr-review.tsx, add a cleanOcrText() function that removes:
+- Batch numbers (5+ digit sequences)
+- Postal codes + addresses
+- "CEDEX", "Service consommateurs", "Levallois-Perret", etc.
+- App UI artifacts ("Ecrire un message", "Retour", "produits de salle de bain")
+- Multiple spaces and commas
+
+Apply this BEFORE displaying the text to the user.
+The user can still edit if needed.
+
+PART 2 — REMOVE PRODUCT NAME FROM PRE-ANALYSIS FORM:
+
+Currently the OCR review screen asks for:
+- Ingredient list (textarea) ✓ KEEP
+- Product name (input)        ✗ REMOVE FROM THIS SCREEN
+- Brand (input)              ✗ REMOVE FROM THIS SCREEN
+- Category (chips)           ✓ KEEP (needed for analysis logic)
+
+The screen should now show ONLY:
+- The product photo
+- The cleaned OCR text (editable)
+- Category selector (chips)
+- Sticky bottom button: "Analyser →"
+
+Make the button STICKY at the bottom using position absolute + 
+useSafeAreaInsets() bottom inset. Always visible without scrolling.
+
+PART 3 — SHOW VERDICT IMMEDIATELY AFTER ANALYSIS:
+
+After "Analyser" is tapped:
+1. Show loading: "Analyse en cours..."
+2. Call Claude with the cleaned ingredients + trimester
+3. Navigate to the verdict screen with:
+   - productName: "Produit scanné" (placeholder)
+   - brand: ""
+   - score, verdict, flagged ingredients (real)
+   - source attributions (CRAT, ANSM, EFSA)
+   - All the normal verdict UI
+
+The user sees their verdict NOW. She gets the value she came for.
+
+PART 4 — ADD "CONTRIBUTION CARD" AT THE BOTTOM OF VERDICT:
+
+After the user has scrolled through their verdict, at the BOTTOM of 
+the verdict screen, add a new section (only visible for Ghost Capture 
+flows, not for regular barcode scans):
+
+<View style={contributionCard}>
+  <Text>🤍 Merci d'avoir aidé la communauté Hēlo</Text>
+  <Text>
+    Ce produit est maintenant dans notre base. 
+    Si tu veux, ajoute quelques infos pour aider 
+    les prochaines mamans à le retrouver :
+  </Text>
+  
+  <TextInput placeholder="Nom du produit (optionnel)" />
+  <TextInput placeholder="Marque (optionnel)" />
+  
+  <Button>Compléter ma contribution →</Button>
+  <Button variant="ghost">Plus tard</Button>
+</View>
+
+When user taps "Compléter":
+- Update the existing community_submissions entry with name + brand
+- Show toast: "Merci ✨ Tu as aidé +X mamans"
+- The card collapses to a thank-you message
+
+When user taps "Plus tard":
+- Card collapses, verdict screen continues normally
+- The product is already saved without name (community can update later)
+
+PART 5 — UI POLISH:
+
+- The contribution card has a warm cream background (Colors.surface)
+- Golden accent on the CTA button
+- Small heart icon 🤍 at the top
+- Smooth fade-in animation when it appears (delay 1s after verdict loads)
+- This creates the "reciprocity moment" — she got her value, now she 
+  wants to give back
+
+PART 6 — DATABASE LOGIC:
+
+When Ghost Capture submits without name/brand:
+- Save to community_submissions with status='auto_captured'
+- Store: barcode (or generated UUID if no barcode), ingredients_raw, 
+  category, scan_count = 1
+- name = "Produit non identifié"
+- brand = ""
+
+When user later adds name/brand via contribution card:
+- Update the row: name, brand, status='community_verified'
+- Show success feedback
+
+PART 7 — TEST FLOW:
+
+1. Scan an unknown barcode
+2. Ghost Capture modal appears (existing)
+3. Take photo
+4. OCR processes, text is now CLEAN
+5. User sees: photo + cleaned ingredients + category chips + sticky button
+6. Tap "Analyser"
+7. 3-5 seconds loading
+8. VERDICT APPEARS with score, ingredients, sources
+9. User scrolls down
+10. At the bottom: contribution card "🤍 Merci..."
+11. Optional: fills name + brand
+12. Saves and feels good
+
+Confirm what was changed.

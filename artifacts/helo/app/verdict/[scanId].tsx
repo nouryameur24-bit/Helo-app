@@ -33,6 +33,7 @@ import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
 import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
 import { ReportBottomSheet } from '@/components/verdict/ReportBottomSheet';
 import { GhostCaptureModal } from '@/components/verdict/GhostCaptureModal';
+import { GhostContributionCard } from '@/components/verdict/GhostContributionCard';
 import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
 import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
 import {
@@ -64,7 +65,12 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { MatchResult, Phase, VerdictResult } from '@/types';
 
 export default function VerdictScreen() {
-  const { scanId, ghostThanks } = useLocalSearchParams<{ scanId: string; ghostThanks?: string }>();
+  const { scanId, ghostThanks, ghostBarcode: ghostBarcodeParam } = useLocalSearchParams<{
+    scanId: string;
+    ghostThanks?: string;
+    ghostBarcode?: string;
+  }>();
+  const ghostBarcode = ghostBarcodeParam ? decodeURIComponent(ghostBarcodeParam) : '';
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();
   const { loading, product, matches, verdict, error, notFound, scanBarcode, setDirectResult } = useScan();
@@ -576,6 +582,22 @@ export default function VerdictScreen() {
           />
         )}
         */}
+
+        {/* ── GHOST CAPTURE CONTRIBUTION CARD ── */}
+        {/* Only shown for ghost-capture flows (user came from OCR review with    */}
+        {/* an unknown barcode). Appears 1s after verdict to create a reciprocity */}
+        {/* moment — she got her value, now she can give back optionally.        */}
+        {ghostThanks === '1' && ghostBarcode ? (
+          <GhostContributionCard
+            barcode={ghostBarcode}
+            onSubmitted={(msg) => {
+              setToastMessage(msg);
+              setToastVisible(true);
+              if (toastTimer.current) clearTimeout(toastTimer.current);
+              toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
+            }}
+          />
+        ) : null}
 
         {/* ── DISCLAIMER ── */}
         <View style={styles.disclaimerSection}>

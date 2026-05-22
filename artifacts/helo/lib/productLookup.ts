@@ -274,6 +274,47 @@ export async function ghostCaptureSave(params: {
   }
 }
 
+// ─── 2b. Update Ghost Capture row with user-provided name + brand ────────────
+// Called from the verdict screen's contribution card when the user opts in to
+// label their ghost-captured product after seeing the verdict. Promotes the
+// row to 'community_verified' since a human-curated label is stronger signal
+// than the scan_count threshold alone.
+export async function updateGhostCaptureNameBrand(params: {
+  barcode: string;
+  name: string;
+  brand: string;
+}): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  const name = params.name.trim();
+  const brand = params.brand.trim();
+  if (!name && !brand) return false;
+
+  try {
+    const { data: existing, error: selectError } = await supabase
+      .from('community_submissions')
+      .select('id, name, brand')
+      .eq('barcode', params.barcode)
+      .in('status', ['auto_captured', 'community_verified'])
+      .maybeSingle();
+    if (selectError || !existing) return false;
+
+    const updates: Record<string, unknown> = {
+      status: 'community_verified',
+    };
+    if (name) updates.name = name;
+    if (brand) updates.brand = brand;
+
+    const { error: updateError } = await supabase
+      .from('community_submissions')
+      .update(updates)
+      .eq('id', existing.id);
+    return !updateError;
+  } catch (err) {
+    logError('productLookup.updateGhostCaptureNameBrand', err, { barcode: params.barcode });
+    return false;
+  }
+}
+
 // ─── 3. Fetch product by barcode — cascades community → OFF → OBF ────────────
 // community_submissions is checked FIRST so ghost-captured products load
 // instantly for the next user (no remote API roundtrip needed).

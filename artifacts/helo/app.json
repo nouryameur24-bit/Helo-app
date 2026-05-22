@@ -32,14 +32,31 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FFFAF5"
       },
-      "package": "com.heloapp.helo"
+      "package": "com.heloapp.helo",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-camera",
       "expo-image-picker",
       "expo-notifications",
-      "@sentry/react-native/expo"
-    ]
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "organization": "helo-54",
+          "project": "react-native"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4397d407-8d6d-422e-9883-8f08da7550ca"
+      }
+    },
+    "owner": "helomama"
   }
 }

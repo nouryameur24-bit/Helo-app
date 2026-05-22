@@ -1,0 +1,286 @@
+ALTERNATIVES SYSTEM — Final implementation, no ghost products, 
+honest Premium benefits.
+
+Goal: replace the current broken alternatives system with a smart, 
+honest, legally safe version. No fake products. No misleading 
+Premium promises. Real value only.
+
+═══════════════════════════════════════════════════════════
+PART 1 — REMOVE FAKE PRODUCTS
+═══════════════════════════════════════════════════════════
+
+In lib/alternatives.ts:
+
+1. DELETE the entire HARDCODED_ALTERNATIVES object (the 123 fake 
+   products with no barcode/image/source).
+
+2. DELETE the getHardcodedAlternatives function.
+
+3. Keep only real products from the Supabase products table.
+
+═══════════════════════════════════════════════════════════
+PART 2 — SMART MATCHING ALGORITHM (3 layers)
+═══════════════════════════════════════════════════════════
+
+Rewrite lib/alternatives.ts with this logic:
+
+export async function getAlternativesByBarcode(
+  barcode: string,
+  flaggedIngredients: { danger: string[]; caution: string[] },
+  trimester: Trimester,
+  isPremium: boolean,
+): Promise<AlternativeProduct[]> {
+  if (!isSupabaseConfigured || !barcode) return [];
+  
+  const { data: current } = await supabase
+    .from('products')
+    .select('id, name, brand, category, ingredients_raw')
+    .eq('barcode', barcode)
+    .maybeSingle();
+  
+  if (!current) return [];
+  
+  const productKeywords = extractProductKeywords(current.name);
+  const limit = isPremium ? 5 : 3;
+  
+  // LAYER 1: Match by product type keywords in name
+  if (productKeywords.length > 0) {
+    const orFilter = productKeywords.map(kw => `name.ilike.%${kw}%`).join(',');
+    const { data: candidates } = await supabase
+      .from('products')
+      .select('id, name, brand, category, barcode, image_url, ingredients_raw')
+      .eq('category', current.category)
+      .neq('id', current.id)
+      .not('ingredients_raw', 'is', null)
+      .or(orFilter)
+      .limit(30);
+    
+    const filtered = filterAndScore(candidates || [], flaggedIngredients, isPremium);
+    if (filtered.length >= limit) return filtered.slice(0, limit);
+    
+    // LAYER 2: Same brand fallback
+    if (current.brand) {
+      const { data: brandProducts } = await supabase
+        .from('products')
+        .select('id, name, brand, category, barcode, image_url, ingredients_raw')
+        .eq('brand', current.brand)
+        .neq('id', current.id)
+        .not('ingredients_raw', 'is', null)
+        .limit(20);
+      
+      const brandSafe = filterAndScore(brandProducts || [], flaggedIngredients, isPremium);
+      const combined = mergeUnique(filtered, brandSafe);
+      if (combined.length >= limit) return combined.slice(0, limit);
+      
+      if (combined.length > 0) return combined;
+    }
+    
+    if (filtered.length > 0) return filtered;
+  }
+  
+  // LAYER 3: Same category, any safe product
+  const { data: anyCat } = await supabase
+    .from('products')
+    .select('id, name, brand, category, barcode, image_url, ingredients_raw')
+    .eq('category', current.category)
+    .neq('id', current.id)
+    .not('ingredients_raw', 'is', null)
+    .limit(50);
+  
+  return filterAndScore(anyCat || [], flaggedIngredients, isPremium).slice(0, limit);
+}
+
+═══════════════════════════════════════════════════════════
+PART 3 — DANGER vs CAUTION FILTERING
+═══════════════════════════════════════════════════════════
+
+function filterAndScore(
+  candidates: any[],
+  flagged: { danger: string[]; caution: string[] },
+  isPremium: boolean,
+): AlternativeProduct[] {
+  const dangerLower = flagged.danger.map(n => n.toLowerCase());
+  const cautionLower = flagged.caution.map(n => n.toLowerCase());
+  
+  return candidates
+    .map(c => {
+      const ingredientsLower = (c.ingredients_raw || '').toLowerCase();
+      
+      // HARD EXCLUSION: any danger ingredient
+      const hasDanger = dangerLower.some(d => ingredientsLower.includes(d));
+      if (hasDanger) return null;
+      
+      // SOFT PENALTY: count caution ingredients
+      const cautionCount = cautionLower.filter(c => ingredientsLower.includes(c)).length;
+      
+      // BONUS: French/pharmacy brands (Premium only — used for sorting)
+      let bonusScore = 0;
+      if (isPremium) {
+        const brand = (c.brand || '').toLowerCase();
+        const PHARMACY_BRANDS = ['avène', 'avene', 'la roche-posay', 'roche posay', 
+          'mustela', 'bioderma', 'uriage', 'a-derma', 'aderma', 'klorane', 
+          'weleda', 'cattier', 'cetaphil', 'cerave'];
+        const FRENCH_BRANDS = ['nuxe', 'caudalie', 'embryolisse', 'lierac'];
+        if (PHARMACY_BRANDS.some(b => brand.includes(b))) bonusScore += 10;
+        else if (FRENCH_BRANDS.some(b => brand.includes(b))) bonusScore += 5;
+      }
+      
+      return {
+        product: c,
+        score: 100 - (cautionCount * 15) + bonusScore,
+        cautionCount,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => b.score - a.score)
+    .map(x => ({
+      id: x.product.id,
+      name: x.product.name,
+      brand: x.product.brand,
+      category: x.product.category,
+      barcode: x.product.barcode,
+      image_url: x.product.image_url,
+      description_fr: null,
+      overall_risk: x.cautionCount === 0 ? 'safe' : 'caution',
+      price_range: '',
+      popularity_count: x.score,
+    }));
+}
+
+═══════════════════════════════════════════════════════════
+PART 4 — PRODUCT KEYWORD EXTRACTION
+═══════════════════════════════════════════════════════════
+
+function extractProductKeywords(name: string): string[] {
+  const lower = name.toLowerCase();
+  const PRODUCT_TYPES = [
+    // Cosmetics
+    'crème visage', 'crème mains', 'crème corps', 'crème solaire',
+    'crème nuit', 'crème jour', 'crème anti-âge', 'crème hydratante',
+    'lait corps', 'lait visage', 'lait démaquillant', 'lait hydratant',
+    'shampoing', 'après-shampoing', 'masque cheveux', 'huile cheveux',
+    'gel douche', 'savon', 'pain de toilette', 'déodorant', 'parfum',
+    'eau micellaire', 'eau florale', 'lotion tonique', 'tonique',
+    'dentifrice', 'bain de bouche', 'fond de teint', 'mascara',
+    'rouge à lèvres', 'baume lèvres', 'gloss', 'crayon', 'fard',
+    'huile démaquillante', 'sérum', 'masque visage', 'gommage',
+    'huile végétale', 'beurre karité', 'liniment', 'cold cream',
+    'soin', 'baume', 'crème mains', 'crème pieds',
+    // Food
+    'yaourt', 'fromage', 'jambon', 'saumon', 'thon', 'chocolat',
+    'biscuit', 'pâte à tartiner', 'jus', 'eau', 'lait', 'beurre',
+    'huile olive', 'huile colza', 'pâtes', 'riz', 'céréales',
+    'soupe', 'compote', 'pain', 'viennoiserie', 'confiture',
+    'miel', 'café', 'thé', 'tisane', 'soda', 'limonade',
+  ];
+  
+  return PRODUCT_TYPES.filter(type => lower.includes(type));
+}
+
+function mergeUnique(a: AlternativeProduct[], b: AlternativeProduct[]): AlternativeProduct[] {
+  const seen = new Set(a.map(p => p.id));
+  return [...a, ...b.filter(p => !seen.has(p.id))];
+}
+
+═══════════════════════════════════════════════════════════
+PART 5 — UPDATE app/alternatives.tsx
+═══════════════════════════════════════════════════════════
+
+1. Pass flagged ingredients as { danger, caution } object via URL params
+   from the verdict screen. Receive and parse them in alternatives.tsx.
+
+2. Display logic:
+
+If alternatives.length === 0:
+  Show EDUCATIONAL EMPTY STATE:
+  
+  "📋 Pas d'alternative dans notre base pour ce type de produit
+  
+  Pour t'aider à choisir, voici les ingrédients à éviter sur les 
+  autres produits de cette catégorie :
+  
+  [Map flagged.danger to red badge with CRAT explanation]
+  [Map flagged.caution to amber badge with explanation]
+  
+  Scanne d'autres produits — tu enrichis la communauté à chaque scan 🤍
+  
+  [CTA: Continuer à scanner →]"
+
+If alternatives.length >= 1:
+  Show the real alternatives.
+  
+  Free user:
+    - Up to 3 alternatives visible with image, name, brand, "Voir →"
+    - Below: small Premium card with REAL benefits:
+      "💎 Avec Premium, débloque :
+       • Filtrage spécifique à ton trimestre actuel (T2)
+       • Priorité aux marques pharmacie et françaises  
+       • Explication détaillée par ingrédient (CRAT)
+       • Notifications de rappels produits
+       [Essayer 7 jours gratuit →]"
+  
+  Premium user:
+    - Up to 5 alternatives visible
+    - Each card shows badge: 🇫🇷 / 🌿 Bio / 💊 Pharmacie when applicable
+    - Each card has 2-3 line explanation
+    - Sort order favors pharmacy/French brands
+
+3. NO ghost cards. NO blurred "premium teaser" cards with fake products.
+   The Premium upgrade card is HONEST and shows only real benefits.
+
+═══════════════════════════════════════════════════════════
+PART 6 — VERDICT SCREEN INTEGRATION
+═══════════════════════════════════════════════════════════
+
+In components/verdict/VerdictBottomBar.tsx, the "Voir les alternatives →" 
+button:
+
+- Only shown if score < 100 (product has flagged ingredients)
+- Pass to router.push:
+  pathname: '/alternatives',
+  params: {
+    barcode: scan.barcode,
+    productName: scan.productName,
+    productBrand: scan.brand,
+    flaggedDanger: JSON.stringify(verdict.dangerIngredients.map(i => i.name)),
+    flaggedCaution: JSON.stringify(verdict.cautionIngredients.map(i => i.name)),
+    trimester: userProfile.trimester,
+  }
+
+═══════════════════════════════════════════════════════════
+PART 7 — TYPESCRIPT TYPES
+═══════════════════════════════════════════════════════════
+
+Update AlternativeProduct interface in lib/alternatives.ts:
+
+export interface AlternativeProduct {
+  id: string;
+  name: string;
+  brand: string;
+  category: Category;
+  barcode: string | null;
+  image_url: string | null;
+  description_fr: string | null;
+  overall_risk: 'safe' | 'caution';
+  price_range: string;
+  popularity_count: number;
+}
+
+═══════════════════════════════════════════════════════════
+PART 8 — VERIFICATION
+═══════════════════════════════════════════════════════════
+
+After implementation:
+1. Run npx tsc --noEmit — must show 0 errors
+2. Test scan a "Crème visage Nivea Q10" → must show real crème visage 
+   alternatives without rétinol
+3. Test scan a "Yaourt aux fruits Danone" → must show real yaourt 
+   alternatives
+4. Test scan an obscure product where 0 alternatives exist → must show 
+   the educational empty state, NOT crash, NOT show ghost products
+5. Test as Premium user → must see 5 alternatives sorted by quality 
+   with origin badges
+6. Test as Free user → must see 3 alternatives + honest Premium card 
+   listing real benefits
+
+CONFIRM what was changed and show 2-3 example outputs.

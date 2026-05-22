@@ -1,4 +1,4 @@
-import { swallow } from '@/lib/swallow';
+import { swallow, swallowAs } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ROUTES } from '@/types/routes';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -181,7 +181,7 @@ export default function ScanScreen() {
         }
       }
 
-      onProductScanned(scanFirstName || '').catch(swallow);
+      onProductScanned(scanFirstName || '').catch(swallowAs('scan.onProductScanned'));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       flashColor.value = withSequence(
         withTiming(1, { duration: 150 }),
@@ -209,10 +209,10 @@ export default function ScanScreen() {
         const ghostParam = ghostBarcode ? `&ghostBarcode=${encodeURIComponent(ghostBarcode)}` : '';
         router.push(`/ocr-review?imageUri=${encodeURIComponent(photo.uri)}&base64=${encodeURIComponent(photo.base64 ?? '')}${ghostParam}`);
       }
-    } catch (err) { swallow(err); } finally {
+    } catch (err) { swallow(err, 'scan.ocrPhotoCapture'); } finally {
       setTakingPhoto(false);
     }
-  }, [takingPhoto, flashOverlay]);
+  }, [takingPhoto, flashOverlay, ghostBarcode]);
 
   const handleMenuCapture = useCallback(async () => {
     if (takingPhoto || !cameraRef.current || menuPhotos.length >= MAX_MENU_PHOTOS) return;
@@ -228,7 +228,7 @@ export default function ScanScreen() {
         setMenuPhotos((prev) => [...prev, { uri: photo.uri, base64: photo.base64! }]);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-    } catch (err) { swallow(err); } finally {
+    } catch (err) { swallow(err, 'scan.menuPhotoCapture'); } finally {
       setTakingPhoto(false);
     }
   }, [takingPhoto, flashOverlay, menuPhotos.length]);
@@ -243,7 +243,7 @@ export default function ScanScreen() {
       await AsyncStorage.setItem(MENU_RESULT_KEY, JSON.stringify(result));
       setMenuPhotos([]);
       router.push('/restaurant-results');
-    } catch (err) { swallow(err); } finally {
+    } catch (err) { swallow(err, 'scan.menuAnalyze'); } finally {
       setIsAnalyzing(false);
     }
   }, [menuPhotos, isAnalyzing]);
@@ -265,7 +265,7 @@ export default function ScanScreen() {
       if (photo?.base64) {
         router.push(`/photo-result?base64=${encodeURIComponent(photo.base64)}`);
       }
-    } catch (err) { swallow(err); } finally {
+    } catch (err) { swallow(err, 'scan.photoCapture'); } finally {
       setTakingPhoto(false);
     }
   }, [takingPhoto, flashOverlay, isPremium]);

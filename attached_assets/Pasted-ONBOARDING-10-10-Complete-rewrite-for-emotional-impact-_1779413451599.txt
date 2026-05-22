@@ -1,0 +1,196 @@
+ONBOARDING 10/10 — Complete rewrite for emotional impact + first-scan magic.
+
+REPLACE the current 4-slide onboarding with this new 5-slide flow.
+
+═══════════════════════════════════════════════════════════
+SLIDE 1 — THE MOMENT (Emotional hook)
+═══════════════════════════════════════════════════════════
+
+Visual: Soft animated illustration of a woman in a bathroom 
+at night, holding a product, looking at the label with worry.
+Background: warm cream gradient, subtle gold accents.
+
+Headline (large, Plus Jakarta Sans Bold):
+"23h47. Tu lis l'étiquette.
+Tu doutes."
+
+Body (regular):
+"Chaque jour, des centaines de produits.
+Des questions que personne ne peut répondre à 3h du matin."
+
+CTA: "→" (just arrow, minimal)
+
+═══════════════════════════════════════════════════════════
+SLIDE 2 — THE PROMISE (Solution reveal)
+═══════════════════════════════════════════════════════════
+
+Visual: Animation of a barcode being scanned, then a soft 
+green "Compatible" badge appearing with a gentle pulse.
+
+Headline:
+"Hēlo te répond.
+En 2 secondes."
+
+Body:
+"16 799 produits analysés.
+Sources : CRAT · ANSM · EFSA · SCCS.
+Adapté à ton trimestre."
+
+Show 4 small badges with the source logos/names.
+
+CTA: "→"
+
+═══════════════════════════════════════════════════════════
+SLIDE 3 — THE PERSONALIZATION (Make it about HER)
+═══════════════════════════════════════════════════════════
+
+Headline:
+"Parlons de toi."
+
+Two big tappable cards (full width, golden border on hover):
+
+Card 1 — Pink/coral accent
+"Je suis enceinte 🤰"
+"Hēlo s'adapte à ton trimestre"
+
+Card 2 — Blue accent
+"J'accompagne 💙"
+"Pour soutenir une future maman"
+
+When user taps Card 1, navigate to slide 4a.
+When user taps Card 2, navigate to slide 4b.
+
+═══════════════════════════════════════════════════════════
+SLIDE 4a — TRIMESTER PERSONALIZATION (if pregnant)
+═══════════════════════════════════════════════════════════
+
+Headline:
+"Tu en es où ?"
+
+Input field for due date (date picker, large, friendly).
+OR three big cards if she doesn't know exact date:
+- "1er trimestre (semaines 1-13)"
+- "2ème trimestre (semaines 14-27)"  
+- "3ème trimestre (semaines 28-40)"
+
+After selection, show a personalized preview:
+
+"À [22 semaines], ton bébé a la taille d'une mangue 🥭
+
+Voici ce qu'on va éviter ensemble :
+🔴 Rétinol
+🔴 Acide salicylique haute concentration
+🔴 Listeria (fromages au lait cru)
+🔴 Mercure (gros poissons)
+
+Hēlo détecte tout ça automatiquement."
+
+CTA: "Continuer →"
+
+═══════════════════════════════════════════════════════════
+SLIDE 4b — PARTNER MODE (if accompanying)
+═══════════════════════════════════════════════════════════
+
+Headline:
+"Le meilleur cadeau."
+
+Body:
+"Connecte-toi à son placard.
+Scanne pour elle quand elle se repose.
+Reçois les mêmes infos qu'elle.
+
+L'accompagner sans la harceler."
+
+Input: Code partenaire (or skip for later setup)
+
+CTA: "Continuer →"
+
+═══════════════════════════════════════════════════════════
+SLIDE 5 — THE FIRST SCAN (THE WOW MOMENT)
+═══════════════════════════════════════════════════════════
+
+This is the most important slide.
+
+Headline:
+"Premier scan ?"
+
+Body:
+"Prends un produit autour de toi.
+Un dentifrice, une crème, un yaourt.
+Scanne-le maintenant."
+
+Big golden button: "📸 Scanner mon premier produit"
+
+Below in smaller text:
+"Ou passer cette étape →" (smaller, gray)
+
+When user taps the main button:
+→ Open the scanner directly
+→ After successful scan, show the verdict screen
+→ After verdict, show a final "wow" overlay:
+
+"Bienvenue dans Hēlo, [Prénom]. ✨
+Ton placard t'attend."
+
+Then navigate to home.
+
+If user skips:
+→ Show: "Quand tu seras prête, Hēlo sera là."
+→ Navigate to home.
+
+═══════════════════════════════════════════════════════════
+TECHNICAL REQUIREMENTS
+═══════════════════════════════════════════════════════════
+
+1. PROGRESS INDICATOR: 5 dots at top, current one filled gold, 
+   others empty. Animate transition between slides.
+
+2. SKIP BUTTON: In the top right, "Passer" in light gray. 
+   Goes directly to home but with a default profile setup.
+
+3. ANIMATIONS:
+   - Slide transitions: smooth horizontal swipe, 300ms ease-out
+   - Headlines: fade in + slight up movement on slide enter
+   - Illustrations: subtle continuous animation (breathing, 
+     pulse, gentle float)
+
+4. PERSISTENCE:
+   - Store onboarding completion in AsyncStorage 
+     (@helo_onboarding_completed = true)
+   - Store user's selection (pregnant / accompanying)
+   - Store trimester or due date
+
+5. ACCESSIBILITY:
+   - All text must support dynamic type sizes
+   - Screen reader labels on all interactive elements
+   - Color contrast meets WCAG AA standards
+
+6. ANALYTICS HOOKS (placeholders for future):
+   - Track which slide users skip from
+   - Track first-scan completion rate
+   - Track time spent on each slide
+
+═══════════════════════════════════════════════════════════
+DESIGN TOKENS (use existing theme.ts)
+═══════════════════════════════════════════════════════════
+
+- Background: Colors.background (cream)
+- Primary: Colors.primary (gold)
+- Text: Colors.text.primary
+- Cards: Colors.surface with Shadows.medium
+- Font: Plus Jakarta Sans
+- Spacing: use Spacing tokens
+- Radius: use Radius.lg for cards, Radius.full for buttons
+
+═══════════════════════════════════════════════════════════
+
+This onboarding does 4 things:
+1. Creates emotional connection (slide 1 — relatable scene)
+2. Shows immediate value (slide 2 — concrete numbers + sources)
+3. Personalizes the experience (slides 3-4 — about HER)
+4. Triggers the wow moment (slide 5 — first scan IN the onboarding)
+
+Implement carefully. Test the full flow end-to-end.
+Verify the first-scan integration triggers the actual scanner
+and that the verdict displays correctly before showing the 
+welcome overlay.

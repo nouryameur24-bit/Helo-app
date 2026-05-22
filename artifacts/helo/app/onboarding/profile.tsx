@@ -27,6 +27,12 @@ import { GENERAL_DISCLAIMER } from "@/constants/disclaimers";
 import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
 import { getOrCreateUserId } from "@/hooks/useProfile";
 import { upsertProfile, generatePartnerCode } from "@/lib/partnerUtils";
+import {
+  firstNameSchema,
+  formatDueDateInput,
+  onboardingProfileSchema,
+  parseDueDate,
+} from "@/lib/validation/profileOnboarding";
 
 type Category = "cosmetics" | "food" | "meds";
 
@@ -47,20 +53,8 @@ function computeTrimester(dueDate: Date): { trimester: number; weeksLeft: number
   return { trimester, weeksLeft: Math.round(weeksUntilDue) };
 }
 
-function parseDateInput(raw: string): Date | null {
-  // Accept DD/MM/YYYY
-  const parts = raw.split("/");
-  if (parts.length !== 3) return null;
-  const [d, m, y] = parts.map(Number);
-  if (!d || !m || !y || y < 2024 || y > 2027) return null;
-  const date = new Date(y, m - 1, d);
-  if (isNaN(date.getTime())) return null;
-  // Round-trip check : empêche 31/02 → 03/03 (rollover JS silencieux).
-  if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) {
-    return null;
-  }
-  return date;
-}
+// Date parsing & format validation live in `@/lib/validation/profileOnboarding`
+// (Zod schema). We just consume `parseDueDate` here.
 
 const TRIMESTER_LABELS: Record<number, string> = {
   1: "1er trimestre",
@@ -110,8 +104,9 @@ export default function ProfileSetupScreen() {
   );
   const [loading, setLoading] = useState(false);
 
-  const parsedDate = parseDateInput(dueDateRaw);
+  const parsedDate = parseDueDate(dueDateRaw);
   const trimesterInfo = parsedDate ? computeTrimester(parsedDate) : null;
+  const firstNameValid = firstNameSchema.safeParse(firstName).success;
 
   const toggleCategory = (key: Category) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -126,29 +121,34 @@ export default function ProfileSetupScreen() {
     });
   };
 
-  const formatDateInput = (raw: string) => {
-    // Auto-insert slashes: DD/MM/YYYY
-    const digits = raw.replace(/\D/g, "").slice(0, 8);
-    let formatted = digits;
-    if (digits.length > 2) formatted = digits.slice(0, 2) + "/" + digits.slice(2);
-    if (digits.length > 4) formatted = formatted.slice(0, 5) + "/" + formatted.slice(5);
-    return formatted;
-  };
-
   const handleDueDateChange = (text: string) => {
-    setDueDateRaw(formatDateInput(text));
+    setDueDateRaw(formatDueDateInput(text));
   };
 
-  const isValid = firstName.trim().length >= 2 && parsedDate !== null;
+  const isValid = firstNameValid && parsedDate !== null;
 
   const handleSubmit = async () => {
-    if (!isValid) return;
+    // Final defence-in-depth Zod parse — guards against any way a caller
+    // (e.g. autofilled value or future refactor) could bypass the live checks.
+    const validation = onboardingProfileSchema.safeParse({
+      firstName,
+      dueDate: dueDateRaw,
+    });
+    if (!validation.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert(
+        'Formulaire incomplet',
+        validation.error.issues.map((i) => `• ${i.message}`).join('\n'),
+      );
+      return;
+    }
+    const { firstName: cleanFirstName, dueDate: cleanDueDate } = validation.data;
     setLoading(true);
     try {
       const partnerCode = generatePartnerCode();
       const profile = {
-        firstName: firstName.trim(),
-        dueDate: parsedDate!.toISOString(),
+        firstName: cleanFirstName,
+        dueDate: cleanDueDate.toISOString(),
         trimester: trimesterInfo?.trimester ?? null,
         categories: Array.from(selectedCategories),
         createdAt: new Date().toISOString(),
@@ -170,8 +170,8 @@ export default function ProfileSetupScreen() {
       getOrCreateUserId().then((userId) => {
         upsertProfile({
           userId,
-          firstName: firstName.trim(),
-          dueDate: parsedDate!.toISOString().split("T")[0],
+          firstName: cleanFirstName,
+          dueDate: cleanDueDate.toISOString().split("T")[0],
           trimester: trimesterInfo?.trimester ?? null,
           partnerCode,
         }).catch((err) => {

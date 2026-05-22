@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextStyle,
@@ -480,7 +481,11 @@ export default function ScanScreen() {
 
       {/* ── Bottom mode chips ── */}
       <View style={[styles.bottomBar, { paddingBottom: bottomOffset + Spacing.lg }]}>
-        <View style={styles.chipsRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsRow}
+        >
           <ModeChip label="Code-barres" active={scanMode === 'barcode'} onPress={() => setScanMode('barcode')} />
           <ModeChip
             label="Ingrédients"
@@ -515,7 +520,7 @@ export default function ScanScreen() {
               void fdPhoto.trigger();
             }}
           />
-        </View>
+        </ScrollView>
         {isMenuMode && menuPhotos.length > 0 && (
           <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75}>
             <Text style={styles.comingSoon}>Réinitialiser les photos</Text>
@@ -585,7 +590,12 @@ const styles = StyleSheet.create({
     position: 'absolute', bottom: 0, left: 0, right: 0,
     alignItems: 'center', gap: Spacing.sm, paddingTop: Spacing.lg, zIndex: 10,
   },
-  chipsRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+  chipsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
   scanCounterWrap: {
     position: 'absolute',
     alignSelf: 'center',

@@ -1,8 +1,7 @@
 import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -17,7 +16,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Svg, Circle, Line, G } from 'react-native-svg';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -28,25 +26,56 @@ import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme'
 import { usePremium } from '@/hooks/usePremium';
 import {
   AlternativeProduct,
+  IngredientExplanation,
+  OriginBadge,
   getAlternativesByBarcode,
+  getIngredientExplanations,
   submitAlternativeSuggestion,
 } from '@/lib/alternatives';
+import type { Trimester } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 64;
 const CARD_GAP = 12;
 
-function MagnifyingGlassIllustration() {
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+function safeParseStringArray(raw: string): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((s) => typeof s === 'string') : [];
+  } catch {
+    return raw.split('|').filter(Boolean);
+  }
+}
+
+function originBadgeMeta(badge: OriginBadge): { emoji: string; label: string; color: string } | null {
+  switch (badge) {
+    case 'pharmacy': return { emoji: '💊', label: 'Pharmacie', color: Colors.accent };
+    case 'french':   return { emoji: '🇫🇷', label: 'Marque française', color: Colors.textSecondary };
+    case 'bio':      return { emoji: '🌿', label: 'Bio', color: Colors.safe };
+    default:         return null;
+  }
+}
+
+function buildIngredientReasons(
+  flaggedExplanations: IngredientExplanation[],
+): IngredientExplanation[] {
+  return flaggedExplanations.filter((e) => e.description && e.description.length > 0).slice(0, 3);
+}
+
+// ─── COMPONENTS ───────────────────────────────────────────────────────────────
+
+function OriginBadgePill({ badge }: { badge: OriginBadge }) {
+  const meta = originBadgeMeta(badge);
+  if (!meta) return null;
   return (
-    <Svg width={120} height={120} viewBox="0 0 120 120">
-      <Circle cx={50} cy={50} r={30} stroke={Colors.accent} strokeWidth={4} fill="none" />
-      <Circle cx={50} cy={50} r={22} stroke={Colors.accentLight} strokeWidth={2} fill={Colors.accentLight} opacity={0.3} />
-      <Line x1={72} y1={72} x2={100} y2={100} stroke={Colors.accent} strokeWidth={6} strokeLinecap="round" />
-      <G>
-        <Circle cx={42} cy={42} r={4} fill={Colors.accent} opacity={0.5} />
-        <Circle cx={55} cy={38} r={3} fill={Colors.accent} opacity={0.3} />
-      </G>
-    </Svg>
+    <View style={[styles.originPill, { borderColor: meta.color }]}>
+      <ThemedText variant="bodySmall" style={{ color: meta.color }}>
+        {meta.emoji} {meta.label}
+      </ThemedText>
+    </View>
   );
 }
 
@@ -58,11 +87,7 @@ function OriginalProductHeader({ productName, productBrand }: { productName: str
           <Feather name="x-circle" size={20} color={Colors.danger} />
         </View>
         <View style={styles.originalInfo}>
-          <ThemedText
-            variant="bodyMedium"
-            style={styles.struckText}
-            numberOfLines={1}
-          >
+          <ThemedText variant="bodyMedium" style={styles.struckText} numberOfLines={1}>
             {productName}
           </ThemedText>
           {productBrand ? (
@@ -79,16 +104,18 @@ function OriginalProductHeader({ productName, productBrand }: { productName: str
 
 function AlternativeCard({
   alt,
+  isPremium,
+  ingredientReasons,
+  trimester,
   onViewDetail,
   onAddToList,
-  locked,
-  onUnlock,
 }: {
   alt: AlternativeProduct;
+  isPremium: boolean;
+  ingredientReasons: IngredientExplanation[];
+  trimester: Trimester;
   onViewDetail: () => void;
   onAddToList: () => void;
-  locked?: boolean;
-  onUnlock?: () => void;
 }) {
   return (
     <View style={{ width: CARD_WIDTH }}>
@@ -108,19 +135,51 @@ function AlternativeCard({
           </ThemedText>
 
           <View style={styles.altBadgeRow}>
-            <Badge variant="safe">Compatible ✓</Badge>
-            {alt.price_range ? <Badge variant="accent">{alt.price_range}</Badge> : null}
+            <Badge variant={alt.overall_risk === 'safe' ? 'safe' : 'caution'}>
+              {alt.overall_risk === 'safe' ? 'Compatible ✓' : 'À surveiller'}
+            </Badge>
+            <OriginBadgePill badge={alt.origin_badge} />
           </View>
 
-          {alt.description_fr ? (
-            <ThemedText
-              variant="bodySmall"
-              color="textSecondary"
-              style={{ marginTop: Spacing.sm }}
-              numberOfLines={2}
-            >
-              {alt.description_fr}
-            </ThemedText>
+          {isPremium ? (
+            <View style={styles.premiumExplanationBox}>
+              <View style={styles.premiumExplanationHeader}>
+                <Feather name="shield" size={14} color={Colors.accent} />
+                <ThemedText
+                  variant="bodySmall"
+                  style={{ marginLeft: 6, fontWeight: '600', color: Colors.accent }}
+                >
+                  Pourquoi c&apos;est compatible · T{trimester}
+                </ThemedText>
+              </View>
+              {ingredientReasons.length > 0 ? (
+                ingredientReasons.map((r) => (
+                  <View key={r.name} style={styles.premiumReasonRow}>
+                    <Feather name="check" size={12} color={Colors.safe} style={{ marginTop: 3 }} />
+                    <View style={{ flex: 1, marginLeft: 6 }}>
+                      <ThemedText variant="bodySmall" style={{ fontWeight: '600' }}>
+                        Sans {r.name}
+                      </ThemedText>
+                      <ThemedText
+                        variant="bodySmall"
+                        color="textSecondary"
+                        style={{ lineHeight: 16, marginTop: 2 }}
+                      >
+                        {r.description}
+                      </ThemedText>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <ThemedText
+                  variant="bodySmall"
+                  color="textSecondary"
+                  style={{ marginTop: 4, lineHeight: 16 }}
+                >
+                  Validé selon le CRAT — aucun ingrédient à risque détecté pour votre trimestre.
+                </ThemedText>
+              )}
+            </View>
           ) : null}
 
           <Divider style={{ marginVertical: Spacing.md }} />
@@ -137,20 +196,6 @@ function AlternativeCard({
           </View>
         </View>
       </Card>
-
-      {locked ? (
-        <BlurView intensity={28} tint="light" style={styles.lockOverlay}>
-          <View style={styles.lockBadge}>
-            <Feather name="lock" size={16} color={Colors.accent} />
-            <ThemedText variant="bodySmall" color="accent" style={{ marginLeft: 6 }}>
-              Premium
-            </ThemedText>
-          </View>
-          <Button variant="primary" onPress={onUnlock}>
-            Débloquer
-          </Button>
-        </BlurView>
-      ) : null}
     </View>
   );
 }
@@ -162,12 +207,158 @@ function DotIndicators({ count, activeIndex }: { count: number; activeIndex: num
       {Array.from({ length: count }).map((_, i) => (
         <View
           key={i}
-          style={[
-            styles.dot,
-            i === activeIndex ? styles.dotActive : styles.dotInactive,
-          ]}
+          style={[styles.dot, i === activeIndex ? styles.dotActive : styles.dotInactive]}
         />
       ))}
+    </View>
+  );
+}
+
+function PremiumUpgradeCard({ trimester, onPress }: { trimester: Trimester; onPress: () => void }) {
+  return (
+    <Card style={styles.premiumCard} padding={Spacing.xl}>
+      <View style={styles.premiumHeader}>
+        <ThemedText variant="headlineMedium">💎 Avec Premium</ThemedText>
+      </View>
+      <View style={styles.premiumBenefit}>
+        <Feather name="check" size={16} color={Colors.accent} />
+        <ThemedText variant="bodyMedium" style={styles.premiumBenefitText}>
+          Explication détaillée par ingrédient (sources CRAT)
+        </ThemedText>
+      </View>
+      <View style={styles.premiumBenefit}>
+        <Feather name="check" size={16} color={Colors.accent} />
+        <ThemedText variant="bodyMedium" style={styles.premiumBenefitText}>
+          Filtrage adapté à ton trimestre actuel (T{trimester})
+        </ThemedText>
+      </View>
+      <View style={styles.premiumBenefit}>
+        <Feather name="check" size={16} color={Colors.accent} />
+        <ThemedText variant="bodyMedium" style={styles.premiumBenefitText}>
+          Jusqu&apos;à 5 alternatives au lieu de 3
+        </ThemedText>
+      </View>
+      <View style={{ height: Spacing.md }} />
+      <Button variant="primary" fullWidth onPress={onPress}>
+        Essayer 7 jours gratuit →
+      </Button>
+    </Card>
+  );
+}
+
+// ─── EDUCATIONAL EMPTY STATE ──────────────────────────────────────────────────
+
+function IngredientExplanationCard({
+  ingredient,
+  level,
+}: {
+  ingredient: IngredientExplanation;
+  level: 'danger' | 'caution';
+}) {
+  const isDanger = level === 'danger';
+  const cardStyle = {
+    backgroundColor: isDanger ? Colors.dangerBg : Colors.backgroundSecondary,
+    borderColor: isDanger ? Colors.dangerLight : Colors.borderLight,
+    borderWidth: 1,
+  };
+  return (
+    <Card style={cardStyle} padding={Spacing.md}>
+      <View style={styles.explanationHeader}>
+        <Feather
+          name={isDanger ? 'x-octagon' : 'alert-triangle'}
+          size={16}
+          color={isDanger ? Colors.danger : Colors.textSecondary}
+        />
+        <ThemedText
+          variant="bodyMedium"
+          style={{ marginLeft: 6, fontWeight: '600', flex: 1 }}
+          numberOfLines={1}
+        >
+          {ingredient.name}
+        </ThemedText>
+      </View>
+      {ingredient.description ? (
+        <ThemedText
+          variant="bodySmall"
+          color="textSecondary"
+          style={{ marginTop: 4, lineHeight: 18 }}
+        >
+          {ingredient.description}
+        </ThemedText>
+      ) : (
+        <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 4, fontStyle: 'italic' }}>
+          À éviter pendant la grossesse selon nos sources.
+        </ThemedText>
+      )}
+    </Card>
+  );
+}
+
+function EducationalEmptyState({
+  dangerExplanations,
+  cautionExplanations,
+  onSuggest,
+  showForm,
+  category,
+}: {
+  dangerExplanations: IngredientExplanation[];
+  cautionExplanations: IngredientExplanation[];
+  onSuggest: () => void;
+  showForm: boolean;
+  category: string;
+}) {
+  const hasAny = dangerExplanations.length > 0 || cautionExplanations.length > 0;
+  return (
+    <View style={styles.emptyContainer}>
+      <ThemedText variant="headlineMedium" style={{ textAlign: 'center' }}>
+        📋 Pas d&apos;alternative dans notre base
+      </ThemedText>
+      <ThemedText
+        variant="bodyMedium"
+        color="textSecondary"
+        style={{ textAlign: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.lg }}
+      >
+        {hasAny
+          ? 'Pour t\'aider à choisir, voici les ingrédients à éviter sur les autres produits de cette catégorie :'
+          : 'Scanne d\'autres produits pour enrichir la base communautaire.'}
+      </ThemedText>
+
+      {dangerExplanations.length > 0 ? (
+        <View style={styles.explanationList}>
+          {dangerExplanations.map((ing) => (
+            <IngredientExplanationCard key={`d-${ing.name}`} ingredient={ing} level="danger" />
+          ))}
+        </View>
+      ) : null}
+
+      {cautionExplanations.length > 0 ? (
+        <View style={styles.explanationList}>
+          {cautionExplanations.map((ing) => (
+            <IngredientExplanationCard key={`c-${ing.name}`} ingredient={ing} level="caution" />
+          ))}
+        </View>
+      ) : null}
+
+      <ThemedText
+        variant="bodySmall"
+        color="textSecondary"
+        style={{ textAlign: 'center', marginTop: Spacing.xl, paddingHorizontal: Spacing.lg }}
+      >
+        Scanne d&apos;autres produits — tu enrichis la communauté à chaque scan 🤍
+      </ThemedText>
+
+      <View style={{ marginTop: Spacing.xl, width: '100%', paddingHorizontal: Spacing.lg, gap: Spacing.sm }}>
+        <Button variant="primary" fullWidth onPress={() => router.back()}>
+          Continuer à scanner →
+        </Button>
+        {!showForm ? (
+          <Button variant="ghost" onPress={onSuggest}>
+            Suggérer une alternative
+          </Button>
+        ) : (
+          <SuggestionForm category={category} />
+        )}
+      </View>
     </View>
   );
 }
@@ -240,10 +431,7 @@ function SuggestionForm({ category: defaultCategory }: { category: string }) {
         {CATEGORY_OPTIONS.map((opt) => (
           <TouchableOpacity
             key={opt.value}
-            style={[
-              styles.categoryChip,
-              selectedCategory === opt.value && styles.categoryChipActive,
-            ]}
+            style={[styles.categoryChip, selectedCategory === opt.value && styles.categoryChipActive]}
             onPress={() => setSelectedCategory(opt.value)}
           >
             <ThemedText
@@ -255,46 +443,14 @@ function SuggestionForm({ category: defaultCategory }: { category: string }) {
           </TouchableOpacity>
         ))}
       </View>
-      <Button
-        variant="primary"
-        fullWidth
-        onPress={handleSubmit}
-        loading={submitting}
-        disabled={submitting}
-      >
+      <Button variant="primary" fullWidth onPress={handleSubmit} loading={submitting} disabled={submitting}>
         Envoyer ma suggestion
       </Button>
     </Card>
   );
 }
 
-function EmptyState({ category }: { category: string }) {
-  const [showForm, setShowForm] = useState(false);
-
-  return (
-    <View style={styles.emptyContainer}>
-      <MagnifyingGlassIllustration />
-      <ThemedText variant="headlineMedium" style={{ textAlign: 'center', marginTop: Spacing.xl }}>
-        Pas encore d'alternatives
-      </ThemedText>
-      <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.xl }}>
-        Pas d'alternative dans notre base. Scannez d'autres produits pour enrichir la communauté 🤍
-      </ThemedText>
-
-      {!showForm ? (
-        <View style={{ marginTop: Spacing.xl }}>
-          <Button variant="ghost" onPress={() => setShowForm(true)}>
-            Suggérer une alternative
-          </Button>
-        </View>
-      ) : (
-        <View style={{ marginTop: Spacing.xl, width: '100%', paddingHorizontal: Spacing.lg }}>
-          <SuggestionForm category={category} />
-        </View>
-      )}
-    </View>
-  );
-}
+// ─── SCREEN ───────────────────────────────────────────────────────────────────
 
 export default function AlternativesScreen() {
   const params = useLocalSearchParams<{
@@ -302,7 +458,9 @@ export default function AlternativesScreen() {
     category: string;
     productName: string;
     productBrand: string;
-    flagged: string;
+    flaggedDanger: string;
+    flaggedCaution: string;
+    trimester: string;
   }>();
 
   const normalize = (v: string | string[] | undefined): string =>
@@ -312,25 +470,67 @@ export default function AlternativesScreen() {
   const category = normalize(params.category) || 'cosmetic';
   const productName = normalize(params.productName) || 'Produit';
   const productBrand = normalize(params.productBrand);
-  const flaggedRaw = normalize(params.flagged);
-  const flaggedNames = flaggedRaw ? flaggedRaw.split('|').filter(Boolean) : [];
+
+  const flaggedDanger = useMemo(
+    () => safeParseStringArray(normalize(params.flaggedDanger)),
+    [params.flaggedDanger],
+  );
+  const flaggedCaution = useMemo(
+    () => safeParseStringArray(normalize(params.flaggedCaution)),
+    [params.flaggedCaution],
+  );
+  const trimester = useMemo<Trimester>(() => {
+    const raw = parseInt(normalize(params.trimester), 10);
+    return (raw === 1 || raw === 2 || raw === 3 ? raw : 2) as Trimester;
+  }, [params.trimester]);
 
   const { isPremium } = usePremium();
   const insets = useSafeAreaInsets();
   const [alternatives, setAlternatives] = useState<AlternativeProduct[]>([]);
+  const [explanations, setExplanations] = useState<{
+    danger: IngredientExplanation[];
+    caution: IngredientExplanation[];
+  }>({ danger: [], caution: [] });
   const [loading, setLoading] = useState(true);
+  const [showSuggestionForm, setShowSuggestionForm] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
+  // Stable keys for memo/effect deps that depend on flagged arrays
+  const flaggedDangerKey = flaggedDanger.join('|');
+  const flaggedCautionKey = flaggedCaution.join('|');
+
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       setLoading(true);
-      const results = await getAlternativesByBarcode(barcode, flaggedNames, 2);
+      const [results, dangerExpl, cautionExpl] = await Promise.all([
+        getAlternativesByBarcode(
+          barcode,
+          { danger: flaggedDanger, caution: flaggedCaution },
+          trimester,
+          isPremium,
+        ),
+        // Always fetch danger explanations: used by premium cards AND by educational empty state.
+        getIngredientExplanations(flaggedDanger),
+        // Caution explanations are only used in the educational empty state.
+        getIngredientExplanations(flaggedCaution),
+      ]);
+      if (cancelled) return;
       setAlternatives(results);
+      setExplanations({ danger: dangerExpl, caution: cautionExpl });
       setLoading(false);
     })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [barcode, flaggedRaw]);
+  }, [barcode, isPremium, trimester, flaggedDangerKey, flaggedCautionKey]);
+
+  const ingredientReasons = useMemo(
+    () => buildIngredientReasons(explanations.danger),
+    [explanations.danger],
+  );
 
   const handleUnlock = useCallback(() => {
     router.push('/paywall');
@@ -342,10 +542,8 @@ export default function AlternativesScreen() {
     setActiveIndex(index);
   }, []);
 
-  const handleViewDetail = useCallback((barcode: string | null) => {
-    if (barcode) {
-      router.push(`/verdict/${encodeURIComponent(barcode)}`);
-    }
+  const handleViewDetail = useCallback((bc: string | null) => {
+    if (bc) router.push(`/verdict/${encodeURIComponent(bc)}`);
   }, []);
 
   const handleAddToList = useCallback(() => {
@@ -380,18 +578,24 @@ export default function AlternativesScreen() {
         <OriginalProductHeader productName={productName} productBrand={productBrand} />
 
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
-          Alternatives compatibles avec votre grossesse
+          Alternatives compatibles avec votre grossesse (T{trimester})
         </ThemedText>
 
         {loading ? (
           <View style={styles.loadingContainer}>
             <View style={styles.loadingCircle} />
             <ThemedText variant="bodyMedium" color="textSecondary">
-              Recherche d'alternatives…
+              Recherche d&apos;alternatives…
             </ThemedText>
           </View>
         ) : alternatives.length === 0 ? (
-          <EmptyState category={category} />
+          <EducationalEmptyState
+            dangerExplanations={explanations.danger}
+            cautionExplanations={explanations.caution}
+            onSuggest={() => setShowSuggestionForm(true)}
+            showForm={showSuggestionForm}
+            category={category}
+          />
         ) : (
           <>
             <ScrollView
@@ -406,28 +610,24 @@ export default function AlternativesScreen() {
               onScroll={handleScroll}
               scrollEventThrottle={16}
             >
-              {alternatives.map((alt, idx) => {
-                const locked = !isPremium && idx >= 1;
-                return (
-                  <AlternativeCard
-                    key={alt.id}
-                    alt={alt}
-                    locked={locked}
-                    onUnlock={handleUnlock}
-                    onViewDetail={() => handleViewDetail(alt.barcode)}
-                    onAddToList={handleAddToList}
-                  />
-                );
-              })}
+              {alternatives.map((alt) => (
+                <AlternativeCard
+                  key={alt.id}
+                  alt={alt}
+                  isPremium={isPremium}
+                  ingredientReasons={ingredientReasons}
+                  trimester={trimester}
+                  onViewDetail={() => handleViewDetail(alt.barcode)}
+                  onAddToList={handleAddToList}
+                />
+              ))}
             </ScrollView>
 
             <DotIndicators count={alternatives.length} activeIndex={activeIndex} />
 
-            {!isPremium && alternatives.length > 1 ? (
-              <View style={styles.unlockCta}>
-                <Button variant="primary" fullWidth onPress={handleUnlock}>
-                  Débloquer toutes les alternatives — Premium
-                </Button>
+            {!isPremium ? (
+              <View style={styles.premiumCardWrapper}>
+                <PremiumUpgradeCard trimester={trimester} onPress={handleUnlock} />
               </View>
             ) : null}
           </>
@@ -436,6 +636,8 @@ export default function AlternativesScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+// ─── STYLES ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   root: {
@@ -526,43 +728,36 @@ const styles = StyleSheet.create({
   },
   altBadgeRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
     marginTop: Spacing.sm,
   },
-  altPopularityRow: {
+  originPill: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    backgroundColor: Colors.surface,
+  },
+  premiumExplanationBox: {
+    backgroundColor: Colors.accentLight,
+    padding: Spacing.md,
+    borderRadius: Radius.sm,
+    marginTop: Spacing.md,
+  },
+  premiumExplanationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  premiumReasonRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: Spacing.xs,
   },
   altActions: {
     gap: Spacing.sm,
     alignItems: 'center',
-  },
-  lockOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.md,
-    backgroundColor: 'rgba(255, 250, 245, 0.45)',
-  },
-  lockBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
-    ...Shadows.soft,
-  },
-  unlockCta: {
-    paddingHorizontal: Spacing.xl,
-    marginTop: Spacing.xl,
   },
   dotsRow: {
     flexDirection: 'row',
@@ -581,10 +776,43 @@ const styles = StyleSheet.create({
   dotInactive: {
     backgroundColor: Colors.borderLight,
   },
+  premiumCardWrapper: {
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.xl,
+  },
+  premiumCard: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+  },
+  premiumHeader: {
+    marginBottom: Spacing.md,
+  },
+  premiumBenefit: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  premiumBenefitText: {
+    flex: 1,
+  },
   emptyContainer: {
     alignItems: 'center',
-    paddingTop: Spacing.xxxl,
+    paddingTop: Spacing.xxl,
     paddingHorizontal: Spacing.xl,
+  },
+  explanationList: {
+    width: '100%',
+    marginTop: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  explanationCard: {
+    borderWidth: 1,
+  },
+  explanationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   loadingContainer: {
     alignItems: 'center',

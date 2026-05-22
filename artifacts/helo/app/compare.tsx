@@ -225,11 +225,14 @@ export default function CompareScreen() {
                   variant="primary"
                   fullWidth
                   onPress={() => {
-                    const flagged = (worseSlot.matches ?? [])
-                      .filter((m) => m.riskLevel === 'danger' || m.riskLevel === 'caution')
+                    const danger = (worseSlot.matches ?? [])
+                      .filter((m) => m.riskLevel === 'danger')
                       .map((m) => m.ingredientName)
-                      .filter(Boolean)
-                      .join('|');
+                      .filter(Boolean);
+                    const caution = (worseSlot.matches ?? [])
+                      .filter((m) => m.riskLevel === 'caution')
+                      .map((m) => m.ingredientName)
+                      .filter(Boolean);
                     router.push({
                       pathname: '/alternatives',
                       params: {
@@ -237,7 +240,9 @@ export default function CompareScreen() {
                         category: 'cosmetic',
                         productName: worseSlot.product.name,
                         productBrand: worseSlot.product.brand ?? '',
-                        flagged,
+                        flaggedDanger: JSON.stringify(danger),
+                        flaggedCaution: JSON.stringify(caution),
+                        trimester: String(trimester ?? 2),
                       },
                     });
                   }}

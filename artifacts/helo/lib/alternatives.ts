@@ -1,17 +1,25 @@
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Category, Trimester } from '@/types';
 
+export type OriginBadge = 'pharmacy' | 'french' | 'bio' | null;
+
 export interface AlternativeProduct {
   id: string;
   name: string;
   brand: string;
   category: Category;
   barcode: string | null;
-  image_url?: string | null;
+  image_url: string | null;
   description_fr: string | null;
-  overall_risk: string;
+  overall_risk: 'safe' | 'caution';
   price_range: string;
   popularity_count: number;
+  origin_badge: OriginBadge;
+}
+
+export interface FlaggedIngredients {
+  danger: string[];
+  caution: string[];
 }
 
 export interface CommunitySuggestion {
@@ -33,26 +41,28 @@ interface ProductCandidate {
   ingredients_raw?: string | null;
 }
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// ─── KEYWORDS ─────────────────────────────────────────────────────────────────
 
 const PRODUCT_TYPES = [
-  // Cosmétiques visage
-  'crème visage', 'crème mains', 'crème corps', 'crème solaire', 'crème hydratante',
-  'sérum', 'masque visage', 'gommage', 'lotion tonique', 'eau micellaire',
-  'huile démaquillante', 'baume lèvres', 'contour des yeux',
-  // Cosmétiques corps
-  'lait corps', 'lait visage', 'huile végétale', 'beurre karité', 'liniment',
-  'eau florale', 'savon', 'gel douche', 'bain moussant',
-  // Cheveux
-  'shampoing', 'après-shampoing', 'masque cheveux',
-  // Hygiène
-  'déodorant', 'parfum', 'dentifrice', 'bain de bouche',
-  // Maquillage
-  'fond de teint', 'mascara', 'rouge à lèvres', 'vernis', 'fard',
-  // Alimentation
+  // Cosmetics
+  'crème visage', 'crème mains', 'crème corps', 'crème solaire',
+  'crème nuit', 'crème jour', 'crème anti-âge', 'crème hydratante',
+  'crème pieds',
+  'lait corps', 'lait visage', 'lait démaquillant', 'lait hydratant',
+  'shampoing', 'après-shampoing', 'masque cheveux', 'huile cheveux',
+  'gel douche', 'savon', 'pain de toilette', 'déodorant', 'parfum',
+  'eau micellaire', 'eau florale', 'lotion tonique', 'tonique',
+  'dentifrice', 'bain de bouche', 'fond de teint', 'mascara',
+  'rouge à lèvres', 'baume lèvres', 'gloss', 'crayon', 'fard',
+  'huile démaquillante', 'sérum', 'masque visage', 'gommage',
+  'huile végétale', 'beurre karité', 'liniment', 'cold cream',
+  'soin', 'baume',
+  // Food
   'yaourt', 'fromage', 'jambon', 'saumon', 'thon', 'chocolat',
-  'biscuit', 'pâte à tartiner', 'jus', 'lait', 'beurre', 'huile',
-  'compote', 'céréales', 'pain', 'pizza', 'soupe',
+  'biscuit', 'pâte à tartiner', 'jus', 'eau', 'lait', 'beurre',
+  'huile olive', 'huile colza', 'pâtes', 'riz', 'céréales',
+  'soupe', 'compote', 'pain', 'viennoiserie', 'confiture',
+  'miel', 'café', 'thé', 'tisane', 'soda', 'limonade',
 ];
 
 export function extractProductKeywords(name: string): string[] {
@@ -60,127 +70,112 @@ export function extractProductKeywords(name: string): string[] {
   return PRODUCT_TYPES.filter((type) => lower.includes(type));
 }
 
-function toAlternative(p: ProductCandidate): AlternativeProduct {
-  return {
-    id: p.id,
-    name: p.name,
-    brand: p.brand,
-    category: p.category,
-    barcode: p.barcode,
-    image_url: p.image_url ?? null,
-    description_fr: null,
-    overall_risk: 'safe',
-    price_range: '',
-    popularity_count: 0,
-  };
+// ─── BRAND HEURISTICS ─────────────────────────────────────────────────────────
+
+const PHARMACY_BRANDS = [
+  'avène', 'avene', 'la roche-posay', 'roche posay',
+  'mustela', 'bioderma', 'uriage', 'a-derma', 'aderma', 'klorane',
+  'weleda', 'cattier', 'cetaphil', 'cerave', 'eucerin', 'ducray', 'nuxe',
+];
+
+const FRENCH_BRANDS = [
+  'caudalie', 'embryolisse', 'lierac', 'sanoflore',
+  'melvita', 'galenic', 'phyto', 'rené furterer',
+];
+
+function detectBio(name: string, ingredientsLower: string): boolean {
+  const nameLower = (name ?? '').toLowerCase();
+  // Strict: standalone word "bio" or "biologique" — avoids matching "biotine", "antibiotique".
+  return /\bbio\b/.test(nameLower)
+    || nameLower.includes('biologique')
+    || /\bbio\b/.test(ingredientsLower);
 }
 
-function filterSafeProducts(
-  candidates: ProductCandidate[],
-  flaggedLower: string[],
-): AlternativeProduct[] {
-  return candidates
-    .filter((c) => {
-      const ingredientsLower = (c.ingredients_raw ?? '').toLowerCase();
-      if (!ingredientsLower) return false;
-      return !flaggedLower.some((flag) => flag && ingredientsLower.includes(flag));
-    })
-    .map(toAlternative);
-}
+// ─── TRIMESTER-SPECIFIC EXCLUSIONS ────────────────────────────────────────────
 
-// ─── HARDCODED FALLBACK ───────────────────────────────────────────────────────
-// Curated safe products vetted as grossesse-compatible. Used when Supabase
-// returns nothing (offline, sparse category, or unmatched product type).
-
-const HARDCODED_ALTERNATIVES: Record<string, string[]> = {
-  // ── Cosmétiques visage
-  'crème visage':       ['Avène Hydrance Riche', 'La Roche-Posay Toleriane Sensitive', 'Bioderma Sensibio Riche'],
-  'crème hydratante':   ['CeraVe Crème Hydratante', 'Avène Hydrance UV Riche', 'Uriage Eau Thermale Crème'],
-  'crème mains':        ['Neutrogena Crème Mains', 'Avène Cicalfate Mains', 'Weleda Crème Mains Skin Food'],
-  'crème corps':        ['Mustela Hydra Bébé Lait', 'A-Derma Exomega Crème', 'CeraVe Crème Hydratante Corps'],
-  'crème solaire':      ['Avène Solaire SPF50', 'La Roche-Posay Anthelios SPF50', 'Bioderma Photoderm SPF50'],
-  'sérum':              ['La Roche-Posay Hyalu B5 Sérum', 'Avène Hydrance Sérum', 'Uriage Hyséac Sérum'],
-  'masque visage':      ['Avène Soothing Masque', 'A-Derma Phys-AC Masque', 'Caudalie Vinopure Masque Purifiant'],
-  'gommage':            ['Cattier Gommage Doux', 'Mustela Stelaprotect Gommage', 'Weleda Gommage Visage à l\'Iris'],
-  'lotion tonique':     ['Avène Eau Thermale Spray', 'Uriage Eau Thermale Spray', 'La Roche-Posay Eau Thermale'],
-  'eau micellaire':     ['Bioderma Sensibio H2O', 'La Roche-Posay Eau Micellaire Ultra', 'Avène Eau Micellaire Douceur'],
-  'huile démaquillante':['Caudalie Huile Démaquillante', 'Weleda Huile Démaquillante', 'Klorane Huile Démaquillante'],
-  'baume lèvres':       ['Avène Cold Cream Baume Lèvres', 'Embryolisse Baume Lèvres', 'Weleda Baume Lèvres'],
-  'contour des yeux':   ['Avène Soothing Eye Contour', 'La Roche-Posay Toleriane Yeux', 'Bioderma Sensibio Yeux'],
-
-  // ── Cheveux
-  'shampoing':          ['Klorane Shampoing à l\'Avoine', 'Cattier Shampoing Doux', 'Weleda Shampoing au Blé'],
-  'après-shampoing':    ['Klorane Après-Shampoing Avoine', 'Cattier Après-Shampoing', 'Weleda Soin Après-Shampoing'],
-  'masque cheveux':     ['Klorane Masque Avoine', 'Cattier Masque Cheveux', 'Weleda Masque Capillaire'],
-
-  // ── Hygiène
-  'déodorant':          ['Weleda Déodorant Spray Citrus', 'Schmidt\'s Déodorant Natural', 'Lavera Déodorant Bio'],
-  'gel douche':         ['Mustela Gel Lavant Doux', 'A-Derma Exomega Gel Émollient', 'Uriage Surgras Liquide'],
-  'savon':              ['Weleda Savon Calendula', 'Cattier Savon Surgras', 'Cadum Savon Lait d\'Amande'],
-  'bain moussant':      ['Mustela Bain Moussant Bébé', 'Weleda Bain Lavande', 'Klorane Bain Doux'],
-  'dentifrice':         ['Sensodyne Soin Complet', 'Elmex Anti-Caries', 'Weleda Dentifrice Salin'],
-  'bain de bouche':     ['Listerine Smart Rinse Sans Alcool', 'Elmex Bain de Bouche', 'Meridol Bain de Bouche'],
-
-  // ── Corps & bébé
-  'lait corps':         ['Mustela Hydra Bébé Lait', 'Cetaphil Lait Hydratant', 'CeraVe Lait Hydratant'],
-  'lait visage':        ['Avène Lait Démaquillant', 'Bioderma Lait Démaquillant', 'La Roche-Posay Lait Démaquillant'],
-  'huile végétale':     ['Weleda Huile Vergetures', 'Mustela Huile Prévention Vergetures', 'Galénic Huile Précieuse'],
-  'beurre karité':      ['Weleda Beurre de Karité', 'Cattier Beurre de Karité Pur', 'Karethic Beurre de Karité'],
-  'liniment':           ['Gilbert Liniment Oléo-Calcaire', 'Mustela Liniment', 'Bioderma ABCDerm Liniment'],
-  'eau florale':        ['Melvita Eau Florale Rose', 'Weleda Eau Florale Rose', 'Sanoflore Eau Florale Rose'],
-
-  // ── Maquillage (sans rétinoïdes/parabens)
-  'fond de teint':      ['Avène Couvrance Fond de Teint', 'La Roche-Posay Toleriane Fond de Teint', 'Bioderma Sensibio Foundation'],
-  'mascara':            ['Avène Couvrance Mascara', 'La Roche-Posay Toleriane Mascara', 'Lavera Mascara Naturel'],
-  'rouge à lèvres':     ['Couleur Caramel Rouge à Lèvres Bio', 'Lavera Rouge à Lèvres', 'Avril Rouge à Lèvres Bio'],
-
-  // ── Alimentation (versions safe pour grossesse)
-  'yaourt':             ['Danone Activia Nature', 'Yoplait Panier de Yoplait Nature', 'La Laitière Yaourt Nature'],
-  'fromage':            ['La Vache qui Rit', 'Babybel Original', 'Kiri Crème de Fromage'],
-  'jambon':             ['Herta Jambon Cuit Le Bon Paris', 'Fleury Michon Jambon Supérieur', 'Aoste Jambon Cuit'],
-  'saumon':             ['Saumon en boîte Petit Navire', 'Saumon Connetable Naturel', 'Petit Navire Saumon Vapeur'],
-  'thon':               ['Petit Navire Thon Albacore Eau', 'Connetable Thon au Naturel', 'Saupiquet Thon Naturel'],
-  'chocolat':           ['Lindt Excellence 70%', 'Côte d\'Or Noir Intense', 'Poulain Noir Extra'],
-  'biscuit':            ['LU Petit Beurre', 'Bonne Maman Galettes', 'BN Goûter Chocolat'],
-  'pâte à tartiner':    ['Bonne Maman Caramel', 'Materne Pomme', 'Nutella (avec modération)'],
-  'jus':                ['Innocent Jus 100% Fruits', 'Joker Le Pur Jus', 'Tropicana Pure Premium'],
-  'compote':            ['Materne Pomme Nature', 'Pom\'Potes Sans Sucres Ajoutés', 'Andros Compote Pomme'],
-  'céréales':           ['Jordans Country Crisp', 'Bjorg Muesli Bio', 'Quaker Oats Flocons Avoine'],
-  'soupe':              ['Liebig Soupe Légumes', 'Knorr Soupe Tomate Basilic', 'Royco Minute Soupe'],
+const TRIMESTER_EXTRA_EXCLUSIONS: Record<Trimester, string[]> = {
+  1: ['alcool denat', 'alcohol denat', 'éthanol', 'ethanol', 'caféine', 'caffeine'],
+  2: [],
+  3: ['ibuprofène', 'ibuprofen', 'aspirine', 'aspirin', 'diclofenac', 'naproxen'],
 };
 
-export function getHardcodedAlternatives(
-  productName: string,
-  category: string,
-): AlternativeProduct[] {
-  const lower = (productName ?? '').toLowerCase();
-  const cat = (category as Category) ?? 'cosmetic';
+// ─── FILTER & SCORE ───────────────────────────────────────────────────────────
 
-  for (const [type, brands] of Object.entries(HARDCODED_ALTERNATIVES)) {
-    if (lower.includes(type)) {
-      return brands.map((label, idx) => ({
-        id: `fallback-${type}-${idx}`,
-        name: label,
-        brand: label.split(' ')[0],
-        category: cat,
-        barcode: null,
-        image_url: null,
-        description_fr: 'Alternative recommandée pendant la grossesse',
-        overall_risk: 'safe',
-        price_range: '',
-        popularity_count: 0,
-      }));
-    }
-  }
-  return [];
+function filterAndScore(
+  candidates: ProductCandidate[],
+  flagged: FlaggedIngredients,
+  trimester: Trimester,
+  isPremium: boolean,
+): AlternativeProduct[] {
+  const dangerLower = flagged.danger.map((n) => n.toLowerCase()).filter((n) => n.length >= 3);
+  const cautionLower = flagged.caution.map((n) => n.toLowerCase()).filter((n) => n.length >= 3);
+  // Trimester-specific exclusions are a Premium benefit (free users get baseline danger exclusion only).
+  const extraExclusions = isPremium ? (TRIMESTER_EXTRA_EXCLUSIONS[trimester] ?? []) : [];
+
+  return candidates
+    .map((c) => {
+      const ingredientsLower = (c.ingredients_raw ?? '').toLowerCase();
+      if (!ingredientsLower) return null;
+
+      // HARD EXCLUSION: danger flagged ingredients
+      if (dangerLower.some((d) => ingredientsLower.includes(d))) return null;
+
+      // HARD EXCLUSION: trimester-specific risks
+      if (extraExclusions.some((e) => ingredientsLower.includes(e))) return null;
+
+      // SOFT PENALTY: caution flagged ingredients
+      const cautionCount = cautionLower.filter((ci) => ingredientsLower.includes(ci)).length;
+
+      // QUALITY BONUS — applies to everyone
+      const brand = (c.brand ?? '').toLowerCase();
+      let bonusScore = 0;
+      let originBadge: OriginBadge = null;
+
+      if (PHARMACY_BRANDS.some((b) => brand.includes(b))) {
+        bonusScore += 15;
+        originBadge = 'pharmacy';
+      } else if (FRENCH_BRANDS.some((b) => brand.includes(b))) {
+        bonusScore += 8;
+        originBadge = 'french';
+      }
+
+      if (detectBio(c.name, ingredientsLower)) {
+        bonusScore += 5;
+        if (!originBadge) originBadge = 'bio';
+      }
+
+      const score = 100 - cautionCount * 15 + bonusScore;
+      return { product: c, score, cautionCount, originBadge };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => b.score - a.score)
+    .map((x) => ({
+      id: x.product.id,
+      name: x.product.name,
+      brand: x.product.brand,
+      category: x.product.category,
+      barcode: x.product.barcode,
+      image_url: x.product.image_url ?? null,
+      description_fr: null,
+      overall_risk: x.cautionCount === 0 ? 'safe' : 'caution',
+      price_range: '',
+      popularity_count: x.score,
+      origin_badge: x.originBadge,
+    }));
 }
 
-// ─── MAIN: 3-LAYER MATCHING ───────────────────────────────────────────────────
+function mergeUnique(a: AlternativeProduct[], b: AlternativeProduct[]): AlternativeProduct[] {
+  const seen = new Set(a.map((p) => p.id));
+  return [...a, ...b.filter((p) => !seen.has(p.id))];
+}
+
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
 
 export async function getAlternativesByBarcode(
   barcode: string,
-  flaggedIngredientNames: string[],
-  _trimester: Trimester,
+  flaggedIngredients: FlaggedIngredients,
+  trimester: Trimester,
+  isPremium: boolean,
 ): Promise<AlternativeProduct[]> {
   if (!isSupabaseConfigured || !barcode) return [];
 
@@ -195,24 +190,11 @@ export async function getAlternativesByBarcode(
     return [];
   }
 
-  const flaggedLower = flaggedIngredientNames
-    .map((n) => (n ?? '').trim().toLowerCase())
-    .filter((n) => n.length >= 3);
-
+  const limit = isPremium ? 5 : 3;
   const productKeywords = extractProductKeywords(current.name);
-  const safe: AlternativeProduct[] = [];
-  const seen = new Set<string>();
+  let accumulated: AlternativeProduct[] = [];
 
-  const merge = (incoming: AlternativeProduct[]) => {
-    for (const a of incoming) {
-      if (seen.has(a.id)) continue;
-      seen.add(a.id);
-      safe.push(a);
-      if (safe.length >= 3) break;
-    }
-  };
-
-  // ── LAYER 1: keyword match on name within same category
+  // ── LAYER 1: keyword match in name within same category
   if (productKeywords.length > 0) {
     const orFilter = productKeywords.map((kw) => `name.ilike.%${kw}%`).join(',');
     const { data: candidates } = await supabase
@@ -222,13 +204,14 @@ export async function getAlternativesByBarcode(
       .neq('id', current.id)
       .not('ingredients_raw', 'is', null)
       .or(orFilter)
-      .limit(20);
+      .limit(30);
 
-    merge(filterSafeProducts((candidates ?? []) as ProductCandidate[], flaggedLower));
+    accumulated = filterAndScore((candidates ?? []) as ProductCandidate[], flaggedIngredients, trimester, isPremium);
+    if (accumulated.length >= limit) return accumulated.slice(0, limit);
   }
 
-  // ── LAYER 2: same brand fallback
-  if (safe.length < 3 && current.brand) {
+  // ── LAYER 2: same brand fallback (runs even if Layer 1 yielded no keywords)
+  if (current.brand) {
     const { data: brandProducts } = await supabase
       .from('products')
       .select('id, name, brand, category, barcode, image_url, ingredients_raw')
@@ -237,35 +220,76 @@ export async function getAlternativesByBarcode(
       .not('ingredients_raw', 'is', null)
       .limit(20);
 
-    merge(filterSafeProducts((brandProducts ?? []) as ProductCandidate[], flaggedLower));
+    const brandSafe = filterAndScore((brandProducts ?? []) as ProductCandidate[], flaggedIngredients, trimester, isPremium);
+    accumulated = mergeUnique(accumulated, brandSafe).sort((a, b) => b.popularity_count - a.popularity_count);
+    if (accumulated.length >= limit) return accumulated.slice(0, limit);
   }
 
-  if (safe.length >= 3) return safe.slice(0, 3);
+  // ── LAYER 3: same category, any safe product
+  const { data: anyCat } = await supabase
+    .from('products')
+    .select('id, name, brand, category, barcode, image_url, ingredients_raw')
+    .eq('category', current.category)
+    .neq('id', current.id)
+    .not('ingredients_raw', 'is', null)
+    .limit(50);
 
-  // ── LAYER 3: hardcoded curated fallback (text-only)
-  const hardcoded = getHardcodedAlternatives(current.name, current.category);
-  if (hardcoded.length > 0) {
-    merge(hardcoded);
-    if (safe.length >= 3) return safe.slice(0, 3);
-  }
-
-  // ── Last resort: any product in same category without flagged ingredients
-  if (safe.length < 3) {
-    const { data: anyCat } = await supabase
-      .from('products')
-      .select('id, name, brand, category, barcode, image_url, ingredients_raw')
-      .eq('category', current.category)
-      .neq('id', current.id)
-      .not('ingredients_raw', 'is', null)
-      .limit(50);
-
-    merge(filterSafeProducts((anyCat ?? []) as ProductCandidate[], flaggedLower));
-  }
-
-  return safe.slice(0, 3);
+  const catSafe = filterAndScore((anyCat ?? []) as ProductCandidate[], flaggedIngredients, trimester, isPremium);
+  accumulated = mergeUnique(accumulated, catSafe).sort((a, b) => b.popularity_count - a.popularity_count);
+  return accumulated.slice(0, limit);
 }
 
-// Retained for legacy callers using product_alternatives curated table.
+// ─── INGREDIENT EXPLANATIONS (for educational empty state) ────────────────────
+
+export interface IngredientExplanation {
+  name: string;
+  description: string;
+}
+
+export async function getIngredientExplanations(
+  names: string[],
+): Promise<IngredientExplanation[]> {
+  if (!isSupabaseConfigured || names.length === 0) return [];
+
+  const orFilter = names
+    .slice(0, 10)
+    .map((n) => {
+      const safe = n.replace(/[%,()]/g, ' ').trim();
+      return `name_inci.ilike.%${safe}%,name.ilike.%${safe}%`;
+    })
+    .join(',');
+
+  const { data } = await supabase
+    .from('ingredients')
+    .select('name, name_inci, description_fr')
+    .or(orFilter)
+    .limit(20);
+
+  const map = new Map<string, string>();
+  for (const row of (data ?? []) as Array<{ name: string; name_inci: string; description_fr: string }>) {
+    const desc = (row.description_fr ?? '').trim();
+    if (!desc) continue;
+    if (row.name) map.set(row.name.toLowerCase(), desc);
+    if (row.name_inci) map.set(row.name_inci.toLowerCase(), desc);
+  }
+
+  return names.map((name) => {
+    const lower = name.toLowerCase();
+    let description = map.get(lower) ?? '';
+    if (!description) {
+      for (const [key, value] of map.entries()) {
+        if (key.includes(lower) || lower.includes(key)) {
+          description = value;
+          break;
+        }
+      }
+    }
+    return { name, description };
+  });
+}
+
+// ─── LEGACY (kept for backwards compat) ───────────────────────────────────────
+
 export async function getAlternatives(
   productId: string,
   category: string,
@@ -317,9 +341,10 @@ export async function getAlternatives(
       barcode: p.barcode,
       image_url: null,
       description_fr: p.description_fr,
-      overall_risk: p.overall_risk,
+      overall_risk: (p.overall_risk === 'caution' ? 'caution' : 'safe'),
       price_range: row.price_range,
       popularity_count: row.popularity_count,
+      origin_badge: null,
     });
     if (results.length >= 5) break;
   }

@@ -6,7 +6,8 @@ import { Feather } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
 import { Colors, Spacing } from '@/constants/theme';
-import type { ProductData, VerdictResult } from '@/types';
+import { useTrimester } from '@/hooks/useTrimester';
+import type { ProductData, Trimester, VerdictResult } from '@/types';
 import { BOTTOM_BAR_HEIGHT } from './verdictHelpers';
 import styles from './verdictStyles';
 
@@ -27,6 +28,7 @@ export function VerdictBottomBar({
   onShare,
   bottomPad,
 }: VerdictBottomBarProps) {
+  const { trimester } = useTrimester();
   return (
     <View style={[styles.bottomBar, { paddingBottom: bottomPad + Spacing.lg }]}>
       <View style={styles.bottomActions}>
@@ -37,10 +39,15 @@ export function VerdictBottomBar({
                 variant="primary"
                 fullWidth
                 onPress={() => {
-                  const flagged = verdict.flaggedIngredients
+                  const danger = verdict.flaggedIngredients
+                    .filter((m) => m.riskLevel === 'danger')
                     .map((m) => m.ingredientName)
-                    .filter(Boolean)
-                    .join('|');
+                    .filter(Boolean);
+                  const caution = verdict.flaggedIngredients
+                    .filter((m) => m.riskLevel === 'caution')
+                    .map((m) => m.ingredientName)
+                    .filter(Boolean);
+                  const t: Trimester = (trimester ?? 2) as Trimester;
                   router.push({
                     pathname: '/alternatives',
                     params: {
@@ -48,7 +55,9 @@ export function VerdictBottomBar({
                       category: 'cosmetic',
                       productName: product.name,
                       productBrand: product.brand ?? '',
-                      flagged,
+                      flaggedDanger: JSON.stringify(danger),
+                      flaggedCaution: JSON.stringify(caution),
+                      trimester: String(t),
                     },
                   });
                 }}

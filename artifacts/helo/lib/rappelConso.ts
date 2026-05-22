@@ -63,8 +63,7 @@ export async function fetchRecentRecalls(forceRefresh = false): Promise<RappelCo
           return records;
         }
       }
-    } catch {
-    }
+    } catch (err) { swallow(err); }
   }
 
   const params = new URLSearchParams({

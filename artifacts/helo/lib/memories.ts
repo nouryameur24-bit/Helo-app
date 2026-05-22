@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
-import type { JournalEntry } from '@/app/(tabs)/journal';
+import type { JournalEntry } from '@/app/journal';
 import type { Trimester } from '@/types';
 
 export const CAPSULES_KEY = 'memory_capsules';

@@ -64,8 +64,7 @@ async function syncWidgetFromShelf(products: ShelfProduct[]): Promise<void> {
     }
     await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester });
     await reloadWidgets();
-  } catch {
-  }
+  } catch (err) { swallow(err); }
 }
 
 export function useShelfData(userId?: string | null) {
@@ -118,8 +117,7 @@ export function useShelfData(userId?: string | null) {
           syncWidgetFromShelf(items).catch(swallow);
           return;
         }
-      } catch {
-      }
+      } catch (err) { swallow(err); }
     }
 
     try {

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { Alert, Platform } from 'react-native';
-import type { JournalEntry } from '@/app/(tabs)/journal';
+import type { JournalEntry } from '@/app/journal';
 
 function escapeHtml(str: string): string {
   return str

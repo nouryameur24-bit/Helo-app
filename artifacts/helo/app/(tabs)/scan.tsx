@@ -69,14 +69,12 @@ import {
 
 const MENU_RESULT_KEY = '@helo_menu_result';
 
-// Module-level one-shot flag: when verdict's "Photographier la composition" CTA
-// is tapped, it sets this to true before navigating. The next time the Scan tab
-// gains focus, we flip to OCR mode ONCE and consume the flag. Every other focus
-// (tab switch, back-from-modal, app foreground) resets to barcode mode.
-let globalGhostFlag = false;
-export function triggerGhostMode() {
-  globalGhostFlag = true;
-}
+// Route-param signal: when verdict's "Photographier la composition" CTA is
+// tapped it navigates to `/(tabs)/scan?ghostMode=1&ghostBarcode=...`. On the
+// next focus we consume the param ONCE (via a ref guard) to flip into OCR
+// mode. Every other focus (tab switch, back-from-modal, foreground) defaults
+// to barcode mode. No module-level mutable state — survives Fast Refresh,
+// works across multiple Scan tab instances, and is testable.
 
 export default function ScanScreen() {
   // First-use discovery sheets — barcode auto-shows on mount; the other modes
@@ -87,7 +85,11 @@ export default function ScanScreen() {
   const fdRestaurant = useFeatureDiscovery('restaurant', { autoShow: false });
   const fdPrescription = useFeatureDiscovery('prescription', { autoShow: false });
 
-  const { ghostBarcode } = useLocalSearchParams<{ ghostBarcode?: string }>();
+  const { ghostBarcode, ghostMode } = useLocalSearchParams<{
+    ghostBarcode?: string;
+    ghostMode?: string;
+  }>();
+  const ghostConsumed = useRef(false);
 
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
@@ -142,11 +144,11 @@ export default function ScanScreen() {
   useFocusEffect(
     useCallback(() => {
       setIsActive(true);
-      // Reset to barcode on every focus, UNLESS Ghost Capture just triggered.
-      // The flag is set by triggerGhostMode() (called from verdict screen) and
-      // consumed exactly once here.
-      if (globalGhostFlag) {
-        globalGhostFlag = false;
+      // Consume the Ghost Capture param exactly once per navigation. Every
+      // other focus (tab switch, back-from-modal, app foreground) resets to
+      // barcode mode.
+      if (ghostMode === '1' && !ghostConsumed.current) {
+        ghostConsumed.current = true;
         setScanMode('ingredients');
       } else {
         setScanMode('barcode');
@@ -156,8 +158,10 @@ export default function ScanScreen() {
         setTorchOn(false);
         setMenuPhotos([]);
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        // Reset the one-shot guard so the NEXT Ghost Capture navigation works.
+        ghostConsumed.current = false;
       };
-    }, []),
+    }, [ghostMode]),
   );
 
   const handleBarcodeScanned = useCallback(
@@ -205,9 +209,7 @@ export default function ScanScreen() {
         const ghostParam = ghostBarcode ? `&ghostBarcode=${encodeURIComponent(ghostBarcode)}` : '';
         router.push(`/ocr-review?imageUri=${encodeURIComponent(photo.uri)}&base64=${encodeURIComponent(photo.base64 ?? '')}${ghostParam}`);
       }
-    } catch {
-      // silent — user can retry
-    } finally {
+    } catch (err) { swallow(err); } finally {
       setTakingPhoto(false);
     }
   }, [takingPhoto, flashOverlay]);
@@ -226,9 +228,7 @@ export default function ScanScreen() {
         setMenuPhotos((prev) => [...prev, { uri: photo.uri, base64: photo.base64! }]);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-    } catch {
-      // silent — user can retry
-    } finally {
+    } catch (err) { swallow(err); } finally {
       setTakingPhoto(false);
     }
   }, [takingPhoto, flashOverlay, menuPhotos.length]);
@@ -243,9 +243,7 @@ export default function ScanScreen() {
       await AsyncStorage.setItem(MENU_RESULT_KEY, JSON.stringify(result));
       setMenuPhotos([]);
       router.push('/restaurant-results');
-    } catch {
-      // silent
-    } finally {
+    } catch (err) { swallow(err); } finally {
       setIsAnalyzing(false);
     }
   }, [menuPhotos, isAnalyzing]);
@@ -267,9 +265,7 @@ export default function ScanScreen() {
       if (photo?.base64) {
         router.push(`/photo-result?base64=${encodeURIComponent(photo.base64)}`);
       }
-    } catch {
-      // silent
-    } finally {
+    } catch (err) { swallow(err); } finally {
       setTakingPhoto(false);
     }
   }, [takingPhoto, flashOverlay, isPremium]);

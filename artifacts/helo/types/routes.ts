@@ -18,10 +18,10 @@ export const ROUTES = {
   shelf: '/(tabs)/shelf',
   chat: '/(tabs)/chat',
   profile: '/(tabs)/profile',
-  history: '/(tabs)/history',
-  community: '/(tabs)/community',
-  journalTab: '/(tabs)/journal',
-  partnerChecklistTab: '/(tabs)/partner-checklist-tab',
+  history: '/history',
+  community: '/community',
+  journalTab: '/journal',
+  partnerChecklistTab: '/partner-checklist-tab',
 
   // Dynamic
   verdict: (scanId: string) => `/verdict/${encodeURIComponent(scanId)}` as const,

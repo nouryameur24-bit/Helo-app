@@ -20,7 +20,7 @@ import { logError } from '@/lib/logger';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 
-import type { JournalEntry } from './(tabs)/journal';
+import type { JournalEntry } from './journal';
 
 const MOODS = ['😍', '😊', '😐', '😔', '😰'];
 const MOOD_LABELS: Record<string, string> = {

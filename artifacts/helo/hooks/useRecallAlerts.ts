@@ -83,12 +83,8 @@ export function useRecallAlerts(isPremium: boolean) {
           }
           await syncWidgetData({ glowScore: score, weekOfPregnancy, trimester: trimesterNum });
           await reloadWidgets();
-        } catch {
-          // Widget sync failure is non-critical — home screen widget falls back to last known data
-        }
-      } catch {
-        // Shelf update failure — item not removed from storage, alert still dismissed
-      }
+        } catch (err) { swallow(err); }
+      } catch (err) { swallow(err); }
       await dismiss();
     },
     [dismiss],
@@ -142,8 +138,7 @@ export function useRecallAlerts(isPremium: boolean) {
       } else {
         await AsyncStorage.removeItem(ACTIVE_ALERT_KEY).catch(swallow);
       }
-    } catch {
-    } finally {
+    } catch (err) { swallow(err); } finally {
       setChecking(false);
     }
   }, [isPremium]);

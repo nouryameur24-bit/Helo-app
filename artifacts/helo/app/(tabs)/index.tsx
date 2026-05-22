@@ -1,11 +1,10 @@
 import { swallow } from '@/lib/swallow';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ROUTES } from '@/types/routes';
-import { router, type Href } from 'expo-router';
+import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Dimensions,
   Platform,
   Pressable,
   ScrollView,
@@ -22,29 +21,28 @@ import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
 import { GlowScoreShareCard } from '@/components/share/GlowScoreShareCard';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { Divider } from '@/components/ui/Divider';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { GlowScoreCircle } from '@/components/GlowScoreCircle';
-import { Colors, Radius, Spacing } from '@/constants/theme';
-import { calculateGlowScore, getGlowLabel } from '@/lib/glowscore';
+import { Colors, Spacing } from '@/constants/theme';
+import { calculateGlowScore } from '@/lib/glowscore';
 import { useTrimester } from '@/hooks/useTrimester';
 import { useWeeklyBrief } from '@/hooks/useWeeklyBrief';
 import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
-import { useBreastfeeding, BREASTFEEDING_PALETTE } from '@/hooks/useBreastfeeding';
+import { useBreastfeeding } from '@/hooks/useBreastfeeding';
 import { usePremium } from '@/hooks/usePremium';
 import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 import { PactWidget } from '@/components/PactWidget';
 import { PartnerHomeScreen } from '@/components/home/PartnerHomeScreen';
+import { BreastfeedingBanners } from '@/components/home/BreastfeedingBanners';
+import { FeatureGrid } from '@/components/home/FeatureGrid';
+import { GlowScoreSection } from '@/components/home/GlowScoreSection';
 import { styles } from '@/components/home/homeStyles';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
 import { PulsingHelpButton } from '@/components/ui/PulsingHelpButton';
 
 const WELCOME_FLAG = '@helo_show_welcome_overlay';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const statusColors: Record<string, { bg: string; accent: string; icon: 'check-circle' | 'alert-circle' | 'x-circle' | 'help-circle' }> = {
   safe:    { bg: Colors.safeBg,    accent: Colors.safe,    icon: 'check-circle'  },
@@ -89,33 +87,6 @@ function ScanCard({ item, index }: { item: ShelfProduct; index: number }) {
   );
 }
 
-function CompositionBar({ count, total, color, label }: {
-  count: number;
-  total: number;
-  color: string;
-  label: string;
-}) {
-  const pct = total > 0 ? count / total : 0;
-  return (
-    <View style={styles.barRow}>
-      <ThemedText variant="bodySmall" color="textSecondary" style={styles.barLabel}>
-        {label}
-      </ThemedText>
-      <View style={styles.barTrack}>
-        <View
-          style={[
-            styles.barFill,
-            { width: `${pct * 100}%`, backgroundColor: color },
-          ]}
-        />
-      </View>
-      <ThemedText variant="bodySmall" color="textTertiary" style={styles.barCount}>
-        {count}
-      </ThemedText>
-    </View>
-  );
-}
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
@@ -145,11 +116,9 @@ export default function HomeScreen() {
   const activeShelf = realShelf;
 
   const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(activeShelf);
-  const hasRisk = countDanger > 0 || countCaution > 0;
   const { isPremium } = usePremium();
 
   const [glowShareVisible, setGlowShareVisible] = useState(false);
-  const [showAllFeatures, setShowAllFeatures] = useState(false);
 
   // ── Post-onboarding "wow" overlay (déclenché par le flag AsyncStorage) ──
   const [showWelcome, setShowWelcome] = useState(false);
@@ -244,58 +213,12 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
 
-        {/* Breastfeeding suggestion banner */}
-        {shouldSuggestBreastfeeding && !isBreastfeeding && (
-          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
-            <View style={styles.bfSuggestionBanner}>
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
-                  Mode allaitement disponible
-                </ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Votre DPA est dépassé. Activez le mode allaitement pour des analyses adaptées.
-                </ThemedText>
-              </View>
-              <View style={{ gap: Spacing.sm }}>
-                <Pressable
-                  onPress={async () => {
-                    await enableBreastfeeding();
-                    dismissBreastfeedingSuggestion();
-                  }}
-                  style={styles.bfSuggestionCTA}
-                  accessibilityRole="button"
-                  accessibilityLabel="Activer le mode allaitement"
-                >
-                  <ThemedText variant="labelSmall" style={{ color: '#FFF' }}>Activer</ThemedText>
-                </Pressable>
-                <Pressable
-                  onPress={dismissBreastfeedingSuggestion}
-                  accessibilityRole="button"
-                  accessibilityLabel="Ignorer"
-                >
-                  <ThemedText variant="bodySmall" color="textTertiary" style={{ textAlign: 'center' }}>Ignorer</ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          </Animated.View>
-        )}
-
-        {/* Breastfeeding active banner */}
-        {isBreastfeeding && (
-          <Animated.View entering={FadeInDown.delay(50).duration(400)}>
-            <View style={[styles.bfSuggestionBanner, { borderColor: BREASTFEEDING_PALETTE.accentLight }]}>
-              <Feather name="heart" size={20} color={BREASTFEEDING_PALETTE.accent} />
-              <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-                <ThemedText variant="labelLarge" style={{ color: BREASTFEEDING_PALETTE.accent }}>
-                  Mode allaitement actif
-                </ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Vos analyses sont adaptées à la période d'allaitement
-                </ThemedText>
-              </View>
-            </View>
-          </Animated.View>
-        )}
+        <BreastfeedingBanners
+          shouldSuggest={shouldSuggestBreastfeeding}
+          isBreastfeeding={isBreastfeeding}
+          enableBreastfeeding={enableBreastfeeding}
+          dismissSuggestion={dismissBreastfeedingSuggestion}
+        />
 
         {/* Hero Scan CTA */}
         <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.heroSection}>
@@ -380,111 +303,7 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Feature discovery grid */}
-        <Animated.View entering={FadeInDown.delay(155).duration(500)}>
-          <View style={styles.featureSectionHeader}>
-            <ThemedText variant="headlineMedium" color="textPrimary">Explorer</ThemedText>
-          </View>
-          <View style={styles.featureGrid}>
-            {(() => {
-              const allFeatures = [
-                {
-                  label: 'Nutrition',
-                  subtitle: 'Besoins du trimestre',
-                  icon: 'heart' as const,
-                  iconBg: Colors.cautionLight,
-                  iconColor: Colors.caution,
-                  route: '/nutrition',
-                },
-                {
-                  label: 'Maison',
-                  subtitle: 'Score environnement',
-                  icon: 'home' as const,
-                  iconBg: Colors.safeBg,
-                  iconColor: Colors.safe,
-                  route: '/home-score',
-                },
-                {
-                  label: 'Restau',
-                  subtitle: 'Analysez le menu',
-                  icon: 'coffee' as const,
-                  iconBg: '#FFF0E8',
-                  iconColor: '#C97B40',
-                  route: '/(tabs)/scan',
-                },
-                {
-                  label: 'Voyage',
-                  subtitle: 'Briefing santé',
-                  icon: 'map' as const,
-                  iconBg: '#E8F0FF',
-                  iconColor: '#6B8FDB',
-                  route: '/travel',
-                  premium: true,
-                },
-                {
-                  label: 'Timeline',
-                  subtitle: 'Semaine par semaine',
-                  icon: 'calendar' as const,
-                  iconBg: '#E8F5EE',
-                  iconColor: Colors.safe,
-                  route: '/timeline',
-                },
-                {
-                  label: 'Widget Glow',
-                  subtitle: 'Widget écran d\'accueil',
-                  icon: 'watch' as const,
-                  iconBg: '#F5F0FF',
-                  iconColor: '#8B6BDB',
-                  route: '/widget-preview',
-                },
-              ];
-              return showAllFeatures ? allFeatures : allFeatures.slice(0, 4);
-            })().map((f) => (
-              <Pressable
-                key={f.label}
-                style={({ pressed }) => [
-                  styles.featureCell,
-                  { opacity: pressed ? 0.82 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
-                ]}
-                onPress={() => router.push(f.route as Href)}
-                accessibilityRole="button"
-                accessibilityLabel={f.label}
-              >
-                <View style={[styles.featureCellIcon, { backgroundColor: f.iconBg }]}>
-                  <Feather name={f.icon} size={20} color={f.iconColor} />
-                </View>
-                <ThemedText variant="labelLarge" color="textPrimary">{f.label}</ThemedText>
-                <Text style={styles.featureCellSubtitle}>{f.subtitle}</Text>
-                {'badge' in f && typeof f.badge === 'string' && (
-                  <View style={styles.featureCellBadge}>
-                    <ThemedText style={styles.featureCellBadgeText}>{f.badge}</ThemedText>
-                  </View>
-                )}
-                {'premium' in f && f.premium && !isPremium && (
-                  <View style={styles.featureCellPremiumDot}>
-                    <Feather name="star" size={9} color={Colors.accentDark} />
-                  </View>
-                )}
-              </Pressable>
-            ))}
-          </View>
-          <Pressable
-            onPress={() => setShowAllFeatures((v) => !v)}
-            style={({ pressed }) => ({
-              alignSelf: 'center',
-              marginTop: Spacing.md,
-              paddingVertical: Spacing.sm,
-              paddingHorizontal: Spacing.lg,
-              opacity: pressed ? 0.7 : 1,
-            })}
-            accessibilityRole="button"
-            accessibilityLabel={showAllFeatures ? 'Voir moins' : 'Voir plus de fonctionnalités'}
-          >
-            <ThemedText variant="labelLarge" color="accent">
-              {showAllFeatures ? 'Voir moins ↑' : 'Voir plus →'}
-            </ThemedText>
-          </Pressable>
-        </Animated.View>
+        <FeatureGrid isPremium={isPremium} />
 
         {/* Shelf scan CTA */}
         <Animated.View entering={FadeInDown.delay(165).duration(500)}>
@@ -589,78 +408,14 @@ export default function HomeScreen() {
           </Pressable>
         </Animated.View>
 
-        {/* Glow Score */}
-        <Animated.View entering={FadeInDown.delay(240).duration(500)}>
-          <View style={styles.sectionHeader}>
-            <ThemedText variant="headlineMedium" color="textPrimary">Votre Glow Score</ThemedText>
-            <IconButton size={36} onPress={() => setGlowShareVisible(true)} accessibilityLabel="Partager le Glow Score">
-              <Feather name="share-2" size={16} color={Colors.textSecondary} />
-            </IconButton>
-          </View>
-
-          <Card padding={Spacing.xl} style={styles.glowCard}>
-            <View style={styles.glowCircleRow}>
-              <GlowScoreCircle
-                score={score}
-                size="large"
-                animated
-                empty={total === 0}
-                breakdown={total > 0 ? { safe: countSafe, caution: countCaution, danger: countDanger } : undefined}
-                breathing={total > 0}
-              />
-            </View>
-            <ThemedText
-              variant="bodyMedium"
-              color="textSecondary"
-              style={styles.glowSubtitle}
-            >
-              {total === 0
-                ? 'Scannez votre premier produit pour découvrir votre Glow Score'
-                : `Basé sur ${total} produit${total > 1 ? 's' : ''} de votre placard`}
-            </ThemedText>
-
-            {total > 0 && (
-              <>
-                <Divider style={{ marginVertical: Spacing.xl }} />
-                <ThemedText variant="labelLarge" color="textPrimary" style={{ marginBottom: Spacing.md }}>
-                  Composition
-                </ThemedText>
-                <View style={styles.barsContainer}>
-                  <CompositionBar count={countSafe} total={total} color={Colors.safe} label="Sûrs" />
-                  <CompositionBar count={countCaution} total={total} color={Colors.caution} label="Vigilance" />
-                  <CompositionBar count={countDanger} total={total} color={Colors.danger} label="À risque" />
-                </View>
-              </>
-            )}
-
-            {hasRisk && (
-              <Pressable
-                onPress={() => router.push('/(tabs)/shelf')}
-                style={({ pressed }) => [
-                  styles.improveCard,
-                  { opacity: pressed ? 0.85 : 1 },
-                ]}
-                accessibilityRole="button"
-                accessibilityLabel="Améliorez votre score"
-              >
-                <View style={styles.improveCardLeft}>
-                  <View style={styles.improveIcon}>
-                    <Feather name="arrow-up-circle" size={20} color={Colors.accent} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <ThemedText variant="labelLarge" color="textPrimary">
-                      Améliorez votre score
-                    </ThemedText>
-                    <ThemedText variant="bodySmall" color="textSecondary">
-                      {countDanger + countCaution} produit{countDanger + countCaution > 1 ? 's' : ''} à risque · voir les alternatives
-                    </ThemedText>
-                  </View>
-                </View>
-                <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
-              </Pressable>
-            )}
-          </Card>
-        </Animated.View>
+        <GlowScoreSection
+          score={score}
+          total={total}
+          countSafe={countSafe}
+          countCaution={countCaution}
+          countDanger={countDanger}
+          onShare={() => setGlowShareVisible(true)}
+        />
 
         {/* Recent scans */}
         <Animated.View entering={FadeInDown.delay(320).duration(500)}>

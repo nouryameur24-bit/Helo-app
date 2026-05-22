@@ -230,13 +230,13 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
   { key: 'nutrition',    category: 'Analyse',      route: '/nutrition' },
   { key: 'travel',       category: 'Analyse',      route: '/travel' },
   // Social
-  { key: 'partner',      category: 'Social',       route: '/(tabs)/partner-checklist-tab' },
+  { key: 'partner',      category: 'Social',       route: '/partner-checklist-tab' },
   // V1: Cercle masqué dans le Guide, réactiver pour V2
   // { key: 'circle',       category: 'Social',       route: '/circle' },
   { key: 'pact',         category: 'Social',       route: '/pact' },
   // Ma Grossesse
   { key: 'timeline',     category: 'Ma Grossesse', route: '/timeline' },
-  { key: 'journal',      category: 'Ma Grossesse', route: '/(tabs)/journal' },
+  { key: 'journal',      category: 'Ma Grossesse', route: '/journal' },
   { key: 'memories',     category: 'Ma Grossesse', route: '/memories' },
   // { key: 'ar_mirror',    category: 'Ma Grossesse', route: '/ar-mirror' }, // hidden V1 — reactivate when visual recognition lands
 ];

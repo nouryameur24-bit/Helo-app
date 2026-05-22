@@ -134,12 +134,6 @@ function ClassicTabLayout() {
             ),
         }}
       />
-
-      {/* Hidden screens — accessible via router.push, not shown in tab bar */}
-      <Tabs.Screen name="history" options={{ href: null }} />
-      <Tabs.Screen name="journal" options={{ href: null }} />
-      <Tabs.Screen name="community" options={{ href: null }} />
-      <Tabs.Screen name="partner-checklist-tab" options={{ href: null }} />
     </Tabs>
   );
 }

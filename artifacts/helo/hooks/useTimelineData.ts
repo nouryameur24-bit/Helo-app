@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useTimelineData — Données de la timeline grossesse semaine par semaine.
  *
@@ -144,8 +145,7 @@ export function useTimelineData() {
       }
 
       setWeeks(result);
-    } catch {
-    } finally {
+    } catch (err) { swallow(err); } finally {
       setIsLoading(false);
     }
   }, []);

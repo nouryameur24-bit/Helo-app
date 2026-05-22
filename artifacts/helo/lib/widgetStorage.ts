@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import { Platform, NativeModules } from 'react-native';
 
 const APP_GROUP_ID = 'group.com.helo.widget';
@@ -31,8 +32,7 @@ export async function syncWidgetData(data: WidgetData): Promise<void> {
       storage.setItem('week_of_pregnancy', String(data.weekOfPregnancy), APP_GROUP_ID),
       storage.setItem('trimester', String(data.trimester), APP_GROUP_ID),
     ]);
-  } catch {
-  }
+  } catch (err) { swallow(err); }
 }
 
 export async function reloadWidgets(): Promise<void> {
@@ -41,6 +41,5 @@ export async function reloadWidgets(): Promise<void> {
   try {
     const { reloadAllTimelines } = await import('react-native-ios-widget');
     await reloadAllTimelines();
-  } catch {
-  }
+  } catch (err) { swallow(err); }
 }

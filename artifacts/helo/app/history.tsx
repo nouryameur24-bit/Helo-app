@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -161,8 +162,7 @@ export default function HistoryScreen() {
           setTotalCount(items.length);
           return;
         }
-      } catch {
-      }
+      } catch (err) { swallow(err); }
     }
 
     try {
@@ -191,8 +191,7 @@ export default function HistoryScreen() {
       }));
       setSections(groupByDate(items));
       setTotalCount(items.length);
-    } catch {
-    } finally {
+    } catch (err) { swallow(err); } finally {
       setIsLoading(false);
     }
   }, [historyUserId]);

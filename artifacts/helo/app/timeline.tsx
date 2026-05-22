@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import * as Print from 'expo-print';
@@ -343,8 +344,7 @@ export default function TimelineScreen() {
             setExporting(false);
             return;
           }
-        } catch {
-        }
+        } catch (err) { swallow(err); }
       }
 
       const journalRaw = await AsyncStorage.getItem('journal_entries');

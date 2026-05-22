@@ -44,8 +44,7 @@ function handleNotificationRoute(
     const route = getDeepLinkRoute(data.type, payload);
     try {
       router.push(route as Parameters<typeof router.push>[0]);
-    } catch {
-    }
+    } catch (err) { swallow(err); }
   }
 }
 

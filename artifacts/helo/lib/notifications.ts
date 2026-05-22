@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
@@ -197,8 +198,7 @@ async function incrementWeeklyCap(): Promise<void> {
     }
     cap.count++;
     await AsyncStorage.setItem(WEEKLY_CAP_KEY, JSON.stringify(cap));
-  } catch {
-  }
+  } catch (err) { swallow(err); }
 }
 
 export async function initAndroidNotificationChannels(): Promise<void> {

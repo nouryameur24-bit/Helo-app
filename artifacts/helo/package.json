@@ -70,6 +70,7 @@
     "expo-camera": "^17.0.10",
     "expo-clipboard": "^8.0.8",
     "expo-crypto": "^15.0.9",
+    "expo-file-system": "~19.0.22",
     "expo-notifications": "^0.32.17",
     "expo-print": "^15.0.8",
     "expo-sharing": "^14.0.8",

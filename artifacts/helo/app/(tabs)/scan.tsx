@@ -129,7 +129,12 @@ export default function ScanScreen() {
     }
   }, [syncComplete]);
 
-  const [menuPhotos, setMenuPhotos] = useState<Array<{ uri: string; base64: string }>>([]);
+  // We deliberately only store the file URI here — not the base64 payload.
+  // Base64 strings for camera frames can be 1-5 MB each and crossing the RN
+  // bridge / sitting in JS state for several photos at once can OOM on older
+  // Android devices. The base64 is read on-demand at analyze time
+  // (see analyzeMenu in lib/restaurant.ts).
+  const [menuPhotos, setMenuPhotos] = useState<Array<{ uri: string }>>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const isOCRMode = scanMode === 'ingredients';
@@ -223,9 +228,12 @@ export default function ScanScreen() {
       withTiming(0, { duration: 250 }),
     );
     try {
-      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.82 });
-      if (photo?.uri && photo.base64) {
-        setMenuPhotos((prev) => [...prev, { uri: photo.uri, base64: photo.base64! }]);
+      // No `base64: true` — we'd otherwise force RN to ship a multi-MB string
+      // across the bridge for every shot. URI is enough; we read base64 only
+      // at analyze time, one image at a time, then release it.
+      const photo = await cameraRef.current.takePictureAsync({ quality: 0.82 });
+      if (photo?.uri) {
+        setMenuPhotos((prev) => [...prev, { uri: photo.uri }]);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (err) { swallow(err, 'scan.menuPhotoCapture'); } finally {
@@ -238,8 +246,8 @@ export default function ScanScreen() {
     setIsAnalyzing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      const base64Array = menuPhotos.map((p) => p.base64);
-      const result = await analyzeMenu(base64Array);
+      const uris = menuPhotos.map((p) => p.uri);
+      const result = await analyzeMenu(uris);
       await AsyncStorage.setItem(MENU_RESULT_KEY, JSON.stringify(result));
       setMenuPhotos([]);
       router.push('/restaurant-results');

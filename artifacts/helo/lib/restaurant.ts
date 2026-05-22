@@ -275,15 +275,30 @@ export function extractDishes(rawText: string): string[] {
 // ─── Full menu analysis ───────────────────────────────────────────────────────
 
 /**
- * OCR each image (base64), extract dish names, analyze each dish.
+ * OCR each image, extract dish names, analyze each dish.
+ *
+ * Accepts file URIs (preferred — keeps base64 out of React state to avoid
+ * OOM on older devices). The base64 payload for each image is read from
+ * disk one at a time, sent to OCR, and released before the next iteration
+ * so peak memory stays at ~1 image worth of base64 regardless of count.
+ *
  * Returns MenuAnalysis with dishes sorted by risk (danger first).
  */
-export async function analyzeMenu(imageBase64Array: string[]): Promise<MenuAnalysis> {
+export async function analyzeMenu(imageUris: string[]): Promise<MenuAnalysis> {
+  // Lazy import: lib/restaurant.ts is imported by jest unit tests that have
+  // no native module shim. Loading expo-file-system at the top would crash
+  // the test suite even though analyzeMenu itself is never invoked there.
+  const FileSystem = await import('expo-file-system/legacy');
+
   const allTexts: string[] = [];
   let hasApiKey = true;
 
-  for (const base64 of imageBase64Array) {
+  for (const uri of imageUris) {
+    let base64: string | null = null;
     try {
+      base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
       const text = await processOCRImage(base64);
       allTexts.push(text);
     } catch (e: unknown) {
@@ -292,7 +307,11 @@ export async function analyzeMenu(imageBase64Array: string[]): Promise<MenuAnaly
         hasApiKey = false;
         break;
       }
-      // Other errors (NO_TEXT_DETECTED, network) — skip this image silently
+      // Other errors (NO_TEXT_DETECTED, network, file read) — skip silently
+    } finally {
+      // Drop the local reference so the ~1-5 MB base64 string is eligible
+      // for GC before we read the next image.
+      base64 = null;
     }
   }
 

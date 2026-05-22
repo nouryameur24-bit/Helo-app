@@ -13,7 +13,7 @@ interface Props {
   isPremium: boolean;
 }
 
-export function HomeShelfScanCTA({ isPremium }: Props) {
+export const HomeShelfScanCTA = React.memo(function HomeShelfScanCTA({ isPremium }: Props) {
   return (
     <Animated.View entering={FadeInDown.delay(165).duration(500)}>
       <Pressable
@@ -45,4 +45,4 @@ export function HomeShelfScanCTA({ isPremium }: Props) {
       </Pressable>
     </Animated.View>
   );
-}
+});

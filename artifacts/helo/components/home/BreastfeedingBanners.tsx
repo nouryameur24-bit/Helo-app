@@ -15,7 +15,7 @@ interface Props {
   dismissSuggestion: () => void;
 }
 
-export function BreastfeedingBanners({
+export const BreastfeedingBanners = React.memo(function BreastfeedingBanners({
   shouldSuggest,
   isBreastfeeding,
   enableBreastfeeding,
@@ -75,4 +75,4 @@ export function BreastfeedingBanners({
       </View>
     </Animated.View>
   );
-}
+});

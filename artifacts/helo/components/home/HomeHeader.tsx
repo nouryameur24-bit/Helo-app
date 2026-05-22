@@ -16,7 +16,7 @@ interface Props {
   weekOfPregnancy: number;
 }
 
-export function HomeHeader({ displayName, weekOfPregnancy }: Props) {
+export const HomeHeader = React.memo(function HomeHeader({ displayName, weekOfPregnancy }: Props) {
   return (
     <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
       <View>
@@ -55,4 +55,4 @@ export function HomeHeader({ displayName, weekOfPregnancy }: Props) {
       </View>
     </Animated.View>
   );
-}
+});

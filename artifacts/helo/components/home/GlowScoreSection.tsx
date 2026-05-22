@@ -43,7 +43,7 @@ interface Props {
   onShare: () => void;
 }
 
-export function GlowScoreSection({ score, total, countSafe, countCaution, countDanger, onShare }: Props) {
+export const GlowScoreSection = React.memo(function GlowScoreSection({ score, total, countSafe, countCaution, countDanger, onShare }: Props) {
   const hasRisk = countDanger > 0 || countCaution > 0;
   return (
     <Animated.View entering={FadeInDown.delay(240).duration(500)}>
@@ -111,4 +111,4 @@ export function GlowScoreSection({ score, total, countSafe, countCaution, countD
       </Card>
     </Animated.View>
   );
-}
+});

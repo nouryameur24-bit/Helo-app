@@ -58,7 +58,7 @@ interface Props {
   shelf: ShelfProduct[];
 }
 
-export function HomeRecentScans({ shelf }: Props) {
+export const HomeRecentScans = React.memo(function HomeRecentScans({ shelf }: Props) {
   return (
     <Animated.View entering={FadeInDown.delay(320).duration(500)}>
       <View style={styles.sectionHeader}>
@@ -93,4 +93,4 @@ export function HomeRecentScans({ shelf }: Props) {
       </View>
     </Animated.View>
   );
-}
+});

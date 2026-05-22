@@ -9,7 +9,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { ROUTES } from '@/types/routes';
 import { styles } from './homeStyles';
 
-export function HomeQuickActions() {
+export const HomeQuickActions = React.memo(function HomeQuickActions() {
   return (
     <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.quickRow}>
       <Pressable
@@ -53,4 +53,4 @@ export function HomeQuickActions() {
       </Pressable>
     </Animated.View>
   );
-}
+});

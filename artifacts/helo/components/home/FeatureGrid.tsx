@@ -32,7 +32,7 @@ interface Props {
   isPremium: boolean;
 }
 
-export function FeatureGrid({ isPremium }: Props) {
+export const FeatureGrid = React.memo(function FeatureGrid({ isPremium }: Props) {
   const [showAll, setShowAll] = useState(false);
   const features = showAll ? ALL_FEATURES : ALL_FEATURES.slice(0, 4);
 
@@ -89,4 +89,4 @@ export function FeatureGrid({ isPremium }: Props) {
       </Pressable>
     </Animated.View>
   );
-}
+});

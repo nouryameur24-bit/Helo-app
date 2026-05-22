@@ -15,7 +15,7 @@ interface Props {
   countDanger: number;
 }
 
-export function HomeStatsRow({ total, countSafe, countCaution, countDanger }: Props) {
+export const HomeStatsRow = React.memo(function HomeStatsRow({ total, countSafe, countCaution, countDanger }: Props) {
   if (total === 0) {
     return (
       <Animated.View entering={FadeInDown.delay(180).duration(500)}>
@@ -53,4 +53,4 @@ export function HomeStatsRow({ total, countSafe, countCaution, countDanger }: Pr
       </Card>
     </Animated.View>
   );
-}
+});

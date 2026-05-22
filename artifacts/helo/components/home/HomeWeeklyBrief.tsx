@@ -13,7 +13,7 @@ interface Props {
   isNew: boolean;
 }
 
-export function HomeWeeklyBrief({ weekOfPregnancy, isNew }: Props) {
+export const HomeWeeklyBrief = React.memo(function HomeWeeklyBrief({ weekOfPregnancy, isNew }: Props) {
   return (
     <Animated.View entering={FadeInDown.delay(220).duration(500)}>
       <Pressable
@@ -51,4 +51,4 @@ export function HomeWeeklyBrief({ weekOfPregnancy, isNew }: Props) {
       </Pressable>
     </Animated.View>
   );
-}
+});

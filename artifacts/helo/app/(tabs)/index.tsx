@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -55,11 +55,23 @@ export default function HomeScreen() {
   const { isNew } = useWeeklyBrief(weekOfPregnancy);
 
   const { shelf } = useShelfData(userId || undefined);
-  const { score, countSafe, countCaution, countDanger, total } = calculateGlowScore(shelf);
+  // Recompute the glow score only when the shelf reference changes — the hook
+  // already memoises `shelf`, so this avoids re-running the reducer on every
+  // unrelated state update (premium, weekly brief, welcome overlay…).
+  const { score, countSafe, countCaution, countDanger, total } = useMemo(
+    () => calculateGlowScore(shelf),
+    [shelf],
+  );
   const { isPremium } = usePremium();
 
   const welcome = useWelcomeOverlay();
   const [glowShareVisible, setGlowShareVisible] = useState(false);
+
+  // Stable handlers — without useCallback the inline arrows would change on
+  // every render and defeat React.memo on the memoised sub-components.
+  const handleShareGlow = useCallback(() => setGlowShareVisible(true), []);
+  const handleCloseShare = useCallback(() => setGlowShareVisible(false), []);
+  const displayName = firstName || 'Hēlo';
 
   if (isPartner) {
     return <PartnerHomeScreen />;
@@ -80,7 +92,7 @@ export default function HomeScreen() {
       {glowShareVisible && (
         <ShareBottomSheet
           visible={glowShareVisible}
-          onClose={() => setGlowShareVisible(false)}
+          onClose={handleCloseShare}
           card={
             <GlowScoreShareCard
               score={score}
@@ -102,7 +114,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <HomeHeader displayName={firstName || 'Hēlo'} weekOfPregnancy={weekOfPregnancy} />
+        <HomeHeader displayName={displayName} weekOfPregnancy={weekOfPregnancy} />
 
         <BreastfeedingBanners
           shouldSuggest={shouldSuggestBreastfeeding}
@@ -136,7 +148,7 @@ export default function HomeScreen() {
           countSafe={countSafe}
           countCaution={countCaution}
           countDanger={countDanger}
-          onShare={() => setGlowShareVisible(true)}
+          onShare={handleShareGlow}
         />
 
         <HomeRecentScans shelf={shelf} />

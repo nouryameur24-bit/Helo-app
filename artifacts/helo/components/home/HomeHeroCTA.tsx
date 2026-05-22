@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import { styles } from './homeStyles';
 
-export function HomeHeroCTA() {
+export const HomeHeroCTA = React.memo(function HomeHeroCTA() {
   return (
     <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.heroSection}>
       <LinearGradient
@@ -45,4 +45,4 @@ export function HomeHeroCTA() {
       </LinearGradient>
     </Animated.View>
   );
-}
+});

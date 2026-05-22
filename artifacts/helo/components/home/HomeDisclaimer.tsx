@@ -8,7 +8,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import { styles } from './homeStyles';
 
-export function HomeDisclaimer() {
+export const HomeDisclaimer = React.memo(function HomeDisclaimer() {
   return (
     <Animated.View entering={FadeInDown.delay(400).duration(500)}>
       <Card style={styles.disclaimerCard} padding={Spacing.lg}>
@@ -24,4 +24,4 @@ export function HomeDisclaimer() {
       </Card>
     </Animated.View>
   );
-}
+});

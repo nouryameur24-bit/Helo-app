@@ -1,6 +1,8 @@
-const { getDefaultConfig } = require("expo/metro-config");
+const {
+  getSentryExpoConfig
+} = require("@sentry/react-native/metro");
 
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 // expo-camera installs zxing-wasm which creates temporary directories
 // that Metro tries to watch but which disappear immediately, causing ENOENT crashes.

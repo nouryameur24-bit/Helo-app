@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useOffline — Détection de la connectivité et synchronisation hors-ligne.
  *
@@ -44,9 +45,9 @@ export function useOffline(): UseOfflineReturn {
 
     AsyncStorage.getItem(PREMIUM_KEY).then((val) => {
       if (val === 'true') {
-        downloadIngredientsDB().catch(() => {});
+        downloadIngredientsDB().catch(swallow);
       }
-    }).catch(() => {});
+    }).catch(swallow);
 
     return result.success;
   }, []);

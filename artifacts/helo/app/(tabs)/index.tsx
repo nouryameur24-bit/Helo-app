@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ROUTES } from '@/types/routes';
 import { router, type Href } from 'expo-router';
@@ -155,13 +156,13 @@ export default function HomeScreen() {
   useEffect(() => {
     AsyncStorage.getItem(WELCOME_FLAG).then((flag) => {
       if (flag === '1') setShowWelcome(true);
-    }).catch(() => {});
+    }).catch(swallow);
   }, []);
   // Memoized pour éviter de relancer le timer auto-dismiss du WelcomeOverlay
   // à chaque re-render du Home (hooks profile/shelf déclenchent souvent).
   const dismissWelcome = useCallback(() => {
     setShowWelcome(false);
-    AsyncStorage.removeItem(WELCOME_FLAG).catch(() => {});
+    AsyncStorage.removeItem(WELCOME_FLAG).catch(swallow);
   }, []);
 
   if (isPartner) {

@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useRecallAlerts — Surveillance des rappels de produits DGCCRF/ANSM.
  *
@@ -46,7 +47,7 @@ export function useRecallAlerts(isPremium: boolean) {
 
   const dismiss = useCallback(async () => {
     setActiveAlert(null);
-    await AsyncStorage.removeItem(ACTIVE_ALERT_KEY).catch(() => {});
+    await AsyncStorage.removeItem(ACTIVE_ALERT_KEY).catch(swallow);
   }, []);
 
   const removeFromShelf = useCallback(
@@ -137,9 +138,9 @@ export function useRecallAlerts(isPremium: boolean) {
           title: '⚠️ Alerte rappel produit',
           body: `${matches[0].recall.libelle} (${matches[0].recall.marque_produit}) — ${matches[0].recall.motif_rappel}`,
           data: { barcode: matches[0].product.barcode ?? '' },
-        }).catch(() => {});
+        }).catch(swallow);
       } else {
-        await AsyncStorage.removeItem(ACTIVE_ALERT_KEY).catch(() => {});
+        await AsyncStorage.removeItem(ACTIVE_ALERT_KEY).catch(swallow);
       }
     } catch {
     } finally {

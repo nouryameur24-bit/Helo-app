@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useBreastfeeding — Mode allaitement avec recalcul des verdicts du placard.
  *
@@ -109,7 +110,7 @@ export function useBreastfeeding(): UseBreastfeedingReturn {
     initialized.current = true;
     AsyncStorage.getItem(BREASTFEEDING_KEY)
       .then((v) => setIsBreastfeeding(v === 'true'))
-      .catch(() => {});
+      .catch(swallow);
   }, []);
 
   const enableBreastfeeding = useCallback(async (): Promise<{ changedCount: number }> => {

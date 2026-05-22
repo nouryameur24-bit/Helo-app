@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
@@ -100,7 +101,7 @@ export default function VerdictScreen() {
     ghostThanksShownRef.current = true;
     setToastMessage("✨ Merci ! Vous venez d'aider la communauté Hēlo");
     setToastVisible(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(swallow);
     const t = setTimeout(() => setToastVisible(false), 3000);
     return () => clearTimeout(t);
   }, [ghostThanks, loading]);
@@ -127,7 +128,7 @@ export default function VerdictScreen() {
     if (!userId) return;
     getCircle().then((data) => {
       setCircleId(data?.circle?.id ?? null);
-    }).catch(() => {});
+    }).catch(swallow);
   }, [userId]);
 
   useEffect(() => {
@@ -149,9 +150,9 @@ export default function VerdictScreen() {
               phaseRef.current = p.trimester as Phase;
             }
           }
-        }).catch(() => {});
+        }).catch(swallow);
       }
-    }).catch(() => {});
+    }).catch(swallow);
   }, [profileTrimester]);
 
   useEffect(() => {
@@ -165,7 +166,7 @@ export default function VerdictScreen() {
           const data = JSON.parse(raw);
           setDirectResult(data.product, data.matches, data.verdict);
         }
-      }).catch(() => {});
+      }).catch(swallow);
       return;
     }
 
@@ -176,7 +177,7 @@ export default function VerdictScreen() {
           const data = JSON.parse(raw);
           setDirectResult(data.product, data.matches, data.verdict);
         }
-      }).catch(() => {});
+      }).catch(swallow);
       return;
     }
 
@@ -203,7 +204,7 @@ export default function VerdictScreen() {
   }, [barcode, phase, isOffline]);
 
   useEffect(() => {
-    getBabyMode().then(setIsBabyMode).catch(() => {});
+    getBabyMode().then(setIsBabyMode).catch(swallow);
   }, []);
 
   useEffect(() => {
@@ -213,14 +214,14 @@ export default function VerdictScreen() {
         setBabyMatches(babyM);
         setBabyVerdict(getVerdict(babyM));
       })
-      .catch(() => {});
+      .catch(swallow);
   }, [isBabyMode, product]);
 
   useEffect(() => {
     if (!barcode || barcode.startsWith('ocr_') || barcode === 'photo-scan' || !isPremium) return;
     fetchRecallForBarcode(barcode)
       .then((r) => setRecallMatch(r))
-      .catch(() => {});
+      .catch(swallow);
   }, [barcode, isPremium]);
 
   useEffect(() => {

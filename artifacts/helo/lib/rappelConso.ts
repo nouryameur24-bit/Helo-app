@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL =
@@ -86,7 +87,7 @@ export async function fetchRecentRecalls(forceRefresh = false): Promise<RappelCo
   await AsyncStorage.setItem(
     RECALL_CACHE_KEY,
     JSON.stringify({ fetchedAt: Date.now(), records }),
-  ).catch(() => {});
+  ).catch(swallow);
 
   return records;
 }

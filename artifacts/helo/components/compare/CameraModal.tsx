@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * CameraModal — scanner de code-barres plein écran pour le comparateur.
  */
@@ -36,7 +37,7 @@ export function CameraModal({ visible, onClose, onScan }: CameraModalProps) {
       const now = Date.now();
       if (now - lastScan.current < 1500) return;
       lastScan.current = now;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(swallow);
       onScan(data);
     },
     [onScan],

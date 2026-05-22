@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -51,7 +52,7 @@ function useWidgetDeepLinks() {
 
     Linking.getInitialURL().then((url) => {
       if (url) handleUrl({ url });
-    }).catch(() => {});
+    }).catch(swallow);
 
     return () => {
       subscription.remove();
@@ -67,11 +68,11 @@ function RootLayoutNav() {
   useWidgetDeepLinks();
 
   useEffect(() => {
-    initAndroidNotificationChannels().catch(() => {});
-    configurePurchases().catch(() => {});
+    initAndroidNotificationChannels().catch(swallow);
+    configurePurchases().catch(swallow);
     // Download ingredients DB for all users (free + premium) so scans never
     // require a live Supabase round-trip. Only runs when local copy is absent.
-    downloadIngredientsDB().catch(() => {});
+    downloadIngredientsDB().catch(swallow);
   }, []);
 
   return (
@@ -250,7 +251,7 @@ function RootLayout() {
         } else {
           const userId = await ensureAnonymousSession().catch(() => null);
           if (userId) {
-            registerPushToken(userId).catch(() => {});
+            registerPushToken(userId).catch(swallow);
           }
         }
       } catch {

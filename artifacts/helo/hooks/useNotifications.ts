@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useNotifications — Gestion complète des notifications push Expo.
  *
@@ -67,7 +68,7 @@ export function useNotificationTapRouting() {
           handleNotificationRoute(routerRef.current, lastResponse);
         }
       })
-      .catch(() => {});
+      .catch(swallow);
 
     globalTapListenerSubscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {

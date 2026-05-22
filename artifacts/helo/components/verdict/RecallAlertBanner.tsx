@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import React from 'react';
 import { Linking, Pressable, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -15,7 +16,7 @@ export function RecallAlertBanner({ recallMatch }: RecallAlertBannerProps) {
   return (
     <Pressable
       style={styles.recallBanner}
-      onPress={() => Linking.openURL(recallMatch.lien_vers_la_fiche_rappel).catch(() => {})}
+      onPress={() => Linking.openURL(recallMatch.lien_vers_la_fiche_rappel).catch(swallow)}
       accessibilityRole="button"
       accessibilityLabel="Voir le rappel officiel"
     >

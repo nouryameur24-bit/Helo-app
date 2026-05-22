@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ROUTES } from '@/types/routes';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -176,7 +177,7 @@ export default function ScanScreen() {
         }
       }
 
-      onProductScanned(scanFirstName || '').catch(() => {});
+      onProductScanned(scanFirstName || '').catch(swallow);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       flashColor.value = withSequence(
         withTiming(1, { duration: 150 }),

@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect } from 'react';
@@ -27,7 +28,7 @@ export function RecallAlertModal({ alert, onDismiss, onRemoveFromShelf }: Props)
 
   useEffect(() => {
     if (visible) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(swallow);
     }
   }, [visible]);
 
@@ -38,7 +39,7 @@ export function RecallAlertModal({ alert, onDismiss, onRemoveFromShelf }: Props)
 
   const handleMoreInfo = () => {
     if (recall.lien_vers_la_fiche_rappel) {
-      Linking.openURL(recall.lien_vers_la_fiche_rappel).catch(() => {});
+      Linking.openURL(recall.lien_vers_la_fiche_rappel).catch(swallow);
     }
   };
 

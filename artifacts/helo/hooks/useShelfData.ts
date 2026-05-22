@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useShelfData — Gestion du placard produits avec fallback local.
  *
@@ -114,7 +115,7 @@ export function useShelfData(userId?: string | null) {
           });
           setShelf(items);
           setLoading(false);
-          syncWidgetFromShelf(items).catch(() => {});
+          syncWidgetFromShelf(items).catch(swallow);
           return;
         }
       } catch {
@@ -127,7 +128,7 @@ export function useShelfData(userId?: string | null) {
       const filtered = all.filter((i) => !i.userId || i.userId === userId);
       const items = filtered.map(mapRawToShelf);
       setShelf(items);
-      syncWidgetFromShelf(items).catch(() => {});
+      syncWidgetFromShelf(items).catch(swallow);
     } catch {
       setShelf([]);
     } finally {

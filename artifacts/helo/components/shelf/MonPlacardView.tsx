@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
@@ -63,7 +64,7 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   const [babyProducts, setBabyProducts] = useState<LocalShelfItem[]>([]);
 
   useEffect(() => {
-    getBabyMode().then(setIsBabyMode).catch(() => {});
+    getBabyMode().then(setIsBabyMode).catch(swallow);
   }, []);
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
       if (!raw) return;
       const all: LocalShelfItem[] = JSON.parse(raw);
       setBabyProducts(all.filter((item) => item.baby_product === true));
-    }).catch(() => {});
+    }).catch(swallow);
   }, [isBabyMode]);
 
   useEffect(() => {

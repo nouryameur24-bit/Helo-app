@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -33,7 +34,7 @@ export function ProfileHeader() {
     if (!userId || isPartner || !firstName) return;
     const week = computeWeekFromDueDate(dueDate);
     if (week && week >= 1 && week <= 42) {
-      checkAndSendWeekMilestoneNotification({ firstName, currentWeek: week }).catch(() => {});
+      checkAndSendWeekMilestoneNotification({ firstName, currentWeek: week }).catch(swallow);
     }
   }, [userId, isPartner, firstName, dueDate]);
 

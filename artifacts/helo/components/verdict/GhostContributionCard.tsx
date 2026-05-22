@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
@@ -36,7 +37,7 @@ export function GhostContributionCard({ barcode, onSubmitted }: GhostContributio
         brand: trimmedBrand,
       });
       if (ok) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(swallow);
         setState('thanks');
         onSubmitted?.('Merci ✨ Tu as aidé la communauté Hēlo');
       } else {

@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useBabyMode — Mode bébé pour scanner les produits de puériculture.
  *
@@ -40,7 +41,7 @@ export function useBabyMode(): UseBabyModeReturn {
     initialized.current = true;
     AsyncStorage.getItem(BABY_MODE_KEY)
       .then((v) => setBabyMode(v === 'true'))
-      .catch(() => {});
+      .catch(swallow);
   }, []);
 
   const enableBabyMode = useCallback(async () => {

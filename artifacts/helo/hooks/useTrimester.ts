@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 /**
  * useTrimester — Calcul automatique du trimestre et gestion des transitions.
  *
@@ -54,7 +55,7 @@ export function useTrimester(): UseTrimesterReturn {
 
   const dismissBreastfeedingSuggestion = useCallback(() => {
     setShouldSuggestBreastfeeding(false);
-    AsyncStorage.setItem(BF_SUGGESTION_KEY, 'true').catch(() => {});
+    AsyncStorage.setItem(BF_SUGGESTION_KEY, 'true').catch(swallow);
   }, []);
 
   useEffect(() => {

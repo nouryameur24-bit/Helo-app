@@ -1,3 +1,4 @@
+import { swallow } from '@/lib/swallow';
 import React from 'react';
 import { Switch, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -50,7 +51,7 @@ export function CircleShareRow({
         productName: product.name,
         verdict: scanVerdict,
         circleId,
-      }).catch(() => {});
+      }).catch(swallow);
     } catch {
       setSharedToCircle(false);
     }

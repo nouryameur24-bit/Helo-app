@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v8";
+const MATCHER_VERSION = "v9";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -337,7 +337,12 @@ function tagsToIngredientsText(tags: string[]): string {
     .join(", ");
 }
 
-const OFF_TIMEOUT_MS = 3000;
+// Bumped from 3000→8000 : cgi/search.pl répond en ~3-4s typiquement (mesuré
+// 3.4s sur amora+mustards). À 3s on timeoutait systématiquement le happy path
+// cgi, forçant 3 retries × 3s = 15s puis empty. À 8s on laisse le 1er essai
+// réussir, et les retries n'interviennent que sur vraies 5xx/network.
+// ES (search.openfoodfacts.org) reste rapide (~1s) donc pas pénalisé.
+const OFF_TIMEOUT_MS = 8000;
 
 /**
  * Choisit l'endpoint OFF (alimentaire) ou OBF (cosmétique) selon la
@@ -559,40 +564,56 @@ async function searchOffCandidates(
     url = `${endpoint}?${params.toString()}`;
   }
 
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
-  try {
-    const resp = await fetch(url, {
-      signal: ac.signal,
-      headers: { "User-Agent": USER_AGENT },
-    });
-    if (!resp.ok) return { candidates: [], error: `http_${resp.status}` };
-    const json = (await resp.json()) as {
-      products?: RawOffProduct[];
-      hits?: RawOffProduct[];
-    };
-    const raws = Array.isArray(json.hits)
-      ? json.hits
-      : Array.isArray(json.products)
-        ? json.products
-        : [];
-    const candidates: LiveCandidate[] = [];
-    for (const r of raws) {
-      const norm = normalizeOffProduct(r);
-      if (norm) candidates.push(norm);
+  // Retry on 503 / network — OFF cgi est intermittent (rate-limit, déploiements).
+  // 3 tentatives avec backoff 0/250/750ms : couvre les blips courts sans
+  // pénaliser le happy path (1ère tentative succès = pas de delay).
+  const MAX_ATTEMPTS = 3;
+  const BACKOFFS_MS = [0, 250, 750];
+  let lastError: string | null = null;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (BACKOFFS_MS[attempt]! > 0) {
+      await new Promise((r) => setTimeout(r, BACKOFFS_MS[attempt]!));
     }
-    return { candidates, error: null };
-  } catch (err) {
-    return {
-      candidates: [],
-      error:
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
+    try {
+      const resp = await fetch(url, {
+        signal: ac.signal,
+        headers: { "User-Agent": USER_AGENT },
+      });
+      if (!resp.ok) {
+        lastError = `http_${resp.status}`;
+        // Retry uniquement sur 5xx + 429 (transient). 4xx autres = définitif.
+        if (resp.status < 500 && resp.status !== 429) {
+          return { candidates: [], error: lastError };
+        }
+        continue;
+      }
+      const json = (await resp.json()) as {
+        products?: RawOffProduct[];
+        hits?: RawOffProduct[];
+      };
+      const raws = Array.isArray(json.hits)
+        ? json.hits
+        : Array.isArray(json.products)
+          ? json.products
+          : [];
+      const candidates: LiveCandidate[] = [];
+      for (const r of raws) {
+        const norm = normalizeOffProduct(r);
+        if (norm) candidates.push(norm);
+      }
+      return { candidates, error: null };
+    } catch (err) {
+      lastError =
         err instanceof Error && err.name === "AbortError"
           ? "timeout"
-          : "network",
-    };
-  } finally {
-    clearTimeout(timer);
+          : "network";
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  return { candidates: [], error: lastError };
 }
 
 /**
@@ -954,7 +975,12 @@ router.get(
       );
 
       if (liveCandidates.length === 0) {
-        await writeAlternativesCache(req, barcode, cache, cacheKey, []);
+        // ★ NE PAS cacher cet empty : un live filet à 0 candidat est presque
+        // toujours dû à un blip OFF (503 sur cgi/search.pl, timeout réseau)
+        // qu'on veut re-tenter au prochain appel. Cacher ici empoisonne le
+        // résultat pour 24h et masque les vraies alternatives. Si le produit
+        // n'a réellement aucune alternative possible (catégorie de niche),
+        // c'est le sniper qui le confirmera plus tard (cache L1010 ci-dessous).
         res.json([]);
         return;
       }

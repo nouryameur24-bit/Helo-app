@@ -10,7 +10,8 @@
  * La clé Anthropic n'est jamais exposée côté client.
  */
 
-import type { MatchResult, Phase, RiskLevel, Verdict } from '@/types';
+import type { Category, MatchResult, Phase, RiskLevel, Verdict } from '@/types';
+import type { AlternativeProduct, OriginBadge } from '@/lib/alternatives';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -30,6 +31,12 @@ const APP_SECRET = process.env.EXPO_PUBLIC_HELO_APP_SECRET ?? '';
 export const isBackendConfigured = Boolean(API_BASE && APP_SECRET);
 
 const SCAN_TIMEOUT_MS = 15_000;
+/**
+ * Timeout plus court pour /alternatives : si le backend met >8s on retombe
+ * sur le pipeline local. L'utilisatrice clique "Voir alternatives" puis voit
+ * le spinner — au-delà de 8s elle décrocherait de toute façon.
+ */
+const ALTERNATIVES_TIMEOUT_MS = 8_000;
 
 // ─── Response shape (mirror du contrat OpenAPI) ──────────────────────────────
 
@@ -142,6 +149,129 @@ export async function scanProductRemote(
       }
       return { ok: false, error: { kind: 'invalid_request', detail } };
     }
+    return {
+      ok: false,
+      error: { kind: 'server', detail: `HTTP ${response.status}` },
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: { kind: 'network', detail: msg } };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ─── /alternatives ───────────────────────────────────────────────────────────
+
+/**
+ * DTO renvoyé par le backend pour `GET /api/alternatives/:barcode`.
+ * Forme volontairement alignée avec le type mobile `AlternativeProduct` — le
+ * backend fait l'hydratation + scoring + badges pour qu'on n'ait rien à faire
+ * côté client (juste un cast de `category`).
+ */
+export interface AlternativeProductDto {
+  id: string;
+  name: string;
+  brand: string;
+  category: string;
+  barcode: string | null;
+  image_url: string | null;
+  description_fr: string | null;
+  overall_risk: 'safe' | 'caution';
+  price_range: string;
+  popularity_count: number;
+  origin_badge: OriginBadge;
+}
+
+export interface AlternativesRemoteOk {
+  ok: true;
+  data: AlternativeProduct[];
+}
+export interface AlternativesRemoteError {
+  ok: false;
+  error: ScanError;
+}
+
+/**
+ * Convertit le DTO backend → type interne du mobile. Le backend nous garantit
+ * déjà le bon format (on l'a designé pour) ; on caste juste `category` qui est
+ * `string` côté contrat OpenAPI vs enum strict côté mobile.
+ */
+const VALID_CATEGORIES: ReadonlySet<Category> = new Set([
+  'cosmetic',
+  'food',
+  'medication',
+]);
+
+/** Normalise toute string backend vers l'enum strict Category, fallback cosmetic. */
+function coerceCategory(raw: unknown): Category {
+  if (typeof raw === 'string' && VALID_CATEGORIES.has(raw as Category)) {
+    return raw as Category;
+  }
+  return 'cosmetic';
+}
+
+function dtoToAlternativeProduct(d: AlternativeProductDto): AlternativeProduct {
+  return {
+    id: d.id,
+    name: d.name,
+    brand: d.brand,
+    category: coerceCategory(d.category),
+    barcode: d.barcode,
+    image_url: d.image_url,
+    description_fr: d.description_fr,
+    overall_risk: d.overall_risk,
+    price_range: d.price_range,
+    popularity_count: d.popularity_count,
+    origin_badge: d.origin_badge,
+  };
+}
+
+/**
+ * Appelle `GET /api/alternatives/:barcode?trimester=X`.
+ *
+ * Backend-first : l'écran appelle cette fonction en premier, et si elle
+ * échoue (réseau, 5xx, timeout, non-configuré), on retombe sur le pipeline
+ * local (`getAlternativesByBarcode`). Un tableau vide n'est PAS une erreur
+ * — c'est la "trappe de sécurité" (aucun produit 100% safe en base) et
+ * l'écran affiche son empty state existant.
+ */
+export async function fetchAlternativesRemote(
+  barcode: string,
+  phase: Phase,
+): Promise<AlternativesRemoteOk | AlternativesRemoteError> {
+  if (!isBackendConfigured) {
+    return { ok: false, error: { kind: 'unconfigured' } };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ALTERNATIVES_TIMEOUT_MS);
+
+  try {
+    const url = `${API_BASE}/api/alternatives/${encodeURIComponent(
+      barcode,
+    )}?trimester=${encodeURIComponent(String(phaseToApi(phase)))}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'x-helo-app-secret': APP_SECRET },
+      signal: controller.signal,
+    });
+
+    if (response.status === 200) {
+      const raw = (await response.json()) as unknown;
+      // Payload malformé (≠ array) → on traite comme une erreur serveur pour
+      // déclencher le fallback local, plutôt que d'afficher un faux empty state.
+      if (!Array.isArray(raw)) {
+        return { ok: false, error: { kind: 'server', detail: 'malformed_payload' } };
+      }
+      const data = raw.map((d) => dtoToAlternativeProduct(d as AlternativeProductDto));
+      return { ok: true, data };
+    }
+    if (response.status === 404) return { ok: false, error: { kind: 'not_found' } };
+    if (response.status === 401) return { ok: false, error: { kind: 'unauthorized' } };
+    if (response.status === 429) return { ok: false, error: { kind: 'rate_limited' } };
+    if (response.status === 400) return { ok: false, error: { kind: 'invalid_request' } };
     return {
       ok: false,
       error: { kind: 'server', detail: `HTTP ${response.status}` },

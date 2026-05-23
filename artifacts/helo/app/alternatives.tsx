@@ -32,6 +32,7 @@ import {
   getIngredientExplanations,
   submitAlternativeSuggestion,
 } from '@/lib/alternatives';
+import { fetchAlternativesRemote } from '@/lib/api';
 import type { Trimester } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -504,19 +505,48 @@ export default function AlternativesScreen() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [results, dangerExpl, cautionExpl] = await Promise.all([
-        getAlternativesByBarcode(
+
+      // ── BACKEND-FIRST : on lance en parallèle l'appel backend ET les
+      //    explications d'ingrédients (toujours via Supabase direct, c'est
+      //    léger et indépendant).
+      const [remote, dangerExpl, cautionExpl] = await Promise.all([
+        fetchAlternativesRemote(barcode, trimester),
+        getIngredientExplanations(flaggedDanger),
+        getIngredientExplanations(flaggedCaution),
+      ]);
+      if (cancelled) return;
+
+      let results: AlternativeProduct[];
+      if (remote.ok) {
+        // Backend a répondu (200) — y compris si data === [] (trappe de
+        // sécurité côté serveur : aucun produit 100% safe en base). L'écran
+        // basculera automatiquement sur l'empty state existant.
+        //
+        // ⚠️ Parité premium : le backend ne connaît pas le tier user (il
+        // renverrait la liste si on l'exposait, sécu paywall côté serveur
+        // possible plus tard). On enforce la limite ici comme le faisait le
+        // pipeline local : 5 alternatives pour premium, 3 pour free.
+        const limit = isPremium ? 5 : 3;
+        results = remote.data.slice(0, limit);
+      } else {
+        // Erreur réseau / 5xx / timeout / backend non configuré → fallback
+        // local. L'utilisatrice n'est jamais bloquée, l'UX reste identique
+        // à l'expérience pré-backend.
+        if (__DEV__) {
+          console.warn(
+            '[Hēlo alternatives] backend KO, fallback local:',
+            remote.error.kind,
+          );
+        }
+        results = await getAlternativesByBarcode(
           barcode,
           { danger: flaggedDanger, caution: flaggedCaution },
           trimester,
           isPremium,
-        ),
-        // Always fetch danger explanations: used by premium cards AND by educational empty state.
-        getIngredientExplanations(flaggedDanger),
-        // Caution explanations are only used in the educational empty state.
-        getIngredientExplanations(flaggedCaution),
-      ]);
-      if (cancelled) return;
+        );
+        if (cancelled) return;
+      }
+
       setAlternatives(results);
       setExplanations({ danger: dangerExpl, caution: cautionExpl });
       setLoading(false);

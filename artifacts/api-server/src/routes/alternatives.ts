@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v4";
+const MATCHER_VERSION = "v5";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -1005,12 +1005,20 @@ router.get(
           });
           continue;
         }
-        // Identifiabilité : la photo est OBLIGATOIRE. Sans visuel, l'utilisateur
-        // ne peut pas reconnaître le pot en rayon — même avec un nom de marque
-        // (qui peut être bidon comme "Moutarde" mis dans le champ brand OFF, ou
-        // une marque légitime mais avec 20 SKUs au même nom). On bumpe aussi
-        // MATCHER_VERSION quand on change cette politique.
-        if (!cand.image_url) {
+        // Identifiabilité : on accepte SOIT une photo SOIT une vraie marque.
+        // Mais on rejette les "marques bidon" où OFF a recopié la catégorie
+        // dans le champ brand (ex. brand="Moutarde" pour la catégorie moutarde,
+        // brand="Yaourt", brand="Whole Grain Mustard"). Détection :
+        //  - brand identique (insensible casse/espaces) à la catégorie, OU
+        //  - brand contenu mot-à-mot dans le nom du produit.
+        const brandNorm = cand.brand.trim().toLowerCase();
+        const categoryNorm = cand.category.trim().toLowerCase();
+        const nameNorm = cand.name.trim().toLowerCase();
+        const isJunkBrand =
+          brandNorm.length === 0 ||
+          brandNorm === categoryNorm ||
+          nameNorm.includes(brandNorm);
+        if (!cand.image_url && isJunkBrand) {
           continue;
         }
         safeCandidates.push(cand);

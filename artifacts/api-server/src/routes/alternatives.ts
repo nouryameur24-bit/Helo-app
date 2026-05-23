@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v7";
+const MATCHER_VERSION = "v8";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -512,11 +512,23 @@ async function searchOffCandidates(
   isCosmetic: boolean,
   categoryTag?: string | null,
 ): Promise<{ candidates: LiveCandidate[]; error: string | null }> {
-  const endpoint = getLiveFiletEndpoint(isCosmetic);
+  // ★ Choix d'endpoint context-aware :
+  //  - ES (`search.openfoodfacts.org`) est rock-solid mais N'HONORE PAS le
+  //    paramètre `categories_tags` (testé : retourne Mayo+Ketchup pour
+  //    mustard) ET omet `categories_tags` de la réponse → on ne peut ni
+  //    filtrer côté serveur, ni filtrer côté client. Inutilisable dès que
+  //    `categoryTag` est fourni.
+  //  - Legacy cgi (`world.openfoodfacts.org/cgi/search.pl`) supporte les
+  //    facets `tagtype_0=categories&tag_0=mustards` côté serveur ET renvoie
+  //    `categories_tags` dans la réponse. Plus lent / parfois 503 mais le
+  //    seul qui filtre vraiment par catégorie.
+  // → cgi quand on a un categoryTag (food ou cosmétique), ES sinon (food
+  //   keyword pur, où la rapidité prime).
   let url: string;
-  if (isCosmetic) {
-    // OBF cgi/search.pl supporte les facets via tagtype_N/tag_N. On encode
-    // la catégorie en facet N°0 et le keyword textuel reste search_terms.
+  if (isCosmetic || categoryTag) {
+    const host = isCosmetic
+      ? "https://world.openbeautyfacts.org"
+      : "https://world.openfoodfacts.org";
     const params = new URLSearchParams({
       search_terms: keyword,
       sort_by: "unique_scans_n",
@@ -527,26 +539,23 @@ async function searchOffCandidates(
     if (categoryTag) {
       params.set("tagtype_0", "categories");
       params.set("tag_contains_0", "contains");
-      // OBF veut le segment sans prefix i18n : "en:body-creams" → "body-creams"
+      // cgi veut le segment sans prefix i18n : "en:mustards" → "mustards"
       const tail = categoryTag.includes(":")
         ? categoryTag.split(":").slice(1).join(":")
         : categoryTag;
       params.set("tag_0", tail);
     }
-    url = `${endpoint}?${params.toString()}`;
+    url = `${host}/cgi/search.pl?${params.toString()}`;
   } else {
-    // OFF ES (search.openfoodfacts.org) supporte `categories_tags` natif.
-    // ★ `fields` : sans cette liste explicite, ES renvoie un set par défaut
-    // qui ne contient PAS categories_tags — du coup la ceinture "drift
-    // catégorie" en aval voit `cand.categories_tags = []` et rejette tout.
+    // Pas de categoryTag → fallback ES rapide pour recherche keyword pure
+    // (déjà filtré côté caller par strategy="keywords" où le drift est
+    // policé par les keywords spécifiques).
+    const endpoint = getLiveFiletEndpoint(isCosmetic);
     const params = new URLSearchParams({
       q: keyword || "*",
       countries_tags: "en:france",
       page_size: "30",
-      fields:
-        "code,product_name,product_name_fr,brands,ingredients_text,ingredients_text_fr,image_url,image_front_url,labels_tags,categories,categories_tags",
     });
-    if (categoryTag) params.set("categories_tags", categoryTag);
     url = `${endpoint}?${params.toString()}`;
   }
 

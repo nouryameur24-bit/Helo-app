@@ -179,3 +179,9 @@ id = "kLI1C_xAstaMHFVTjrcuL"
 uri = "file://exports/helo-audit-complet.tar.gz"
 type = "unspecified"
 title = "helo-audit-complet.tar.gz — Monorepo complet (7,3 Mo, 582 fichiers)"
+
+[[outputs]]
+id = "Vfuqh_bqhjvTGD_o0du9K"
+uri = "file://docs/scan-alternatives-logic.md"
+type = "text"
+title = "Logique technique Scan + Alternatives (Hēlo)"

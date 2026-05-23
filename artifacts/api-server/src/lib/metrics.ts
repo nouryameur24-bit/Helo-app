@@ -35,7 +35,7 @@ export type MetricEvent =
 
 export type SafetyTrapReason =
   | "sniper_empty" // Claude a renvoyé [] (aucun produit 100% safe)
-  | "belt_unknown" // Ceinture & Bretelles : ingrédient non reconnu
+  | "belt_low_coverage" // Ceinture : pas assez d'ingrédients reconnus pour valider (garde-fou hotfix)
   | "belt_risk"; // Ceinture & Bretelles : danger/caution détecté
 
 /**

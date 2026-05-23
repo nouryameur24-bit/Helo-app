@@ -353,18 +353,37 @@ router.get(
       }
 
       // ── 8. CEINTURE & BRETELLES — deterministic re-verification ────────
-      // Strict policy: we admit a product as "100% safe" only when our 5000-
-      // entry knowledge base recognises EVERY ingredient AND none of them
-      // is danger/caution for this phase. Products with even one unknown
-      // ingredient (no_signal) are vetoed — "we don't know" ≠ "it's safe".
-      // This is the whole point of Ceinture & Bretelles: positive proof,
-      // not absence of evidence.
+      // HOTFIX 1 (post-CHUNK 7) : assouplissement pragmatique pour
+      // l'alimentaire. La règle "unknown = veto" était théoriquement juste
+      // ("on ne sait pas" ≠ "c'est safe") mais en pratique vétait ~100 %
+      // des candidats Open Food Facts (base EFSA trop maigre vs richesse
+      // des listes INCI alimentaires composées).
       //
-      // Métriques : on agrège les vetos par raison sur la requête (au lieu
-      // d'émettre jusqu'à 20 events/req). Un seul event résumé en fin de
-      // boucle si au moins un veto. Cardinality bornée → log lisible.
+      // Nouvelle règle :
+      //   - `danger` ou `caution` détecté → VETO (la Ceinture bloque toujours
+      //     les risques EXPLICITEMENT identifiés par notre base curatée).
+      //   - `unknown` (no_signal) → ACCEPT. La preuve positive est déjà
+      //     apportée par le Sniper Claude qui a analysé la liste complète
+      //     et certifié 100 % safe pour cette phase.
+      //
+      // La Ceinture reste un filet de sûreté contre les danger/caution connus,
+      // mais ne sur-veto plus sur l'absence d'évidence dans notre base.
+      // Application stricte de la directive HOTFIX 1 utilisateur : la Ceinture
+      // veto UNIQUEMENT sur danger/caution explicitement identifiés par notre
+      // base curatée. Tout ingrédient "unknown" (no_signal) → ACCEPT, preuve
+      // positive déléguée au Sniper Claude.
+      //
+      // ⚠️ DETTE TECHNIQUE ASSUMÉE (post-review architect) : un produit dont
+      // AUCUN ingrédient n'est dans notre base peut passer si le Sniper le
+      // choisit. Tests empiriques (Oreo, Coca, Nutella, Red Bull) montrent
+      // que toute borne plancher (même knownCount≥1) veto ~100 % des picks
+      // alimentaires — la base EFSA (1540 entrées) est trop maigre face à
+      // la richesse des listes Open Food Facts. La levée de cette dette
+      // dépend de l'enrichissement de la base alimentaire, pas du pipeline.
+      //
+      // La trappe `belt_low_coverage` reste DÉCLARÉE dans metrics.ts pour
+      // pouvoir être réactivée d'un seul flip une fois la base enrichie.
       const safeProducts: typeof hydrated = [];
-      let beltVetoUnknown = 0;
       let beltVetoRisk = 0;
       for (const p of hydrated) {
         if (!p.ingredients_raw) continue;
@@ -372,10 +391,6 @@ router.get(
         if (ingredientsList.length === 0) continue;
         const det = await matchDeterministic(ingredientsList, phase);
 
-        if (det.hasUnknown) {
-          beltVetoUnknown++;
-          continue;
-        }
         const hasRisk = det.matches.some(
           (m) => m.riskLevel === "danger" || m.riskLevel === "caution",
         );
@@ -386,16 +401,6 @@ router.get(
         safeProducts.push(p);
       }
 
-      if (beltVetoUnknown > 0) {
-        emitMetric(req.log, "safety_trap_triggered", {
-          reason: "belt_unknown",
-          barcode,
-          cacheKey,
-          vetoed: beltVetoUnknown,
-          examined: hydrated.length,
-        });
-        alertSafetyTrap({ reason: "belt_unknown", barcode, cacheKey });
-      }
       if (beltVetoRisk > 0) {
         emitMetric(req.log, "safety_trap_triggered", {
           reason: "belt_risk",

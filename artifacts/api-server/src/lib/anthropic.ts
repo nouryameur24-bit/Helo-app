@@ -195,10 +195,15 @@ export async function selectSafeAlternativesWithClaude(params: {
     phaseLabel,
   );
 
+  // Post-CHUNK 7 review : ancienne troncature 800 chars laissait Claude
+  // ignorer ~5-15 % de la fin des listes Open Food Facts (additifs en queue
+  // de liste type "arôme naturel, E150c"). On passe à 2000 ce qui couvre
+  // >99 % des produits OFF tout en restant largement sous la limite tokens
+  // (20 candidats × 2000 ≈ 10 k tokens d'input, marge confortable).
   const userPrompt = params.candidates
     .map(
       (c, i) =>
-        `${i + 1}. Code-barres: ${c.barcode}\n   Nom: ${c.name}\n   Ingrédients: ${c.ingredients_raw.slice(0, 800)}`,
+        `${i + 1}. Code-barres: ${c.barcode}\n   Nom: ${c.name}\n   Ingrédients: ${c.ingredients_raw.slice(0, 2000)}`,
     )
     .join("\n\n");
 

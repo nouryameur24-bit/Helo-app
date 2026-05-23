@@ -370,39 +370,53 @@ function capitalizeFirst(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+// HOTFIX 2 (post-CHUNK 7) — synchronisé avec
+// artifacts/api-server/src/lib/parseIngredients.ts. Toute modification doit
+// être appliquée AUX DEUX FICHIERS pour conserver le même verdict mobile/BFF.
+function normalizeAllergenCaps(s: string): string {
+  return s.replace(/\b([A-ZÀ-Ÿ]{3,})\b/g, (m) => m.toLowerCase());
+}
+
+function extractParenthesizedSubItems(text: string): string[] {
+  const subs: string[] = [];
+  const re = /\(([^()]+)\)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    subs.push(m[1]);
+  }
+  return subs;
+}
+
 export function parseIngredients(ingredientsText: string): string[] {
   if (!ingredientsText.trim()) return [];
 
-  let text = ingredientsText;
+  // 1) Pré-nettoyage GLOBAL (pourcentages, marqueurs).
+  const preCleaned = ingredientsText
+    .replace(/\d+[,.]?\d*\s*%/g, '')
+    .replace(/[*†‡§#]/g, '');
 
-  // Remove content in parentheses (sub-ingredients / percentages)
-  text = text.replace(/\([^)]*\)/g, '');
-  // Remove orphan stray closing parens left over from malformed inputs
-  text = text.replace(/[()]/g, '');
+  // 2) Extraire les sous-ingrédients entre parens APRÈS pré-nettoyage.
+  const parenSubItems = extractParenthesizedSubItems(preCleaned);
 
-  // Remove percentage patterns like "12%", "12,5%"
-  text = text.replace(/\d+[,.]?\d*\s*%/g, '');
+  // 3) Nettoyer la chaîne principale (supprimer les parens elles-mêmes).
+  const text = preCleaned.replace(/\([^)]*\)/g, '').replace(/[()]/g, '');
 
-  // Remove asterisks (organic markers), stars, daggers
-  text = text.replace(/[*†‡§#]/g, '');
+  // 4) Concat items principaux + sous-items extraits.
+  const combined = parenSubItems.length > 0
+    ? `${text} ; ${parenSubItems.join(' ; ')}`
+    : text;
 
-  // Split on commas and semicolons
-  const raw = text.split(/[,;]/);
-
-  const cleaned = raw
+  const cleaned = combined
+    .split(/[,;.\n]+/)
     .map((s) => s.trim())
     .map((s) => s.replace(/^[\s\-–—:.]+/, '').trim())
     .map((s) => s.replace(/[\s\-–—:.]+$/, '').trim())
+    .map(normalizeAllergenCaps) // SOJA → soja, LAIT → lait
     .filter((s) => s.length >= 2)
-    // Drop anything that contains a "label: number" pattern (e.g. "saturés: 0")
     .filter((s) => !/:\s*\d/.test(s))
-    // Drop "dont …" sub-nutritional facts
     .filter((s) => !/^dont\b/i.test(s))
-    // Drop pure nutritional labels
     .filter((s) => !NUTRITION_PATTERNS.test(s))
-    // Dedup using lowercase form
     .filter((s, i, arr) => arr.findIndex((o) => o.toLowerCase() === s.toLowerCase()) === i)
-    // Capitalize first letter for display, downstream matching is case-insensitive
     .map(capitalizeFirst);
 
   return cleaned;

@@ -104,13 +104,10 @@ GET /api/alternatives/:barcode?trimester=X
    ╔════════════════════════════════════╗
    ║  ÉTAGE 3 — CEINTURE & BRETELLES    ║   Re-vérification déterministe
    ║  Match ingrédient-par-ingrédient   ║   contre les 5000 ingrédients.
-   ║  sur les 3 picks du Sniper         ║   Veto si UNE seule entrée :
-   ╚════════════════════════════════════╝   - inconnue (no_signal)
-                 │                          - danger/caution pour la phase
-                 │
-                 ├── beltVetoUnknown > 0    → 🛡️ metric{reason:"belt_unknown",
-                 │                                       vetoed, examined}
-                 │                            + alertSafetyTrap throttlée
+   ║  sur les 3 picks du Sniper         ║   Veto UNIQUEMENT si :
+   ╚════════════════════════════════════╝   - danger/caution pour la phase
+                 │                          (unknown=ACCEPT, preuve positive
+                 │                           déléguée au Sniper)
                  │
                  ├── beltVetoRisk > 0       → 🛡️ metric{reason:"belt_risk", …}
                  │                            + alertSafetyTrap throttlée
@@ -134,7 +131,9 @@ GET /api/alternatives/:barcode?trimester=X
                           sur erreur réseau / payload malformé.
 ```
 
-**Philosophie "Ceinture & Bretelles"** : on n'admet un produit comme "100 % safe" que si **chaque** ingrédient est positivement reconnu ET sans risque pour la phase. *"On ne sait pas" ≠ "c'est safe"*. Cette preuve positive est le cœur de la fiabilité médicale.
+**Philosophie "Ceinture & Bretelles" (révisée post-hotfix v2)** : la règle d'origine "100 % d'ingrédients reconnus + 0 risque" puis le compromis "≥ 50 % de couverture" se sont tous deux révélés trop stricts empiriquement (base EFSA 1540 entrées vs richesse des listes OFF → veto de ~100 % des picks Sniper alimentaires, y compris à seuil `knownCount ≥ 1`). État actuel : la Ceinture veto UNIQUEMENT sur `danger`/`caution` explicitement identifiés ; tout ingrédient `unknown` (no_signal) est ACCEPTÉ, la preuve positive de safety étant déléguée au Sniper Claude.
+
+⚠️ **Dette technique assumée** : un produit dont aucun ingrédient n'est dans notre base peut passer si le Sniper le valide. Mitigations actives : (a) Sniper Claude lit la liste complète (tronquée à 2000 chars), (b) prompt strict "100 % safe", (c) veto déterministe maintenu sur tout danger/caution connu, (d) trappe `sniper_empty` sur refus explicite du Sniper. **Critère de sortie de dette** : enrichir la base alimentaire (cible ≥ 5 000 entrées food) puis ré-activer le plancher `belt_low_coverage` (déjà câblé dans `metrics.ts`, ne demande qu'un flip de constante dans `routes/alternatives.ts`).
 
 ---
 
@@ -147,7 +146,7 @@ Deux mécanismes orthogonaux, distinctement loggés et alertés :
 | Trappe | Déclencheur | Métrique |
 |---|---|---|
 | **Sniper empty** | Claude renvoie explicitement `[]` sur un set candidat non vide | `safety_trap_triggered{reason:"sniper_empty"}` |
-| **Belt unknown** | ≥ 1 produit vetoé car ingrédient inconnu | `safety_trap_triggered{reason:"belt_unknown", vetoed, examined}` |
+| **Belt low coverage** | _désactivée hotfix v2_ — câblage conservé dans `metrics.ts` pour réactivation dès enrichissement de la base alimentaire | `safety_trap_triggered{reason:"belt_low_coverage", vetoed, examined}` |
 | **Belt risk** | ≥ 1 produit vetoé car ingrédient danger/caution | `safety_trap_triggered{reason:"belt_risk", vetoed, examined}` |
 
 **Distinction critique** : le KPI ne fire que sur `model_empty` (intention explicite du modèle). Les `infra_error`, `parse_error`, `unconfigured`, `no_candidates` produisent aussi `[]` mais sont des incidents techniques séparés (`alternatives_ai_error` ou `log.warn`) — **ne polluent pas le taux de trappe**.

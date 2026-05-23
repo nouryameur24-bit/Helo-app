@@ -199,7 +199,7 @@ export function alertAiError(params: {
 }
 
 /**
- * Alerte de trappe de sécurité médicale (sniper_empty, belt_unknown,
+ * Alerte de trappe de sécurité médicale (sniper_empty, belt_low_coverage,
  * belt_risk). Throttlée à 1 alerte par (reason, barcode) toutes les minutes.
  *
  * Choix de clé : on dédup par barcode (et pas par cacheKey) parce que si
@@ -209,7 +209,7 @@ export function alertAiError(params: {
  * les logs Pino.
  */
 export function alertSafetyTrap(params: {
-  reason: "sniper_empty" | "belt_unknown" | "belt_risk";
+  reason: "sniper_empty" | "belt_low_coverage" | "belt_risk";
   barcode: string;
   cacheKey: string;
 }): void {

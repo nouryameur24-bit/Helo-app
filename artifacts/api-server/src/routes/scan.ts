@@ -80,8 +80,11 @@ function aiStatusToVerdict(s: AiVerdict["status"]): Verdict {
   return "danger";
 }
 
+const MATCHER_VERSION = "v2";
+
 function trimesterCacheKey(t: Phase): string {
-  return typeof t === "number" ? `t${t}` : t;
+  const base = typeof t === "number" ? `t${t}` : t;
+  return `${base}_${MATCHER_VERSION}`;
 }
 
 // ─── Route ──────────────────────────────────────────────────────────────────

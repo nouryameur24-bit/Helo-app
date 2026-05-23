@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v2";
+const MATCHER_VERSION = "v3";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;

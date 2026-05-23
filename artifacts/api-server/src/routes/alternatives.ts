@@ -81,11 +81,77 @@ const PRODUCT_TYPES = [
   "huile olive", "huile colza", "pâtes", "riz", "céréales",
   "soupe", "compote", "pain", "viennoiserie", "confiture",
   "miel", "café", "thé", "tisane", "soda", "limonade",
+  "cola", "boisson", "barre", "bonbon", "glace", "sorbet",
+  "boisson énergisante",
 ];
 
-function extractKeywords(name: string): string[] {
+/**
+ * Mapping marque/nom-produit → catégorie consommation.
+ * Indispensable car la majorité des produits Open Food Facts ont un nom qui
+ * est PUREMENT une marque ("Coke", "Nutella", "Red Bull", "Twix") sans aucun
+ * mot-clé descriptif. Sans ce mapping, le Filet ramène 20 candidats aléatoires
+ * (kw=[]) et le Sniper rejette tout pour incohérence d'usage.
+ */
+const BRAND_TO_TYPE: Record<string, string[]> = {
+  // Sodas / boissons sucrées
+  "coke": ["soda", "cola", "boisson"],
+  "coca": ["soda", "cola", "boisson"],
+  "pepsi": ["soda", "cola", "boisson"],
+  "fanta": ["soda", "boisson"],
+  "sprite": ["soda", "boisson"],
+  "schweppes": ["soda", "limonade", "boisson"],
+  "orangina": ["soda", "boisson"],
+  "perrier": ["eau", "boisson"],
+  "evian": ["eau", "boisson"],
+  // Énergisantes
+  "red bull": ["boisson énergisante", "boisson", "soda"],
+  "monster": ["boisson énergisante", "boisson"],
+  "burn": ["boisson énergisante", "boisson"],
+  // Pâtes à tartiner (inclus substituts safe présents dans la base :
+  // purée d'oléagineux, miel, confiture)
+  "nutella": ["pâte à tartiner", "chocolat", "purée", "miel", "confiture"],
+  "nocciolata": ["pâte à tartiner", "chocolat", "purée", "miel", "confiture"],
+  // Barres / confiseries chocolatées
+  "twix": ["barre", "chocolat", "biscuit"],
+  "mars": ["barre", "chocolat"],
+  "snickers": ["barre", "chocolat"],
+  "bounty": ["barre", "chocolat"],
+  "kit kat": ["barre", "chocolat", "biscuit"],
+  "kinder": ["chocolat", "barre"],
+  "milka": ["chocolat"],
+  "lindt": ["chocolat"],
+  "côte d'or": ["chocolat"],
+  // Biscuits
+  "oreo": ["biscuit", "chocolat"],
+  "prince": ["biscuit", "chocolat"],
+  "lu": ["biscuit"],
+  "granola": ["biscuit", "céréales"],
+  "petit beurre": ["biscuit"],
+  "bn": ["biscuit"],
+  // Bonbons
+  "haribo": ["bonbon"],
+  "carambar": ["bonbon"],
+  // Glaces
+  "magnum": ["glace", "chocolat"],
+  "häagen-dazs": ["glace"],
+  "ben & jerry": ["glace"],
+};
+
+function extractKeywords(name: string, brand?: string | null): string[] {
   const lower = (name ?? "").toLowerCase();
-  return PRODUCT_TYPES.filter((type) => lower.includes(type));
+  const brandLower = (brand ?? "").toLowerCase();
+  const hits = new Set<string>();
+  // 1) Direct match on descriptive product types in the name.
+  for (const type of PRODUCT_TYPES) {
+    if (lower.includes(type)) hits.add(type);
+  }
+  // 2) Brand-name fallback: known brand → consumption category.
+  for (const [needle, types] of Object.entries(BRAND_TO_TYPE)) {
+    if (lower.includes(needle) || brandLower.includes(needle)) {
+      for (const t of types) hits.add(t);
+    }
+  }
+  return Array.from(hits);
 }
 
 const PHARMACY_BRANDS = [
@@ -208,7 +274,7 @@ router.get(
 
       // ── 3. Resolve search keyword (cache → local heuristic) ──────────────
       let searchKeyword: string | null = phaseCache?.search_keyword ?? null;
-      const fallbackKeywords = extractKeywords(origin.name ?? "");
+      const fallbackKeywords = extractKeywords(origin.name ?? "", origin.brand);
 
       // ── 4. FILET (Supabase) — only if no cache hit ──────────────────────
       if (validatedBarcodes === null) {
@@ -230,10 +296,15 @@ router.get(
 
         if (uniqueKw.length > 0) {
           // Sanitize for PostgREST `or()` filter — strip commas/parens.
-          const orFilter = uniqueKw
+          // Cherche dans name ET brand : les produits Open Food Facts ont
+          // souvent un nom purement marque ("Perrier", "Nutella") sans
+          // descripteur, mais le brand contient le mot-clé recherché
+          // (ex: brand="Coca-Cola" matche kw "cola").
+          const cleanKw = uniqueKw
             .map((kw) => kw.replace(/[,()]/g, " ").trim())
-            .filter((kw) => kw.length >= 3)
-            .map((kw) => `name.ilike.%${kw}%`)
+            .filter((kw) => kw.length >= 3);
+          const orFilter = cleanKw
+            .flatMap((kw) => [`name.ilike.%${kw}%`, `brand.ilike.%${kw}%`])
             .join(",");
 
           if (orFilter) {
@@ -304,6 +375,8 @@ router.get(
         const sniperResult = await selectSafeAlternativesWithClaude({
           candidates: sniperInput,
           trimester: phase,
+          originalName: origin.name ?? "",
+          searchKeyword: searchKeyword ?? fallbackKeywords[0] ?? "",
           log: req.log,
         });
         validatedBarcodes = sniperResult.barcodes;

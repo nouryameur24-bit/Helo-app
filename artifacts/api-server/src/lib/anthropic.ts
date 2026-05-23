@@ -126,13 +126,23 @@ export async function analyzeWithClaude(params: {
 
 // ─── Alternatives selector (Sniper) ─────────────────────────────────────────
 
-const ALTERNATIVES_SYSTEM_PROMPT = `Tu es un expert en toxicologie périnatale. Voici 20 produits avec leurs listes d'ingrédients. L'utilisatrice est au trimestre {trimester} de sa grossesse.
+const ALTERNATIVES_SYSTEM_PROMPT = `Tu es un expert en toxicologie périnatale ET en grande distribution. Voici 20 produits candidats avec leurs listes d'ingrédients.
+Le produit d'origine scanné par l'utilisatrice est : '{originalName}' (Mot-clé/Catégorie : '{searchKeyword}'). L'utilisatrice est au {trimester}.
 
-Ta mission : Sélectionne jusqu'à 3 produits qui sont 100% SANS DANGER (zéro composant toxique, zéro risque selon les recommandations médicales).
+Ta mission : Sélectionne jusqu'à 3 produits qui respectent STRICTEMENT ces 3 règles :
+1. SÉCURITÉ : Ils doivent être 100% SANS DANGER (zéro risque, zéro perturbateur endocrinien).
+2. COHÉRENCE D'USAGE : Les alternatives doivent répondre EXACTEMENT au même besoin de consommation, au même usage et à la même texture que le produit d'origine '{originalName}'. (Ex : ne propose JAMAIS de soupe, de bouillon, de bouillie ou de lait infantile si le produit d'origine est un soda rafraîchissant pour adulte).
+3. MARCHÉ FRANÇAIS : Ne sélectionne que des produits grand public trouvables facilement dans les supermarchés de France métropolitaine. Exclus les produits exclusifs aux marchés étrangers.
 
-🚨 SÉCURITÉ CRITIQUE (Trappe de Secours) : Si AUCUN produit de cette liste n'est parfaitement sûr pour ce trimestre, tu DOIS IMPÉRATIVEMENT renvoyer un tableau JSON vide []. Ne fais aucun compromis. Ne choisis pas 'le moins pire'.
+🚨 SÉCURITÉ ET COHÉRENCE CRITIQUES : Si AUCUN produit de la liste ne respecte CES TROIS RÈGLES à la fois, tu DOIS IMPÉRATIVEMENT renvoyer un tableau JSON vide []. Ne choisis pas 'le moins pire'.
 
-Tu dois répondre UNIQUEMENT par un tableau JSON contenant les codes-barres des produits validés, ou un tableau vide. Exemple : ["123456789", "987654321"]`;
+⚠️ FORMAT DE RÉPONSE OBLIGATOIRE — RÈGLE ABSOLUE :
+Ta réponse DOIT commencer par '[' et finir par ']'. AUCUN texte, AUCUN markdown, AUCUNE analyse, AUCUNE explication avant ou après. Pas de "##", pas de "###", pas d'emojis, pas de phrases.
+Exemples valides :
+["3017620422003"]
+["3017620422003","5449000000996"]
+[]
+Toute réponse qui n'est pas EXACTEMENT un tableau JSON sera rejetée par le système.`;
 
 export interface AlternativeCandidate {
   barcode: string;
@@ -170,6 +180,10 @@ export interface SniperResult {
 export async function selectSafeAlternativesWithClaude(params: {
   candidates: AlternativeCandidate[];
   trimester: 1 | 2 | 3 | "breastfeeding" | "baby";
+  /** Nom du produit d'origine scanné (injection prompt pour cohérence usage). */
+  originalName: string;
+  /** Mot-clé/catégorie recherche (cache hint ou heuristique locale). */
+  searchKeyword: string;
   /** Logger requête pour émettre les métriques FinOps. */
   log?: Logger;
 }): Promise<SniperResult> {
@@ -185,15 +199,20 @@ export async function selectSafeAlternativesWithClaude(params: {
 
   const phaseLabel =
     params.trimester === "breastfeeding"
-      ? "allaitement"
+      ? "stade d'allaitement"
       : params.trimester === "baby"
-        ? "bébé (post-natal)"
-        : `trimestre ${params.trimester}`;
+        ? "stade post-natal (bébé)"
+        : `trimestre ${params.trimester} de sa grossesse`;
 
   const systemPrompt = ALTERNATIVES_SYSTEM_PROMPT.replace(
-    "{trimester}",
+    /\{trimester\}/g,
     phaseLabel,
-  );
+  )
+    .replace(/\{originalName\}/g, params.originalName || "(produit inconnu)")
+    .replace(
+      /\{searchKeyword\}/g,
+      params.searchKeyword || "(catégorie inconnue)",
+    );
 
   // Post-CHUNK 7 review : ancienne troncature 800 chars laissait Claude
   // ignorer ~5-15 % de la fin des listes Open Food Facts (additifs en queue
@@ -213,7 +232,7 @@ export async function selectSafeAlternativesWithClaude(params: {
   try {
     response = await client.messages.create({
       model: MODEL,
-      max_tokens: 200, // tighter cap — output is just a tiny JSON array
+      max_tokens: 500, // marge confortable : 3 barcodes × ~15 chars + brackets/quotes/commas reste largement sous 100 tokens, mais on laisse de l'air pour absorber un éventuel préambule markdown récalcitrant (parser regex le rattrapera ensuite).
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
@@ -251,7 +270,10 @@ export async function selectSafeAlternativesWithClaude(params: {
   const raw = textBlock.text.trim();
   const match = raw.match(/\[[\s\S]*?\]/);
   if (!match) {
-    log.warn("sniper: no JSON array found in Claude output");
+    log.warn(
+      { rawOutput: raw.slice(0, 500) },
+      "sniper: no JSON array found in Claude output",
+    );
     emitCall(0);
     return { barcodes: [], outcome: "parse_error" };
   }

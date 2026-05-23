@@ -143,3 +143,33 @@ id = "WrAxv6h93MyXpJNhMySsq"
 uri = "file://exports/helo-bundle.txt"
 type = "text"
 title = "Hēlo — Full Source Bundle (pour Gemini AI Studio)"
+
+[[outputs]]
+id = "jSxRI6VNxqNgNnfGNFGHb"
+uri = "file://exports/helo-bundle.txt.gz"
+type = "unspecified"
+title = "Bundle complet COMPRESSÉ (713 Ko — décompresser après)"
+
+[[outputs]]
+id = "3pNuLODdZRWpG5BFlMptI"
+uri = "file://exports/split/01-backend-api-server.txt"
+type = "text"
+title = "1/4 — Backend API Server (99 Ko)"
+
+[[outputs]]
+id = "kNOA5QfwXjw8pKjl8u6pM"
+uri = "file://exports/split/02-lib-shared.txt"
+type = "text"
+title = "2/4 — Lib partagées : db + zod + spec (26 Ko)"
+
+[[outputs]]
+id = "JVyzT_hPIPpK8OcS0IvXI"
+uri = "file://exports/split/03-mobile-helo.txt"
+type = "text"
+title = "3/4 — Mobile Hēlo Expo (2 Mo)"
+
+[[outputs]]
+id = "ca3TKLZEjSHc4mtI2mVxA"
+uri = "file://exports/split/04-scripts-config.txt"
+type = "text"
+title = "4/4 — Scripts + Mockup sandbox + Configs (957 Ko)"

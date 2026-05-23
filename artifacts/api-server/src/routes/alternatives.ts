@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v5";
+const MATCHER_VERSION = "v6";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -1003,6 +1003,25 @@ router.get(
             barcode: b,
             ingredient: belt.dangerousMatch.matchedIngredientName ?? "?",
           });
+          continue;
+        }
+        // Garde-fou catégorie : OFF tag parfois un produit avec plusieurs
+        // catégories (ex. "moutarde-mayonnaise" combo a en:mustards ET
+        // en:mayonnaises). On a déjà filtré server-side par categoryTag mais
+        // ces multi-tags passent. On exige donc que le tag d'origine soit
+        // bien présent dans les tags du candidat — ce qui est garanti si OFF
+        // l'a renvoyé. Ce test est en pratique une double sécurité contre
+        // les cas où Claude pioche dans des candidats hors-domaine du keyword
+        // fallback (strategy="category_then_kw").
+        if (categoryTag && !cand.categories_tags.includes(categoryTag)) {
+          req.log.info(
+            {
+              barcode: b,
+              expected: categoryTag,
+              got: cand.categories_tags.slice(-3),
+            },
+            "category drift rejected",
+          );
           continue;
         }
         // Identifiabilité : on accepte SOIT une photo SOIT une vraie marque.

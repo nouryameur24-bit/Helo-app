@@ -191,3 +191,9 @@ id = "C8D7TqIiWyd62OcYOUmi-"
 uri = "file://exports/helo-project.tar.gz"
 type = "unspecified"
 title = "Projet Hēlo complet (source)"
+
+[[outputs]]
+id = "0s_3cmbJ8mT64zTB04D8j"
+uri = "file://exports/helo-FULL.tar.gz"
+type = "unspecified"
+title = "Projet Hēlo COMPLET"

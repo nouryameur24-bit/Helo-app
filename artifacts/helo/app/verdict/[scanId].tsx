@@ -49,7 +49,7 @@ import {
 import styles from '@/components/verdict/verdictStyles';
 
 import { SCAN_DISCLAIMER } from '@/constants/disclaimers';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
@@ -441,6 +441,62 @@ export default function VerdictScreen() {
               color={verdictColor}
               visible={labelVisible}
             />
+            {(() => {
+              // Garde-fou : on n'affiche la carte que si l'explication backend
+              // est présente ET non vide (trim pour éviter une carte blanche
+              // si le backend renvoie '   ').
+              const explanation = displayVerdict?.aiExplanation?.trim();
+              if (!labelVisible || !explanation) return null;
+              const isAi = displayVerdict?.aiSource === 'ai';
+              return (
+                <View
+                  style={{
+                    marginTop: Spacing.md,
+                    marginHorizontal: Spacing.lg,
+                    paddingVertical: Spacing.md,
+                    paddingHorizontal: Spacing.lg,
+                    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                    borderRadius: Radius.lg,
+                    borderWidth: 1,
+                    borderColor: verdictColor + '33',
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {/* Icône en couleur verdict (accent visuel), texte du
+                        header en textPrimary pour garantir le contraste WCAG. */}
+                    <Feather
+                      name={isAi ? 'cpu' : 'shield'}
+                      size={11}
+                      color={verdictColor}
+                    />
+                    <ThemedText
+                      variant="labelSmall"
+                      style={{
+                        color: Colors.textPrimary,
+                        letterSpacing: 0.8,
+                        textTransform: 'uppercase',
+                        fontSize: 10,
+                      }}
+                    >
+                      {isAi ? 'Analyse IA Hēlo' : 'Analyse Hēlo'}
+                    </ThemedText>
+                  </View>
+                  <ThemedText
+                    variant="bodyMedium"
+                    style={{ lineHeight: 21, textAlign: 'left' }}
+                  >
+                    {explanation}
+                  </ThemedText>
+                </View>
+              );
+            })()}
             {labelVisible && (() => {
               const quote = getContextualQuote(
                 phase,

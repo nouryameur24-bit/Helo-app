@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v6";
+const MATCHER_VERSION = "v7";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -536,10 +536,15 @@ async function searchOffCandidates(
     url = `${endpoint}?${params.toString()}`;
   } else {
     // OFF ES (search.openfoodfacts.org) supporte `categories_tags` natif.
+    // ★ `fields` : sans cette liste explicite, ES renvoie un set par défaut
+    // qui ne contient PAS categories_tags — du coup la ceinture "drift
+    // catégorie" en aval voit `cand.categories_tags = []` et rejette tout.
     const params = new URLSearchParams({
       q: keyword || "*",
       countries_tags: "en:france",
       page_size: "30",
+      fields:
+        "code,product_name,product_name_fr,brands,ingredients_text,ingredients_text_fr,image_url,image_front_url,labels_tags,categories,categories_tags",
     });
     if (categoryTag) params.set("categories_tags", categoryTag);
     url = `${endpoint}?${params.toString()}`;
@@ -593,6 +598,8 @@ async function searchOffCandidates(
  *   - retourne au max 20 candidats, dédoublonnés, normalisés, avec ingrédients
  *   - retour [] si toutes les tentatives échouent
  */
+type LiveStrategy = "category_primary" | "category_then_kw" | "keywords";
+
 async function fetchLiveCandidates(
   keywords: string[],
   isCosmetic: boolean,
@@ -606,15 +613,16 @@ async function fetchLiveCandidates(
    * cross-pollinise les types de produits).
    */
   categoryTag?: string | null,
-): Promise<LiveCandidate[]> {
-  if (keywords.length === 0 && !categoryTag) return [];
+): Promise<{ candidates: LiveCandidate[]; strategy: LiveStrategy }> {
+  if (keywords.length === 0 && !categoryTag)
+    return { candidates: [], strategy: "keywords" };
 
   const t0 = Date.now();
   let lastError: string | null = null;
   let totalRaw = 0;
   const seen = new Set<string>([excludeBarcode]);
   const collected: LiveCandidate[] = [];
-  let usedStrategy = "keywords";
+  let usedStrategy: LiveStrategy = "keywords";
 
   // PHASE 1 : recherche scopée à la catégorie stricte. Si on a une catégorie
   // (ex: en:mustards), on l'utilise comme filtre principal avec keyword="*"
@@ -675,7 +683,7 @@ async function fetchLiveCandidates(
     error: lastError,
   });
 
-  return deduped;
+  return { candidates: deduped, strategy: usedStrategy };
 }
 
 /**
@@ -916,13 +924,14 @@ router.get(
         "category resolution",
       );
 
-      const liveCandidates = await fetchLiveCandidates(
-        uniqueKw,
-        isCosmetic,
-        barcode,
-        req.log,
-        categoryTag,
-      );
+      const { candidates: liveCandidates, strategy: liveStrategy } =
+        await fetchLiveCandidates(
+          uniqueKw,
+          isCosmetic,
+          barcode,
+          req.log,
+          categoryTag,
+        );
 
       req.log.info(
         {
@@ -1005,24 +1014,27 @@ router.get(
           });
           continue;
         }
-        // Garde-fou catégorie : OFF tag parfois un produit avec plusieurs
-        // catégories (ex. "moutarde-mayonnaise" combo a en:mustards ET
-        // en:mayonnaises). On a déjà filtré server-side par categoryTag mais
-        // ces multi-tags passent. On exige donc que le tag d'origine soit
-        // bien présent dans les tags du candidat — ce qui est garanti si OFF
-        // l'a renvoyé. Ce test est en pratique une double sécurité contre
-        // les cas où Claude pioche dans des candidats hors-domaine du keyword
-        // fallback (strategy="category_then_kw").
-        if (categoryTag && !cand.categories_tags.includes(categoryTag)) {
-          req.log.info(
-            {
-              barcode: b,
-              expected: categoryTag,
-              got: cand.categories_tags.slice(-3),
-            },
-            "category drift rejected",
-          );
-          continue;
+        // Garde-fou catégorie CONTEXT-AWARE :
+        //  - strategy "category_primary" / "category_then_kw" : OFF a filtré
+        //    server-side par categoryTag, on lui fait confiance. Si le champ
+        //    categories_tags est absent côté candidat (ES peut le tronquer
+        //    selon les fields), on bypass — validité héritée.
+        //  - strategy "keywords" : recherche full-text pure, risque de drift
+        //    (Mayo Amora pour "amora moutarde"). On EXIGE la présence du tag.
+        if (categoryTag && liveStrategy === "keywords") {
+          const tags = cand.categories_tags || [];
+          if (!tags.includes(categoryTag)) {
+            req.log.info(
+              {
+                barcode: b,
+                expected: categoryTag,
+                got: tags.slice(-3),
+                strategy: liveStrategy,
+              },
+              "category drift rejected",
+            );
+            continue;
+          }
         }
         // Identifiabilité : on accepte SOIT une photo SOIT une vraie marque.
         // Mais on rejette les "marques bidon" où OFF a recopié la catégorie

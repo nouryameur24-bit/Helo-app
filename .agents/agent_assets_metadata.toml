@@ -137,3 +137,9 @@ id = "YxoEzNVJVN2ViRlz66ehC"
 uri = "file://exports/helo-monorepo-final.tar.gz"
 type = "unspecified"
 title = "Hēlo Monorepo — Final (Étape 3 Freemium)"
+
+[[outputs]]
+id = "WrAxv6h93MyXpJNhMySsq"
+uri = "file://exports/helo-bundle.txt"
+type = "text"
+title = "Hēlo — Full Source Bundle (pour Gemini AI Studio)"

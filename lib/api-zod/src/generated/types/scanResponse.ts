@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ScanMatch } from "./scanMatch";
 import type { ScanProductInfo } from "./scanProductInfo";
 import type { ScanResponseSource } from "./scanResponseSource";
 import type { ScanResponseStatus } from "./scanResponseStatus";
@@ -24,4 +25,6 @@ export interface ScanResponse {
   /** @nullable */
   search_keyword: string | null;
   product: ScanProductInfo;
+  /** Per-ingredient breakdown for UI rendering. */
+  matches: ScanMatch[];
 }

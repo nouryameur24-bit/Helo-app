@@ -61,4 +61,27 @@ export const ScanProductResponse = zod.object({
     brand: zod.string().nullable(),
     image_url: zod.string().nullable(),
   }),
+  matches: zod
+    .array(
+      zod
+        .object({
+          ingredient_name: zod
+            .string()
+            .describe("The raw ingredient string as parsed from the product."),
+          matched: zod
+            .boolean()
+            .describe(
+              "True if the ingredient was found in our 5000 curated entries.",
+            ),
+          matched_ingredient_name: zod
+            .string()
+            .nullable()
+            .describe("Canonical name from our DB when matched."),
+          risk_level: zod.enum(["safe", "caution", "danger", "no_signal"]),
+        })
+        .describe(
+          "Per-ingredient deterministic match result. Mobile uses this to render\nthe colour-coded breakdown under the verdict (zero regression UI).\n",
+        ),
+    )
+    .describe("Per-ingredient breakdown for UI rendering."),
 });

@@ -49,7 +49,7 @@ async function recalculateShelfForBreastfeeding(): Promise<number> {
 
     for (const item of shelf) {
       if (!item.barcode) continue;
-      const cacheKey = scanCacheKey(item.barcode);
+      const cacheKey = scanCacheKey(item.barcode, 'breastfeeding');
       try {
         const cacheRaw = await AsyncStorage.getItem(cacheKey);
         let cache: ScanCache | null = cacheRaw ? JSON.parse(cacheRaw) : null;

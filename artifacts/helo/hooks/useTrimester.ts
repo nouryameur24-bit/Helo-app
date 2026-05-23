@@ -136,7 +136,7 @@ async function recalculateShelfVerdicts(newTrimester: Trimester): Promise<number
     for (const item of shelf) {
       if (!item.barcode) continue;
 
-      const cacheKey = scanCacheKey(item.barcode);
+      const cacheKey = scanCacheKey(item.barcode, newTrimester);
 
       try {
         const cacheRaw = await AsyncStorage.getItem(cacheKey);

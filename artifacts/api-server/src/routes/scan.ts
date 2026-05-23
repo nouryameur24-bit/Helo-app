@@ -9,6 +9,8 @@ import {
   computeVerdict,
   type Phase,
   type Verdict,
+  type MatchResult,
+  type RiskLevel,
 } from "../lib/matcher";
 import { analyzeWithClaude, type AiVerdict } from "../lib/anthropic";
 import { requireAppSecret } from "../middlewares/appSecret";
@@ -33,6 +35,13 @@ const ScanBodySchema = z.object({
 
 // ─── Response shape ─────────────────────────────────────────────────────────
 
+interface ScanMatchDto {
+  ingredient_name: string;
+  matched: boolean;
+  matched_ingredient_name: string | null;
+  risk_level: RiskLevel;
+}
+
 interface ScanResponse {
   status: "autorise" | "a_eviter" | "interdit";
   verdict: Verdict;
@@ -45,6 +54,16 @@ interface ScanResponse {
     name: string;
     brand: string | null;
     image_url: string | null;
+  };
+  matches: ScanMatchDto[];
+}
+
+function toMatchDto(m: MatchResult): ScanMatchDto {
+  return {
+    ingredient_name: m.ingredientName,
+    matched: m.matched,
+    matched_ingredient_name: m.matchedIngredientName ?? null,
+    risk_level: m.riskLevel,
   };
 }
 
@@ -122,6 +141,9 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
           brand: productBrand,
           image_url: productImage,
         },
+        // Older cached entries (pre-matches) may lack this; default to []
+        // — UI will simply show an empty breakdown rather than crash.
+        matches: cached.matches ?? [],
       };
       res.json(response);
       return;
@@ -151,6 +173,8 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
 
     // Helper: conservative "analysis unavailable" verdict. NEVER returns safe.
     // Used when our knowledge sources cannot give a confident answer.
+    const matchesDto: ScanMatchDto[] = det.matches.map(toMatchDto);
+
     const indeterminateResponse = (reason: string): ScanResponse => ({
       status: "a_eviter",
       verdict: "caution",
@@ -164,6 +188,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
         brand: productBrand,
         image_url: productImage,
       },
+      matches: matchesDto,
     });
 
     let response: ScanResponse;
@@ -187,6 +212,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
           brand: productBrand,
           image_url: productImage,
         },
+        matches: matchesDto,
       };
     } else if (!det.hasUnknown) {
       // ── 4b. All ingredients known, no danger → deterministic verdict ───
@@ -207,6 +233,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
           brand: productBrand,
           image_url: productImage,
         },
+        matches: matchesDto,
       };
     } else {
       // ── 4c. Unknown ingredients present → AI fallback ──────────────────
@@ -231,6 +258,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
             brand: productBrand,
             image_url: productImage,
           },
+          matches: matchesDto,
         };
       } catch (aiErr) {
         req.log.error({ err: aiErr }, "AI fallback failed");
@@ -267,6 +295,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
           source: response.source,
           search_keyword: response.search_keyword,
           product: response.product,
+          matches: response.matches,
           analyzed_at: new Date().toISOString(),
         },
       };

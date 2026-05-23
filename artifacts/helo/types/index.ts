@@ -78,6 +78,13 @@ export interface VerdictResult {
   flaggedIngredients: MatchResult[];
   noSignalCount: number;
   safeCount: number;
+  // ── Champs optionnels fournis par le backend hybride ───────────────────
+  // Présents quand le scan a transité par POST /api/scan (mode en ligne).
+  // Absents en mode offline (matching local pur).
+  aiExplanation?: string;
+  aiSource?: 'deterministic' | 'ai';
+  glowScoreRemote?: number; // score calculé côté backend (0-100)
+  searchKeyword?: string | null; // pour la recherche d'alternatives sûres
 }
 
 export interface ScanCache {

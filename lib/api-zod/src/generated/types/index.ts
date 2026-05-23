@@ -8,6 +8,8 @@
 
 export * from "./apiError";
 export * from "./healthStatus";
+export * from "./scanMatch";
+export * from "./scanMatchRiskLevel";
 export * from "./scanPhase";
 export * from "./scanProductInfo";
 export * from "./scanRequest";

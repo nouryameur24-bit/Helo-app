@@ -39,6 +39,34 @@ export interface ScanProductInfo {
   image_url: string | null;
 }
 
+export type ScanMatchRiskLevel =
+  (typeof ScanMatchRiskLevel)[keyof typeof ScanMatchRiskLevel];
+
+export const ScanMatchRiskLevel = {
+  safe: "safe",
+  caution: "caution",
+  danger: "danger",
+  no_signal: "no_signal",
+} as const;
+
+/**
+ * Per-ingredient deterministic match result. Mobile uses this to render
+the colour-coded breakdown under the verdict (zero regression UI).
+
+ */
+export interface ScanMatch {
+  /** The raw ingredient string as parsed from the product. */
+  ingredient_name: string;
+  /** True if the ingredient was found in our 5000 curated entries. */
+  matched: boolean;
+  /**
+   * Canonical name from our DB when matched.
+   * @nullable
+   */
+  matched_ingredient_name: string | null;
+  risk_level: ScanMatchRiskLevel;
+}
+
 export type ScanResponseStatus =
   (typeof ScanResponseStatus)[keyof typeof ScanResponseStatus];
 
@@ -79,4 +107,6 @@ export interface ScanResponse {
   /** @nullable */
   search_keyword: string | null;
   product: ScanProductInfo;
+  /** Per-ingredient breakdown for UI rendering. */
+  matches: ScanMatch[];
 }

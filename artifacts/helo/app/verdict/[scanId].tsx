@@ -333,7 +333,11 @@ export default function VerdictScreen() {
 
   const verdictColor = getVerdictColor(displayVerdict?.verdict);
   const verdictBgColor = getVerdictBg(displayVerdict?.verdict);
-  const glowScore = displayVerdict ? computeGlowScore(displayVerdict) : 0;
+  // Le backend est désormais l'autorité du score quand disponible (online path).
+  // En offline pur, on retombe sur le calcul local déterministe.
+  const glowScore = displayVerdict
+    ? (displayVerdict.glowScoreRemote ?? computeGlowScore(displayVerdict))
+    : 0;
   const sorted = sortMatches(displayMatches);
   const flagged = sorted.filter((m) => m.riskLevel !== 'no_signal');
   const noSignal = sorted.filter((m) => m.riskLevel === 'no_signal');

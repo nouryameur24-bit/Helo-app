@@ -17,6 +17,12 @@ import {
   getVerdict,
   matchIngredients,
 } from '@/lib/productLookup';
+import {
+  dtoToMatchResult,
+  isBackendConfigured,
+  scanProductRemote,
+  type ScanResponseDto,
+} from '@/lib/api';
 
 import {
   cacheProduct,
@@ -53,13 +59,13 @@ interface UseScanReturn extends ScanState {
   setDirectResult: (product: ProductData, matches: MatchResult[], verdict: VerdictResult) => void;
 }
 
-async function readCache(barcode: string): Promise<ScanCache | null> {
+async function readCache(barcode: string, phase: Phase): Promise<ScanCache | null> {
   try {
-    const raw = await AsyncStorage.getItem(scanCacheKey(barcode));
+    const raw = await AsyncStorage.getItem(scanCacheKey(barcode, phase));
     if (!raw) return null;
     const cache: ScanCache = JSON.parse(raw);
     if (Date.now() - cache.cachedAt > CACHE_TTL_MS) {
-      await AsyncStorage.removeItem(scanCacheKey(barcode));
+      await AsyncStorage.removeItem(scanCacheKey(barcode, phase));
       return null;
     }
     return cache;
@@ -68,10 +74,63 @@ async function readCache(barcode: string): Promise<ScanCache | null> {
   }
 }
 
-async function writeCache(barcode: string, data: Omit<ScanCache, 'barcode' | 'cachedAt'>): Promise<void> {
+/**
+ * Convertit la réponse du backend (POST /api/scan) vers les types internes
+ * du mobile (ProductData + MatchResult[] + VerdictResult).
+ *
+ * Le backend détient désormais l'autorité sur :
+ *  - le verdict (status/verdict)
+ *  - le score (glow_score, expose via verdict.glowScoreRemote pour l'UI)
+ *  - l'explication (déterministe ou IA, exposée via verdict.aiExplanation)
+ *  - le breakdown par ingrédient (matches[])
+ */
+function adaptBackendResponse(
+  barcode: string,
+  dto: ScanResponseDto,
+): { product: ProductData; matches: MatchResult[]; verdict: VerdictResult } {
+  const matches: MatchResult[] = dto.matches.map(dtoToMatchResult);
+
+  // ingredientsList reconstruit depuis matches → cohérent avec ce que le backend a parsé.
+  const ingredientsList = matches.map((m) => m.ingredientName);
+
+  const product: ProductData = {
+    barcode,
+    name: dto.product.name,
+    brand: dto.product.brand ?? '',
+    imageUrl: dto.product.image_url,
+    ingredientsList,
+    source: 'helo', // marqueur "passé par le backend Hēlo"
+  };
+
+  const flaggedIngredients = matches.filter(
+    (m) => m.riskLevel === 'danger' || m.riskLevel === 'caution',
+  );
+  const verdict: VerdictResult = {
+    verdict: dto.verdict,
+    flaggedIngredients,
+    noSignalCount: matches.filter((m) => m.riskLevel === 'no_signal').length,
+    safeCount: matches.filter((m) => m.riskLevel === 'safe').length,
+    aiExplanation: dto.explanation,
+    aiSource: dto.source,
+    glowScoreRemote: dto.glow_score,
+    searchKeyword: dto.search_keyword,
+  };
+
+  return { product, matches, verdict };
+}
+
+async function writeCache(
+  barcode: string,
+  phase: Phase,
+  data: Omit<ScanCache, 'barcode' | 'cachedAt'>,
+): Promise<void> {
   try {
+    // Garde-fou : ne pas persister un breakdown vide (legacy cache hit côté
+    // backend renvoyant matches:[]). Sinon une recompute locale ultérieure
+    // partirait d'un ingredientsList vide et biaiserait safe par défaut.
+    if (data.matches.length === 0) return;
     const cache: ScanCache = { barcode, cachedAt: Date.now(), ...data };
-    await AsyncStorage.setItem(scanCacheKey(barcode), JSON.stringify(cache));
+    await AsyncStorage.setItem(scanCacheKey(barcode, phase), JSON.stringify(cache));
   } catch {
     // Non-blocking — cache write failure is silent
   }
@@ -111,7 +170,7 @@ export function useScan(): UseScanReturn {
         const hasLocalDB = localIngredients.length > 0;
 
         // 1. Check 7-day scan cache first
-        const cached = await readCache(barcode);
+        const cached = await readCache(barcode, phase);
         if (cached) {
           const matches = hasLocalDB
             ? await matchIngredientsLocal(cached.product.ingredientsList, phase)
@@ -180,8 +239,8 @@ export function useScan(): UseScanReturn {
 
       // ── Online path ───────────────────────────────────────────────────────────
 
-      // 1. Check cache first
-      const cached = await readCache(barcode);
+      // 1. Check 7-day local cache first (instant, no network)
+      const cached = await readCache(barcode, phase);
       if (cached) {
         setState({
           loading: false,
@@ -195,30 +254,80 @@ export function useScan(): UseScanReturn {
         return;
       }
 
-      // 2. Fetch from Open Food Facts / OBF / community submissions
+      // 2. Source of truth en ligne = backend Hēlo (déterministe + IA).
+      //    Le backend orchestre déjà OFF/OBF, matching, AI et cache Supabase.
+      if (isBackendConfigured) {
+        const remote = await scanProductRemote(barcode, phase);
+        if (remote.ok) {
+          const { product, matches, verdict } = adaptBackendResponse(
+            barcode,
+            remote.data,
+          );
+          await writeCache(barcode, phase, { product, matches, verdict });
+          await cacheProduct(barcode, product, verdict);
+          setState({
+            loading: false,
+            product,
+            matches,
+            verdict,
+            error: null,
+            notFound: false,
+            fromCache: false,
+          });
+          return;
+        }
+        // Erreurs métier "terminales" : pas la peine de retomber sur le local
+        // (le local ne saura pas faire mieux et risque d'être inconsistant).
+        if (remote.error.kind === 'not_found') {
+          setState((s) => ({
+            ...s,
+            loading: false,
+            notFound: true,
+            error: 'Produit non trouvé. Vous pouvez le soumettre à la communauté.',
+          }));
+          return;
+        }
+        if (remote.error.kind === 'rate_limited') {
+          setState((s) => ({
+            ...s,
+            loading: false,
+            error: 'Trop de scans rapprochés. Patientez quelques instants.',
+          }));
+          return;
+        }
+        if (
+          remote.error.kind === 'unauthorized' ||
+          remote.error.kind === 'invalid_request' ||
+          remote.error.kind === 'no_ingredients'
+        ) {
+          // Échec de configuration / contrat — pas de fallback silencieux.
+          setState((s) => ({
+            ...s,
+            loading: false,
+            error: "Service temporairement indisponible. Réessayez plus tard.",
+          }));
+          return;
+        }
+        // network / server / unconfigured → on retombe sur le pipeline local
+        // pour préserver l'expérience (best-effort, déterministe uniquement).
+      }
+
+      // 3. Fallback : pipeline 100% local (legacy)
+      //    Utilisé si backend KO (réseau, 5xx) ou non configuré (preview/CI).
       const product = await fetchProductByBarcode(barcode);
       if (!product) {
         setState((s) => ({
           ...s,
           loading: false,
           notFound: true,
-          error: 'Produit non trouvé dans la base Open Food Facts. Vous pouvez le soumettre à la communauté.',
+          error: 'Produit non trouvé. Vous pouvez le soumettre à la communauté.',
         }));
         return;
       }
-
-      // 3. Match ingredients against DB
       const matches = await matchIngredients(product.ingredientsList, phase);
-
-      // 4. Compute verdict
       const verdict = getVerdict(matches);
-
-      // 5. Cache the result
-      await writeCache(barcode, { product, matches, verdict });
-
-      // 6. Also store in offline LRU cache
+      await writeCache(barcode, phase, { product, matches, verdict });
       await cacheProduct(barcode, product, verdict);
-
       setState({
         loading: false,
         product,

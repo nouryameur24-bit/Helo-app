@@ -140,6 +140,31 @@ components:
             - string
             - "null"
       required: [name, brand, image_url]
+    ScanMatch:
+      type: object
+      description: |
+        Per-ingredient deterministic match result. Mobile uses this to render
+        the colour-coded breakdown under the verdict (zero regression UI).
+      properties:
+        ingredient_name:
+          type: string
+          description: The raw ingredient string as parsed from the product.
+        matched:
+          type: boolean
+          description: True if the ingredient was found in our 5000 curated entries.
+        matched_ingredient_name:
+          type:
+            - string
+            - "null"
+          description: Canonical name from our DB when matched.
+        risk_level:
+          type: string
+          enum: [safe, caution, danger, no_signal]
+      required:
+        - ingredient_name
+        - matched
+        - matched_ingredient_name
+        - risk_level
     ScanResponse:
       type: object
       properties:
@@ -166,6 +191,11 @@ components:
             - "null"
         product:
           $ref: "#/components/schemas/ScanProductInfo"
+        matches:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScanMatch"
+          description: Per-ingredient breakdown for UI rendering.
       required:
         - status
         - verdict
@@ -175,3 +205,4 @@ components:
         - cached
         - search_keyword
         - product
+        - matches

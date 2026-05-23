@@ -114,8 +114,17 @@ export const STORAGE_PREFIXES = {
   ocrResult: '@helo_ocr_',
 } as const;
 
-export const scanCacheKey = (barcode: string): string =>
-  `${STORAGE_PREFIXES.scanCache}${barcode}`;
+/**
+ * Clé du cache de scan local. **Phase-aware** : un même barcode peut avoir des
+ * verdicts différents selon la phase (T1/T2/T3/breastfeeding/baby), donc la
+ * clé doit inclure la phase pour éviter de servir un verdict obsolète au
+ * changement de trimestre.
+ *
+ * Les anciennes clés sans phase (legacy `@helo_scan_<barcode>`) seront
+ * simplement ignorées (cache miss) puis écrasées à la prochaine écriture.
+ */
+export const scanCacheKey = (barcode: string, phase: string | number): string =>
+  `${STORAGE_PREFIXES.scanCache}${barcode}_${phase}`;
 
 export const roomCelebratedKey = (roomId: string): string =>
   `${STORAGE_PREFIXES.roomCelebrated}${roomId}`;

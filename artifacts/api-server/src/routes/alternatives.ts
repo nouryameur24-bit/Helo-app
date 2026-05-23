@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v3";
+const MATCHER_VERSION = "v4";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -1005,10 +1005,12 @@ router.get(
           });
           continue;
         }
-        // Identifiabilité : sans photo + sans marque, l'utilisateur ne peut
-        // pas reconnaître le produit en rayon ("whole grain mustard" générique).
-        // On exige au minimum une image OU une marque non vide.
-        if (!cand.image_url && !cand.brand.trim()) {
+        // Identifiabilité : la photo est OBLIGATOIRE. Sans visuel, l'utilisateur
+        // ne peut pas reconnaître le pot en rayon — même avec un nom de marque
+        // (qui peut être bidon comme "Moutarde" mis dans le champ brand OFF, ou
+        // une marque légitime mais avec 20 SKUs au même nom). On bumpe aussi
+        // MATCHER_VERSION quand on change cette politique.
+        if (!cand.image_url) {
           continue;
         }
         safeCandidates.push(cand);

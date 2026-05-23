@@ -173,3 +173,9 @@ id = "ca3TKLZEjSHc4mtI2mVxA"
 uri = "file://exports/split/04-scripts-config.txt"
 type = "text"
 title = "4/4 — Scripts + Mockup sandbox + Configs (957 Ko)"
+
+[[outputs]]
+id = "kLI1C_xAstaMHFVTjrcuL"
+uri = "file://exports/helo-audit-complet.tar.gz"
+type = "unspecified"
+title = "helo-audit-complet.tar.gz — Monorepo complet (7,3 Mo, 582 fichiers)"

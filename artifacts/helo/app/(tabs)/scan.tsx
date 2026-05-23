@@ -164,6 +164,10 @@ export default function ScanScreen() {
         setTorchOn(false);
         setMenuPhotos([]);
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        // CRITICAL : sans ce reset, la ref reste figée sur le dernier code
+        // après un blur (navigation vers verdict), et tout re-scan du même
+        // produit au retour est rejeté en silence ligne 175.
+        lastBarcode.current = null;
         // Reset the one-shot guard so the NEXT Ghost Capture navigation works.
         ghostConsumed.current = false;
       };

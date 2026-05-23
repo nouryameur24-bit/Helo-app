@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: scan
     description: Product scanning operations
+  - name: alternatives
+    description: Safe product alternatives engine (Filet & Sniper + Ceinture & Bretelles)
 paths:
   /healthz:
     get:
@@ -26,6 +28,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /alternatives/{barcode}:
+    get:
+      operationId: getAlternatives
+      tags: [alternatives]
+      summary: Find safe alternatives for a flagged product
+      description: |
+        Lazy-loaded endpoint. Only called by the mobile app when the user taps
+        "Voir les alternatives" on a caution/danger verdict.
+
+        Flow (Filet & Sniper + Ceinture & Bretelles):
+        1. Lookup origin product. 404 if unknown.
+        2. Cache hit on `analysis_cache[{trimester}].alternatives` → skip to 5.
+        3. FILET: Supabase ILIKE on `search_keyword` (cache or local heuristic),
+           LIMIT 20, exclude origin.
+        4. SNIPER: Claude Haiku selects up to 3 barcodes "100% safe" for the
+           phase. Empty array allowed (strict — no compromises on health).
+        5. CEINTURE & BRETELLES: re-run our deterministic engine on each
+           Claude-validated product. Drop any product whose ingredients
+           contain a danger or caution match for this phase.
+        6. Hydrate and return as enriched AlternativeProduct[].
+
+        Cache miss writes back the validated barcode list. On any Claude
+        failure (timeout, invalid JSON), returns the cached list if any,
+        otherwise an empty array.
+      parameters:
+        - in: header
+          name: x-helo-app-secret
+          required: true
+          schema:
+            type: string
+          description: Shared secret between the mobile app and the backend.
+        - in: path
+          name: barcode
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{6,14}$"
+          description: Barcode of the flagged origin product.
+        - in: query
+          name: trimester
+          required: true
+          schema:
+            $ref: "#/components/schemas/ScanPhase"
+          description: User phase. Determines safety filtering.
+      responses:
+        "200":
+          description: |
+            Validated alternatives, possibly empty (means "no product in our
+            DB is 100% safe for this phase — show suggestion form").
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlternativesResponse"
+        "400":
+          description: Invalid barcode or trimester
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Missing or invalid x-helo-app-secret
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Origin product not in our DB
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
   /scan:
     post:
       operationId: scanProduct
@@ -206,3 +285,69 @@ components:
         - search_keyword
         - product
         - matches
+    AlternativeProduct:
+      type: object
+      description: |
+        Enriched alternative product, ready for direct rendering by the mobile
+        carousel. Shape mirrors the mobile `AlternativeProduct` type so the
+        client can drop-in replace the local algorithm output.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        brand:
+          type: string
+        category:
+          type: string
+          description: Free-form product category (cosmetic, food, medication...).
+        barcode:
+          type:
+            - string
+            - "null"
+        image_url:
+          type:
+            - string
+            - "null"
+        description_fr:
+          type:
+            - string
+            - "null"
+        overall_risk:
+          type: string
+          enum: [safe, caution]
+          description: |
+            Always "safe" — every returned product has passed both Claude's
+            selection and our deterministic re-verification (Ceinture &
+            Bretelles). The "caution" variant is kept in the enum for
+            mobile-side fallback compatibility only.
+        price_range:
+          type: string
+        popularity_count:
+          type: integer
+          description: Bonus score (pharmacy/french/bio). Used by mobile for sort.
+        origin_badge:
+          type:
+            - string
+            - "null"
+          enum: [pharmacy, french, bio, null]
+      required:
+        - id
+        - name
+        - brand
+        - category
+        - barcode
+        - image_url
+        - description_fr
+        - overall_risk
+        - price_range
+        - popularity_count
+        - origin_badge
+    AlternativesResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/AlternativeProduct"
+      description: |
+        Up to 3 safe alternatives. Empty array is a valid, expected response
+        when no product in our DB is 100% safe for this phase — mobile shows
+        the community suggestion empty state.

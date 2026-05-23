@@ -17,7 +17,9 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AlternativesResponse,
   ApiError,
+  GetAlternativesParams,
   HealthStatus,
   ScanRequest,
   ScanResponse,
@@ -100,6 +102,137 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Lazy-loaded endpoint. Only called by the mobile app when the user taps
+"Voir les alternatives" on a caution/danger verdict.
+
+Flow (Filet & Sniper + Ceinture & Bretelles):
+1. Lookup origin product. 404 if unknown.
+2. Cache hit on `analysis_cache[{trimester}].alternatives` → skip to 5.
+3. FILET: Supabase ILIKE on `search_keyword` (cache or local heuristic),
+   LIMIT 20, exclude origin.
+4. SNIPER: Claude Haiku selects up to 3 barcodes "100% safe" for the
+   phase. Empty array allowed (strict — no compromises on health).
+5. CEINTURE & BRETELLES: re-run our deterministic engine on each
+   Claude-validated product. Drop any product whose ingredients
+   contain a danger or caution match for this phase.
+6. Hydrate and return as enriched AlternativeProduct[].
+
+Cache miss writes back the validated barcode list. On any Claude
+failure (timeout, invalid JSON), returns the cached list if any,
+otherwise an empty array.
+
+ * @summary Find safe alternatives for a flagged product
+ */
+export const getGetAlternativesUrl = (
+  barcode: string,
+  params: GetAlternativesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/alternatives/${barcode}?${stringifiedParams}`
+    : `/api/alternatives/${barcode}`;
+};
+
+export const getAlternatives = async (
+  barcode: string,
+  params: GetAlternativesParams,
+  options?: RequestInit,
+): Promise<AlternativesResponse> => {
+  return customFetch<AlternativesResponse>(
+    getGetAlternativesUrl(barcode, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetAlternativesQueryKey = (
+  barcode: string,
+  params?: GetAlternativesParams,
+) => {
+  return [`/api/alternatives/${barcode}`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAlternativesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAlternatives>>,
+  TError = ErrorType<ApiError>,
+>(
+  barcode: string,
+  params: GetAlternativesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAlternatives>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAlternativesQueryKey(barcode, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAlternatives>>> = ({
+    signal,
+  }) => getAlternatives(barcode, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!barcode,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAlternatives>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAlternativesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAlternatives>>
+>;
+export type GetAlternativesQueryError = ErrorType<ApiError>;
+
+/**
+ * @summary Find safe alternatives for a flagged product
+ */
+
+export function useGetAlternatives<
+  TData = Awaited<ReturnType<typeof getAlternatives>>,
+  TError = ErrorType<ApiError>,
+>(
+  barcode: string,
+  params: GetAlternativesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAlternatives>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAlternativesQueryOptions(barcode, params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

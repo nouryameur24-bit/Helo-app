@@ -100,6 +100,97 @@ export async function analyzeWithClaude(params: {
   return normalizeVerdict(parsed);
 }
 
+// ─── Alternatives selector (Sniper) ─────────────────────────────────────────
+
+const ALTERNATIVES_SYSTEM_PROMPT = `Tu es un expert en toxicologie périnatale. Voici 20 produits avec leurs listes d'ingrédients. L'utilisatrice est au trimestre {trimester} de sa grossesse.
+
+Ta mission : Sélectionne jusqu'à 3 produits qui sont 100% SANS DANGER (zéro composant toxique, zéro risque selon les recommandations médicales).
+
+🚨 SÉCURITÉ CRITIQUE (Trappe de Secours) : Si AUCUN produit de cette liste n'est parfaitement sûr pour ce trimestre, tu DOIS IMPÉRATIVEMENT renvoyer un tableau JSON vide []. Ne fais aucun compromis. Ne choisis pas 'le moins pire'.
+
+Tu dois répondre UNIQUEMENT par un tableau JSON contenant les codes-barres des produits validés, ou un tableau vide. Exemple : ["123456789", "987654321"]`;
+
+export interface AlternativeCandidate {
+  barcode: string;
+  name: string;
+  ingredients_raw: string;
+}
+
+/**
+ * Calls Claude Haiku to select up to 3 "100% safe" barcodes from a candidate
+ * list. Returns [] on any failure (invalid JSON, timeout, etc.) — the empty
+ * array is a valid, expected output per the strict safety policy.
+ */
+export async function selectSafeAlternativesWithClaude(params: {
+  candidates: AlternativeCandidate[];
+  trimester: 1 | 2 | 3 | "breastfeeding" | "baby";
+}): Promise<string[]> {
+  if (!apiKey) {
+    logger.warn("ANTHROPIC_API_KEY not set — alternatives sniper returns []");
+    return [];
+  }
+  if (params.candidates.length === 0) return [];
+
+  const phaseLabel =
+    params.trimester === "breastfeeding"
+      ? "allaitement"
+      : params.trimester === "baby"
+        ? "bébé (post-natal)"
+        : `trimestre ${params.trimester}`;
+
+  const systemPrompt = ALTERNATIVES_SYSTEM_PROMPT.replace(
+    "{trimester}",
+    phaseLabel,
+  );
+
+  const userPrompt = params.candidates
+    .map(
+      (c, i) =>
+        `${i + 1}. Code-barres: ${c.barcode}\n   Nom: ${c.name}\n   Ingrédients: ${c.ingredients_raw.slice(0, 800)}`,
+    )
+    .join("\n\n");
+
+  try {
+    const response = await client.messages.create({
+      model: MODEL,
+      max_tokens: 200, // tighter cap — output is just a tiny JSON array
+      system: systemPrompt,
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const textBlock = response.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") return [];
+
+    // Resilient extraction: Claude sometimes wraps the JSON in markdown or
+    // adds explanatory text after the array despite our prompt. Find the
+    // first `[...]` block and parse only that.
+    const raw = textBlock.text.trim();
+    const match = raw.match(/\[[\s\S]*?\]/);
+    if (!match) {
+      logger.warn({ raw }, "sniper: no JSON array found in Claude output");
+      return [];
+    }
+    const parsed: unknown = JSON.parse(match[0]);
+    if (!Array.isArray(parsed)) return [];
+
+    // Only keep barcodes that were in the candidate set (defence against
+    // Claude hallucinating barcodes that don't exist).
+    const validSet = new Set(params.candidates.map((c) => c.barcode));
+    const barcodes = parsed
+      .filter((x): x is string => typeof x === "string")
+      .filter((bc) => validSet.has(bc))
+      .slice(0, 3);
+
+    return barcodes;
+  } catch (err) {
+    logger.warn(
+      { err },
+      "selectSafeAlternativesWithClaude failed — returning []",
+    );
+    return [];
+  }
+}
+
 function normalizeVerdict(raw: unknown): AiVerdict {
   if (!raw || typeof raw !== "object") {
     throw new Error("Claude verdict is not an object");

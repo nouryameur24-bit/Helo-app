@@ -16,6 +16,88 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
+ * Lazy-loaded endpoint. Only called by the mobile app when the user taps
+"Voir les alternatives" on a caution/danger verdict.
+
+Flow (Filet & Sniper + Ceinture & Bretelles):
+1. Lookup origin product. 404 if unknown.
+2. Cache hit on `analysis_cache[{trimester}].alternatives` → skip to 5.
+3. FILET: Supabase ILIKE on `search_keyword` (cache or local heuristic),
+   LIMIT 20, exclude origin.
+4. SNIPER: Claude Haiku selects up to 3 barcodes "100% safe" for the
+   phase. Empty array allowed (strict — no compromises on health).
+5. CEINTURE & BRETELLES: re-run our deterministic engine on each
+   Claude-validated product. Drop any product whose ingredients
+   contain a danger or caution match for this phase.
+6. Hydrate and return as enriched AlternativeProduct[].
+
+Cache miss writes back the validated barcode list. On any Claude
+failure (timeout, invalid JSON), returns the cached list if any,
+otherwise an empty array.
+
+ * @summary Find safe alternatives for a flagged product
+ */
+export const getAlternativesPathBarcodeRegExp = new RegExp("^[0-9]{6,14}$");
+
+export const GetAlternativesParams = zod.object({
+  barcode: zod.coerce
+    .string()
+    .regex(getAlternativesPathBarcodeRegExp)
+    .describe("Barcode of the flagged origin product."),
+});
+
+export const GetAlternativesQueryParams = zod.object({
+  trimester: zod
+    .union([
+      zod.union([zod.literal(1), zod.literal(2), zod.literal(3)]),
+      zod.enum(["breastfeeding", "baby"]),
+    ])
+    .describe("User phase. Determines safety filtering."),
+});
+
+export const GetAlternativesHeader = zod.object({
+  "x-helo-app-secret": zod
+    .string()
+    .describe("Shared secret between the mobile app and the backend."),
+});
+
+export const GetAlternativesResponseItem = zod
+  .object({
+    id: zod.string(),
+    name: zod.string(),
+    brand: zod.string(),
+    category: zod
+      .string()
+      .describe("Free-form product category (cosmetic, food, medication...)."),
+    barcode: zod.string().nullable(),
+    image_url: zod.string().nullable(),
+    description_fr: zod.string().nullable(),
+    overall_risk: zod
+      .enum(["safe", "caution"])
+      .describe(
+        'Always \"safe\" — every returned product has passed both Claude\'s\nselection and our deterministic re-verification (Ceinture &\nBretelles). The \"caution\" variant is kept in the enum for\nmobile-side fallback compatibility only.\n',
+      ),
+    price_range: zod.string(),
+    popularity_count: zod
+      .number()
+      .describe(
+        "Bonus score (pharmacy\/french\/bio). Used by mobile for sort.",
+      ),
+    origin_badge: zod
+      .union([
+        zod.literal("pharmacy"),
+        zod.literal("french"),
+        zod.literal("bio"),
+        zod.literal(null),
+      ])
+      .nullable(),
+  })
+  .describe(
+    "Enriched alternative product, ready for direct rendering by the mobile\ncarousel. Shape mirrors the mobile `AlternativeProduct` type so the\nclient can drop-in replace the local algorithm output.\n",
+  );
+export const GetAlternativesResponse = zod.array(GetAlternativesResponseItem);
+
+/**
  * Hybrid analysis: deterministic ingredient matching against our 5000 curated
 entries, with Claude (Haiku) fallback when unknown ingredients are present
 and no confirmed danger is found. Results are cached per (barcode, trimester)

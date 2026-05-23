@@ -1,0 +1,435 @@
+import { Router, type IRouter } from "express";
+import { z } from "zod/v4";
+
+import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabaseAdmin";
+import { parseIngredients } from "../lib/parseIngredients";
+import { matchDeterministic, type Phase } from "../lib/matcher";
+import {
+  selectSafeAlternativesWithClaude,
+  type AlternativeCandidate,
+} from "../lib/anthropic";
+import { requireAppSecret } from "../middlewares/appSecret";
+import { alternativesRateLimit } from "../middlewares/alternativesRateLimit";
+
+const router: IRouter = Router();
+
+// ─── Request validation ─────────────────────────────────────────────────────
+
+const BARCODE_RE = /^[0-9]{6,14}$/;
+
+const QuerySchema = z.object({
+  trimester: z.union([
+    z.literal("1"),
+    z.literal("2"),
+    z.literal("3"),
+    z.literal("breastfeeding"),
+    z.literal("baby"),
+  ]),
+});
+
+function parsePhase(raw: string): Phase {
+  if (raw === "1" || raw === "2" || raw === "3") {
+    return Number(raw) as 1 | 2 | 3;
+  }
+  return raw as "breastfeeding" | "baby";
+}
+
+function trimesterCacheKey(t: Phase): string {
+  return typeof t === "number" ? `t${t}` : t;
+}
+
+// ─── Response shape (mirrors mobile AlternativeProduct) ─────────────────────
+
+type OriginBadge = "pharmacy" | "french" | "bio" | null;
+
+interface AlternativeProductDto {
+  id: string;
+  name: string;
+  brand: string;
+  category: string;
+  barcode: string | null;
+  image_url: string | null;
+  description_fr: string | null;
+  overall_risk: "safe" | "caution";
+  price_range: string;
+  popularity_count: number;
+  origin_badge: OriginBadge;
+}
+
+// ─── Local helpers (duplicated from mobile lib/alternatives.ts) ─────────────
+// TODO: extract to a shared @workspace/alternatives-scoring lib post-MVP.
+
+const PRODUCT_TYPES = [
+  // Cosmetics
+  "crème visage", "crème mains", "crème corps", "crème solaire",
+  "crème nuit", "crème jour", "crème anti-âge", "crème hydratante",
+  "crème pieds",
+  "lait corps", "lait visage", "lait démaquillant", "lait hydratant",
+  "shampoing", "après-shampoing", "masque cheveux", "huile cheveux",
+  "gel douche", "savon", "pain de toilette", "déodorant", "parfum",
+  "eau micellaire", "eau florale", "lotion tonique", "tonique",
+  "dentifrice", "bain de bouche", "fond de teint", "mascara",
+  "rouge à lèvres", "baume lèvres", "gloss", "crayon", "fard",
+  "huile démaquillante", "sérum", "masque visage", "gommage",
+  "huile végétale", "beurre karité", "liniment", "cold cream",
+  "soin", "baume",
+  // Food
+  "yaourt", "fromage", "jambon", "saumon", "thon", "chocolat",
+  "biscuit", "pâte à tartiner", "jus", "eau", "lait", "beurre",
+  "huile olive", "huile colza", "pâtes", "riz", "céréales",
+  "soupe", "compote", "pain", "viennoiserie", "confiture",
+  "miel", "café", "thé", "tisane", "soda", "limonade",
+];
+
+function extractKeywords(name: string): string[] {
+  const lower = (name ?? "").toLowerCase();
+  return PRODUCT_TYPES.filter((type) => lower.includes(type));
+}
+
+const PHARMACY_BRANDS = [
+  "avène", "avene", "la roche-posay", "roche posay",
+  "mustela", "bioderma", "uriage", "a-derma", "aderma", "klorane",
+  "weleda", "cattier", "cetaphil", "cerave", "eucerin", "ducray", "nuxe",
+];
+
+const FRENCH_BRANDS = [
+  "caudalie", "embryolisse", "lierac", "sanoflore",
+  "melvita", "galenic", "phyto", "rené furterer",
+];
+
+function detectBio(name: string, ingredientsLower: string): boolean {
+  const nameLower = (name ?? "").toLowerCase();
+  return /\bbio\b/.test(nameLower)
+    || nameLower.includes("biologique")
+    || /\bbio\b/.test(ingredientsLower);
+}
+
+function scoreAndBadge(
+  name: string,
+  brand: string,
+  ingredientsRaw: string,
+): { score: number; originBadge: OriginBadge } {
+  const brandLower = (brand ?? "").toLowerCase();
+  const ingLower = (ingredientsRaw ?? "").toLowerCase();
+  let score = 0;
+  let originBadge: OriginBadge = null;
+
+  if (PHARMACY_BRANDS.some((b) => brandLower.includes(b))) {
+    score += 15;
+    originBadge = "pharmacy";
+  } else if (FRENCH_BRANDS.some((b) => brandLower.includes(b))) {
+    score += 8;
+    originBadge = "french";
+  }
+
+  if (detectBio(name, ingLower)) {
+    score += 5;
+    if (!originBadge) originBadge = "bio";
+  }
+
+  return { score, originBadge };
+}
+
+// ─── Route ──────────────────────────────────────────────────────────────────
+
+router.get(
+  "/alternatives/:barcode",
+  alternativesRateLimit,
+  requireAppSecret,
+  async (req, res) => {
+    const barcode = String(req.params.barcode ?? "");
+    if (!BARCODE_RE.test(barcode)) {
+      res.status(400).json({ error: "invalid_barcode" });
+      return;
+    }
+
+    const queryParsed = QuerySchema.safeParse(req.query);
+    if (!queryParsed.success) {
+      res.status(400).json({ error: "invalid_trimester" });
+      return;
+    }
+    const phase = parsePhase(queryParsed.data.trimester);
+    const cacheKey = trimesterCacheKey(phase);
+
+    if (!isSupabaseConfigured) {
+      req.log.error("Supabase not configured");
+      res.status(500).json({ error: "server_misconfigured" });
+      return;
+    }
+
+    try {
+      // ── 1. Lookup origin product ─────────────────────────────────────────
+      const { data: origin, error: originErr } = await supabaseAdmin
+        .from("products")
+        .select(
+          "id, barcode, name, brand, category, ingredients_raw, image_url, analysis_cache",
+        )
+        .eq("barcode", barcode)
+        .maybeSingle();
+
+      if (originErr) {
+        req.log.error({ err: originErr }, "origin lookup failed");
+        res.status(500).json({ error: "db_error" });
+        return;
+      }
+      if (!origin) {
+        res.status(404).json({ error: "origin_not_found" });
+        return;
+      }
+
+      const cache = (origin.analysis_cache ?? {}) as Record<
+        string,
+        {
+          search_keyword?: string | null;
+          alternatives?: string[];
+        }
+      >;
+      const phaseCache = cache[cacheKey];
+
+      // ── 2. CACHE HIT on alternatives → skip Filet+Sniper ────────────────
+      let validatedBarcodes: string[] | null = null;
+      if (phaseCache?.alternatives && Array.isArray(phaseCache.alternatives)) {
+        validatedBarcodes = phaseCache.alternatives;
+        req.log.info(
+          { barcode, cacheKey, n: validatedBarcodes.length },
+          "alternatives cache hit",
+        );
+      }
+
+      // ── 3. Resolve search keyword (cache → local heuristic) ──────────────
+      let searchKeyword: string | null = phaseCache?.search_keyword ?? null;
+      const fallbackKeywords = extractKeywords(origin.name ?? "");
+
+      // ── 4. FILET (Supabase) — only if no cache hit ──────────────────────
+      if (validatedBarcodes === null) {
+        // Build OR filter from keyword (string) and/or local keyword list.
+        const keywordList = searchKeyword
+          ? [searchKeyword.toLowerCase(), ...fallbackKeywords]
+          : fallbackKeywords;
+        const uniqueKw = Array.from(new Set(keywordList)).slice(0, 6);
+
+        let netCandidates: Array<{
+          id: string;
+          barcode: string | null;
+          name: string;
+          brand: string | null;
+          category: string | null;
+          ingredients_raw: string | null;
+          image_url: string | null;
+        }> = [];
+
+        if (uniqueKw.length > 0) {
+          // Sanitize for PostgREST `or()` filter — strip commas/parens.
+          const orFilter = uniqueKw
+            .map((kw) => kw.replace(/[,()]/g, " ").trim())
+            .filter((kw) => kw.length >= 3)
+            .map((kw) => `name.ilike.%${kw}%`)
+            .join(",");
+
+          if (orFilter) {
+            const query = supabaseAdmin
+              .from("products")
+              .select(
+                "id, barcode, name, brand, category, ingredients_raw, image_url",
+              )
+              .neq("barcode", barcode)
+              .not("ingredients_raw", "is", null)
+              .or(orFilter)
+              .limit(20);
+
+            // Prefer same category when we have one — keeps the filet tight.
+            const finalQuery = origin.category
+              ? query.eq("category", origin.category)
+              : query;
+
+            const { data: netRows, error: netErr } = await finalQuery;
+            if (netErr) {
+              req.log.warn({ err: netErr }, "filet keyword query failed");
+            } else if (netRows) {
+              netCandidates = netRows;
+            }
+          }
+        }
+
+        // Fallback: if keyword net was empty AND we have a category, take
+        // any same-category product. Better to give Claude SOMETHING to
+        // chew on than to return empty by lack of data.
+        if (netCandidates.length === 0 && origin.category) {
+          const { data: catRows } = await supabaseAdmin
+            .from("products")
+            .select(
+              "id, barcode, name, brand, category, ingredients_raw, image_url",
+            )
+            .eq("category", origin.category)
+            .neq("barcode", barcode)
+            .not("ingredients_raw", "is", null)
+            .limit(20);
+          if (catRows) netCandidates = catRows;
+        }
+
+        req.log.info(
+          { barcode, cacheKey, n: netCandidates.length, kw: uniqueKw },
+          "filet caught candidates",
+        );
+
+        if (netCandidates.length === 0) {
+          // Nothing to sniper → store empty cache and return empty.
+          await writeAlternativesCache(req, barcode, cache, cacheKey, []);
+          res.json([]);
+          return;
+        }
+
+        // ── 5. SNIPER (Claude Haiku) ───────────────────────────────────────
+        const sniperInput: AlternativeCandidate[] = netCandidates
+          .filter(
+            (c): c is typeof c & { barcode: string; ingredients_raw: string } =>
+              !!c.barcode && !!c.ingredients_raw,
+          )
+          .map((c) => ({
+            barcode: c.barcode,
+            name: c.name,
+            ingredients_raw: c.ingredients_raw,
+          }));
+
+        validatedBarcodes = await selectSafeAlternativesWithClaude({
+          candidates: sniperInput,
+          trimester: phase,
+        });
+
+        req.log.info(
+          { barcode, cacheKey, sniperPicked: validatedBarcodes.length },
+          "sniper finished",
+        );
+
+        // ── 6. Write back cache (best-effort) ─────────────────────────────
+        await writeAlternativesCache(
+          req,
+          barcode,
+          cache,
+          cacheKey,
+          validatedBarcodes,
+        );
+      }
+
+      if (validatedBarcodes.length === 0) {
+        res.json([]);
+        return;
+      }
+
+      // ── 7. Hydrate full product rows ───────────────────────────────────
+      const { data: hydrated, error: hydErr } = await supabaseAdmin
+        .from("products")
+        .select(
+          "id, barcode, name, brand, category, ingredients_raw, image_url",
+        )
+        .in("barcode", validatedBarcodes);
+
+      if (hydErr || !hydrated) {
+        req.log.error({ err: hydErr }, "hydration failed");
+        res.json([]); // graceful degrade — better empty than 500
+        return;
+      }
+
+      // ── 8. CEINTURE & BRETELLES — deterministic re-verification ────────
+      // Strict policy: we admit a product as "100% safe" only when our 5000-
+      // entry knowledge base recognises EVERY ingredient AND none of them
+      // is danger/caution for this phase. Products with even one unknown
+      // ingredient (no_signal) are vetoed — "we don't know" ≠ "it's safe".
+      // This is the whole point of Ceinture & Bretelles: positive proof,
+      // not absence of evidence.
+      const safeProducts: typeof hydrated = [];
+      for (const p of hydrated) {
+        if (!p.ingredients_raw) continue;
+        const ingredientsList = parseIngredients(p.ingredients_raw);
+        if (ingredientsList.length === 0) continue;
+        const det = await matchDeterministic(ingredientsList, phase);
+
+        if (det.hasUnknown) {
+          req.log.info(
+            { barcode: p.barcode, name: p.name },
+            "ceinture & bretelles vetoed: unknown ingredients (no positive proof)",
+          );
+          continue;
+        }
+        const hasRisk = det.matches.some(
+          (m) => m.riskLevel === "danger" || m.riskLevel === "caution",
+        );
+        if (hasRisk) {
+          req.log.info(
+            { barcode: p.barcode, name: p.name },
+            "ceinture & bretelles vetoed: danger/caution ingredient",
+          );
+          continue;
+        }
+        safeProducts.push(p);
+      }
+
+      // ── 9. Transform to DTO with badges + score ─────────────────────────
+      const dtos: AlternativeProductDto[] = safeProducts.map((p) => {
+        const { score, originBadge } = scoreAndBadge(
+          p.name,
+          p.brand ?? "",
+          p.ingredients_raw ?? "",
+        );
+        return {
+          id: p.id,
+          name: p.name,
+          brand: p.brand ?? "",
+          category: p.category ?? "",
+          barcode: p.barcode,
+          image_url: p.image_url,
+          description_fr: null,
+          overall_risk: "safe",
+          price_range: "",
+          popularity_count: score,
+          origin_badge: originBadge,
+        };
+      });
+
+      // Sort by score desc (pharmacy > french > bio > neutral)
+      dtos.sort((a, b) => b.popularity_count - a.popularity_count);
+
+      res.json(dtos);
+    } catch (err) {
+      req.log.error({ err }, "alternatives handler failed");
+      res.status(500).json({ error: "internal_error" });
+    }
+  },
+);
+
+// ─── Cache write helper (best-effort) ───────────────────────────────────────
+
+async function writeAlternativesCache(
+  req: import("express").Request,
+  barcode: string,
+  existingCache: Record<string, unknown>,
+  cacheKey: string,
+  alternatives: string[],
+): Promise<void> {
+  // NOTE: same JSONB read-modify-write race as scan.ts. Acceptable for v1.
+  // Worst case: cache miss on next scan, one extra Claude call.
+  const existingPhase =
+    (existingCache[cacheKey] as Record<string, unknown> | undefined) ?? {};
+  const newCache = {
+    ...existingCache,
+    [cacheKey]: {
+      ...existingPhase,
+      alternatives,
+      alternatives_computed_at: new Date().toISOString(),
+    },
+  };
+  const { error } = await supabaseAdmin
+    .from("products")
+    .update({ analysis_cache: newCache })
+    .eq("barcode", barcode);
+  if (error) {
+    // Non-fatal but observable: every silent failure here = repeated Claude
+    // calls forever. Surface to logs so we can spot DB issues in production.
+    req.log.warn(
+      { err: error, barcode, cacheKey, n: alternatives.length },
+      "alternatives cache write failed — next call will re-trigger Claude",
+    );
+  }
+}
+
+export default router;

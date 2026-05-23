@@ -6,7 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./alternativeProduct";
+export * from "./alternativeProductOriginBadge";
+export * from "./alternativeProductOverallRisk";
+export * from "./alternativesResponse";
 export * from "./apiError";
+export * from "./getAlternativesParams";
 export * from "./healthStatus";
 export * from "./scanMatch";
 export * from "./scanMatchRiskLevel";

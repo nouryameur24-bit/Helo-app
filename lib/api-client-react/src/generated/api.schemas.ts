@@ -110,3 +110,77 @@ export interface ScanResponse {
   /** Per-ingredient breakdown for UI rendering. */
   matches: ScanMatch[];
 }
+
+/**
+ * Always "safe" — every returned product has passed both Claude's
+selection and our deterministic re-verification (Ceinture &
+Bretelles). The "caution" variant is kept in the enum for
+mobile-side fallback compatibility only.
+
+ */
+export type AlternativeProductOverallRisk =
+  (typeof AlternativeProductOverallRisk)[keyof typeof AlternativeProductOverallRisk];
+
+export const AlternativeProductOverallRisk = {
+  safe: "safe",
+  caution: "caution",
+} as const;
+
+/**
+ * @nullable
+ */
+export type AlternativeProductOriginBadge =
+  | (typeof AlternativeProductOriginBadge)[keyof typeof AlternativeProductOriginBadge]
+  | null;
+
+export const AlternativeProductOriginBadge = {
+  pharmacy: "pharmacy",
+  french: "french",
+  bio: "bio",
+} as const;
+
+/**
+ * Enriched alternative product, ready for direct rendering by the mobile
+carousel. Shape mirrors the mobile `AlternativeProduct` type so the
+client can drop-in replace the local algorithm output.
+
+ */
+export interface AlternativeProduct {
+  id: string;
+  name: string;
+  brand: string;
+  /** Free-form product category (cosmetic, food, medication...). */
+  category: string;
+  /** @nullable */
+  barcode: string | null;
+  /** @nullable */
+  image_url: string | null;
+  /** @nullable */
+  description_fr: string | null;
+  /** Always "safe" — every returned product has passed both Claude's
+selection and our deterministic re-verification (Ceinture &
+Bretelles). The "caution" variant is kept in the enum for
+mobile-side fallback compatibility only.
+ */
+  overall_risk: AlternativeProductOverallRisk;
+  price_range: string;
+  /** Bonus score (pharmacy/french/bio). Used by mobile for sort. */
+  popularity_count: number;
+  /** @nullable */
+  origin_badge: AlternativeProductOriginBadge;
+}
+
+/**
+ * Up to 3 safe alternatives. Empty array is a valid, expected response
+when no product in our DB is 100% safe for this phase — mobile shows
+the community suggestion empty state.
+
+ */
+export type AlternativesResponse = AlternativeProduct[];
+
+export type GetAlternativesParams = {
+  /**
+   * User phase. Determines safety filtering.
+   */
+  trimester: ScanPhase;
+};

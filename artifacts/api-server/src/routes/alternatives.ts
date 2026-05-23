@@ -291,6 +291,12 @@ interface LiveCandidate {
   image_url: string | null;
   labels_tags: string[];
   category: string;
+  /**
+   * Bug "Moutarde → Mayonnaise" : on récupère les categories_tags i18n d'OFF
+   * (ex: ["en:condiments", "en:mustards"]) pour pouvoir scoper la recherche
+   * d'alternatives à la MÊME catégorie stricte que l'origine.
+   */
+  categories_tags: string[];
 }
 
 interface RawOffProduct {
@@ -307,6 +313,7 @@ interface RawOffProduct {
   image_front_url?: unknown;
   labels_tags?: unknown;
   categories?: unknown;
+  categories_tags?: unknown; // ES + cgi: array i18n ["en:mustards","en:condiments"]
 }
 
 /**
@@ -403,6 +410,10 @@ function normalizeOffProduct(raw: RawOffProduct): LiveCandidate | null {
       ? raw.categories.split(",")[0]!.trim()
       : "";
 
+  const categoriesTags = Array.isArray(raw.categories_tags)
+    ? raw.categories_tags.filter((t): t is string => typeof t === "string")
+    : [];
+
   return {
     barcode,
     name,
@@ -411,6 +422,7 @@ function normalizeOffProduct(raw: RawOffProduct): LiveCandidate | null {
     image_url: image,
     labels_tags: labelsTags,
     category,
+    categories_tags: categoriesTags,
   };
 }
 
@@ -453,7 +465,7 @@ async function fetchOffProduct(
     ? "world.openbeautyfacts.org"
     : "world.openfoodfacts.org";
   const fields =
-    "code,product_name,product_name_fr,brands,ingredients_text,ingredients_text_fr,image_url,image_front_url,labels_tags,categories";
+    "code,product_name,product_name_fr,brands,ingredients_text,ingredients_text_fr,image_url,image_front_url,labels_tags,categories,categories_tags";
   const url = `https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${fields}`;
 
   const ac = new AbortController();
@@ -495,23 +507,38 @@ async function fetchOffProduct(
 async function searchOffCandidates(
   keyword: string,
   isCosmetic: boolean,
+  categoryTag?: string | null,
 ): Promise<{ candidates: LiveCandidate[]; error: string | null }> {
   const endpoint = getLiveFiletEndpoint(isCosmetic);
   let url: string;
   if (isCosmetic) {
+    // OBF cgi/search.pl supporte les facets via tagtype_N/tag_N. On encode
+    // la catégorie en facet N°0 et le keyword textuel reste search_terms.
     const params = new URLSearchParams({
       search_terms: keyword,
       sort_by: "unique_scans_n",
       page_size: "30",
       json: "true",
+      action: "process",
     });
+    if (categoryTag) {
+      params.set("tagtype_0", "categories");
+      params.set("tag_contains_0", "contains");
+      // OBF veut le segment sans prefix i18n : "en:body-creams" → "body-creams"
+      const tail = categoryTag.includes(":")
+        ? categoryTag.split(":").slice(1).join(":")
+        : categoryTag;
+      params.set("tag_0", tail);
+    }
     url = `${endpoint}?${params.toString()}`;
   } else {
+    // OFF ES (search.openfoodfacts.org) supporte `categories_tags` natif.
     const params = new URLSearchParams({
-      q: keyword,
+      q: keyword || "*",
       countries_tags: "en:france",
       page_size: "30",
     });
+    if (categoryTag) params.set("categories_tags", categoryTag);
     url = `${endpoint}?${params.toString()}`;
   }
 
@@ -568,18 +595,35 @@ async function fetchLiveCandidates(
   isCosmetic: boolean,
   excludeBarcode: string,
   log: import("pino").Logger,
+  /**
+   * Bug "Moutarde → Mayonnaise" : tag de catégorie OFF/OBF i18n du produit
+   * d'origine (ex: "en:mustards", "en:body-creams"). Quand fourni, on
+   * cherche en PRIORITÉ dans cette catégorie stricte avant de tomber
+   * sur les keywords textuels (qui peuvent matcher la marque et
+   * cross-pollinise les types de produits).
+   */
+  categoryTag?: string | null,
 ): Promise<LiveCandidate[]> {
-  if (keywords.length === 0) return [];
+  if (keywords.length === 0 && !categoryTag) return [];
 
   const t0 = Date.now();
   let lastError: string | null = null;
   let totalRaw = 0;
   const seen = new Set<string>([excludeBarcode]);
   const collected: LiveCandidate[] = [];
+  let usedStrategy = "keywords";
 
-  for (const kw of keywords.slice(0, 3)) {
-    if (collected.length >= 10) break;
-    const { candidates, error } = await searchOffCandidates(kw, isCosmetic);
+  // PHASE 1 : recherche scopée à la catégorie stricte. Si on a une catégorie
+  // (ex: en:mustards), on l'utilise comme filtre principal avec keyword="*"
+  // (ou le 1er keyword pour pondérer la pertinence). Garantit qu'on ne
+  // remplacera jamais une moutarde par une mayonnaise.
+  if (categoryTag) {
+    usedStrategy = "category_primary";
+    const { candidates, error } = await searchOffCandidates(
+      keywords[0] ?? "",
+      isCosmetic,
+      categoryTag,
+    );
     if (error) lastError = error;
     totalRaw += candidates.length;
     for (const c of candidates) {
@@ -587,6 +631,31 @@ async function fetchLiveCandidates(
       seen.add(c.barcode);
       collected.push(c);
       if (collected.length >= 30) break;
+    }
+  }
+
+  // PHASE 2 : fallback keywords textuels si la phase 1 a rendu trop peu.
+  // SAFETY : si on a un categoryTag, on garde le filtre catégorie aussi dans
+  // les requêtes keywords (sinon on réintroduit le bug cross-catégorie type
+  // mayonnaise dans la recherche de moutarde). On ne lance des keywords
+  // unscoped QUE si aucun categoryTag n'a été trouvé.
+  if (collected.length < 5) {
+    if (categoryTag && collected.length > 0) usedStrategy = "category_then_kw";
+    for (const kw of keywords.slice(0, 3)) {
+      if (collected.length >= 10) break;
+      const { candidates, error } = await searchOffCandidates(
+        kw,
+        isCosmetic,
+        categoryTag ?? null,
+      );
+      if (error) lastError = error;
+      totalRaw += candidates.length;
+      for (const c of candidates) {
+        if (seen.has(c.barcode)) continue;
+        seen.add(c.barcode);
+        collected.push(c);
+        if (collected.length >= 30) break;
+      }
     }
   }
 
@@ -598,10 +667,84 @@ async function fetchLiveCandidates(
     n_raw: totalRaw,
     n_filtered: collected.length,
     n_final: deduped.length,
+    strategy: usedStrategy,
+    category_tag: categoryTag ?? null,
     error: lastError,
   });
 
   return deduped;
+}
+
+/**
+ * Sélectionne le tag de catégorie le plus spécifique parmi un array OFF
+ * (ex: ["en:condiments", "en:mustards", "en:dijon-mustards"] → "en:dijon-mustards").
+ *
+ * OFF range ses categories_tags du plus général au plus spécifique : on
+ * prend donc le DERNIER. Garde-fou : on ignore les tags trop génériques
+ * (≤ une catégorie racine type "en:groceries" ou "en:plant-based-foods")
+ * qui ramèneraient n'importe quoi.
+ */
+const TOO_GENERIC_TAGS = new Set([
+  "en:groceries", "en:plant-based-foods-and-beverages", "en:plant-based-foods",
+  "en:beverages", "en:meats", "en:meals", "en:snacks", "en:foods",
+  "en:dairies", "en:fats", "en:cereals-and-potatoes",
+  "en:cosmetics", "en:body", "en:hair", "en:face", "en:skin",
+]);
+
+/**
+ * Fetch léger des categories_tags du produit d'origine via OFF/OBF.
+ *
+ * Ne ré-utilise pas `fetchOffProduct()` : celui-ci normalise vers un
+ * `LiveCandidate` complet (et drop le produit si `ingredients_raw < 20`),
+ * ce qui est totalement non pertinent pour l'origine. Ici on a juste
+ * besoin des categories_tags pour scoper la recherche d'alternatives —
+ * un produit d'origine sans liste d'ingrédients publique reste tout à
+ * fait éligible (et c'est même un cas fréquent côté OBF/OFF où l'utilisateur
+ * remonte juste une photo).
+ */
+async function fetchOriginCategoriesTags(
+  barcode: string,
+  isCosmetic: boolean,
+): Promise<string[]> {
+  const host = isCosmetic
+    ? "world.openbeautyfacts.org"
+    : "world.openfoodfacts.org";
+  const url = `https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=categories_tags`;
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
+  try {
+    const resp = await fetch(url, {
+      signal: ac.signal,
+      headers: { "User-Agent": USER_AGENT },
+    });
+    if (!resp.ok) return [];
+    const json = (await resp.json()) as {
+      status?: number;
+      product?: { categories_tags?: unknown };
+    };
+    if (json.status !== 1 || !json.product) return [];
+    const tags = json.product.categories_tags;
+    return Array.isArray(tags)
+      ? tags.filter((t): t is string => typeof t === "string")
+      : [];
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function pickMostSpecificCategoryTag(tags: string[]): string | null {
+  if (!tags || tags.length === 0) return null;
+  // On parcourt à l'envers (le plus spécifique vient en dernier dans OFF)
+  for (let i = tags.length - 1; i >= 0; i--) {
+    const t = tags[i]!;
+    if (TOO_GENERIC_TAGS.has(t)) continue;
+    // Tag i18n minimum : "en:foo-bar" (≥ 6 chars segment)
+    const seg = t.includes(":") ? t.split(":").slice(1).join(":") : t;
+    if (seg.length >= 4) return t;
+  }
+  return null;
 }
 
 // ─── DTO cache (encoded as JSON in analysis_cache) ──────────────────────────
@@ -745,11 +888,37 @@ router.get(
       const isCosmetic =
         (origin.category ?? "").toLowerCase() === "cosmetic";
       const beltDomain: IngredientDomain = isCosmetic ? "cosmetic" : "food";
+
+      // Bug "Moutarde Amora → Mayonnaise Amora" : on récupère les
+      // categories_tags du produit d'origine via OFF live pour scoper la
+      // recherche d'alternatives à la même catégorie stricte. Coût : un
+      // appel HTTP en plus (~200-400ms), gain : zéro cross-catégorie.
+      // Échec silencieux → on retombe sur les keywords seuls (comportement
+      // pré-correctif), donc pas de régression de robustesse.
+      //
+      // ⚠️ On n'utilise PAS `fetchOffProduct()` ici : celui-ci rejette les
+      // produits avec ingredients < 20 chars (pertinent pour candidats,
+      // pas pour l'origine où seuls les categories_tags nous intéressent).
+      const originCategoriesTags = await fetchOriginCategoriesTags(
+        barcode,
+        isCosmetic,
+      );
+      const categoryTag = pickMostSpecificCategoryTag(originCategoriesTags);
+      req.log.info(
+        {
+          barcode,
+          category_tag: categoryTag,
+          all_tags: originCategoriesTags.slice(-3),
+        },
+        "category resolution",
+      );
+
       const liveCandidates = await fetchLiveCandidates(
         uniqueKw,
         isCosmetic,
         barcode,
         req.log,
+        categoryTag,
       );
 
       req.log.info(

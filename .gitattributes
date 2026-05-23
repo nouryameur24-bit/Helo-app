@@ -1,3 +1,4 @@
 helo_20260323.tar.gz filter=lfs diff=lfs merge=lfs -text
 helo_src_20260323.tar.gz filter=lfs diff=lfs merge=lfs -text
 helo-audit-complet.tar.gz filter=lfs diff=lfs merge=lfs -text
+helo-audit.zip filter=lfs diff=lfs merge=lfs -text

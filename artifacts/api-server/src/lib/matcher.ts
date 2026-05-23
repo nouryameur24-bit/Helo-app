@@ -88,6 +88,86 @@ async function loadIngredients(): Promise<IngredientRow[]> {
   return cache.rows;
 }
 
+// ─── Whitelist d'exceptions (Bug "Vinaigre d'alcool") ──────────────────────
+//
+// Contexte : le matcher faisait `nameLower.includes(ing.name)` pour gérer
+// les noms composés type "huile d'amande douce" (qui contient "amande").
+// Effet pervers : si un row court du dictionnaire s'appelle "alcool" ou
+// "alcool éthylique", il matche dans "vinaigre d'alcool" → faux positif
+// danger systématique (test QA : Moutarde Amora → 27/100 à cause de ça).
+//
+// Médicalement, plusieurs composés contenant le mot "alcool" sont en
+// réalité totalement inoffensifs en grossesse :
+//   - Vinaigre d'alcool / vinaigre blanc : acide acétique pur, zéro éthanol
+//   - Alcools gras (cetearyl, cetyl, stearyl, behenyl, myristyl) :
+//     émollients cosmétiques, sans rapport avec l'éthanol
+//   - Benzyl alcohol : conservateur cosmétique, sûr aux doses légales
+//
+// Ces patterns SHORT-CIRCUITENT le matching standard et marquent
+// l'ingrédient comme `safe` quelle que soit la phase. Word-boundary seul
+// ne suffirait pas : `\balcool\b` matcherait dans "vinaigre d'alcool".
+const SAFE_OVERRIDES: { pattern: RegExp; label: string }[] = [
+  { pattern: /\bvinaigre\s+(?:blanc|d['’]?\s*alcool|de\s+vin|de\s+cidre|balsamique)\b/iu, label: "Vinaigre" },
+  { pattern: /\bcetearyl\s+alcohol\b/iu, label: "Cetearyl alcohol (alcool gras)" },
+  { pattern: /\bcetyl\s+alcohol\b/iu, label: "Cetyl alcohol (alcool gras)" },
+  { pattern: /\bstearyl\s+alcohol\b/iu, label: "Stearyl alcohol (alcool gras)" },
+  { pattern: /\bbehenyl\s+alcohol\b/iu, label: "Behenyl alcohol (alcool gras)" },
+  { pattern: /\bmyristyl\s+alcohol\b/iu, label: "Myristyl alcohol (alcool gras)" },
+  { pattern: /\bbenzyl\s+alcohol\b/iu, label: "Benzyl alcohol (conservateur cosmétique)" },
+  { pattern: /\balcool[s]?\s+gras\b/iu, label: "Alcool gras" },
+];
+
+function matchSafeOverride(
+  ingredientName: string,
+): { matched: true; label: string } | null {
+  for (const { pattern, label } of SAFE_OVERRIDES) {
+    if (pattern.test(ingredientName)) return { matched: true, label };
+  }
+  return null;
+}
+
+// ─── Word-boundary matcher (Bug substring) ──────────────────────────────────
+//
+// Échappe les caractères regex puis normalise les espaces et apostrophes
+// (curly + straight) pour qu'une entrée "huile d'amande" match
+// "huile d'amande douce" (et son apostrophe typographique).
+function escapeForRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Cache des regex compilées : avec ~5000 rows × ≥3 champs (name, inci,
+// synonyms), le map().find() ferait jusqu'à ~20k recompilations par scan.
+// On mémorise par needle pour rester à ~5000 compilations totales sur la
+// vie du process (puis 0 jusqu'au prochain restart).
+const REGEX_CACHE = new Map<string, RegExp | null>();
+const REGEX_CACHE_MAX = 20_000; // safety cap pour éviter une fuite mémoire
+
+function makeWordRegex(term: string): RegExp | null {
+  const trimmed = term.trim();
+  if (trimmed.length < 2) return null;
+  const cached = REGEX_CACHE.get(trimmed);
+  if (cached !== undefined) return cached;
+  // Apostrophes droites ou typographiques interchangeables
+  const escaped = escapeForRegex(trimmed)
+    .replace(/['’]/g, "['’]")
+    .replace(/\s+/g, "\\s+");
+  let compiled: RegExp | null = null;
+  try {
+    compiled = new RegExp(`\\b${escaped}\\b`, "iu");
+  } catch {
+    compiled = null;
+  }
+  if (REGEX_CACHE.size < REGEX_CACHE_MAX) {
+    REGEX_CACHE.set(trimmed, compiled);
+  }
+  return compiled;
+}
+
+function wordMatches(haystack: string, needle: string): boolean {
+  const re = makeWordRegex(needle);
+  return re ? re.test(haystack) : false;
+}
+
 function getRiskForPhase(ing: IngredientRow, phase: Phase): RiskLevel {
   switch (phase) {
     case 1:
@@ -132,15 +212,41 @@ export async function matchDeterministic(
     : allRows;
 
   const matches: MatchResult[] = ingredientsList.map((ingredientName) => {
-    const nameLower = ingredientName.toLowerCase();
+    // 0. Whitelist d'exceptions : "vinaigre d'alcool", alcools gras, etc.
+    //    Court-circuite TOUTE règle dangereuse — médicalement inoffensifs.
+    const safeOverride = matchSafeOverride(ingredientName);
+    if (safeOverride) {
+      return {
+        ingredientName,
+        matched: true,
+        matchedIngredientName: safeOverride.label,
+        riskLevel: "safe" as const,
+      };
+    }
+
+    // 1. Matching word-boundary bi-directionnel (au lieu de substring).
+    //    Évite les faux positifs type "fat" dans "sulfate" ou "ester" dans
+    //    "esterel". On teste les 2 sens car les noms en BD peuvent être
+    //    plus courts (radical) OU plus longs (forme INCI complète) que
+    //    ce que le scanner OCR détecte.
     const matched = rows.find((ing) => {
-      if (ing.name.toLowerCase().includes(nameLower)) return true;
-      if (ing.name_inci?.toLowerCase().includes(nameLower)) return true;
+      const ingName = ing.name;
+      const ingInci = ing.name_inci ?? "";
+      // a) row → ingredient (row name est un sous-mot du scan)
+      if (ingName && wordMatches(ingredientName, ingName)) return true;
+      if (ingInci && wordMatches(ingredientName, ingInci)) return true;
       if (
-        ing.synonyms?.some((syn) => syn.toLowerCase().includes(nameLower))
+        ing.synonyms?.some((syn) => syn && wordMatches(ingredientName, syn))
       )
         return true;
-      if (nameLower.includes(ing.name.toLowerCase())) return true;
+      // b) ingredient → row (le scan est un sous-mot du row, ex: "amande"
+      //    scanné, row "huile d'amande douce"). Plus restrictif : on
+      //    n'autorise ce sens que si l'ingrédient scanné ≥ 4 chars pour
+      //    éviter les matches accidentels sur tokens courts.
+      if (ingredientName.length >= 4) {
+        if (ingName && wordMatches(ingName, ingredientName)) return true;
+        if (ingInci && wordMatches(ingInci, ingredientName)) return true;
+      }
       return false;
     });
 

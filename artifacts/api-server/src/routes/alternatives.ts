@@ -2,8 +2,12 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 
 import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabaseAdmin";
+import {
+  matchDeterministic,
+  type Phase,
+  type IngredientDomain,
+} from "../lib/matcher";
 import { parseIngredients } from "../lib/parseIngredients";
-import { matchDeterministic, type Phase } from "../lib/matcher";
 import {
   selectSafeAlternativesWithClaude,
   type AlternativeCandidate,
@@ -52,6 +56,12 @@ interface AlternativeProductDto {
   barcode: string | null;
   image_url: string | null;
   description_fr: string | null;
+  /**
+   * M3 : Phrase française percutante (≤15 mots) générée par Claude pour
+   * justifier pourquoi ce produit est sûr pour la phase de grossesse de
+   * l'utilisatrice. Null si la sélection vient d'un cache pré-M3 (legacy).
+   */
+  reason: string | null;
   overall_risk: "safe" | "caution";
   price_range: string;
   popularity_count: number;
@@ -169,8 +179,47 @@ function extractKeywords(name: string, brand?: string | null): string[] {
   for (const type of PRODUCT_TYPES) {
     if (lower.includes(type)) hits.add(type);
   }
+  // Last-resort fallback : si aucun match (cas typique des cosmétiques
+  // dermo-pédiatriques type "Crème change 123" ou "Baume réconfortant"
+  // qui n'ont aucun keyword exact dans PRODUCT_TYPES), on cherche le
+  // premier "vrai" nom de produit dans le name : mot alphabétique pur
+  // ≥4 lettres, hors stopwords marketing (bio, sans, naturel, hydra…).
+  // Refus systématique des tokens type "100%", chiffres, articles.
+  // OBF/OFF acceptent un mot seul et ranke par unique_scans_n — bien
+  // suffisant pour donner des candidats au Sniper.
+  if (hits.size === 0) {
+    const fallbackWord = lower
+      .split(/[\s,/()\-_+.0-9%]+/)
+      .find((w) => /^[a-zà-ÿ][a-zà-ÿ'’-]{3,}$/iu.test(w) && !KEYWORD_STOPWORDS.has(w));
+    if (fallbackWord) hits.add(fallbackWord);
+  }
   return Array.from(hits);
 }
+
+/**
+ * Stopwords génériques marketing / qualificatifs qui ne sont PAS des noms
+ * de produit utilisables comme keyword OFF/OBF. Sans ce filtre, le
+ * fallback renvoyait des trucs comme "naturel" ou "sans" pour des noms
+ * type "BIO 100% naturel sans paraben", ce qui faisait remonter 0 candidat.
+ */
+const KEYWORD_STOPWORDS = new Set<string>([
+  // Marketing / qualité
+  "bio", "biologique", "naturel", "naturelle", "natural", "pure", "purs", "organic",
+  "premium", "essentiel", "essentielle", "vital", "vegan",
+  // Négations / exclusions
+  "sans", "zero", "zéro", "free", "non",
+  // Articles / liaisons
+  "avec", "pour", "sur", "dans", "des", "les", "une", "aux", "leur",
+  // Quantifiants
+  "tout", "tous", "toute", "toutes", "plus", "moins",
+  // Sensations / promesses
+  "doux", "douce", "frais", "fraiche", "fraîche", "léger", "légère",
+  "intense", "intensif", "intensive", "extra", "ultra", "super", "hyper",
+  // Formats commerciaux
+  "pack", "lot", "format", "edition", "édition", "spécial", "special",
+  // Couleurs (rarement discriminantes)
+  "rouge", "vert", "verte", "bleu", "bleue", "blanc", "blanche", "noir", "noire",
+]);
 
 // ─── Scoring badges (adapted for OFF/OBF labels_tags) ───────────────────────
 
@@ -656,8 +705,16 @@ router.get(
       const uniqueKw = Array.from(new Set(keywordList));
 
       // ── 4. LIVE FILET (OFF / OBF) ──────────────────────────────────────
+      // M1 : routage cosmétique. La détection s'appuie sur origin.category
+      // côté Supabase (alimenté par notre pipeline de scan). Le flag
+      // bascule (1) le host OFF/OBF dans le fetcher live, (2) le system
+      // prompt du Sniper Claude vers la grille cosmétique (perturbateurs
+      // endocriniens, allergènes de contact, sulfates), (3) le domain
+      // passé à la Ceinture déterministe pour qu'elle ne lise QUE le
+      // dictionnaire Cosing (food → EFSA only, cf. Mission 2).
       const isCosmetic =
         (origin.category ?? "").toLowerCase() === "cosmetic";
+      const beltDomain: IngredientDomain = isCosmetic ? "cosmetic" : "food";
       const liveCandidates = await fetchLiveCandidates(
         uniqueKw,
         isCosmetic,
@@ -694,9 +751,14 @@ router.get(
         trimester: phase,
         originalName: origin.name ?? "",
         searchKeyword: searchKeyword ?? fallbackKeywords[0] ?? "",
+        isCosmetic, // M1
         log: req.log,
       });
       const validatedBarcodes = sniperResult.barcodes;
+      // M3 : reason indexée par barcode pour propagation au DTO.
+      const reasonByBarcode = new Map(
+        sniperResult.picks.map((p) => [p.barcode, p.reason]),
+      );
 
       if (sniperResult.outcome === "model_empty") {
         emitMetric(req.log, "safety_trap_triggered", {
@@ -715,26 +777,45 @@ router.get(
       }
 
       // ── 6. CEINTURE & BRETELLES (in-memory, no DB hit) ─────────────────
-      // MITIGATION TEMPORAIRE (architect review 2026-05-23) : le Belt est
-      // désactivé pour les candidats Live Filet (source=openfoodfacts/food)
-      // car matchDeterministic() utilise une base d'ingrédients mixte
-      // (cosmétique/médicaments/food) avec matching substring bidirectionnel,
-      // ce qui produit des faux positifs structurels sur ingrédients food
-      // (ex: "fat" → "sulfate de magnésium", "water" → "eau de rose",
-      // "wheat" → "protéine de blé hydrolysée cosmétique"). Le Belt sera
-      // réactivé après refactor du matcher en : (1) gating par catégorie
-      // food/cosmetic, (2) matching token/word-boundary plutôt que substring.
-      // En attendant, la sécurité repose sur le Sniper (Claude Haiku) qui
-      // évalue chaque candidat contre la phase de grossesse via prompt.
+      // M2 : Belt RÉACTIVÉ avec isolation domaine. matchDeterministic ne
+      // charge plus la base ingrédients entière — il filtre par `source`
+      // pour ne garder QUE le dictionnaire pertinent (food → EFSA only,
+      // cosmetic → Cosing/SCCS/ECHA only). Plus de faux positifs cross-
+      // domain genre "fat" → "sulfate de magnésium lauryléther".
+      //
+      // Politique : un candidat est rejeté s'il contient au moins un
+      // ingrédient noté `danger` pour la phase courante dans le dico
+      // isolé. `caution` n'est PAS bloquant (le Sniper Claude a déjà
+      // jugé l'ensemble safe ; la Ceinture est un filet "ceinture"
+      // contre l'hallucination, pas un second avis subjectif).
       const byBarcode = new Map(liveCandidates.map((c) => [c.barcode, c]));
       const safeCandidates: LiveCandidate[] = [];
+      const beltRejections: Array<{ barcode: string; ingredient: string }> = [];
       for (const b of validatedBarcodes) {
         const cand = byBarcode.get(b);
         if (!cand) continue; // Claude hallucinated a barcode not in the input
+        const parsed = parseIngredients(cand.ingredients_raw);
+        const belt = await matchDeterministic(parsed, phase, beltDomain);
+        if (belt.dangerousMatch) {
+          beltRejections.push({
+            barcode: b,
+            ingredient: belt.dangerousMatch.matchedIngredientName ?? "?",
+          });
+          continue;
+        }
         safeCandidates.push(cand);
       }
-      // phase est conservée pour ré-activation future du Belt food-aware.
-      void phase;
+      if (beltRejections.length > 0) {
+        req.log.warn(
+          { barcode, beltDomain, beltRejections },
+          "belt caught Sniper hallucinations",
+        );
+        emitMetric(req.log, "alternatives_belt_rejection", {
+          barcode,
+          beltDomain,
+          n_rejected: beltRejections.length,
+        });
+      }
 
       // ── 7. Build DTOs in-memory (no Supabase hydration) ────────────────
       const dtos: AlternativeProductDto[] = safeCandidates.map((c) => {
@@ -744,6 +825,7 @@ router.get(
           c.ingredients_raw,
           c.labels_tags,
         );
+        const reason = reasonByBarcode.get(c.barcode) ?? "";
         return {
           id: c.barcode, // OFF barcodes are globally unique → use as id
           name: c.name,
@@ -752,6 +834,7 @@ router.get(
           barcode: c.barcode,
           image_url: c.image_url,
           description_fr: null,
+          reason: reason.length > 0 ? reason : null, // M3
           overall_risk: "safe",
           price_range: "",
           popularity_count: score,

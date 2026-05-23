@@ -142,6 +142,18 @@ function AlternativeCard({
             <OriginBadgePill badge={alt.origin_badge} />
           </View>
 
+          {alt.reason ? (
+            <View style={styles.reasonBox}>
+              <Feather name="check-circle" size={12} color={Colors.safe} />
+              <ThemedText
+                variant="bodySmall"
+                style={{ flex: 1, marginLeft: 6, fontStyle: 'italic', lineHeight: 16 }}
+              >
+                {alt.reason}
+              </ThemedText>
+            </View>
+          ) : null}
+
           {isPremium ? (
             <View style={styles.premiumExplanationBox}>
               <View style={styles.premiumExplanationHeader}>
@@ -760,6 +772,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  reasonBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.safeBg ?? Colors.backgroundSecondary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
     marginTop: Spacing.sm,
   },
   originPill: {

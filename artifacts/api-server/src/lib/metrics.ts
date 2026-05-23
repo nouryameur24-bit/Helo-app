@@ -31,6 +31,7 @@ export type MetricEvent =
   | "alternatives_cache"
   | "alternatives_ai_call"
   | "alternatives_ai_error"
+  | "alternatives_belt_rejection"
   | "live_filet_fetch"
   | "safety_trap_triggered";
 

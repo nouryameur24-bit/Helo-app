@@ -72,6 +72,12 @@ export const GetAlternativesResponseItem = zod
     barcode: zod.string().nullable(),
     image_url: zod.string().nullable(),
     description_fr: zod.string().nullable(),
+    reason: zod
+      .string()
+      .nullable()
+      .describe(
+        "M3 — Justification française (≤15 mots) générée par Claude pour\nexpliquer pourquoi ce produit est sûr pour la phase de grossesse\nde l'utilisatrice. Ex : \"Sans caféine ni édulcorant, sucres\nnaturels seulement.\" Null si la sélection vient d'un cache\npré-M3 (legacy).\n",
+      ),
     overall_risk: zod
       .enum(["safe", "caution"])
       .describe(

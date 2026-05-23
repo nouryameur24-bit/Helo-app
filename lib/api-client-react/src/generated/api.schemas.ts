@@ -157,6 +157,16 @@ export interface AlternativeProduct {
   image_url: string | null;
   /** @nullable */
   description_fr: string | null;
+  /**
+   * M3 — Justification française (≤15 mots) générée par Claude pour
+expliquer pourquoi ce produit est sûr pour la phase de grossesse
+de l'utilisatrice. Ex : "Sans caféine ni édulcorant, sucres
+naturels seulement." Null si la sélection vient d'un cache
+pré-M3 (legacy).
+
+   * @nullable
+   */
+  reason: string | null;
   /** Always "safe" — every returned product has passed both Claude's
 selection and our deterministic re-verification (Ceinture &
 Bretelles). The "caution" variant is kept in the enum for

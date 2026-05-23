@@ -11,6 +11,13 @@ export interface AlternativeProduct {
   barcode: string | null;
   image_url: string | null;
   description_fr: string | null;
+  /**
+   * M3 — Phrase française (≤15 mots) générée par Claude pour justifier la
+   * sélection de ce produit comme alternative sûre pour la phase de
+   * grossesse de l'utilisatrice. Null pour les caches legacy / suggestions
+   * communautaires.
+   */
+  reason: string | null;
   overall_risk: 'safe' | 'caution';
   price_range: string;
   popularity_count: number;
@@ -157,6 +164,7 @@ function filterAndScore(
       barcode: x.product.barcode,
       image_url: x.product.image_url ?? null,
       description_fr: null,
+      reason: null,
       overall_risk: x.cautionCount === 0 ? 'safe' : 'caution',
       price_range: '',
       popularity_count: x.score,
@@ -341,6 +349,7 @@ export async function getAlternatives(
       barcode: p.barcode,
       image_url: null,
       description_fr: p.description_fr,
+      reason: null,
       overall_risk: (p.overall_risk === 'caution' ? 'caution' : 'safe'),
       price_range: row.price_range,
       popularity_count: row.popularity_count,

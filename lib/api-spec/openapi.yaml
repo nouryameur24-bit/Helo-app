@@ -313,6 +313,16 @@ components:
           type:
             - string
             - "null"
+        reason:
+          type:
+            - string
+            - "null"
+          description: |
+            M3 — Justification française (≤15 mots) générée par Claude pour
+            expliquer pourquoi ce produit est sûr pour la phase de grossesse
+            de l'utilisatrice. Ex : "Sans caféine ni édulcorant, sucres
+            naturels seulement." Null si la sélection vient d'un cache
+            pré-M3 (legacy).
         overall_risk:
           type: string
           enum: [safe, caution]
@@ -339,6 +349,7 @@ components:
         - barcode
         - image_url
         - description_fr
+        - reason
         - overall_risk
         - price_range
         - popularity_count

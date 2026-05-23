@@ -177,6 +177,7 @@ export interface AlternativeProductDto {
   barcode: string | null;
   image_url: string | null;
   description_fr: string | null;
+  reason: string | null; // M3
   overall_risk: 'safe' | 'caution';
   price_range: string;
   popularity_count: number;
@@ -220,6 +221,7 @@ function dtoToAlternativeProduct(d: AlternativeProductDto): AlternativeProduct {
     barcode: d.barcode,
     image_url: d.image_url,
     description_fr: d.description_fr,
+    reason: d.reason ?? null, // M3
     overall_risk: d.overall_risk,
     price_range: d.price_range,
     popularity_count: d.popularity_count,

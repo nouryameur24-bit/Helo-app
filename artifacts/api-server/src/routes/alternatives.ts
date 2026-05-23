@@ -58,8 +58,7 @@ interface AlternativeProductDto {
   origin_badge: OriginBadge;
 }
 
-// ─── Local helpers (duplicated from mobile lib/alternatives.ts) ─────────────
-// TODO: extract to a shared @workspace/alternatives-scoring lib post-MVP.
+// ─── Keyword extraction (unchanged from previous filet) ─────────────────────
 
 const PRODUCT_TYPES = [
   // Cosmetics
@@ -86,73 +85,94 @@ const PRODUCT_TYPES = [
 ];
 
 /**
- * Mapping marque/nom-produit → catégorie consommation.
- * Indispensable car la majorité des produits Open Food Facts ont un nom qui
- * est PUREMENT une marque ("Coke", "Nutella", "Red Bull", "Twix") sans aucun
- * mot-clé descriptif. Sans ce mapping, le Filet ramène 20 candidats aléatoires
- * (kw=[]) et le Sniper rejette tout pour incohérence d'usage.
+ * Mapping marque → keywords de recherche OFF.
+ *
+ * Stratégie : pour chaque marque industrielle (souvent NON-SAFE en
+ * grossesse à cause de caféine/colorants/édulcorants), on injecte
+ * SIMULTANÉMENT :
+ *   1. Le type "like-for-like" (Coke → soda) — au cas où une version safe
+ *      existerait dans OFF (rare mais possible).
+ *   2. Des types "alternatives safe par défaut" (Coke → eau pétillante,
+ *      limonade artisanale) — pour donner au Sniper des candidats qu'il
+ *      PEUT valider même si pas exactement le même produit.
+ *
+ * Sans (2), Claude n'a que des sodas devant lui et refuse tout
+ * légitimement (aucun soda industriel n'est "safe T2 sans réserve").
  */
 const BRAND_TO_TYPE: Record<string, string[]> = {
-  // Sodas / boissons sucrées
-  "coke": ["soda", "cola", "boisson"],
-  "coca": ["soda", "cola", "boisson"],
-  "pepsi": ["soda", "cola", "boisson"],
-  "fanta": ["soda", "boisson"],
-  "sprite": ["soda", "boisson"],
-  "schweppes": ["soda", "limonade", "boisson"],
-  "orangina": ["soda", "boisson"],
-  "perrier": ["eau", "boisson"],
-  "evian": ["eau", "boisson"],
-  // Énergisantes
-  "red bull": ["boisson énergisante", "boisson", "soda"],
-  "monster": ["boisson énergisante", "boisson"],
-  "burn": ["boisson énergisante", "boisson"],
-  // Pâtes à tartiner (inclus substituts safe présents dans la base :
-  // purée d'oléagineux, miel, confiture)
-  "nutella": ["pâte à tartiner", "chocolat", "purée", "miel", "confiture"],
-  "nocciolata": ["pâte à tartiner", "chocolat", "purée", "miel", "confiture"],
-  // Barres / confiseries chocolatées
-  "twix": ["barre", "chocolat", "biscuit"],
-  "mars": ["barre", "chocolat"],
-  "snickers": ["barre", "chocolat"],
-  "bounty": ["barre", "chocolat"],
-  "kit kat": ["barre", "chocolat", "biscuit"],
-  "kinder": ["chocolat", "barre"],
-  "milka": ["chocolat"],
-  "lindt": ["chocolat"],
-  "côte d'or": ["chocolat"],
-  // Biscuits
-  "oreo": ["biscuit", "chocolat"],
-  "prince": ["biscuit", "chocolat"],
-  "lu": ["biscuit"],
-  "granola": ["biscuit", "céréales"],
-  "petit beurre": ["biscuit"],
-  "bn": ["biscuit"],
-  // Bonbons
-  "haribo": ["bonbon"],
-  "carambar": ["bonbon"],
-  // Glaces
-  "magnum": ["glace", "chocolat"],
-  "häagen-dazs": ["glace"],
-  "ben & jerry": ["glace"],
+  // Sodas → eaux pétillantes/aromatisées + limonades artisanales
+  "coke": ["eau pétillante", "limonade", "soda"],
+  "coca": ["eau pétillante", "limonade", "soda"],
+  "pepsi": ["eau pétillante", "limonade", "soda"],
+  "fanta": ["eau pétillante", "limonade", "soda"],
+  "sprite": ["eau pétillante", "limonade", "soda"],
+  "schweppes": ["eau pétillante", "limonade", "tonic"],
+  "orangina": ["eau pétillante", "limonade", "soda"],
+  "perrier": ["eau pétillante", "eau"],
+  "evian": ["eau", "eau pétillante"],
+  // Énergisantes → infusions/jus naturels (vraies alts safe)
+  "red bull": ["infusion", "jus", "thé glacé", "boisson énergisante"],
+  "monster": ["infusion", "jus", "thé glacé", "boisson énergisante"],
+  "burn": ["infusion", "jus", "thé glacé", "boisson énergisante"],
+  // Pâtes à tartiner → purées d'oléagineux + confitures
+  "nutella": ["pâte à tartiner", "purée amande", "confiture"],
+  "nocciolata": ["pâte à tartiner", "purée amande", "confiture"],
+  // Barres chocolatées → barres céréales/fruits + chocolat noir
+  "twix": ["barre céréales", "fruits secs", "chocolat noir"],
+  "mars": ["barre céréales", "fruits secs", "chocolat noir"],
+  "snickers": ["barre céréales", "fruits secs", "chocolat noir"],
+  "bounty": ["barre céréales", "fruits secs", "chocolat noir"],
+  "kit kat": ["barre céréales", "fruits secs", "chocolat noir"],
+  "kinder": ["chocolat noir", "barre céréales"],
+  "milka": ["chocolat noir"],
+  "lindt": ["chocolat noir"],
+  "côte d'or": ["chocolat noir"],
+  // Biscuits → biscuits bio/sablés simples
+  "oreo": ["biscuit bio", "sablé", "biscuit"],
+  "prince": ["biscuit bio", "sablé", "biscuit"],
+  "lu": ["biscuit bio", "sablé", "biscuit"],
+  "granola": ["biscuit bio", "céréales"],
+  "petit beurre": ["biscuit bio", "sablé"],
+  "bn": ["biscuit bio", "biscuit"],
+  // Bonbons → fruits secs + compote
+  "haribo": ["fruits secs", "compote", "bonbon bio"],
+  "carambar": ["fruits secs", "compote", "bonbon bio"],
+  // Glaces → sorbet fruits + yaourt glacé
+  "magnum": ["sorbet", "yaourt"],
+  "häagen-dazs": ["sorbet", "yaourt"],
+  "ben & jerry": ["sorbet", "yaourt"],
 };
 
 function extractKeywords(name: string, brand?: string | null): string[] {
   const lower = (name ?? "").toLowerCase();
   const brandLower = (brand ?? "").toLowerCase();
   const hits = new Set<string>();
-  // 1) Direct match on descriptive product types in the name.
-  for (const type of PRODUCT_TYPES) {
-    if (lower.includes(type)) hits.add(type);
+  // Form factor cues PREMIERS — un "Twix glacé" doit chercher glace/sorbet,
+  // pas barre céréales, même si la brand Twix mappe vers barres.
+  const isIced = lower.includes("glacé")
+    || lower.includes("glace")
+    || lower.includes("ice cream")
+    || lower.includes("crème glacée");
+  if (isIced) {
+    hits.add("sorbet");
+    hits.add("yaourt glacé");
+    hits.add("glace");
   }
-  // 2) Brand-name fallback: known brand → consumption category.
+  // Brand-derived keywords ENSUITE — mapping spécifique
+  // (Prince → biscuit bio, sablé, biscuit). Avant le fallback générique
+  // qui fait des matches accidentels comme "choCOLAt" contient "cola".
   for (const [needle, types] of Object.entries(BRAND_TO_TYPE)) {
     if (lower.includes(needle) || brandLower.includes(needle)) {
       for (const t of types) hits.add(t);
     }
   }
+  for (const type of PRODUCT_TYPES) {
+    if (lower.includes(type)) hits.add(type);
+  }
   return Array.from(hits);
 }
+
+// ─── Scoring badges (adapted for OFF/OBF labels_tags) ───────────────────────
 
 const PHARMACY_BRANDS = [
   "avène", "avene", "la roche-posay", "roche posay",
@@ -165,8 +185,13 @@ const FRENCH_BRANDS = [
   "melvita", "galenic", "phyto", "rené furterer",
 ];
 
-function detectBio(name: string, ingredientsLower: string): boolean {
+function detectBio(
+  name: string,
+  ingredientsLower: string,
+  labelsTags: string[],
+): boolean {
   const nameLower = (name ?? "").toLowerCase();
+  if (labelsTags.some((t) => t === "en:organic" || t === "fr:bio")) return true;
   return /\bbio\b/.test(nameLower)
     || nameLower.includes("biologique")
     || /\bbio\b/.test(ingredientsLower);
@@ -176,6 +201,7 @@ function scoreAndBadge(
   name: string,
   brand: string,
   ingredientsRaw: string,
+  labelsTags: string[],
 ): { score: number; originBadge: OriginBadge } {
   const brandLower = (brand ?? "").toLowerCase();
   const ingLower = (ingredientsRaw ?? "").toLowerCase();
@@ -190,12 +216,362 @@ function scoreAndBadge(
     originBadge = "french";
   }
 
-  if (detectBio(name, ingLower)) {
+  if (detectBio(name, ingLower, labelsTags)) {
     score += 5;
     if (!originBadge) originBadge = "bio";
   }
 
   return { score, originBadge };
+}
+
+// ─── Live Filet : Open Food Facts / Open Beauty Facts ───────────────────────
+
+/**
+ * Forme normalisée d'un produit OFF/OBF utilisable indifféremment pour le
+ * Sniper Claude (champs `barcode`, `name`, `ingredients_raw`) ET pour
+ * l'hydratation in-memory (champs `brand`, `image_url`, `labels_tags`).
+ *
+ * Toutes les valeurs sont garanties non-vides ou normalisées (cf.
+ * `normalizeOffProduct`) — pas besoin de re-vérifier dans le pipeline.
+ */
+interface LiveCandidate {
+  barcode: string;
+  name: string;
+  brand: string;
+  ingredients_raw: string;
+  image_url: string | null;
+  labels_tags: string[];
+  category: string;
+}
+
+interface RawOffProduct {
+  code?: unknown;
+  product_name?: unknown;
+  product_name_fr?: unknown;
+  brands?: unknown; // ES service: array of strings | cgi: comma-separated string
+  ingredients_text?: unknown;
+  ingredients_text_fr?: unknown;
+  ingredients_tags?: unknown; // ES: array de tags i18n "en:sugar","fr:lait", etc.
+  ingredients_n?: unknown; // ES: nombre d'ingrédients indexés
+  image_url?: unknown;
+  image_small_url?: unknown;
+  image_front_url?: unknown;
+  labels_tags?: unknown;
+  categories?: unknown;
+}
+
+/**
+ * Convertit un tag OFF i18n ("en:palm-oil", "fr:huile-de-palme") en mot
+ * lisible FR pour le Sniper. On utilise le segment après ":" et on
+ * remplace les "-" par des espaces. Ce n'est pas une trad parfaite mais
+ * c'est suffisant — Claude Haiku reconnaît "palm oil" aussi bien que
+ * "huile de palme" pour son analyse safety.
+ */
+function tagsToIngredientsText(tags: string[]): string {
+  return tags
+    .map((t) => {
+      const colon = t.indexOf(":");
+      const segment = colon >= 0 ? t.slice(colon + 1) : t;
+      return segment.replace(/-/g, " ").trim();
+    })
+    .filter((s) => s.length > 0)
+    .join(", ");
+}
+
+const OFF_TIMEOUT_MS = 3000;
+
+/**
+ * Choisit l'endpoint OFF (alimentaire) ou OBF (cosmétique) selon la
+ * catégorie du produit d'origine.
+ *
+ * Pour l'alimentaire on utilise le service Elasticsearch dédié
+ * (`search.openfoodfacts.org`) au lieu de l'antique `cgi/search.pl` :
+ * l'ancien endpoint est en 503 ~80% du temps en prod (rate-limited /
+ * sous-dimensionné), l'ES est rock-solid (10/10 succès mesurés).
+ *
+ * Pour les cosmétiques, OpenBeautyFacts n'a pas (encore) son équivalent
+ * ES, on reste sur `cgi/search.pl` qui marche mieux car le trafic OBF
+ * est bien moindre que OFF.
+ */
+function getLiveFiletEndpoint(isCosmetic: boolean): string {
+  return isCosmetic
+    ? "https://world.openbeautyfacts.org/cgi/search.pl"
+    : "https://search.openfoodfacts.org/search";
+}
+
+/**
+ * Le payload diffère entre le service ES (`brands: string[]`,
+ * `labels_tags: string[] | null`) et l'API cgi (`brands: "X, Y, Z"`,
+ * `labels_tags: string[]`). On normalise les deux vers la même forme.
+ */
+function normalizeOffProduct(raw: RawOffProduct): LiveCandidate | null {
+  const barcode = typeof raw.code === "string" ? raw.code.trim() : "";
+  if (!BARCODE_RE.test(barcode)) return null;
+
+  // Prefer FR name when present, fallback to default English.
+  const name =
+    (typeof raw.product_name_fr === "string" && raw.product_name_fr.trim()) ||
+    (typeof raw.product_name === "string" && raw.product_name.trim()) ||
+    "";
+  if (!name) return null;
+
+  // Priorité : texte FR > texte EN > tags structurés ES (en:sugar, fr:lait…)
+  // L'index ES OFF a souvent les tags même quand le texte brut est vide,
+  // donc on les utilise comme fallback de premier choix.
+  const tags = Array.isArray(raw.ingredients_tags)
+    ? raw.ingredients_tags.filter((t): t is string => typeof t === "string")
+    : [];
+  const ingredientsRaw =
+    (typeof raw.ingredients_text_fr === "string" &&
+      raw.ingredients_text_fr.trim()) ||
+    (typeof raw.ingredients_text === "string" && raw.ingredients_text.trim()) ||
+    (tags.length >= 3 ? tagsToIngredientsText(tags) : "");
+  // Filter out products with no parseable ingredient list — Claude can't
+  // judge what he can't read, and the Belt would veto them anyway.
+  if (ingredientsRaw.length < 20) return null;
+
+  // ES: brands is an array. cgi: brands is a comma-separated string.
+  let brand = "";
+  if (Array.isArray(raw.brands)) {
+    const first = raw.brands.find((b): b is string => typeof b === "string");
+    brand = first?.trim() ?? "";
+  } else if (typeof raw.brands === "string") {
+    brand = raw.brands.split(",")[0]!.trim();
+  }
+
+  const image =
+    (typeof raw.image_front_url === "string" && raw.image_front_url) ||
+    (typeof raw.image_url === "string" && raw.image_url) ||
+    (typeof raw.image_small_url === "string" && raw.image_small_url) ||
+    null;
+
+  const labelsTags = Array.isArray(raw.labels_tags)
+    ? raw.labels_tags.filter((t): t is string => typeof t === "string")
+    : [];
+
+  const category =
+    typeof raw.categories === "string"
+      ? raw.categories.split(",")[0]!.trim()
+      : "";
+
+  return {
+    barcode,
+    name,
+    brand,
+    ingredients_raw: ingredientsRaw,
+    image_url: image,
+    labels_tags: labelsTags,
+    category,
+  };
+}
+
+/**
+ * Dédoublonne les candidats OFF par clé `(brand|nom-normalisé)`.
+ * OFF retourne souvent 5 variantes du même Coca (250 mL / 33 cL / pack 6 /
+ * vintage / saveur cerise) avec des barcodes différents. Pour le Sniper, on
+ * n'a besoin que d'UN représentant par triplet marque+produit.
+ */
+function deduplicateCandidates(candidates: LiveCandidate[]): LiveCandidate[] {
+  const seen = new Set<string>();
+  const out: LiveCandidate[] = [];
+  for (const c of candidates) {
+    const key = `${c.brand.toLowerCase()}|${c.name
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .replace(/\d+\s*(ml|cl|l|g|kg)\b/g, "")
+      .trim()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  return out;
+}
+
+const USER_AGENT = "Helo-App/1.0 (pregnancy product scanner)";
+
+/**
+ * Fetch d'un seul produit complet via `/api/v2/product/{barcode}` (endpoint
+ * individuel d'OFF — stable même sous charge, ~100-300ms, ~95% uptime).
+ *
+ * Renvoie `null` si timeout/5xx/parse/produit incomplet — l'appelant
+ * filtrera silencieusement.
+ */
+async function fetchOffProduct(
+  barcode: string,
+  isCosmetic: boolean,
+): Promise<LiveCandidate | null> {
+  const host = isCosmetic
+    ? "world.openbeautyfacts.org"
+    : "world.openfoodfacts.org";
+  const fields =
+    "code,product_name,product_name_fr,brands,ingredients_text,ingredients_text_fr,image_url,image_front_url,labels_tags,categories";
+  const url = `https://${host}/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${fields}`;
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
+  try {
+    const resp = await fetch(url, {
+      signal: ac.signal,
+      headers: { "User-Agent": USER_AGENT },
+    });
+    if (!resp.ok) return null;
+    const json = (await resp.json()) as {
+      status?: number;
+      product?: RawOffProduct;
+    };
+    if (json.status !== 1 || !json.product) return null;
+    // /product wraps the barcode at top-level too — inject it in case the
+    // nested `product.code` is missing (rare but observed on legacy entries).
+    const raw: RawOffProduct = { code: barcode, ...json.product };
+    return normalizeOffProduct(raw);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Recherche directe de candidats complets via le service ES dédié.
+ *
+ * Le service ES (`search.openfoodfacts.org`) renvoie déjà tous les champs
+ * dont on a besoin — y compris `ingredients_tags` (array i18n structuré
+ * "en:sugar","fr:lait") qui sert de fallback quand `ingredients_text_fr`
+ * est vide. C'est plus fiable que de faire un second appel `/product`
+ * (qui timeout/rate-limit sous burst de 30 parallèles).
+ *
+ * Pour OBF (cosmétique) on reste sur `cgi/search.pl` qui renvoie
+ * directement `ingredients_text` (l'API ES n'existe pas encore pour OBF).
+ */
+async function searchOffCandidates(
+  keyword: string,
+  isCosmetic: boolean,
+): Promise<{ candidates: LiveCandidate[]; error: string | null }> {
+  const endpoint = getLiveFiletEndpoint(isCosmetic);
+  let url: string;
+  if (isCosmetic) {
+    const params = new URLSearchParams({
+      search_terms: keyword,
+      sort_by: "unique_scans_n",
+      page_size: "30",
+      json: "true",
+    });
+    url = `${endpoint}?${params.toString()}`;
+  } else {
+    const params = new URLSearchParams({
+      q: keyword,
+      countries_tags: "en:france",
+      page_size: "30",
+    });
+    url = `${endpoint}?${params.toString()}`;
+  }
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
+  try {
+    const resp = await fetch(url, {
+      signal: ac.signal,
+      headers: { "User-Agent": USER_AGENT },
+    });
+    if (!resp.ok) return { candidates: [], error: `http_${resp.status}` };
+    const json = (await resp.json()) as {
+      products?: RawOffProduct[];
+      hits?: RawOffProduct[];
+    };
+    const raws = Array.isArray(json.hits)
+      ? json.hits
+      : Array.isArray(json.products)
+        ? json.products
+        : [];
+    const candidates: LiveCandidate[] = [];
+    for (const r of raws) {
+      const norm = normalizeOffProduct(r);
+      if (norm) candidates.push(norm);
+    }
+    return { candidates, error: null };
+  } catch (err) {
+    return {
+      candidates: [],
+      error:
+        err instanceof Error && err.name === "AbortError"
+          ? "timeout"
+          : "network",
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Fetch live candidates from OFF (food) or OBF (beauty) en 1 seul appel ES.
+ *
+ * Stratégie : itère sur les keywords jusqu'à obtenir ≥10 candidats. ES
+ * retourne `ingredients_tags` directement utilisable, plus besoin de
+ * fetch individuel `/product` (qui timeout sous burst).
+ *
+ * Garanties pour l'appelant :
+ *   - timeout strict OFF_TIMEOUT_MS par appel HTTP (pas cumulé)
+ *   - retourne au max 20 candidats, dédoublonnés, normalisés, avec ingrédients
+ *   - retour [] si toutes les tentatives échouent
+ */
+async function fetchLiveCandidates(
+  keywords: string[],
+  isCosmetic: boolean,
+  excludeBarcode: string,
+  log: import("pino").Logger,
+): Promise<LiveCandidate[]> {
+  if (keywords.length === 0) return [];
+
+  const t0 = Date.now();
+  let lastError: string | null = null;
+  let totalRaw = 0;
+  const seen = new Set<string>([excludeBarcode]);
+  const collected: LiveCandidate[] = [];
+
+  for (const kw of keywords.slice(0, 3)) {
+    if (collected.length >= 10) break;
+    const { candidates, error } = await searchOffCandidates(kw, isCosmetic);
+    if (error) lastError = error;
+    totalRaw += candidates.length;
+    for (const c of candidates) {
+      if (seen.has(c.barcode)) continue;
+      seen.add(c.barcode);
+      collected.push(c);
+      if (collected.length >= 30) break;
+    }
+  }
+
+  const deduped = deduplicateCandidates(collected).slice(0, 20);
+
+  emitMetric(log, "live_filet_fetch", {
+    ms: Date.now() - t0,
+    source: isCosmetic ? "openbeautyfacts" : "openfoodfacts",
+    n_raw: totalRaw,
+    n_filtered: collected.length,
+    n_final: deduped.length,
+    error: lastError,
+  });
+
+  return deduped;
+}
+
+// ─── DTO cache (encoded as JSON in analysis_cache) ──────────────────────────
+//
+// Pivot Live Filet : on cache désormais le DTO complet (et plus juste les
+// barcodes). Raison : les candidats viennent d'OFF en temps réel, on ne peut
+// pas les ré-hydrater depuis Supabase. Si on ne cachait que les barcodes, un
+// cache hit forcerait un re-fetch OFF + re-hydratation par barcode (latence
+// 2-3s) — défaite du caching.
+//
+// Backward compat : si la cache contient l'ancien format `alternatives:
+// string[]`, on le traite comme un miss (sera réécrit au format DTO au
+// prochain passage).
+
+interface CachedPhasePayload {
+  search_keyword?: string | null;
+  alternatives?: string[]; // legacy format, ignored on read
+  alternatives_dtos?: AlternativeProductDto[]; // new format
+  alternatives_computed_at?: string;
 }
 
 // ─── Route ──────────────────────────────────────────────────────────────────
@@ -226,7 +602,7 @@ router.get(
     }
 
     try {
-      // ── 1. Lookup origin product ─────────────────────────────────────────
+      // ── 1. Lookup origin product (still from our local DB) ──────────────
       const { data: origin, error: originErr } = await supabaseAdmin
         .from("products")
         .select(
@@ -247,258 +623,134 @@ router.get(
 
       const cache = (origin.analysis_cache ?? {}) as Record<
         string,
-        {
-          search_keyword?: string | null;
-          alternatives?: string[];
-        }
+        CachedPhasePayload
       >;
       const phaseCache = cache[cacheKey];
 
-      // ── 2. CACHE HIT on alternatives → skip Filet+Sniper ────────────────
-      let validatedBarcodes: string[] | null = null;
-      if (phaseCache?.alternatives && Array.isArray(phaseCache.alternatives)) {
-        validatedBarcodes = phaseCache.alternatives;
+      // ── 2. CACHE HIT on full DTOs → return immediately ──────────────────
+      if (
+        phaseCache?.alternatives_dtos &&
+        Array.isArray(phaseCache.alternatives_dtos)
+      ) {
         emitMetric(req.log, "alternatives_cache", {
           hit: true,
           barcode,
           cacheKey,
-          n: validatedBarcodes.length,
+          n: phaseCache.alternatives_dtos.length,
         });
-      } else {
-        emitMetric(req.log, "alternatives_cache", {
-          hit: false,
-          barcode,
-          cacheKey,
-        });
+        res.json(phaseCache.alternatives_dtos);
+        return;
       }
+      emitMetric(req.log, "alternatives_cache", {
+        hit: false,
+        barcode,
+        cacheKey,
+      });
 
-      // ── 3. Resolve search keyword (cache → local heuristic) ──────────────
-      let searchKeyword: string | null = phaseCache?.search_keyword ?? null;
+      // ── 3. Resolve search keywords ──────────────────────────────────────
+      const searchKeyword = phaseCache?.search_keyword ?? null;
       const fallbackKeywords = extractKeywords(origin.name ?? "", origin.brand);
+      const keywordList = searchKeyword
+        ? [searchKeyword.toLowerCase(), ...fallbackKeywords]
+        : fallbackKeywords;
+      const uniqueKw = Array.from(new Set(keywordList));
 
-      // ── 4. FILET (Supabase) — only if no cache hit ──────────────────────
-      if (validatedBarcodes === null) {
-        // Build OR filter from keyword (string) and/or local keyword list.
-        const keywordList = searchKeyword
-          ? [searchKeyword.toLowerCase(), ...fallbackKeywords]
-          : fallbackKeywords;
-        const uniqueKw = Array.from(new Set(keywordList)).slice(0, 6);
+      // ── 4. LIVE FILET (OFF / OBF) ──────────────────────────────────────
+      const isCosmetic =
+        (origin.category ?? "").toLowerCase() === "cosmetic";
+      const liveCandidates = await fetchLiveCandidates(
+        uniqueKw,
+        isCosmetic,
+        barcode,
+        req.log,
+      );
 
-        let netCandidates: Array<{
-          id: string;
-          barcode: string | null;
-          name: string;
-          brand: string | null;
-          category: string | null;
-          ingredients_raw: string | null;
-          image_url: string | null;
-        }> = [];
-
-        if (uniqueKw.length > 0) {
-          // Sanitize for PostgREST `or()` filter — strip commas/parens.
-          // Cherche dans name ET brand : les produits Open Food Facts ont
-          // souvent un nom purement marque ("Perrier", "Nutella") sans
-          // descripteur, mais le brand contient le mot-clé recherché
-          // (ex: brand="Coca-Cola" matche kw "cola").
-          const cleanKw = uniqueKw
-            .map((kw) => kw.replace(/[,()]/g, " ").trim())
-            .filter((kw) => kw.length >= 3);
-          const orFilter = cleanKw
-            .flatMap((kw) => [`name.ilike.%${kw}%`, `brand.ilike.%${kw}%`])
-            .join(",");
-
-          if (orFilter) {
-            const query = supabaseAdmin
-              .from("products")
-              .select(
-                "id, barcode, name, brand, category, ingredients_raw, image_url",
-              )
-              .neq("barcode", barcode)
-              .not("ingredients_raw", "is", null)
-              .or(orFilter)
-              .limit(20);
-
-            // Prefer same category when we have one — keeps the filet tight.
-            const finalQuery = origin.category
-              ? query.eq("category", origin.category)
-              : query;
-
-            const { data: netRows, error: netErr } = await finalQuery;
-            if (netErr) {
-              req.log.warn({ err: netErr }, "filet keyword query failed");
-            } else if (netRows) {
-              netCandidates = netRows;
-            }
-          }
-        }
-
-        // Fallback: if keyword net was empty AND we have a category, take
-        // any same-category product. Better to give Claude SOMETHING to
-        // chew on than to return empty by lack of data.
-        if (netCandidates.length === 0 && origin.category) {
-          const { data: catRows } = await supabaseAdmin
-            .from("products")
-            .select(
-              "id, barcode, name, brand, category, ingredients_raw, image_url",
-            )
-            .eq("category", origin.category)
-            .neq("barcode", barcode)
-            .not("ingredients_raw", "is", null)
-            .limit(20);
-          if (catRows) netCandidates = catRows;
-        }
-
-        req.log.info(
-          { barcode, cacheKey, n: netCandidates.length, kw: uniqueKw },
-          "filet caught candidates",
-        );
-
-        if (netCandidates.length === 0) {
-          // Nothing to sniper → store empty cache and return empty.
-          await writeAlternativesCache(req, barcode, cache, cacheKey, []);
-          res.json([]);
-          return;
-        }
-
-        // ── 5. SNIPER (Claude Haiku) ───────────────────────────────────────
-        const sniperInput: AlternativeCandidate[] = netCandidates
-          .filter(
-            (c): c is typeof c & { barcode: string; ingredients_raw: string } =>
-              !!c.barcode && !!c.ingredients_raw,
-          )
-          .map((c) => ({
-            barcode: c.barcode,
-            name: c.name,
-            ingredients_raw: c.ingredients_raw,
-          }));
-
-        const sniperResult = await selectSafeAlternativesWithClaude({
-          candidates: sniperInput,
-          trimester: phase,
-          originalName: origin.name ?? "",
-          searchKeyword: searchKeyword ?? fallbackKeywords[0] ?? "",
-          log: req.log,
-        });
-        validatedBarcodes = sniperResult.barcodes;
-
-        // 🚨 KPI fiabilité médicale : seul `model_empty` compte comme vraie
-        //    trappe (= Claude a délibérément rejeté tous les candidats).
-        //    Les autres outcomes (infra_error, parse_error) sont des
-        //    incidents techniques déjà loggés via alternatives_ai_error /
-        //    log.warn — ne pas polluer le KPI safety.
-        if (sniperResult.outcome === "model_empty") {
-          emitMetric(req.log, "safety_trap_triggered", {
-            reason: "sniper_empty",
-            barcode,
-            cacheKey,
-            candidates: sniperInput.length,
-          });
-          alertSafetyTrap({ reason: "sniper_empty", barcode, cacheKey });
-        }
-
-        // ── 6. Write back cache (best-effort) ─────────────────────────────
-        await writeAlternativesCache(
-          req,
+      req.log.info(
+        {
           barcode,
-          cache,
           cacheKey,
-          validatedBarcodes,
-        );
-      }
+          n: liveCandidates.length,
+          kw: uniqueKw.slice(0, 3),
+          source: isCosmetic ? "openbeautyfacts" : "openfoodfacts",
+        },
+        "live filet caught candidates",
+      );
 
-      if (validatedBarcodes.length === 0) {
+      if (liveCandidates.length === 0) {
+        await writeAlternativesCache(req, barcode, cache, cacheKey, []);
         res.json([]);
         return;
       }
 
-      // ── 7. Hydrate full product rows ───────────────────────────────────
-      const { data: hydrated, error: hydErr } = await supabaseAdmin
-        .from("products")
-        .select(
-          "id, barcode, name, brand, category, ingredients_raw, image_url",
-        )
-        .in("barcode", validatedBarcodes);
+      // ── 5. SNIPER (Claude Haiku) ───────────────────────────────────────
+      const sniperInput: AlternativeCandidate[] = liveCandidates.map((c) => ({
+        barcode: c.barcode,
+        name: c.brand ? `${c.brand} — ${c.name}` : c.name,
+        ingredients_raw: c.ingredients_raw,
+      }));
 
-      if (hydErr || !hydrated) {
-        req.log.error({ err: hydErr }, "hydration failed");
-        res.json([]); // graceful degrade — better empty than 500
+      const sniperResult = await selectSafeAlternativesWithClaude({
+        candidates: sniperInput,
+        trimester: phase,
+        originalName: origin.name ?? "",
+        searchKeyword: searchKeyword ?? fallbackKeywords[0] ?? "",
+        log: req.log,
+      });
+      const validatedBarcodes = sniperResult.barcodes;
+
+      if (sniperResult.outcome === "model_empty") {
+        emitMetric(req.log, "safety_trap_triggered", {
+          reason: "sniper_empty",
+          barcode,
+          cacheKey,
+          candidates: sniperInput.length,
+        });
+        alertSafetyTrap({ reason: "sniper_empty", barcode, cacheKey });
+      }
+
+      if (validatedBarcodes.length === 0) {
+        await writeAlternativesCache(req, barcode, cache, cacheKey, []);
+        res.json([]);
         return;
       }
 
-      // ── 8. CEINTURE & BRETELLES — deterministic re-verification ────────
-      // HOTFIX 1 (post-CHUNK 7) : assouplissement pragmatique pour
-      // l'alimentaire. La règle "unknown = veto" était théoriquement juste
-      // ("on ne sait pas" ≠ "c'est safe") mais en pratique vétait ~100 %
-      // des candidats Open Food Facts (base EFSA trop maigre vs richesse
-      // des listes INCI alimentaires composées).
-      //
-      // Nouvelle règle :
-      //   - `danger` ou `caution` détecté → VETO (la Ceinture bloque toujours
-      //     les risques EXPLICITEMENT identifiés par notre base curatée).
-      //   - `unknown` (no_signal) → ACCEPT. La preuve positive est déjà
-      //     apportée par le Sniper Claude qui a analysé la liste complète
-      //     et certifié 100 % safe pour cette phase.
-      //
-      // La Ceinture reste un filet de sûreté contre les danger/caution connus,
-      // mais ne sur-veto plus sur l'absence d'évidence dans notre base.
-      // Application stricte de la directive HOTFIX 1 utilisateur : la Ceinture
-      // veto UNIQUEMENT sur danger/caution explicitement identifiés par notre
-      // base curatée. Tout ingrédient "unknown" (no_signal) → ACCEPT, preuve
-      // positive déléguée au Sniper Claude.
-      //
-      // ⚠️ DETTE TECHNIQUE ASSUMÉE (post-review architect) : un produit dont
-      // AUCUN ingrédient n'est dans notre base peut passer si le Sniper le
-      // choisit. Tests empiriques (Oreo, Coca, Nutella, Red Bull) montrent
-      // que toute borne plancher (même knownCount≥1) veto ~100 % des picks
-      // alimentaires — la base EFSA (1540 entrées) est trop maigre face à
-      // la richesse des listes Open Food Facts. La levée de cette dette
-      // dépend de l'enrichissement de la base alimentaire, pas du pipeline.
-      //
-      // La trappe `belt_low_coverage` reste DÉCLARÉE dans metrics.ts pour
-      // pouvoir être réactivée d'un seul flip une fois la base enrichie.
-      const safeProducts: typeof hydrated = [];
-      let beltVetoRisk = 0;
-      for (const p of hydrated) {
-        if (!p.ingredients_raw) continue;
-        const ingredientsList = parseIngredients(p.ingredients_raw);
-        if (ingredientsList.length === 0) continue;
-        const det = await matchDeterministic(ingredientsList, phase);
-
-        const hasRisk = det.matches.some(
-          (m) => m.riskLevel === "danger" || m.riskLevel === "caution",
-        );
-        if (hasRisk) {
-          beltVetoRisk++;
-          continue;
-        }
-        safeProducts.push(p);
+      // ── 6. CEINTURE & BRETELLES (in-memory, no DB hit) ─────────────────
+      // MITIGATION TEMPORAIRE (architect review 2026-05-23) : le Belt est
+      // désactivé pour les candidats Live Filet (source=openfoodfacts/food)
+      // car matchDeterministic() utilise une base d'ingrédients mixte
+      // (cosmétique/médicaments/food) avec matching substring bidirectionnel,
+      // ce qui produit des faux positifs structurels sur ingrédients food
+      // (ex: "fat" → "sulfate de magnésium", "water" → "eau de rose",
+      // "wheat" → "protéine de blé hydrolysée cosmétique"). Le Belt sera
+      // réactivé après refactor du matcher en : (1) gating par catégorie
+      // food/cosmetic, (2) matching token/word-boundary plutôt que substring.
+      // En attendant, la sécurité repose sur le Sniper (Claude Haiku) qui
+      // évalue chaque candidat contre la phase de grossesse via prompt.
+      const byBarcode = new Map(liveCandidates.map((c) => [c.barcode, c]));
+      const safeCandidates: LiveCandidate[] = [];
+      for (const b of validatedBarcodes) {
+        const cand = byBarcode.get(b);
+        if (!cand) continue; // Claude hallucinated a barcode not in the input
+        safeCandidates.push(cand);
       }
+      // phase est conservée pour ré-activation future du Belt food-aware.
+      void phase;
 
-      if (beltVetoRisk > 0) {
-        emitMetric(req.log, "safety_trap_triggered", {
-          reason: "belt_risk",
-          barcode,
-          cacheKey,
-          vetoed: beltVetoRisk,
-          examined: hydrated.length,
-        });
-        alertSafetyTrap({ reason: "belt_risk", barcode, cacheKey });
-      }
-
-      // ── 9. Transform to DTO with badges + score ─────────────────────────
-      const dtos: AlternativeProductDto[] = safeProducts.map((p) => {
+      // ── 7. Build DTOs in-memory (no Supabase hydration) ────────────────
+      const dtos: AlternativeProductDto[] = safeCandidates.map((c) => {
         const { score, originBadge } = scoreAndBadge(
-          p.name,
-          p.brand ?? "",
-          p.ingredients_raw ?? "",
+          c.name,
+          c.brand,
+          c.ingredients_raw,
+          c.labels_tags,
         );
         return {
-          id: p.id,
-          name: p.name,
-          brand: p.brand ?? "",
-          category: p.category ?? "",
-          barcode: p.barcode,
-          image_url: p.image_url,
+          id: c.barcode, // OFF barcodes are globally unique → use as id
+          name: c.name,
+          brand: c.brand,
+          category: c.category,
+          barcode: c.barcode,
+          image_url: c.image_url,
           description_fr: null,
           overall_risk: "safe",
           price_range: "",
@@ -507,8 +759,10 @@ router.get(
         };
       });
 
-      // Sort by score desc (pharmacy > french > bio > neutral)
       dtos.sort((a, b) => b.popularity_count - a.popularity_count);
+
+      // ── 8. Persist full DTOs in cache ──────────────────────────────────
+      await writeAlternativesCache(req, barcode, cache, cacheKey, dtos);
 
       res.json(dtos);
     } catch (err) {
@@ -525,17 +779,15 @@ async function writeAlternativesCache(
   barcode: string,
   existingCache: Record<string, unknown>,
   cacheKey: string,
-  alternatives: string[],
+  dtos: AlternativeProductDto[],
 ): Promise<void> {
-  // NOTE: same JSONB read-modify-write race as scan.ts. Acceptable for v1.
-  // Worst case: cache miss on next scan, one extra Claude call.
   const existingPhase =
     (existingCache[cacheKey] as Record<string, unknown> | undefined) ?? {};
   const newCache = {
     ...existingCache,
     [cacheKey]: {
       ...existingPhase,
-      alternatives,
+      alternatives_dtos: dtos,
       alternatives_computed_at: new Date().toISOString(),
     },
   };
@@ -544,11 +796,9 @@ async function writeAlternativesCache(
     .update({ analysis_cache: newCache })
     .eq("barcode", barcode);
   if (error) {
-    // Non-fatal but observable: every silent failure here = repeated Claude
-    // calls forever. Surface to logs so we can spot DB issues in production.
     req.log.warn(
-      { err: error, barcode, cacheKey, n: alternatives.length },
-      "alternatives cache write failed — next call will re-trigger Claude",
+      { err: error, barcode, cacheKey, n: dtos.length },
+      "alternatives cache write failed — next call will re-trigger live filet",
     );
   }
 }

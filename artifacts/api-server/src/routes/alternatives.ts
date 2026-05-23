@@ -9,7 +9,7 @@ import {
   type AlternativeCandidate,
 } from "../lib/anthropic";
 import { emitMetric } from "../lib/metrics";
-import { sendAlert, formatSafetyTrapAlert } from "../lib/webhookAlerter";
+import { alertSafetyTrap } from "../lib/webhookAlerter";
 import { requireAppSecret } from "../middlewares/appSecret";
 import { alternativesRateLimit } from "../middlewares/alternativesRateLimit";
 
@@ -320,13 +320,7 @@ router.get(
             cacheKey,
             candidates: sniperInput.length,
           });
-          sendAlert(
-            formatSafetyTrapAlert({
-              reason: "sniper_empty",
-              barcode,
-              cacheKey,
-            }),
-          );
+          alertSafetyTrap({ reason: "sniper_empty", barcode, cacheKey });
         }
 
         // ── 6. Write back cache (best-effort) ─────────────────────────────
@@ -400,13 +394,7 @@ router.get(
           vetoed: beltVetoUnknown,
           examined: hydrated.length,
         });
-        sendAlert(
-          formatSafetyTrapAlert({
-            reason: "belt_unknown",
-            barcode,
-            cacheKey,
-          }),
-        );
+        alertSafetyTrap({ reason: "belt_unknown", barcode, cacheKey });
       }
       if (beltVetoRisk > 0) {
         emitMetric(req.log, "safety_trap_triggered", {
@@ -416,13 +404,7 @@ router.get(
           vetoed: beltVetoRisk,
           examined: hydrated.length,
         });
-        sendAlert(
-          formatSafetyTrapAlert({
-            reason: "belt_risk",
-            barcode,
-            cacheKey,
-          }),
-        );
+        alertSafetyTrap({ reason: "belt_risk", barcode, cacheKey });
       }
 
       // ── 9. Transform to DTO with badges + score ─────────────────────────

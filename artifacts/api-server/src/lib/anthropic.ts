@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { Logger } from "pino";
 import { logger } from "./logger";
 import { emitMetric, mark } from "./metrics";
-import { sendAlert, formatAiErrorAlert } from "./webhookAlerter";
+import { alertAiError } from "./webhookAlerter";
 
 const apiKey =
   process.env.ANTHROPIC_API_KEY ?? process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
@@ -90,7 +90,7 @@ export async function analyzeWithClaude(params: {
       model: MODEL,
       error_kind: errorKind,
     });
-    sendAlert(formatAiErrorAlert({ source: "scan", errorKind, model: MODEL }));
+    alertAiError({ source: "scan", errorKind, model: MODEL });
     throw err;
   }
 
@@ -219,9 +219,7 @@ export async function selectSafeAlternativesWithClaude(params: {
       model: MODEL,
       error_kind: errorKind,
     });
-    sendAlert(
-      formatAiErrorAlert({ source: "alternatives", errorKind, model: MODEL }),
-    );
+    alertAiError({ source: "alternatives", errorKind, model: MODEL });
     return { barcodes: [], outcome: "infra_error" };
   }
 

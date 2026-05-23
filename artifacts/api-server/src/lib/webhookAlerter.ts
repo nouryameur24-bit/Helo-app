@@ -1,29 +1,29 @@
 /**
- * lib/webhookAlerter.ts — Alerting fire-and-forget vers Discord/Slack.
+ * lib/webhookAlerter.ts — Alerting fire-and-forget vers Discord/Slack
+ *                        avec throttling/déduplication en mémoire.
  *
  * Lit `METRICS_WEBHOOK_URL` au module load. Si l'env var est absente,
- * `sendAlert()` est un no-op silencieux (zéro overhead, zéro log).
+ * toutes les fonctions `alert*` sont des no-op silencieux.
  *
- * Garanties critiques (cahier des charges CHUNK 6) :
+ * ─── Garanties critiques ────────────────────────────────────────────────────
  *
- *   1. FIRE & FORGET : `sendAlert()` ne `await` JAMAIS l'HTTP call. Elle
- *      retourne `void` immédiatement, lance la requête en arrière-plan,
- *      attrape toutes les erreurs (réseau, timeout, 5xx Discord) et les
- *      log en `warn`. Aucune erreur ne peut remonter au call site et
- *      polluer la réponse user.
+ *   1. FIRE & FORGET : aucune fonction publique n'`await` l'HTTP call. Elles
+ *      retournent `void` immédiatement, lancent la requête en arrière-plan,
+ *      attrapent toutes les erreurs (réseau, timeout, 5xx Discord) et les
+ *      log en `warn`. Aucune erreur ne peut remonter au call site.
  *
- *   2. TIMEOUT BORNÉ : 3s max via AbortController. Si Discord rame, on
- *      abandonne sans bloquer le pool d'event loop.
+ *   2. TIMEOUT BORNÉ : 3s max via AbortController.
  *
  *   3. ZÉRO PII : seuls les codes-barres, IDs, error_kind et nom de modèle
  *      passent dans le message. Pas d'ingrédients, pas de prompts.
  *
- * Détection automatique du format de payload :
- *   - URL contient "slack" → `{ text }`
- *   - sinon (Discord par défaut) → `{ content }`
+ *   4. THROTTLING / DEDUPLICATION (CHUNK 7) : protège le channel contre le
+ *      spam en cas de panne prolongée d'Anthropic ou de scan massif d'un
+ *      même mauvais produit. Voir la section THROTTLING ci-dessous.
  *
- * Les deux services acceptent aussi le format de l'autre dans une certaine
- * mesure, mais on fait propre pour rendre le rendu Markdown natif.
+ * ─── Détection automatique du format de payload ─────────────────────────────
+ *   - Hostname Slack officiel → `{ text }`
+ *   - Sinon (Discord par défaut) → `{ content }`
  */
 
 import { logger } from "./logger";
@@ -33,12 +33,8 @@ const WEBHOOK_TIMEOUT_MS = 3_000;
 
 export const isWebhookConfigured = WEBHOOK_URL.length > 0;
 
-/**
- * Détection robuste du service cible via hostname parsing (et pas substring,
- * qui matcherait `myslack-clone.com` à tort). Slack publie ses webhooks sur
- * `hooks.slack.com` (commercial) et `hooks.slack-gov.com` (gov cloud). Tout
- * autre hostname → Discord par défaut (couvre discord.com + proxys custom).
- */
+// ─── Slack vs Discord detection ──────────────────────────────────────────────
+// Hostname allowlist (pas substring : évite `myslack-clone.com` faux positif).
 const SLACK_HOSTS = new Set(["hooks.slack.com", "hooks.slack-gov.com"]);
 const isSlack = (() => {
   if (!isWebhookConfigured) return false;
@@ -59,6 +55,74 @@ if (isWebhookConfigured) {
   logger.info("METRICS_WEBHOOK_URL not set — alerting disabled (no-op)");
 }
 
+// ─── THROTTLING / DEDUPLICATION ──────────────────────────────────────────────
+//
+// On garde en RAM la dernière date d'envoi par clé de dédup. Si la même clé
+// est re-déclenchée avant l'expiration du TTL, l'alerte est silencieusement
+// droppée (pas de log warn — c'est le comportement attendu, pas une erreur).
+//
+// Clés composites par type :
+//   - AI errors    : "ai_error:<source>:<errorKind>"   (TTL 5 min)
+//                    → 50 timeouts/min sur /api/scan = 1 seule alerte
+//   - Safety traps : "safety_trap:<reason>:<barcode>"  (TTL 1 min)
+//                    → 10 personnes scannent le même mauvais produit = 1 alerte
+//
+// Mémoire HARD-BORNÉE par éviction FIFO O(1).
+//
+// `Map` en JS itère dans l'ordre d'insertion : `lastSentAt.keys().next()`
+// donne donc l'entrée la plus anciennement insérée, qu'on évince en O(1).
+// Pour conserver l'ordre FIFO correct quand on rafraîchit une clé, on la
+// delete avant de la re-set (sinon elle reste à sa position d'origine et
+// notre éviction la pénaliserait à tort).
+//
+// Avantages vs full-sweep purge :
+//   - Hard cap garanti : la Map ne dépasse JAMAIS THROTTLE_MAX_KEYS
+//     (mitige le DoS par flood de clés uniques : codes-barres aléatoires
+//     d'un attaquant).
+//   - Aucune itération O(n) sur le request path : pas de spike CPU.
+//   - Pas de setInterval/timer non-unref qui empêcherait Node de s'arrêter.
+
+const AI_ERROR_TTL_MS = 5 * 60_000; // 5 minutes
+const SAFETY_TRAP_TTL_MS = 60_000; //  1 minute
+const THROTTLE_MAX_KEYS = 10_000;
+
+const lastSentAt = new Map<string, number>();
+
+/**
+ * Retourne `true` si l'alerte peut être envoyée (clé absente ou TTL expiré),
+ * et marque la clé comme "envoyée maintenant". Retourne `false` si on est
+ * encore dans la fenêtre de silence → l'appelant doit dropper l'alerte.
+ *
+ * Complexité : strictement O(1) — pas d'itération sur la Map.
+ */
+function shouldSend(key: string, ttlMs: number): boolean {
+  const now = Date.now();
+  const last = lastSentAt.get(key);
+  if (last !== undefined) {
+    if (now - last < ttlMs) {
+      return false; // encore dans la fenêtre de silence
+    }
+    // TTL expiré : on supprime puis ré-insère pour que la clé "rafraîchie"
+    // soit la plus récente dans l'ordre FIFO (évite qu'on l'évince à tort
+    // alors qu'elle vient juste d'être réémise).
+    lastSentAt.delete(key);
+  }
+  // Hard cap par éviction FIFO O(1). On ne dépasse JAMAIS le seuil.
+  if (lastSentAt.size >= THROTTLE_MAX_KEYS) {
+    const oldest = lastSentAt.keys().next().value;
+    if (oldest !== undefined) lastSentAt.delete(oldest);
+  }
+  lastSentAt.set(key, now);
+  return true;
+}
+
+/** Exposé pour les tests : remet le throttler à zéro. */
+export function _resetThrottleForTests(): void {
+  lastSentAt.clear();
+}
+
+// ─── Plomberie HTTP ──────────────────────────────────────────────────────────
+
 /** Helper paranoïaque : log.warn ne peut JAMAIS faire rejeter la promesse
  *  background. Si pino lui-même throw (transport cassé, FS plein…), on
  *  swallow. Le call site est déjà en train de répondre à l'utilisatrice. */
@@ -70,29 +134,23 @@ function safeWarn(payload: unknown, msg: string): void {
   }
 }
 
-/** Détecte le format de payload attendu par le service cible. */
 function buildPayload(message: string): Record<string, string> {
   return isSlack ? { text: message } : { content: message };
 }
 
 /**
- * Envoie un message au webhook. **Fire-and-forget** : retourne immédiatement,
- * la requête HTTP part en arrière-plan. Ne lance jamais, ne bloque jamais.
- *
- * Si `METRICS_WEBHOOK_URL` n'est pas défini, est un no-op silencieux.
+ * Pousse réellement le message vers le webhook. Privée : tous les call sites
+ * doivent passer par `alertAiError` ou `alertSafetyTrap` pour garantir que le
+ * throttling est appliqué (impossible d'oublier le throttle en oubliant la clé).
  */
-export function sendAlert(message: string): void {
+function sendAlertRaw(message: string): void {
   if (!isWebhookConfigured) return;
-
-  // Lance la requête sans attendre. Le `void` explicite documente
-  // l'intention pour les linters et les futurs lecteurs.
   void postWebhookSafely(message);
 }
 
 async function postWebhookSafely(message: string): Promise<void> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS);
-
   try {
     const res = await fetch(WEBHOOK_URL, {
       method: "POST",
@@ -107,40 +165,65 @@ async function postWebhookSafely(message: string): Promise<void> {
       );
     }
   } catch (err) {
-    // Toute erreur (timeout, DNS, réseau, abort) → warn only, never throw.
     safeWarn({ err }, "metrics webhook delivery failed — alert dropped");
   } finally {
     clearTimeout(timer);
   }
 }
 
-// ─── Formatters ──────────────────────────────────────────────────────────────
-// Centralisés ici pour garder un rendu cohérent entre toutes les alertes,
-// et pour qu'on puisse ajuster le format Markdown à un seul endroit.
+// ─── API publique : 2 fonctions throttlées par construction ──────────────────
 
-export function formatAiErrorAlert(params: {
+/**
+ * Alerte d'erreur infra Anthropic (timeout, 429, 5xx…).
+ * Throttlée à 1 alerte par (source, error_kind) toutes les 5 minutes.
+ */
+export function alertAiError(params: {
   source: "scan" | "alternatives";
   errorKind: string;
   model: string;
-}): string {
+}): void {
+  if (!isWebhookConfigured) return;
+
+  const key = `ai_error:${params.source}:${params.errorKind}`;
+  if (!shouldSend(key, AI_ERROR_TTL_MS)) return; // silence gracieux
+
   const route = params.source === "scan" ? "`/api/scan`" : "`/api/alternatives`";
-  return [
+  const message = [
     `🔴 **Erreur API Anthropic**`,
     `**Route** : ${route}`,
     `**Type** : \`${params.errorKind}\``,
     `**Modèle** : \`${params.model}\``,
   ].join("\n");
+
+  sendAlertRaw(message);
 }
 
-export function formatSafetyTrapAlert(params: {
-  reason: string;
+/**
+ * Alerte de trappe de sécurité médicale (sniper_empty, belt_unknown,
+ * belt_risk). Throttlée à 1 alerte par (reason, barcode) toutes les minutes.
+ *
+ * Choix de clé : on dédup par barcode (et pas par cacheKey) parce que si
+ * 10 utilisatrices scannent le même produit pour 10 trimestres différents
+ * en 30 secondes, c'est probablement la même Nutella problématique — pas
+ * besoin de 10 pings Discord. La granularité par phase reste visible dans
+ * les logs Pino.
+ */
+export function alertSafetyTrap(params: {
+  reason: "sniper_empty" | "belt_unknown" | "belt_risk";
   barcode: string;
   cacheKey: string;
-}): string {
-  return [
+}): void {
+  if (!isWebhookConfigured) return;
+
+  const key = `safety_trap:${params.reason}:${params.barcode}`;
+  if (!shouldSend(key, SAFETY_TRAP_TTL_MS)) return; // silence gracieux
+
+  const message = [
     `🛡️ **Trappe de Sécurité Activée**`,
     `**Raison** : \`${params.reason}\``,
     `**Code-barres** : \`${params.barcode}\``,
     `**Contexte** : \`${params.cacheKey}\``,
   ].join("\n");
+
+  sendAlertRaw(message);
 }

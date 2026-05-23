@@ -1005,6 +1005,12 @@ router.get(
           });
           continue;
         }
+        // Identifiabilité : sans photo + sans marque, l'utilisateur ne peut
+        // pas reconnaître le produit en rayon ("whole grain mustard" générique).
+        // On exige au minimum une image OU une marque non vide.
+        if (!cand.image_url && !cand.brand.trim()) {
+          continue;
+        }
         safeCandidates.push(cand);
       }
       if (beltRejections.length > 0) {
@@ -1044,7 +1050,15 @@ router.get(
         };
       });
 
-      dtos.sort((a, b) => b.popularity_count - a.popularity_count);
+      dtos.sort((a, b) => {
+        // Tri principal par score ; à score égal, on remonte les produits
+        // avec photo (identifiables visuellement en rayon).
+        const scoreDiff = b.popularity_count - a.popularity_count;
+        if (scoreDiff !== 0) return scoreDiff;
+        const aHasImage = a.image_url ? 1 : 0;
+        const bHasImage = b.image_url ? 1 : 0;
+        return bHasImage - aHasImage;
+      });
 
       // ── 8. Persist full DTOs in cache ──────────────────────────────────
       await writeAlternativesCache(req, barcode, cache, cacheKey, dtos);

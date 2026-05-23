@@ -40,7 +40,7 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v9";
+const MATCHER_VERSION = "v12";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -635,14 +635,10 @@ async function fetchLiveCandidates(
   isCosmetic: boolean,
   excludeBarcode: string,
   log: import("pino").Logger,
-  /**
-   * Bug "Moutarde → Mayonnaise" : tag de catégorie OFF/OBF i18n du produit
-   * d'origine (ex: "en:mustards", "en:body-creams"). Quand fourni, on
-   * cherche en PRIORITÉ dans cette catégorie stricte avant de tomber
-   * sur les keywords textuels (qui peuvent matcher la marque et
-   * cross-pollinise les types de produits).
-   */
   categoryTag?: string | null,
+  // Bug "Amora → 3× variantes Amora" : marque d'origine exclue des candidats.
+  // Une "alternative" = AUTRE marque (Maille, Bornier), pas autre format.
+  excludeBrand?: string | null,
 ): Promise<{ candidates: LiveCandidate[]; strategy: LiveStrategy }> {
   if (keywords.length === 0 && !categoryTag)
     return { candidates: [], strategy: "keywords" };
@@ -653,15 +649,16 @@ async function fetchLiveCandidates(
   const seen = new Set<string>([excludeBarcode]);
   const collected: LiveCandidate[] = [];
   let usedStrategy: LiveStrategy = "keywords";
+  const excludeBrandNorm = (excludeBrand ?? "").trim().toLowerCase();
 
-  // PHASE 1 : recherche scopée à la catégorie stricte. Si on a une catégorie
-  // (ex: en:mustards), on l'utilise comme filtre principal avec keyword="*"
-  // (ou le 1er keyword pour pondérer la pertinence). Garantit qu'on ne
-  // remplacera jamais une moutarde par une mayonnaise.
+  // PHASE 1 : recherche scopée catégorie, keyword="" volontairement — sinon
+  // cgi trie par pertinence textuelle et ramène 20 variantes de la même
+  // marque (ex. "amora" → 20× Amora). Sans keyword, sort_by=unique_scans_n
+  // remonte les produits populaires de la catégorie → mix de marques.
   if (categoryTag) {
     usedStrategy = "category_primary";
     const { candidates, error } = await searchOffCandidates(
-      keywords[0] ?? "",
+      "",
       isCosmetic,
       categoryTag,
     );
@@ -669,21 +666,21 @@ async function fetchLiveCandidates(
     totalRaw += candidates.length;
     for (const c of candidates) {
       if (seen.has(c.barcode)) continue;
+      if (excludeBrandNorm && c.brand.trim().toLowerCase() === excludeBrandNorm)
+        continue;
       seen.add(c.barcode);
       collected.push(c);
       if (collected.length >= 30) break;
     }
   }
 
-  // PHASE 2 : fallback keywords textuels si la phase 1 a rendu trop peu.
-  // SAFETY : si on a un categoryTag, on garde le filtre catégorie aussi dans
-  // les requêtes keywords (sinon on réintroduit le bug cross-catégorie type
-  // mayonnaise dans la recherche de moutarde). On ne lance des keywords
-  // unscoped QUE si aucun categoryTag n'a été trouvé.
+  // PHASE 2 : fallback keywords textuels si phase 1 trop peu.
   if (collected.length < 5) {
     if (categoryTag && collected.length > 0) usedStrategy = "category_then_kw";
     for (const kw of keywords.slice(0, 3)) {
       if (collected.length >= 10) break;
+      if (excludeBrandNorm && kw.trim().toLowerCase() === excludeBrandNorm)
+        continue;
       const { candidates, error } = await searchOffCandidates(
         kw,
         isCosmetic,
@@ -693,6 +690,8 @@ async function fetchLiveCandidates(
       totalRaw += candidates.length;
       for (const c of candidates) {
         if (seen.has(c.barcode)) continue;
+        if (excludeBrandNorm && c.brand.trim().toLowerCase() === excludeBrandNorm)
+          continue;
         seen.add(c.barcode);
         collected.push(c);
         if (collected.length >= 30) break;
@@ -700,7 +699,19 @@ async function fetchLiveCandidates(
     }
   }
 
-  const deduped = deduplicateCandidates(collected).slice(0, 20);
+  // Diversité marques : max 2 candidats par marque pour éviter qu'une marque
+  // dominante (Maille avec 5 formats) sature le top et prive Claude d'options.
+  const perBrandCount = new Map<string, number>();
+  const brandDiverse: LiveCandidate[] = [];
+  for (const c of collected) {
+    const key = c.brand.trim().toLowerCase() || "__nobrand__";
+    const n = perBrandCount.get(key) ?? 0;
+    if (n >= 2) continue;
+    perBrandCount.set(key, n + 1);
+    brandDiverse.push(c);
+  }
+
+  const deduped = deduplicateCandidates(brandDiverse).slice(0, 20);
 
   emitMetric(log, "live_filet_fetch", {
     ms: Date.now() - t0,
@@ -961,6 +972,7 @@ router.get(
           barcode,
           req.log,
           categoryTag,
+          origin.brand ?? null,
         );
 
       req.log.info(

@@ -442,12 +442,33 @@ export default function VerdictScreen() {
               visible={labelVisible}
             />
             {(() => {
-              // Garde-fou : on n'affiche la carte que si l'explication backend
-              // est présente ET non vide (trim pour éviter une carte blanche
-              // si le backend renvoie '   ').
+              // Carte "Provenance de l'analyse" — design premium différencié
+              // par source (IA = lavande subtile, déterministe = vert sauge).
+              // Affichée uniquement quand l'explication backend est présente
+              // (mode online). En offline pur, rien n'est rendu (zéro régression).
               const explanation = displayVerdict?.aiExplanation?.trim();
               if (!labelVisible || !explanation) return null;
               const isAi = displayVerdict?.aiSource === 'ai';
+
+              // Palette dédiée — pas dans le thème (usage local et ciblé).
+              // Choisi pour : (a) contraste WCAG AA sur fond clair, (b) cohésion
+              // avec la palette nude/cream/gold sans la concurrencer.
+              const palette = isAi
+                ? {
+                    bg: '#F4F0FB',       // lavande très pâle
+                    border: '#D4C7EC',   // lavande douce
+                    accent: '#6B5B9C',   // violet profond (header + emoji wrap)
+                    emoji: '✨',
+                    label: 'Analysé par Hēlo IA',
+                  }
+                : {
+                    bg: '#EEF7F0',       // sauge très pâle
+                    border: '#BFD9C8',   // sauge douce
+                    accent: '#4F8068',   // vert médical profond
+                    emoji: '🛡️',
+                    label: 'Vérifié via nos sources médicales',
+                  };
+
               return (
                 <View
                   style={{
@@ -455,42 +476,40 @@ export default function VerdictScreen() {
                     marginHorizontal: Spacing.lg,
                     paddingVertical: Spacing.md,
                     paddingHorizontal: Spacing.lg,
-                    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                    backgroundColor: palette.bg,
                     borderRadius: Radius.lg,
                     borderWidth: 1,
-                    borderColor: verdictColor + '33',
+                    borderColor: palette.border,
                   }}
                 >
                   <View
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
-                      gap: 6,
-                      marginBottom: 6,
+                      gap: 8,
+                      marginBottom: 8,
                     }}
                   >
-                    {/* Icône en couleur verdict (accent visuel), texte du
-                        header en textPrimary pour garantir le contraste WCAG. */}
-                    <Feather
-                      name={isAi ? 'cpu' : 'shield'}
-                      size={11}
-                      color={verdictColor}
-                    />
+                    <ThemedText style={{ fontSize: 14 }}>{palette.emoji}</ThemedText>
                     <ThemedText
                       variant="labelSmall"
                       style={{
-                        color: Colors.textPrimary,
-                        letterSpacing: 0.8,
-                        textTransform: 'uppercase',
-                        fontSize: 10,
+                        color: palette.accent,
+                        letterSpacing: 0.4,
+                        fontSize: 12,
+                        fontWeight: '700',
                       }}
                     >
-                      {isAi ? 'Analyse IA Hēlo' : 'Analyse Hēlo'}
+                      {palette.label}
                     </ThemedText>
                   </View>
                   <ThemedText
                     variant="bodyMedium"
-                    style={{ lineHeight: 21, textAlign: 'left' }}
+                    style={{
+                      lineHeight: 22,
+                      textAlign: 'left',
+                      color: Colors.textPrimary,
+                    }}
                   >
                     {explanation}
                   </ThemedText>

@@ -11,6 +11,7 @@ import type {
   VerdictResult,
 } from '@/types';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { findMatchingRow, matchSafeOverride } from '@/lib/ingredientMatch';
 
 const OFF_API_BASE = 'https://world.openfoodfacts.org/api/v2/product';
 const OBF_API_BASE = 'https://world.openbeautyfacts.org/api/v2/product';
@@ -477,15 +478,16 @@ export async function matchIngredients(
   });
 
   return ingredientsList.map((ingredientName): MatchResult => {
-    const nameLower = ingredientName.toLowerCase();
+    // Whitelist d'exceptions safe (vinaigre d'alcool, alcools gras, etc.)
+    // — court-circuite la règle d'éviction du dictionnaire.
+    if (matchSafeOverride(ingredientName)) {
+      return { ingredientName, matched: true, riskLevel: 'safe' };
+    }
 
-    const matched = (dbIngredients as IngredientData[]).find((ing) => {
-      if (ing.name.toLowerCase().includes(nameLower)) return true;
-      if (ing.name_inci?.toLowerCase().includes(nameLower)) return true;
-      if (ing.synonyms?.some((syn) => syn.toLowerCase().includes(nameLower))) return true;
-      if (nameLower.includes(ing.name.toLowerCase())) return true;
-      return false;
-    });
+    const matched = findMatchingRow(
+      ingredientName,
+      dbIngredients as IngredientData[],
+    );
 
     if (matched) {
       const riskLevel = getRiskForPhase(matched, phase);

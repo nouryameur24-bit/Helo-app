@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { IngredientData, MatchResult, Phase, ProductData, RiskLevel, Trimester, VerdictResult } from '@/types';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { findMatchingRow, matchSafeOverride } from '@/lib/ingredientMatch';
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
@@ -115,15 +116,13 @@ export async function matchIngredientsLocal(
   if (ingredientsList.length === 0) return [];
 
   return ingredientsList.map((ingredientName): MatchResult => {
-    const nameLower = ingredientName.toLowerCase();
+    // Whitelist d'exceptions safe (vinaigre d'alcool, alcools gras, etc.)
+    // Voir lib/ingredientMatch.ts pour le contexte du bug.
+    if (matchSafeOverride(ingredientName)) {
+      return { ingredientName, matched: true, riskLevel: 'safe' };
+    }
 
-    const matched = dbIngredients.find((ing) => {
-      if (ing.name.toLowerCase().includes(nameLower)) return true;
-      if (ing.name_inci?.toLowerCase().includes(nameLower)) return true;
-      if (ing.synonyms?.some((syn) => syn.toLowerCase().includes(nameLower))) return true;
-      if (nameLower.includes(ing.name.toLowerCase())) return true;
-      return false;
-    });
+    const matched = findMatchingRow(ingredientName, dbIngredients);
 
     if (matched) {
       const riskLevel = getRiskForPhase(matched, phase);

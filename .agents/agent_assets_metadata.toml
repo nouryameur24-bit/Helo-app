@@ -131,3 +131,9 @@ id = "QBuMib_Vzfip5HldoFo7C"
 uri = "file://helo_audit_complet.md"
 type = "text"
 title = "Hēlo — audit complet & analyse business"
+
+[[outputs]]
+id = "YxoEzNVJVN2ViRlz66ehC"
+uri = "file://exports/helo-monorepo-final.tar.gz"
+type = "unspecified"
+title = "Hēlo Monorepo — Final (Étape 3 Freemium)"

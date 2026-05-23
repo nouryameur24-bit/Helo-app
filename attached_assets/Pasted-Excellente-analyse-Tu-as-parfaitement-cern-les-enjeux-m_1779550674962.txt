@@ -1,0 +1,29 @@
+Excellente analyse. Tu as parfaitement cerné les enjeux médicaux, financiers et de sécurité de l'application. Je valide ton raisonnement à 100%.
+
+Nous partons officiellement sur l'Option 2 : **Hybride déterministe-first + Claude fallback**. C'est la solution maximale.
+
+[NOTRE NOUVEAU CONTRAT D'ARCHITECTURE]
+L'objectif est de sécuriser la clé Anthropic en passant par le backend, de conserver notre fiabilité médicale, tout en utilisant l'IA comme filet de sécurité intelligent.
+
+[Étape 1 : Le Contrat API et la Base de Données]
+1. Dans `lib/db/src/schema` : Assure-toi que la table `products` possède bien une colonne `analysis_cache` (JSONB, DEFAULT '{}'). Prépare la migration.
+2. Dans `lib/api-spec/openapi.yaml` : Crée les schémas pour la nouvelle route POST `/api/scan`.
+   - Request : `{ barcode: string, trimester: number }`
+   - Response : `{ status, glow_score, explanation, source: "deterministic" | "ai", search_keyword }`
+
+[Étape 2 : Le Backend (artifacts/api-server)]
+Crée la route `/api/scan`. Voici la logique exacte à implémenter :
+1. Recherche Supabase du produit via le `barcode`.
+2. Cache Hit : Vérifie si le produit est déjà dans `analysis_cache[trimester]`. Si oui, retourne le JSON avec `source: "cache"`.
+3. Moteur Déterministe : Passe les `ingredients_raw` dans notre fonction de matching (celle sur les 5000 ingrédients). 
+   - Si 100% des ingrédients sont reconnus -> Calcule le Glow Score -> Retourne le JSON avec `source: "deterministic"` -> Sauvegarde dans `analysis_cache`.
+4. Fallback IA (Claude) : Si 1 ou plusieurs ingrédients sont inconnus du moteur déterministe, appelle le wrapper Anthropic côté serveur.
+   - Demande à l'IA d'analyser la liste en précisant le `trimester`.
+   - Retourne le JSON avec `source: "ai"` -> Sauvegarde dans `analysis_cache`.
+
+[Étape 3 : Le Mobile (artifacts/helo)]
+1. Retire définitivement `EXPO_PUBLIC_ANTHROPIC_API_KEY` du bundle mobile.
+2. Dans `lib/productLookup.ts` et `hooks/useScan.ts`, modifie la logique pour appeler le backend `/api/scan` quand il y a du réseau.
+3. Garde la logique locale (`matchIngredientsLocal`) UNIQUEMENT comme fallback pur pour le mode hors-ligne.
+
+On y va étape par étape. Commence par l'Étape 1 et 2 (API Backend et Schémas). Affiche-moi le code de la route `/api/scan` et du wrapper Claude côté serveur pour que je valide la logique.

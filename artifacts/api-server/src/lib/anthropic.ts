@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { Logger } from "pino";
 import { logger } from "./logger";
+import { emitMetric, mark } from "./metrics";
 
 const apiKey =
   process.env.ANTHROPIC_API_KEY ?? process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
@@ -54,24 +56,46 @@ export async function analyzeWithClaude(params: {
   brand: string | null;
   ingredients: string;
   trimester: 1 | 2 | 3 | "breastfeeding" | "baby";
+  /** Logger requête pour émettre les métriques FinOps. */
+  log?: Logger;
 }): Promise<AiVerdict> {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
-  const response = await client.messages.create({
+  const log = params.log ?? logger;
+  const t = mark();
+
+  let response: Anthropic.Messages.Message;
+  try {
+    response = await client.messages.create({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: buildUserPrompt(
+            params.productName,
+            params.brand,
+            params.ingredients,
+            params.trimester,
+          ),
+        },
+      ],
+    });
+  } catch (err) {
+    emitMetric(log, "scan_ai_error", {
+      ms: t(),
+      model: MODEL,
+      error_kind: classifyAnthropicError(err),
+    });
+    throw err;
+  }
+
+  emitMetric(log, "scan_ai_call", {
+    ms: t(),
     model: MODEL,
-    max_tokens: MAX_TOKENS,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: buildUserPrompt(
-          params.productName,
-          params.brand,
-          params.ingredients,
-          params.trimester,
-        ),
-      },
-    ],
+    input_tokens: response.usage.input_tokens,
+    output_tokens: response.usage.output_tokens,
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
@@ -90,10 +114,7 @@ export async function analyzeWithClaude(params: {
   try {
     parsed = JSON.parse(cleaned);
   } catch (err) {
-    logger.error(
-      { err, raw: textBlock.text },
-      "Claude returned non-JSON content",
-    );
+    log.error({ err }, "Claude returned non-JSON content");
     throw new Error("Claude returned invalid JSON");
   }
 
@@ -117,19 +138,47 @@ export interface AlternativeCandidate {
 }
 
 /**
+ * Outcome distinguishing "le modèle a explicitement renvoyé []" (= vraie
+ * trappe de sécurité, KPI fiabilité médicale) de tous les autres cas qui
+ * produisent aussi un tableau vide (erreur infra, parse, key manquante…).
+ *
+ * Seul `model_empty` doit faire incrémenter le KPI safety_trap_triggered.
+ */
+export type SniperOutcome =
+  | "success" //  ≥ 1 barcode validé
+  | "model_empty" // 🚨 Claude a explicitement renvoyé [] — TRUE TRAP
+  | "no_candidates" // filet vide en amont
+  | "infra_error" // throw SDK (network/timeout/401/429/5xx)
+  | "parse_error" // réponse non-JSON ou non-array
+  | "unconfigured"; // ANTHROPIC_API_KEY manquante
+
+export interface SniperResult {
+  barcodes: string[];
+  outcome: SniperOutcome;
+}
+
+/**
  * Calls Claude Haiku to select up to 3 "100% safe" barcodes from a candidate
- * list. Returns [] on any failure (invalid JSON, timeout, etc.) — the empty
- * array is a valid, expected output per the strict safety policy.
+ * list. Always returns a structured `SniperResult` so that callers can
+ * distinguish a true medical safety trap (`model_empty`) from infrastructure
+ * or parse failures (which also yield `barcodes: []` but mean different
+ * things FinOps-wise).
  */
 export async function selectSafeAlternativesWithClaude(params: {
   candidates: AlternativeCandidate[];
   trimester: 1 | 2 | 3 | "breastfeeding" | "baby";
-}): Promise<string[]> {
+  /** Logger requête pour émettre les métriques FinOps. */
+  log?: Logger;
+}): Promise<SniperResult> {
+  const log = params.log ?? logger;
+
   if (!apiKey) {
-    logger.warn("ANTHROPIC_API_KEY not set — alternatives sniper returns []");
-    return [];
+    log.warn("ANTHROPIC_API_KEY not set — alternatives sniper returns []");
+    return { barcodes: [], outcome: "unconfigured" };
   }
-  if (params.candidates.length === 0) return [];
+  if (params.candidates.length === 0) {
+    return { barcodes: [], outcome: "no_candidates" };
+  }
 
   const phaseLabel =
     params.trimester === "breastfeeding"
@@ -150,45 +199,108 @@ export async function selectSafeAlternativesWithClaude(params: {
     )
     .join("\n\n");
 
+  const t = mark();
+
+  let response: Anthropic.Messages.Message;
   try {
-    const response = await client.messages.create({
+    response = await client.messages.create({
       model: MODEL,
       max_tokens: 200, // tighter cap — output is just a tiny JSON array
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     });
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return [];
-
-    // Resilient extraction: Claude sometimes wraps the JSON in markdown or
-    // adds explanatory text after the array despite our prompt. Find the
-    // first `[...]` block and parse only that.
-    const raw = textBlock.text.trim();
-    const match = raw.match(/\[[\s\S]*?\]/);
-    if (!match) {
-      logger.warn({ raw }, "sniper: no JSON array found in Claude output");
-      return [];
-    }
-    const parsed: unknown = JSON.parse(match[0]);
-    if (!Array.isArray(parsed)) return [];
-
-    // Only keep barcodes that were in the candidate set (defence against
-    // Claude hallucinating barcodes that don't exist).
-    const validSet = new Set(params.candidates.map((c) => c.barcode));
-    const barcodes = parsed
-      .filter((x): x is string => typeof x === "string")
-      .filter((bc) => validSet.has(bc))
-      .slice(0, 3);
-
-    return barcodes;
   } catch (err) {
-    logger.warn(
-      { err },
-      "selectSafeAlternativesWithClaude failed — returning []",
-    );
-    return [];
+    emitMetric(log, "alternatives_ai_error", {
+      ms: t(),
+      model: MODEL,
+      error_kind: classifyAnthropicError(err),
+    });
+    return { barcodes: [], outcome: "infra_error" };
   }
+
+  // Helper to emit the ai_call metric in every exit path below.
+  const emitCall = (picked: number) =>
+    emitMetric(log, "alternatives_ai_call", {
+      ms: t(),
+      model: MODEL,
+      input_tokens: response.usage.input_tokens,
+      output_tokens: response.usage.output_tokens,
+      candidates: params.candidates.length,
+      picked,
+    });
+
+  const textBlock = response.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    emitCall(0);
+    return { barcodes: [], outcome: "parse_error" };
+  }
+
+  // Resilient extraction: Claude sometimes wraps the JSON in markdown or
+  // adds explanatory text after the array despite our prompt. Find the
+  // first `[...]` block and parse only that.
+  const raw = textBlock.text.trim();
+  const match = raw.match(/\[[\s\S]*?\]/);
+  if (!match) {
+    log.warn("sniper: no JSON array found in Claude output");
+    emitCall(0);
+    return { barcodes: [], outcome: "parse_error" };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(match[0]);
+  } catch {
+    emitCall(0);
+    return { barcodes: [], outcome: "parse_error" };
+  }
+  if (!Array.isArray(parsed)) {
+    emitCall(0);
+    return { barcodes: [], outcome: "parse_error" };
+  }
+
+  // Only keep barcodes that were in the candidate set (defence against
+  // Claude hallucinating barcodes that don't exist).
+  const validSet = new Set(params.candidates.map((c) => c.barcode));
+  const barcodes = parsed
+    .filter((x): x is string => typeof x === "string")
+    .filter((bc) => validSet.has(bc))
+    .slice(0, 3);
+
+  emitCall(barcodes.length);
+
+  // ⚠️ Distinction critique : Claude a parsé un array vide (vraie trappe)
+  //    OU bien Claude a pické des barcodes hallucinés tous filtrés out.
+  //    Dans les deux cas l'intention modèle = "rien de sûr" → model_empty.
+  return {
+    barcodes,
+    outcome: barcodes.length > 0 ? "success" : "model_empty",
+  };
+}
+
+/**
+ * Classifie une erreur du SDK Anthropic en une string courte pour métriques.
+ *
+ * Ordre important : les sous-classes connexion/timeout n'ont PAS de `status`
+ * HTTP, donc le check `APIError`+status doit venir APRÈS. Cf. SDK source :
+ *   - APIConnectionTimeoutError extends APIConnectionError extends APIError
+ *   - APIConnectionError n'a pas de status → tomberait dans `api_unknown`.
+ */
+function classifyAnthropicError(err: unknown): string {
+  if (err instanceof Anthropic.APIConnectionTimeoutError) return "timeout";
+  if (err instanceof Anthropic.APIConnectionError) return "network";
+  if (err instanceof Anthropic.RateLimitError) return "rate_limited";
+  if (err instanceof Anthropic.AuthenticationError) return "unauthorized";
+  if (err instanceof Anthropic.APIError) {
+    if (err.status && err.status >= 500) return "server_error";
+    return `api_${err.status ?? "unknown"}`;
+  }
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    if (msg.includes("timeout") || msg.includes("aborted")) return "timeout";
+    if (msg.includes("network") || msg.includes("econn")) return "network";
+    return "other";
+  }
+  return "unknown";
 }
 
 function normalizeVerdict(raw: unknown): AiVerdict {

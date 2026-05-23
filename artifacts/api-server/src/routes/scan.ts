@@ -13,6 +13,7 @@ import {
   type RiskLevel,
 } from "../lib/matcher";
 import { analyzeWithClaude, type AiVerdict } from "../lib/anthropic";
+import { emitMetric } from "../lib/metrics";
 import { requireAppSecret } from "../middlewares/appSecret";
 import { scanRateLimit } from "../middlewares/scanRateLimit";
 
@@ -127,6 +128,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
 
     // ── 2. CACHE HIT ─────────────────────────────────────────────────────
     if (product && cache[cacheKey]) {
+      emitMetric(req.log, "scan_cache", { hit: true, barcode, cacheKey });
       const cached = cache[cacheKey];
       const response: ScanResponse = {
         status: cached.status,
@@ -148,6 +150,9 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
       res.json(response);
       return;
     }
+
+    // Cache miss (atteint ici uniquement si pas de hit ci-dessus)
+    emitMetric(req.log, "scan_cache", { hit: false, barcode, cacheKey });
 
     // ── 3. Fallback to OpenFoodFacts if product missing or has no ingredients
     if (!product || !ingredientsRaw || !ingredientsRaw.trim()) {
@@ -243,6 +248,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
           brand: productBrand,
           ingredients: ingredientsRaw ?? "",
           trimester,
+          log: req.log,
         });
         const verdict = aiStatusToVerdict(ai.status);
         response = {

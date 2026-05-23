@@ -8,6 +8,7 @@ import {
   selectSafeAlternativesWithClaude,
   type AlternativeCandidate,
 } from "../lib/anthropic";
+import { emitMetric } from "../lib/metrics";
 import { requireAppSecret } from "../middlewares/appSecret";
 import { alternativesRateLimit } from "../middlewares/alternativesRateLimit";
 
@@ -190,10 +191,18 @@ router.get(
       let validatedBarcodes: string[] | null = null;
       if (phaseCache?.alternatives && Array.isArray(phaseCache.alternatives)) {
         validatedBarcodes = phaseCache.alternatives;
-        req.log.info(
-          { barcode, cacheKey, n: validatedBarcodes.length },
-          "alternatives cache hit",
-        );
+        emitMetric(req.log, "alternatives_cache", {
+          hit: true,
+          barcode,
+          cacheKey,
+          n: validatedBarcodes.length,
+        });
+      } else {
+        emitMetric(req.log, "alternatives_cache", {
+          hit: false,
+          barcode,
+          cacheKey,
+        });
       }
 
       // ── 3. Resolve search keyword (cache → local heuristic) ──────────────
@@ -291,15 +300,26 @@ router.get(
             ingredients_raw: c.ingredients_raw,
           }));
 
-        validatedBarcodes = await selectSafeAlternativesWithClaude({
+        const sniperResult = await selectSafeAlternativesWithClaude({
           candidates: sniperInput,
           trimester: phase,
+          log: req.log,
         });
+        validatedBarcodes = sniperResult.barcodes;
 
-        req.log.info(
-          { barcode, cacheKey, sniperPicked: validatedBarcodes.length },
-          "sniper finished",
-        );
+        // 🚨 KPI fiabilité médicale : seul `model_empty` compte comme vraie
+        //    trappe (= Claude a délibérément rejeté tous les candidats).
+        //    Les autres outcomes (infra_error, parse_error) sont des
+        //    incidents techniques déjà loggés via alternatives_ai_error /
+        //    log.warn — ne pas polluer le KPI safety.
+        if (sniperResult.outcome === "model_empty") {
+          emitMetric(req.log, "safety_trap_triggered", {
+            reason: "sniper_empty",
+            barcode,
+            cacheKey,
+            candidates: sniperInput.length,
+          });
+        }
 
         // ── 6. Write back cache (best-effort) ─────────────────────────────
         await writeAlternativesCache(
@@ -337,7 +357,13 @@ router.get(
       // ingredient (no_signal) are vetoed — "we don't know" ≠ "it's safe".
       // This is the whole point of Ceinture & Bretelles: positive proof,
       // not absence of evidence.
+      //
+      // Métriques : on agrège les vetos par raison sur la requête (au lieu
+      // d'émettre jusqu'à 20 events/req). Un seul event résumé en fin de
+      // boucle si au moins un veto. Cardinality bornée → log lisible.
       const safeProducts: typeof hydrated = [];
+      let beltVetoUnknown = 0;
+      let beltVetoRisk = 0;
       for (const p of hydrated) {
         if (!p.ingredients_raw) continue;
         const ingredientsList = parseIngredients(p.ingredients_raw);
@@ -345,23 +371,36 @@ router.get(
         const det = await matchDeterministic(ingredientsList, phase);
 
         if (det.hasUnknown) {
-          req.log.info(
-            { barcode: p.barcode, name: p.name },
-            "ceinture & bretelles vetoed: unknown ingredients (no positive proof)",
-          );
+          beltVetoUnknown++;
           continue;
         }
         const hasRisk = det.matches.some(
           (m) => m.riskLevel === "danger" || m.riskLevel === "caution",
         );
         if (hasRisk) {
-          req.log.info(
-            { barcode: p.barcode, name: p.name },
-            "ceinture & bretelles vetoed: danger/caution ingredient",
-          );
+          beltVetoRisk++;
           continue;
         }
         safeProducts.push(p);
+      }
+
+      if (beltVetoUnknown > 0) {
+        emitMetric(req.log, "safety_trap_triggered", {
+          reason: "belt_unknown",
+          barcode,
+          cacheKey,
+          vetoed: beltVetoUnknown,
+          examined: hydrated.length,
+        });
+      }
+      if (beltVetoRisk > 0) {
+        emitMetric(req.log, "safety_trap_triggered", {
+          reason: "belt_risk",
+          barcode,
+          cacheKey,
+          vetoed: beltVetoRisk,
+          examined: hydrated.length,
+        });
       }
 
       // ── 9. Transform to DTO with badges + score ─────────────────────────

@@ -630,6 +630,36 @@ router.get(
   alternativesRateLimit,
   requireAppSecret,
   async (req, res) => {
+    // ── 0. BOUCLIER FINOPS (Étape 3 — M1) ──────────────────────────────────
+    // Les alternatives sont une feature Premium. On gate la route AVANT
+    // toute lecture DB et SURTOUT avant tout appel Claude/OFF/OBF pour ne
+    // payer aucun token / aucun fetch externe sur un utilisateur free.
+    //
+    // En l'absence d'auth user back-end, on s'appuie sur un header signal
+    // émis par l'app mobile (`x-helo-is-premium: true|false`). Ce header
+    // n'est PAS un secret — le bouclier réel reste l'IAP RevenueCat côté
+    // device + la signature App Store/Play. Le header sert à éviter le
+    // coût API ; un utilisateur qui le forgerait ne casserait que sa
+    // propre rate-limit de 10 req/min/IP et ne paierait rien à Anthropic
+    // au-delà. Lorsqu'on aura un vrai serveur d'auth, on remplacera ce
+    // header par un check JWT → `is_premium` en DB.
+    const premiumHeader = String(
+      req.header("x-helo-is-premium") ?? "",
+    ).toLowerCase();
+    const isPremiumRequest = premiumHeader === "true" || premiumHeader === "1";
+    if (!isPremiumRequest) {
+      emitMetric(req.log, "alternatives_premium_blocked", {
+        barcode: String(req.params.barcode ?? ""),
+      });
+      res.status(403).json({
+        error: "premium_required",
+        feature: "alternatives",
+        message:
+          "Les alternatives expertes sont réservées aux abonnées Hēlo Premium.",
+      });
+      return;
+    }
+
     const barcode = String(req.params.barcode ?? "");
     if (!BARCODE_RE.test(barcode)) {
       res.status(400).json({ error: "invalid_barcode" });

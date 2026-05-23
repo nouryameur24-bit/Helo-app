@@ -188,9 +188,18 @@ export interface AlternativesRemoteOk {
   ok: true;
   data: AlternativeProduct[];
 }
+/**
+ * Étape 3 — M1 : on étend ScanError avec `premium_required` pour gérer
+ * proprement le 403 du bouclier FinOps. L'écran appelant peut alors
+ * rediriger vers /paywall plutôt que d'afficher une erreur générique.
+ */
+export type AlternativesError =
+  | ScanError
+  | { kind: 'premium_required'; message?: string };
+
 export interface AlternativesRemoteError {
   ok: false;
-  error: ScanError;
+  error: AlternativesError;
 }
 
 /**
@@ -241,6 +250,7 @@ function dtoToAlternativeProduct(d: AlternativeProductDto): AlternativeProduct {
 export async function fetchAlternativesRemote(
   barcode: string,
   phase: Phase,
+  isPremium: boolean,
 ): Promise<AlternativesRemoteOk | AlternativesRemoteError> {
   if (!isBackendConfigured) {
     return { ok: false, error: { kind: 'unconfigured' } };
@@ -256,9 +266,25 @@ export async function fetchAlternativesRemote(
 
     const response = await fetch(url, {
       method: 'GET',
-      headers: { 'x-helo-app-secret': APP_SECRET },
+      headers: {
+        'x-helo-app-secret': APP_SECRET,
+        // Étape 3 — M1 : signal Premium pour le bouclier FinOps backend.
+        // En non-premium, le backend renvoie 403 sans appeler Claude.
+        'x-helo-is-premium': isPremium ? 'true' : 'false',
+      },
       signal: controller.signal,
     });
+
+    if (response.status === 403) {
+      let message: string | undefined;
+      try {
+        const body = (await response.json()) as { message?: string };
+        message = body.message;
+      } catch {
+        /* ignore */
+      }
+      return { ok: false, error: { kind: 'premium_required', message } };
+    }
 
     if (response.status === 200) {
       const raw = (await response.json()) as unknown;

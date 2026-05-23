@@ -40,30 +40,34 @@ export interface Plan {
   highlight: boolean;
 }
 
+// Étape 3 — M2 : grille tarifaire spécifique grossesse.
+// L'enveloppe "9 mois" correspond à la durée naturelle du besoin → meilleur
+// rapport perçu + paiement unique = friction zéro pour la cible (femme
+// enceinte qui veut sécuriser TOUTE sa grossesse sans gérer un abonnement).
 export const PLANS: Plan[] = [
   {
     id: 'monthly',
     label: 'Mensuel',
-    price: '4,99 €',
-    pricePerMonth: '4,99 €/mois',
+    price: '9,99 €',
+    pricePerMonth: '9,99 €/mois',
     badge: null,
     trial: null,
     highlight: false,
   },
   {
-    id: 'annual',
-    label: 'Annuel',
-    price: '29,99 €',
-    pricePerMonth: '2,49 €/mois',
+    id: 'annual', // RC product mapping conservé : 'annual' = formule trimestrielle ici
+    label: 'Trimestriel',
+    price: '24,99 €',
+    pricePerMonth: '8,33 €/mois',
     badge: 'Populaire',
-    trial: '7 jours offerts',
+    trial: null,
     highlight: true,
   },
   {
     id: 'lifetime',
-    label: 'À vie',
+    label: 'Pass Sérénité 9 mois',
     price: '59,99 €',
-    pricePerMonth: null,
+    pricePerMonth: 'Paiement unique',
     badge: 'Meilleure offre',
     trial: null,
     highlight: false,

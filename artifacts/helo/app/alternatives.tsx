@@ -522,11 +522,31 @@ export default function AlternativesScreen() {
       //    explications d'ingrédients (toujours via Supabase direct, c'est
       //    léger et indépendant).
       const [remote, dangerExpl, cautionExpl] = await Promise.all([
-        fetchAlternativesRemote(barcode, trimester),
+        fetchAlternativesRemote(barcode, trimester, isPremium),
         getIngredientExplanations(flaggedDanger),
         getIngredientExplanations(flaggedCaution),
       ]);
       if (cancelled) return;
+
+      // Étape 3 — M1 : bouclier monétisation côté client.
+      // Deux scénarios envoient un free user vers le paywall sans fallback :
+      //   (a) le backend a explicitement répondu 403 premium_required ;
+      //   (b) le backend est KO (network/5xx/unconfigured) ET l'utilisatrice
+      //       n'est pas premium. Sans (b), un free user pourrait obtenir les
+      //       alternatives via fallback local en cas de panne réseau —
+      //       régression monétisation identifiée par la revue d'archi.
+      //   Le fallback local reste actif UNIQUEMENT pour les premium (filet
+      //   d'expérience : panne backend ≠ écran vide pour une payante).
+      if (!remote.ok) {
+        if (remote.error.kind === 'premium_required' || !isPremium) {
+          setLoading(false);
+          router.replace({
+            pathname: '/paywall',
+            params: { trigger: 'feature' },
+          });
+          return;
+        }
+      }
 
       let results: AlternativeProduct[];
       if (remote.ok) {

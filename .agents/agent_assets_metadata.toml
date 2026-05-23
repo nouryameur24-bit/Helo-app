@@ -197,3 +197,9 @@ id = "0s_3cmbJ8mT64zTB04D8j"
 uri = "file://exports/helo-FULL.tar.gz"
 type = "unspecified"
 title = "Projet Hēlo COMPLET"
+
+[[outputs]]
+id = "T-hRvfK7oCLkGzDUKFqR7"
+uri = "file://docs/alternatives-logic-et-problemes.md"
+type = "text"
+title = "Alternatives — logique complète + problèmes rencontrés"

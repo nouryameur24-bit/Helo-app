@@ -123,8 +123,12 @@ export const STORAGE_PREFIXES = {
  * Les anciennes clés sans phase (legacy `@helo_scan_<barcode>`) seront
  * simplement ignorées (cache miss) puis écrasées à la prochaine écriture.
  */
+/** Bump when matcher logic changes so old verdicts (e.g. false-positive
+ *  "alcool" substring matches) are ignored instead of being served from cache. */
+const SCAN_CACHE_VERSION = "v2";
+
 export const scanCacheKey = (barcode: string, phase: string | number): string =>
-  `${STORAGE_PREFIXES.scanCache}${barcode}_${phase}`;
+  `${STORAGE_PREFIXES.scanCache}${barcode}_${phase}_${SCAN_CACHE_VERSION}`;
 
 export const roomCelebratedKey = (roomId: string): string =>
   `${STORAGE_PREFIXES.roomCelebrated}${roomId}`;

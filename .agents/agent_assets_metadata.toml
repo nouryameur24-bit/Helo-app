@@ -185,3 +185,9 @@ id = "Vfuqh_bqhjvTGD_o0du9K"
 uri = "file://docs/scan-alternatives-logic.md"
 type = "text"
 title = "Logique technique Scan + Alternatives (Hēlo)"
+
+[[outputs]]
+id = "C8D7TqIiWyd62OcYOUmi-"
+uri = "file://exports/helo-project.tar.gz"
+type = "unspecified"
+title = "Projet Hēlo complet (source)"

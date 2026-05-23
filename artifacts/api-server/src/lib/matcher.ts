@@ -38,11 +38,20 @@ async function loadIngredients(): Promise<IngredientRow[]> {
   if (cache && Date.now() - cache.loadedAt < CACHE_TTL_MS) {
     return cache.rows;
   }
-  const { data, error } = await supabaseAdmin
+  // risk_level_baby is optional — older Supabase schemas don't have it yet.
+  // We select it via a defensive query: try with, fall back to without.
+  let { data, error } = await supabaseAdmin
     .from("ingredients")
     .select(
       "id, name, name_inci, synonyms, risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding, risk_level_baby",
     );
+  if (error?.code === "42703") {
+    ({ data, error } = await supabaseAdmin
+      .from("ingredients")
+      .select(
+        "id, name, name_inci, synonyms, risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding",
+      ));
+  }
   if (error || !data) {
     logger.error({ err: error }, "loadIngredients failed");
     return cache?.rows ?? [];

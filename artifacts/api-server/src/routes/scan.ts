@@ -149,6 +149,23 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
 
     const det = await matchDeterministic(ingredientsList, trimester);
 
+    // Helper: conservative "analysis unavailable" verdict. NEVER returns safe.
+    // Used when our knowledge sources cannot give a confident answer.
+    const indeterminateResponse = (reason: string): ScanResponse => ({
+      status: "a_eviter",
+      verdict: "caution",
+      glow_score: 40,
+      explanation: reason,
+      source: "deterministic",
+      cached: false,
+      search_keyword: null,
+      product: {
+        name: productName ?? "",
+        brand: productBrand,
+        image_url: productImage,
+      },
+    });
+
     let response: ScanResponse;
 
     if (det.dangerousMatch) {
@@ -217,28 +234,29 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
         };
       } catch (aiErr) {
         req.log.error({ err: aiErr }, "AI fallback failed");
-        // Last-resort safe fallback: return deterministic partial result
-        const { verdict, glowScore } = computeVerdict(det.matches);
-        response = {
-          status: verdictToStatus(verdict),
-          verdict,
-          glow_score: glowScore,
-          explanation:
-            "Analyse partielle (certains ingrédients non reconnus). Consultez votre médecin en cas de doute.",
-          source: "deterministic",
-          cached: false,
-          search_keyword: null,
-          product: {
-            name: productName ?? "",
-            brand: productBrand,
-            image_url: productImage,
-          },
-        };
+        // Conservative: AI is the only safety net for unknown ingredients.
+        // If it fails, we refuse to declare the product safe — medical context.
+        response = indeterminateResponse(
+          "Analyse indisponible pour le moment (ingrédients non reconnus dans notre base et IA injoignable). À éviter par précaution — consultez votre médecin.",
+        );
       }
     }
 
-    // ── 5. Persist to analysis_cache (upsert product if missing) ─────────
-    try {
+    // ── 5. Persist to analysis_cache (skip indeterminate verdicts) ───────
+    // We deliberately do NOT cache "analysis unavailable" responses so a
+    // transient AI/DB outage doesn't poison the cache for hours.
+    const shouldCache = !(
+      response.source === "deterministic" &&
+      response.glow_score === 40 &&
+      response.verdict === "caution"
+    );
+
+    if (shouldCache) {
+      // NOTE: read-modify-write on the JSONB column is not atomic. Concurrent
+      // scans of the same barcode across different phases can lose one write.
+      // Acceptable for v1 — worst case is one re-computation on next scan.
+      // For atomic merge, install the `merge_analysis_cache` Postgres RPC
+      // (see docs/supabase-rpc.sql) and switch to .rpc() here.
       const newCache = {
         ...cache,
         [cacheKey]: {
@@ -252,24 +270,22 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
           analyzed_at: new Date().toISOString(),
         },
       };
-      if (product) {
-        await supabaseAdmin
-          .from("products")
-          .update({ analysis_cache: newCache })
-          .eq("barcode", barcode);
-      } else {
-        await supabaseAdmin.from("products").insert({
-          barcode,
-          name: productName,
-          brand: productBrand,
-          ingredients_raw: ingredientsRaw,
-          image_url: productImage,
-          analysis_cache: newCache,
-        });
+      const { error: writeErr } = product
+        ? await supabaseAdmin
+            .from("products")
+            .update({ analysis_cache: newCache })
+            .eq("barcode", barcode)
+        : await supabaseAdmin.from("products").insert({
+            barcode,
+            name: productName,
+            brand: productBrand,
+            ingredients_raw: ingredientsRaw,
+            image_url: productImage,
+            analysis_cache: newCache,
+          });
+      if (writeErr) {
+        req.log.warn({ err: writeErr }, "analysis_cache write failed");
       }
-    } catch (writeErr) {
-      // Cache write failure is non-fatal — log and still return the result
-      req.log.warn({ err: writeErr }, "analysis_cache write failed");
     }
 
     res.json(response);

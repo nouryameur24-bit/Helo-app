@@ -10,7 +10,7 @@ if (!apiKey) {
 
 const client = new Anthropic({ apiKey: apiKey ?? "" });
 
-const MODEL = "claude-3-5-haiku-20241022";
+const MODEL = "claude-haiku-4-5";
 const MAX_TOKENS = 400; // hard cap to bound cost per call
 
 export interface AiVerdict {

@@ -64,7 +64,7 @@ catalogs:
       specifier: ^7.3.0
       version: 7.3.1
     zod:
-      specifier: ^3.25.76
+      specifier: 3.25.76
       version: 3.25.76
 
 overrides:
@@ -165,7 +165,7 @@ importers:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.98.0
-        version: 0.98.0(zod@4.3.6)
+        version: 0.98.0(zod@3.25.76)
       '@supabase/supabase-js':
         specifier: ^2.99.1
         version: 2.99.1
@@ -196,6 +196,9 @@ importers:
       pino-http:
         specifier: ^11.0.0
         version: 11.0.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.25.76
     devDependencies:
       '@types/cookie-parser':
         specifier: ^1.4.10
@@ -6737,12 +6740,12 @@ snapshots:
 
   '@0no-co/graphql.web@1.2.0': {}
 
-  '@anthropic-ai/sdk@0.98.0(zod@4.3.6)':
+  '@anthropic-ai/sdk@0.98.0(zod@3.25.76)':
     dependencies:
       json-schema-to-ts: 3.1.1
       standardwebhooks: 1.0.0
     optionalDependencies:
-      zod: 4.3.6
+      zod: 3.25.76
 
   '@babel/code-frame@7.10.4':
     dependencies:

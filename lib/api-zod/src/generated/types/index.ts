@@ -6,4 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./apiError";
 export * from "./healthStatus";
+export * from "./scanPhase";
+export * from "./scanProductInfo";
+export * from "./scanRequest";
+export * from "./scanResponse";
+export * from "./scanResponseSource";
+export * from "./scanResponseStatus";
+export * from "./scanResponseVerdict";

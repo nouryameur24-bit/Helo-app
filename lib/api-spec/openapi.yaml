@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: scan
+    description: Product scanning operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,72 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /scan:
+    post:
+      operationId: scanProduct
+      tags: [scan]
+      summary: Scan a product barcode
+      description: |
+        Hybrid analysis: deterministic ingredient matching against our 5000 curated
+        entries, with Claude (Haiku) fallback when unknown ingredients are present
+        and no confirmed danger is found. Results are cached per (barcode, trimester)
+        in Supabase analysis_cache.
+      parameters:
+        - in: header
+          name: x-helo-app-secret
+          required: true
+          schema:
+            type: string
+          description: Shared secret between the mobile app and the backend.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanRequest"
+      responses:
+        "200":
+          description: Scan analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResponse"
+        "400":
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "401":
+          description: Missing or invalid x-helo-app-secret
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "404":
+          description: Product not found in our DB or OpenFoodFacts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "422":
+          description: Product found but no ingredients could be parsed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +101,77 @@ components:
           type: string
       required:
         - status
-
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    ScanPhase:
+      oneOf:
+        - type: integer
+          enum: [1, 2, 3]
+        - type: string
+          enum: [breastfeeding, baby]
+    ScanRequest:
+      type: object
+      properties:
+        barcode:
+          type: string
+          pattern: "^[0-9]{6,14}$"
+          description: EAN-8/13, UPC-A/E or ITF-14
+        trimester:
+          $ref: "#/components/schemas/ScanPhase"
+      required:
+        - barcode
+        - trimester
+    ScanProductInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        brand:
+          type:
+            - string
+            - "null"
+        image_url:
+          type:
+            - string
+            - "null"
+      required: [name, brand, image_url]
+    ScanResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [autorise, a_eviter, interdit]
+        verdict:
+          type: string
+          enum: [safe, caution, danger]
+        glow_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        explanation:
+          type: string
+        source:
+          type: string
+          enum: [deterministic, ai]
+        cached:
+          type: boolean
+        search_keyword:
+          type:
+            - string
+            - "null"
+        product:
+          $ref: "#/components/schemas/ScanProductInfo"
+      required:
+        - status
+        - verdict
+        - glow_score
+        - explanation
+        - source
+        - cached
+        - search_keyword
+        - product

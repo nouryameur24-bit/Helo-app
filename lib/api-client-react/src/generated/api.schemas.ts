@@ -8,3 +8,75 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface ApiError {
+  error: string;
+}
+
+export const ScanPhase = {
+  NUMBER_1: 1,
+  NUMBER_2: 2,
+  NUMBER_3: 3,
+  breastfeeding: "breastfeeding",
+  baby: "baby",
+} as const;
+export type ScanPhase = (typeof ScanPhase)[keyof typeof ScanPhase];
+
+export interface ScanRequest {
+  /**
+   * EAN-8/13, UPC-A/E or ITF-14
+   * @pattern ^[0-9]{6,14}$
+   */
+  barcode: string;
+  trimester: ScanPhase;
+}
+
+export interface ScanProductInfo {
+  name: string;
+  /** @nullable */
+  brand: string | null;
+  /** @nullable */
+  image_url: string | null;
+}
+
+export type ScanResponseStatus =
+  (typeof ScanResponseStatus)[keyof typeof ScanResponseStatus];
+
+export const ScanResponseStatus = {
+  autorise: "autorise",
+  a_eviter: "a_eviter",
+  interdit: "interdit",
+} as const;
+
+export type ScanResponseVerdict =
+  (typeof ScanResponseVerdict)[keyof typeof ScanResponseVerdict];
+
+export const ScanResponseVerdict = {
+  safe: "safe",
+  caution: "caution",
+  danger: "danger",
+} as const;
+
+export type ScanResponseSource =
+  (typeof ScanResponseSource)[keyof typeof ScanResponseSource];
+
+export const ScanResponseSource = {
+  deterministic: "deterministic",
+  ai: "ai",
+} as const;
+
+export interface ScanResponse {
+  status: ScanResponseStatus;
+  verdict: ScanResponseVerdict;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  glow_score: number;
+  explanation: string;
+  source: ScanResponseSource;
+  cached: boolean;
+  /** @nullable */
+  search_keyword: string | null;
+  product: ScanProductInfo;
+}

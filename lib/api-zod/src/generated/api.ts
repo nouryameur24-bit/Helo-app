@@ -14,3 +14,51 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Hybrid analysis: deterministic ingredient matching against our 5000 curated
+entries, with Claude (Haiku) fallback when unknown ingredients are present
+and no confirmed danger is found. Results are cached per (barcode, trimester)
+in Supabase analysis_cache.
+
+ * @summary Scan a product barcode
+ */
+export const ScanProductHeader = zod.object({
+  "x-helo-app-secret": zod
+    .string()
+    .describe("Shared secret between the mobile app and the backend."),
+});
+
+export const scanProductBodyBarcodeRegExp = new RegExp("^[0-9]{6,14}$");
+
+export const ScanProductBody = zod.object({
+  barcode: zod
+    .string()
+    .regex(scanProductBodyBarcodeRegExp)
+    .describe("EAN-8\/13, UPC-A\/E or ITF-14"),
+  trimester: zod.union([
+    zod.union([zod.literal(1), zod.literal(2), zod.literal(3)]),
+    zod.enum(["breastfeeding", "baby"]),
+  ]),
+});
+
+export const scanProductResponseGlowScoreMin = 0;
+export const scanProductResponseGlowScoreMax = 100;
+
+export const ScanProductResponse = zod.object({
+  status: zod.enum(["autorise", "a_eviter", "interdit"]),
+  verdict: zod.enum(["safe", "caution", "danger"]),
+  glow_score: zod
+    .number()
+    .min(scanProductResponseGlowScoreMin)
+    .max(scanProductResponseGlowScoreMax),
+  explanation: zod.string(),
+  source: zod.enum(["deterministic", "ai"]),
+  cached: zod.boolean(),
+  search_keyword: zod.string().nullable(),
+  product: zod.object({
+    name: zod.string(),
+    brand: zod.string().nullable(),
+    image_url: zod.string().nullable(),
+  }),
+});

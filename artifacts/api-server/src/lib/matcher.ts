@@ -1,0 +1,144 @@
+import { supabaseAdmin } from "./supabaseAdmin";
+import { logger } from "./logger";
+
+export type RiskLevel = "safe" | "caution" | "danger" | "no_signal";
+export type Phase = 1 | 2 | 3 | "breastfeeding" | "baby";
+export type Verdict = "safe" | "caution" | "danger";
+
+interface IngredientRow {
+  id: string;
+  name: string;
+  name_inci: string | null;
+  synonyms: string[] | null;
+  risk_level_t1: RiskLevel;
+  risk_level_t2: RiskLevel;
+  risk_level_t3: RiskLevel;
+  risk_level_breastfeeding: RiskLevel | null;
+  risk_level_baby: RiskLevel | null;
+}
+
+export interface MatchResult {
+  ingredientName: string;
+  matched: boolean;
+  matchedIngredientName?: string;
+  riskLevel: RiskLevel;
+}
+
+export interface DeterministicResult {
+  matches: MatchResult[];
+  hasUnknown: boolean;
+  dangerousMatch?: MatchResult;
+}
+
+// In-memory cache for the ingredients dictionary. ~5000 rows, refreshed lazily.
+let cache: { rows: IngredientRow[]; loadedAt: number } | null = null;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+async function loadIngredients(): Promise<IngredientRow[]> {
+  if (cache && Date.now() - cache.loadedAt < CACHE_TTL_MS) {
+    return cache.rows;
+  }
+  const { data, error } = await supabaseAdmin
+    .from("ingredients")
+    .select(
+      "id, name, name_inci, synonyms, risk_level_t1, risk_level_t2, risk_level_t3, risk_level_breastfeeding, risk_level_baby",
+    );
+  if (error || !data) {
+    logger.error({ err: error }, "loadIngredients failed");
+    return cache?.rows ?? [];
+  }
+  cache = { rows: data as IngredientRow[], loadedAt: Date.now() };
+  return cache.rows;
+}
+
+function getRiskForPhase(ing: IngredientRow, phase: Phase): RiskLevel {
+  switch (phase) {
+    case 1:
+      return ing.risk_level_t1;
+    case 2:
+      return ing.risk_level_t2;
+    case 3:
+      return ing.risk_level_t3;
+    case "breastfeeding":
+      return ing.risk_level_breastfeeding ?? ing.risk_level_t3;
+    case "baby":
+      return ing.risk_level_baby ?? "no_signal";
+  }
+}
+
+/**
+ * Deterministic matching engine. Mirrors the mobile matchIngredientsLocal logic.
+ *
+ * Returns:
+ *  - matches: per-ingredient verdict
+ *  - hasUnknown: at least one ingredient is not in our 5000 curated entries
+ *  - dangerousMatch: the first matched ingredient with risk = danger (caution
+ *    is NOT enough to bypass Claude — only confirmed danger short-circuits)
+ */
+export async function matchDeterministic(
+  ingredientsList: string[],
+  phase: Phase,
+): Promise<DeterministicResult> {
+  if (ingredientsList.length === 0) {
+    return { matches: [], hasUnknown: false };
+  }
+
+  const rows = await loadIngredients();
+
+  const matches: MatchResult[] = ingredientsList.map((ingredientName) => {
+    const nameLower = ingredientName.toLowerCase();
+    const matched = rows.find((ing) => {
+      if (ing.name.toLowerCase().includes(nameLower)) return true;
+      if (ing.name_inci?.toLowerCase().includes(nameLower)) return true;
+      if (
+        ing.synonyms?.some((syn) => syn.toLowerCase().includes(nameLower))
+      )
+        return true;
+      if (nameLower.includes(ing.name.toLowerCase())) return true;
+      return false;
+    });
+
+    if (matched) {
+      return {
+        ingredientName,
+        matched: true,
+        matchedIngredientName: matched.name,
+        riskLevel: getRiskForPhase(matched, phase),
+      };
+    }
+    return { ingredientName, matched: false, riskLevel: "no_signal" as const };
+  });
+
+  const dangerousMatch = matches.find((m) => m.riskLevel === "danger");
+  const hasUnknown = matches.some((m) => !m.matched);
+
+  return { matches, hasUnknown, dangerousMatch };
+}
+
+/**
+ * Compute the GlowScore + verdict from deterministic matches.
+ * Same formula as artifacts/helo/lib/glowscore.ts for consistency across surfaces.
+ */
+export function computeVerdict(matches: MatchResult[]): {
+  verdict: Verdict;
+  glowScore: number;
+} {
+  const hasDanger = matches.some((m) => m.riskLevel === "danger");
+  const hasCaution = matches.some((m) => m.riskLevel === "caution");
+
+  const verdict: Verdict = hasDanger
+    ? "danger"
+    : hasCaution
+      ? "caution"
+      : "safe";
+
+  // Score: 100 baseline, -50 per danger, -15 per caution, -2 per unknown
+  const dangerCount = matches.filter((m) => m.riskLevel === "danger").length;
+  const cautionCount = matches.filter((m) => m.riskLevel === "caution").length;
+  const unknownCount = matches.filter((m) => !m.matched).length;
+
+  let score = 100 - dangerCount * 50 - cautionCount * 15 - unknownCount * 2;
+  score = Math.max(0, Math.min(100, score));
+
+  return { verdict, glowScore: score };
+}

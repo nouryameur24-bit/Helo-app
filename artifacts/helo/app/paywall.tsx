@@ -14,6 +14,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
+import { AnimatedMeshGradient } from '@/components/ui/AnimatedMeshGradient';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { PLANS, type PlanId, type Plan } from '@/lib/purchases';
@@ -218,12 +219,10 @@ export default function PaywallScreen() {
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero gradient header */}
-        <LinearGradient
+        {/* Hero gradient header — mesh animé (v4 design polish) */}
+        <AnimatedMeshGradient
           colors={[Colors.accentLight, '#e8c98a', Colors.accentLight]}
           style={s.hero}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
         >
           <View style={s.heroCrown}>
             <ThemedText style={s.crownEmoji}>👑</ThemedText>
@@ -240,7 +239,7 @@ export default function PaywallScreen() {
               <ThemedText variant="bodySmall" style={s.triggerText}>{triggerMsg}</ThemedText>
             </View>
           )}
-        </LinearGradient>
+        </AnimatedMeshGradient>
 
         {/* Comparison table */}
         <View style={s.section}>

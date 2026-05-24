@@ -105,7 +105,7 @@ export function PartnerHomeScreen() {
               GLOW SCORE DE {momName.toUpperCase()}
             </ThemedText>
             <View style={styles.glowCircleRow}>
-              <GlowScoreCircle score={score} size="large" animated />
+              <GlowScoreCircle score={score} size="large" animated breathing={score > 0} />
             </View>
             <ThemedText variant="bodyMedium" color="textSecondary" style={styles.glowSubtitle}>
               Basé sur {total} produit{total > 1 ? 's' : ''} dans son placard

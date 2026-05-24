@@ -181,7 +181,7 @@ function SlideGlowScore({
         </ThemedText>
 
         <View style={slide.glowCircle}>
-          <GlowScoreCircle score={glowScore} size="large" animated />
+          <GlowScoreCircle score={glowScore} size="large" animated breathing={glowScore > 0} />
         </View>
 
         <Card padding={Spacing.xl} style={slide.encourageCard}>

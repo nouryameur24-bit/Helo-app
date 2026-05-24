@@ -393,7 +393,7 @@ function SlidePartager({ glowScore, week }: { glowScore: number; week: number })
         </ThemedText>
 
         <View style={slide.shareCircle}>
-          <GlowScoreCircle score={glowScore} size="large" animated />
+          <GlowScoreCircle score={glowScore} size="large" animated breathing={glowScore > 0} />
         </View>
 
         <ThemedText variant="bodySmall" color="textTertiary" style={slide.shareWeek}>

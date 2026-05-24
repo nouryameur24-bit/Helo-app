@@ -7,7 +7,8 @@ import { Card } from '@/components/ui/Card';
 import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
+import { useAppTheme, type ThemeMode } from '@/hooks/useAppTheme';
 import { useBabyMode } from '@/hooks/useBabyMode';
 import { BREASTFEEDING_PALETTE, useBreastfeeding } from '@/hooks/useBreastfeeding';
 import { usePremium } from '@/hooks/usePremium';
@@ -17,6 +18,62 @@ import { sendSentryTestEvent } from '@/lib/sentry';
 import { useProfile } from './ProfileContext';
 
 import styles from './profileStyles';
+
+/**
+ * Sélecteur 3-segments pour le mode thème : Auto / Clair / Sombre.
+ * Persiste via useAppTheme → AsyncStorage. Toujours visible dans
+ * PreferencesSection (pas seulement en dev).
+ */
+function ThemeModeSelector() {
+  const { mode, setMode } = useAppTheme();
+  const options: { value: ThemeMode; label: string }[] = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'light', label: 'Clair' },
+    { value: 'dark', label: 'Sombre' },
+  ];
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        marginTop: Spacing.md,
+        backgroundColor: Colors.backgroundSecondary,
+        borderRadius: Radius.full,
+        padding: 3,
+      }}
+    >
+      {options.map((opt) => {
+        const active = mode === opt.value;
+        return (
+          <Pressable
+            key={opt.value}
+            onPress={() => { void setMode(opt.value); }}
+            style={({ pressed }) => ({
+              flex: 1,
+              paddingVertical: 8,
+              borderRadius: Radius.full,
+              backgroundColor: active ? Colors.surface : 'transparent',
+              alignItems: 'center',
+              opacity: pressed && !active ? 0.6 : 1,
+            })}
+            accessibilityRole="button"
+            accessibilityLabel={`Apparence ${opt.label}`}
+            accessibilityState={{ selected: active }}
+          >
+            <ThemedText
+              variant="labelSmall"
+              style={{
+                color: active ? Colors.textPrimary : Colors.textSecondary,
+                fontWeight: active ? '600' : '400',
+              }}
+            >
+              {opt.label}
+            </ThemedText>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 export function PreferencesSection() {
   const { role } = useProfile();
@@ -109,6 +166,29 @@ export function PreferencesSection() {
               thumbColor={babyMode ? Colors.accentDark : '#f4f3f4'}
               accessibilityLabel="Mode bébé"
             />
+          </View>
+        </Card>
+      </Animated.View>
+
+      {/* APPARENCE — thème clair / sombre / auto (v4 design polish) */}
+      <Animated.View entering={FadeInDown.delay(240).duration(500)}>
+        <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
+          APPARENCE
+        </ThemedText>
+        <Card padding={0} style={styles.settingGroup}>
+          <View style={[styles.settingRow, { flexDirection: 'column', alignItems: 'stretch' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+              <View style={[styles.settingIcon, { backgroundColor: '#F0E8DC' }]}>
+                <Feather name="moon" size={18} color={Colors.accent} />
+              </View>
+              <View style={styles.settingContent}>
+                <ThemedText variant="labelLarge" color="textPrimary">Mode "Lune de minuit"</ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">
+                  Bascule en sombre pour les consultations nocturnes
+                </ThemedText>
+              </View>
+            </View>
+            <ThemeModeSelector />
           </View>
         </Card>
       </Animated.View>

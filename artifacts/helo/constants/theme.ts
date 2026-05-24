@@ -47,6 +47,53 @@ export const Colors = {
   overlay: 'rgba(45, 41, 38, 0.4)',
 } as const;
 
+/**
+ * Palette « Lune de minuit » — dark mode warm pour les consultations
+ * nocturnes (T3 = insomnies massives). Choix volontaire : pas de pur
+ * noir #000 (trop dur OLED + cassé du palette warm). Le noir charbon
+ * #1A1815 garde la chaleur, le crème inversé #F5EFE6 garde la
+ * lisibilité sans agresser.
+ *
+ * Activation : consommer via `useColors()` au lieu d'importer `Colors`
+ * directement. La migration des écrans existants est progressive — pour
+ * l'instant, le toggle existe mais aucun écran ne réagit visuellement.
+ * Voir docs/DARK-MODE-MIGRATION.md (à créer) pour le plan d'extension.
+ */
+export const ColorsDark = {
+  background: '#1A1815',
+  backgroundSecondary: '#22201C',
+  surface: '#27241F',
+  surfaceElevated: '#2D2A24',
+
+  textPrimary: '#F5EFE6',
+  textSecondary: '#C4B8A8',
+  textTertiary: '#807466',
+
+  accent: '#D4B988',
+  accentLight: '#8C7547',
+  accentDark: '#E8D5B0',
+
+  safe: '#8FCBB1',
+  safeLight: '#3A4A42',
+  safeBg: '#222B26',
+
+  caution: '#E8C268',
+  cautionLight: '#5A4A28',
+  cautionBg: '#2E2820',
+
+  danger: '#DB9090',
+  dangerLight: '#5A3838',
+  dangerBg: '#2E2222',
+
+  border: '#3A352E',
+  borderLight: '#2D2A24',
+
+  shadow: 'rgba(0, 0, 0, 0.4)',
+  overlay: 'rgba(0, 0, 0, 0.6)',
+} as const;
+
+export type ColorPalette = typeof Colors;
+
 export const Typography = {
   displayLarge: {
     fontSize: 34,

@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
@@ -47,6 +48,7 @@ type ScreenMode = 'list' | 'create' | 'sealing' | 'opening' | 'viewing';
 type CreateStep = 0 | 1 | 2;
 
 export default function MemoriesScreen() {
+  if (!isFeatureEnabled('memories')) return <Redirect href="/" />;
   const __discovery_memories = useFeatureDiscovery('memories');
   const insets = useSafeAreaInsets();
   const { firstName, dueDate, trimester } = useProfile();

@@ -19,6 +19,7 @@ import Animated, {
 import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import {
   computePactDay,
@@ -32,6 +33,7 @@ interface PactWidgetProps {
 }
 
 export function PactWidget({ onReload }: PactWidgetProps) {
+  if (!isFeatureEnabled('pact')) return null;
   const [pact, setPact] = useState<PactState | null>(null);
   const pulse = useSharedValue(1);
   const isMounted = useRef(true);

@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import { Colors, Spacing } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
 import { exportJournalToPdf } from '@/lib/exportJournalPdf';
@@ -54,10 +55,18 @@ export function AccountActions() {
           COMPTE
         </ThemedText>
         <Card padding={0} style={styles.settingGroup}>
-          <SettingRow icon="zap" title="Mon Pacte" subtitle="Engagement quotidien · Streak 🔥" onPress={() => router.push(ROUTES.pact)} />
-          <Divider />
-          <SettingRow icon="package" title="Hēlo Memories" subtitle="Capsules temporelles de grossesse" onPress={() => router.push(ROUTES.memories)} />
-          <Divider />
+          {isFeatureEnabled('pact') && (
+            <>
+              <SettingRow icon="zap" title="Mon Pacte" subtitle="Engagement quotidien · Streak 🔥" onPress={() => router.push(ROUTES.pact)} />
+              <Divider />
+            </>
+          )}
+          {isFeatureEnabled('memories') && (
+            <>
+              <SettingRow icon="package" title="Hēlo Memories" subtitle="Capsules temporelles de grossesse" onPress={() => router.push(ROUTES.memories)} />
+              <Divider />
+            </>
+          )}
           <SettingRow icon="heart" title="Ma Nutrition" onPress={() => router.push(ROUTES.nutrition)} />
           <Divider />
           <SettingRow icon="home" title="Mon Environnement" onPress={() => router.push(ROUTES.homeScore)} />
@@ -68,10 +77,12 @@ export function AccountActions() {
           <Divider />
           <SettingRow icon="bell" title="Notifications" onPress={() => router.push(ROUTES.notificationsSettings)} />
           <Divider />
-          {/* V1: Communauté masquée, réactiver pour V2
-          <SettingRow icon="users" title="Communauté" subtitle="Contributions & produits signalés" onPress={() => router.push(ROUTES.community)} />
-          <Divider />
-          */}
+          {isFeatureEnabled('community') && (
+            <>
+              <SettingRow icon="users" title="Communauté" subtitle="Contributions & produits signalés" onPress={() => router.push(ROUTES.community)} />
+              <Divider />
+            </>
+          )}
           <SettingRow icon="star" title="Hēlo Premium" onPress={() => router.push(ROUTES.premium)} />
           <Divider />
           <SettingRow icon="help-circle" title="Guide des fonctionnalités" subtitle="Comment marche chaque mode" onPress={() => router.push(ROUTES.guide)} />

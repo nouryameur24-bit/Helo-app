@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { ROUTES } from '@/types/routes';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
@@ -61,6 +62,7 @@ function stripMarkdown(text: string): string {
 }
 
 export default function VoiceScreen() {
+  if (!isFeatureEnabled('voice')) return <Redirect href="/" />;
   const __discovery_voice = useFeatureDiscovery('voice');
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;

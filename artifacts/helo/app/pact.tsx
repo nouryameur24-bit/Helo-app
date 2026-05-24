@@ -2,7 +2,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
@@ -47,6 +48,7 @@ const DURATIONS: { days: number; label: string; sub: string }[] = [
 ];
 
 export default function PactScreen() {
+  if (!isFeatureEnabled('pact')) return <Redirect href="/" />;
   const __discovery_pact = useFeatureDiscovery('pact');
   const insets = useSafeAreaInsets();
   const { userId, firstName } = useProfile();

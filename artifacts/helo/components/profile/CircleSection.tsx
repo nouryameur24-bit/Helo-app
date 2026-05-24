@@ -14,6 +14,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import { Colors, Spacing } from '@/constants/theme';
 import { useProfile } from './ProfileContext';
 import { usePremium } from '@/hooks/usePremium';
@@ -27,6 +28,7 @@ import styles from './profileStyles';
 const CIRCLE_V1_ENABLED = false;
 
 export function CircleSection() {
+  if (!isFeatureEnabled('circle')) return null;
   const router = useRouter();
   const { userId, role, firstName } = useProfile();
   const isPartner = role === 'partner';

@@ -6,6 +6,7 @@
 // `hooks/useFeatureDiscovery.ts` for the rendering + control surface.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isFeatureEnabled, type FeatureFlag } from '@/constants/featureFlags';
 import { featureDiscoveryKey } from '@/lib/storageKeys';
 
 export type DiscoveryKey =
@@ -216,12 +217,25 @@ export type GuideEntry = {
   route: string;
 };
 
-export const GUIDE_ENTRIES: GuideEntry[] = [
+// Map de routes -> feature flag. Si une entrée a un flag listé ici, elle ne
+// sera incluse dans GUIDE_ENTRIES que si le flag est activé.
+const ROUTE_FLAG_MAP: Record<string, FeatureFlag> = {
+  '/voice': 'voice',
+  '/circle': 'circle',
+  '/ar-mirror': 'arMirror',
+  '/travel': 'travel',
+  '/pact': 'pact',
+  '/memories': 'memories',
+  '/community': 'community',
+  '/scan-party': 'scanParty',
+};
+
+const RAW_GUIDE_ENTRIES: GuideEntry[] = [
   // Scanner
   { key: 'barcode',      category: 'Scanner',      route: '/(tabs)/scan' },
   { key: 'ocr',          category: 'Scanner',      route: '/(tabs)/scan' },
   { key: 'photo',        category: 'Scanner',      route: '/(tabs)/scan' },
-  // { key: 'voice',        category: 'Scanner',      route: '/voice' }, // hidden V1 — reactivate when usage justifies
+  { key: 'voice',        category: 'Scanner',      route: '/voice' },
   { key: 'basket',       category: 'Scanner',      route: '/basket-scan' },
   { key: 'shelf',        category: 'Scanner',      route: '/shelf-scan' },
   { key: 'prescription', category: 'Scanner',      route: '/prescription-scan' },
@@ -232,15 +246,19 @@ export const GUIDE_ENTRIES: GuideEntry[] = [
   { key: 'travel',       category: 'Analyse',      route: '/travel' },
   // Social
   { key: 'partner',      category: 'Social',       route: '/partner-checklist-tab' },
-  // V1: Cercle masqué dans le Guide, réactiver pour V2
-  // { key: 'circle',       category: 'Social',       route: '/circle' },
+  { key: 'circle',       category: 'Social',       route: '/circle' },
   { key: 'pact',         category: 'Social',       route: '/pact' },
   // Ma Grossesse
   { key: 'timeline',     category: 'Ma Grossesse', route: '/timeline' },
   { key: 'journal',      category: 'Ma Grossesse', route: '/journal' },
   { key: 'memories',     category: 'Ma Grossesse', route: '/memories' },
-  // { key: 'ar_mirror',    category: 'Ma Grossesse', route: '/ar-mirror' }, // hidden V1 — reactivate when visual recognition lands
+  { key: 'ar_mirror',    category: 'Ma Grossesse', route: '/ar-mirror' },
 ];
+
+export const GUIDE_ENTRIES: GuideEntry[] = RAW_GUIDE_ENTRIES.filter((entry) => {
+  const flag = ROUTE_FLAG_MAP[entry.route];
+  return flag == null || isFeatureEnabled(flag);
+});
 
 export const GUIDE_CATEGORIES: DiscoveryCategory[] = [
   'Scanner',

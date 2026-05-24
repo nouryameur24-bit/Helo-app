@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import { ROUTES } from '@/types/routes';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import React, { type ComponentProps, useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
@@ -291,6 +292,7 @@ function ListHeader({ showUnavailableBanner, isOffline }: ListHeaderProps) {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CommunityScreen() {
+  if (!isFeatureEnabled('community')) return <Redirect href="/" />;
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const { isOffline } = useOffline();

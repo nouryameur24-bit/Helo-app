@@ -4,7 +4,8 @@
  * Affiche le briefing par sections avec checklist interactive, chargé depuis AsyncStorage.
  */
 
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Platform,
@@ -266,6 +267,7 @@ const sk = StyleSheet.create({
 });
 
 export default function TravelBriefingScreen() {
+  if (!isFeatureEnabled('travel')) return <Redirect href="/" />;
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const params = useLocalSearchParams<{

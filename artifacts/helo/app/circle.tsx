@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -35,6 +36,7 @@ import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
   
 
 export default function CircleScreen() {
+  if (!isFeatureEnabled('circle')) return <Redirect href="/" />;
   const __discovery_circle = useFeatureDiscovery('circle');
   const insets = useSafeAreaInsets();
   const { userId, firstName } = useProfile();

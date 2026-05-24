@@ -3,7 +3,8 @@ import { ROUTES } from '@/types/routes';
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as Sharing from 'expo-sharing';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -42,6 +43,7 @@ import {
 } from '@/components/ar-mirror/arMirrorTypes';
 
 export default function ARMirrorScreen() {
+  if (!isFeatureEnabled('arMirror')) return <Redirect href="/" />;
   const __discovery_ar_mirror = useFeatureDiscovery('ar_mirror');
   const insets = useSafeAreaInsets();
   const { isPremium } = usePremium();

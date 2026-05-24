@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Redirect } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import { useProfile } from '@/hooks/useProfile';
 import { logError } from '@/lib/logger';
 import { exp } from '@/components/scan-party/scanPartyStyles';
@@ -16,6 +18,7 @@ import ExportCard from '@/components/scan-party/ExportCard';
 import PaywallModal from '@/components/scan-party/PaywallModal';
 
 export default function ScanPartyScreen() {
+  if (!isFeatureEnabled('scanParty')) return <Redirect href="/" />;
   const { trimester } = useProfile();
   const [phase, setPhase] = useState<Phase>('config');
   const [selectedTheme, setSelectedTheme] = useState<Theme>('libre');

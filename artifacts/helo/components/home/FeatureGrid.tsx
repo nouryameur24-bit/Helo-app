@@ -5,6 +5,7 @@ import { router, type Href } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
+import { isFeatureEnabled } from '@/constants/featureFlags';
 import { Colors, Spacing } from '@/constants/theme';
 import { styles } from './homeStyles';
 
@@ -34,7 +35,10 @@ interface Props {
 
 export const FeatureGrid = React.memo(function FeatureGrid({ isPremium }: Props) {
   const [showAll, setShowAll] = useState(false);
-  const features = showAll ? ALL_FEATURES : ALL_FEATURES.slice(0, 4);
+  const enabledFeatures = ALL_FEATURES.filter(
+    (f) => f.route !== '/travel' || isFeatureEnabled('travel'),
+  );
+  const features = showAll ? enabledFeatures : enabledFeatures.slice(0, 4);
 
   return (
     <Animated.View entering={FadeInDown.delay(155).duration(500)}>

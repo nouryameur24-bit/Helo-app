@@ -4,8 +4,13 @@ import { logger } from "./logger";
 import { emitMetric, mark } from "./metrics";
 import { alertAiError } from "./webhookAlerter";
 
-const apiKey =
-  process.env.ANTHROPIC_API_KEY ?? process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
+// v4 SECURITY — Le fallback sur EXPO_PUBLIC_ANTHROPIC_API_KEY a été supprimé :
+// toute variable EXPO_PUBLIC_* est embarquée en clair dans le bundle mobile
+// (extractible par décompilation APK/IPA). Utiliser cette clé en fallback
+// côté serveur exposait notre crédit Anthropic à un attaquant qui aurait
+// extrait la clé du bundle. La clé doit IMPÉRATIVEMENT être configurée via
+// le secret Replit `ANTHROPIC_API_KEY` (jamais une variable EXPO_PUBLIC).
+const apiKey = process.env.ANTHROPIC_API_KEY;
 
 if (!apiKey) {
   logger.warn("ANTHROPIC_API_KEY not set — AI fallback will fail");

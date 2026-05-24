@@ -75,11 +75,14 @@ export function parseIngredients(ingredientsText: string): string[] {
   const cleaned = combined
     .split(/[,;.\n]+/)
     .map((s) => s.trim())
-    // Retire les préfixes de langue OFF type "en:", "fr:", "en " (cas où
+    // v4 — Strip leading punctuation (aligné avec mobile productLookup.ts)
+    .map((s) => s.replace(/^[\s\-–—:.]+/, "").trim())
+    // v4 — Retire les préfixes de langue OFF type "en:", "fr:", "en " (cas où
     // OFF renvoie des tags i18n mal stripés dans ingredients_text_fr ou
     // dans le fallback tagsToIngredientsText d'alternatives.ts).
     // Couvre : "en:e145" → "e145", "en natural flavouring" → "natural
     // flavouring", "fr arôme naturel" → "arôme naturel".
+    // DOIT rester aligné avec artifacts/helo/lib/productLookup.ts (parseIngredients).
     .map((s) => s.replace(/^(en|fr|de|es|it|nl|pt)\s*:?\s+/i, "").trim())
     .map((s) => s.replace(/[\s\-–—:.]+$/, "").trim())
     .map(normalizeAllergenCaps) // SOJA → soja, LAIT → lait

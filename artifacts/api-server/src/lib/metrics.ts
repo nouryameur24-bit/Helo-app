@@ -33,6 +33,7 @@ export type MetricEvent =
   | "alternatives_ai_error"
   | "alternatives_belt_rejection"
   | "alternatives_premium_blocked"
+  | "alternatives_budget_exceeded"
   | "live_filet_fetch"
   | "safety_trap_triggered";
 

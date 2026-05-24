@@ -411,6 +411,10 @@ export function parseIngredients(ingredientsText: string): string[] {
     .split(/[,;.\n]+/)
     .map((s) => s.trim())
     .map((s) => s.replace(/^[\s\-–—:.]+/, '').trim())
+    // v4 — Retire les préfixes de langue OFF type "en:", "fr:", "en " (cas
+    // où OFF renvoie des tags i18n mal stripés dans ingredients_text_fr).
+    // DOIT rester aligné avec artifacts/api-server/src/lib/parseIngredients.ts.
+    .map((s) => s.replace(/^(en|fr|de|es|it|nl|pt)\s*:?\s+/i, '').trim())
     .map((s) => s.replace(/[\s\-–—:.]+$/, '').trim())
     .map(normalizeAllergenCaps) // SOJA → soja, LAIT → lait
     .filter((s) => s.length >= 2)

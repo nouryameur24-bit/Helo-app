@@ -122,7 +122,7 @@ const SAFE_OVERRIDES: { pattern: RegExp; label: string }[] = [
   { pattern: /\balcool[s]?\s+gras\b/iu, label: "Alcool gras" },
 ];
 
-function matchSafeOverride(
+export function matchSafeOverride(
   ingredientName: string,
 ): { matched: true; label: string } | null {
   for (const { pattern, label } of SAFE_OVERRIDES) {
@@ -171,7 +171,7 @@ const FOOD_CONTEXT_OVERRIDES: {
   { pattern: /\bgomme\s+(?:xanthane|guar|arabique|caroube)\b/iu, label: "Gomme épaississante", riskLevel: "safe" },
 ];
 
-function matchFoodContextOverride(
+export function matchFoodContextOverride(
   ingredientName: string,
 ): { matched: true; label: string; riskLevel: "safe" | "caution" } | null {
   for (const { pattern, label, riskLevel } of FOOD_CONTEXT_OVERRIDES) {

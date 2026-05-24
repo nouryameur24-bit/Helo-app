@@ -363,6 +363,18 @@ function tagsToIngredientsText(tags: string[]): string {
 // ES (search.openfoodfacts.org) reste rapide (~1s) donc pas pénalisé.
 const OFF_TIMEOUT_MS = 8000;
 
+// v4 — Budget global pour l'ENSEMBLE du handler /alternatives (toutes les
+// fetches OFF cumulées). Le mobile timeout HTTP est ~15s, on plafonne à 12s
+// pour garder une marge de réponse réseau Replit→mobile. Sans ce budget,
+// le pire cas était 3 keywords × 3 retries × 8s = 72s de fetches OFF avant
+// de renvoyer [], pendant que le worker Replit Autoscale reste bloqué.
+const OVERALL_BUDGET_MS = 12_000;
+
+/** Combine un signal parent optionnel avec un signal local (timeout fetch). */
+function combineSignals(parent: AbortSignal | undefined, local: AbortSignal): AbortSignal {
+  return parent ? AbortSignal.any([parent, local]) : local;
+}
+
 /**
  * Choisit l'endpoint OFF (alimentaire) ou OBF (cosmétique) selon la
  * catégorie du produit d'origine.
@@ -487,6 +499,7 @@ const USER_AGENT = "Helo-App/1.0 (pregnancy product scanner)";
 async function fetchOffProduct(
   barcode: string,
   isCosmetic: boolean,
+  parentSignal?: AbortSignal,
 ): Promise<LiveCandidate | null> {
   const host = isCosmetic
     ? "world.openbeautyfacts.org"
@@ -499,7 +512,7 @@ async function fetchOffProduct(
   const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
   try {
     const resp = await fetch(url, {
-      signal: ac.signal,
+      signal: combineSignals(parentSignal, ac.signal),
       headers: { "User-Agent": USER_AGENT },
     });
     if (!resp.ok) return null;
@@ -535,6 +548,7 @@ async function searchOffCandidates(
   keyword: string,
   isCosmetic: boolean,
   categoryTag?: string | null,
+  parentSignal?: AbortSignal,
 ): Promise<{ candidates: LiveCandidate[]; error: string | null }> {
   // ★ Choix d'endpoint context-aware :
   //  - ES (`search.openfoodfacts.org`) est rock-solid mais N'HONORE PAS le
@@ -597,7 +611,7 @@ async function searchOffCandidates(
     const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
     try {
       const resp = await fetch(url, {
-        signal: ac.signal,
+        signal: combineSignals(parentSignal, ac.signal),
         headers: { "User-Agent": USER_AGENT },
       });
       if (!resp.ok) {
@@ -658,6 +672,7 @@ async function fetchLiveCandidates(
   // Bug "Amora → 3× variantes Amora" : marque d'origine exclue des candidats.
   // Une "alternative" = AUTRE marque (Maille, Bornier), pas autre format.
   excludeBrand?: string | null,
+  parentSignal?: AbortSignal,
 ): Promise<{ candidates: LiveCandidate[]; strategy: LiveStrategy }> {
   if (keywords.length === 0 && !categoryTag)
     return { candidates: [], strategy: "keywords" };
@@ -680,6 +695,7 @@ async function fetchLiveCandidates(
       "",
       isCosmetic,
       categoryTag,
+      parentSignal,
     );
     if (error) lastError = error;
     totalRaw += candidates.length;
@@ -704,6 +720,7 @@ async function fetchLiveCandidates(
         kw,
         isCosmetic,
         categoryTag ?? null,
+        parentSignal,
       );
       if (error) lastError = error;
       totalRaw += candidates.length;
@@ -780,6 +797,7 @@ const TOO_GENERIC_TAGS = new Set([
 async function fetchOriginCategoriesTags(
   barcode: string,
   isCosmetic: boolean,
+  parentSignal?: AbortSignal,
 ): Promise<string[]> {
   const host = isCosmetic
     ? "world.openbeautyfacts.org"
@@ -789,7 +807,7 @@ async function fetchOriginCategoriesTags(
   const timer = setTimeout(() => ac.abort(), OFF_TIMEOUT_MS);
   try {
     const resp = await fetch(url, {
-      signal: ac.signal,
+      signal: combineSignals(parentSignal, ac.signal),
       headers: { "User-Agent": USER_AGENT },
     });
     if (!resp.ok) return [];
@@ -901,6 +919,16 @@ router.get(
       return;
     }
 
+    // v4 — Budget global pour le handler. Si dépassé, toutes les fetches OFF
+    // en cours sont abort() en cascade via AbortSignal.any(). Le worker
+    // Replit est libéré et un timeout est renvoyé au client mobile (qui
+    // affichera l'errorBanner retry).
+    const overallAc = new AbortController();
+    const overallTimer = setTimeout(
+      () => overallAc.abort(),
+      OVERALL_BUDGET_MS,
+    );
+
     try {
       // ── 1. Lookup origin product (still from our local DB) ──────────────
       const { data: origin, error: originErr } = await supabaseAdmin
@@ -980,6 +1008,7 @@ router.get(
       const originCategoriesTags = await fetchOriginCategoriesTags(
         barcode,
         isCosmetic,
+        overallAc.signal,
       );
       const categoryTag = pickMostSpecificCategoryTag(originCategoriesTags);
       req.log.info(
@@ -999,6 +1028,7 @@ router.get(
           req.log,
           categoryTag,
           origin.brand ?? null,
+          overallAc.signal,
         );
 
       req.log.info(
@@ -1258,8 +1288,22 @@ router.get(
 
       res.json(dtos);
     } catch (err) {
-      req.log.error({ err }, "alternatives handler failed");
-      res.status(500).json({ error: "internal_error" });
+      // v4 — Distinguer un AbortError (timeout budget global dépassé) d'une
+      // vraie erreur interne. Le mobile errorBanner gère mieux un 504 typé
+      // qu'un 500 opaque.
+      const isAbort =
+        err instanceof Error &&
+        (err.name === "AbortError" || overallAc.signal.aborted);
+      if (isAbort) {
+        req.log.warn({ barcode }, "alternatives budget exceeded — short-circuit");
+        emitMetric(req.log, "alternatives_budget_exceeded", { barcode });
+        res.status(504).json({ error: "upstream_timeout" });
+      } else {
+        req.log.error({ err }, "alternatives handler failed");
+        res.status(500).json({ error: "internal_error" });
+      }
+    } finally {
+      clearTimeout(overallTimer);
     }
   },
 );

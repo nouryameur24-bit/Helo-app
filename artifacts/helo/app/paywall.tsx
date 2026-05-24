@@ -142,7 +142,7 @@ function FeatureRow({ feature, index }: { feature: Feature; index: number }) {
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const { trigger } = useLocalSearchParams<{ trigger?: string }>();
-  const { purchase, restore, isPremium, devActivate } = usePremium();
+  const { purchase, restore, isPremium } = usePremium();
 
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual');
   const [purchasing, setPurchasing] = useState(false);
@@ -321,28 +321,6 @@ export default function PaywallScreen() {
             )}
           </Pressable>
 
-          {/* Étape 3 — M2 : bypass dev pour tester le flow Premium sans IAP.
-              Bordure pointillée + couleur sourde = lecture "outil interne"
-              instantanée. À retirer / gater par __DEV__ avant le ship store. */}
-          {__DEV__ && (
-            <Pressable
-              onPress={async () => {
-                await devActivate();
-                Alert.alert(
-                  'Mode Dev',
-                  'Premium activé localement. Le backend va maintenant servir les alternatives.',
-                  [{ text: 'OK', onPress: () => router.back() }],
-                );
-              }}
-              style={({ pressed }) => [s.devBtn, { opacity: pressed ? 0.7 : 1 }]}
-            >
-              <Feather name="zap" size={14} color={Colors.textSecondary} />
-              <ThemedText variant="labelSmall" style={s.devBtnText}>
-                Activer Premium (Mode Dev)
-              </ThemedText>
-            </Pressable>
-          )}
-
           {/* Legal */}
           <ThemedText variant="bodySmall" color="textTertiary" style={s.legal}>
             {Platform.OS === 'ios'
@@ -428,24 +406,6 @@ const s = StyleSheet.create({
   },
   ctaText: { ...Typography.labelLarge, color: '#fff', fontSize: 16 },
   restoreBtn: { paddingVertical: Spacing.sm },
-  devBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: Spacing.xs,
-    paddingVertical: 8,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: Colors.border,
-    backgroundColor: Colors.borderLight,
-  },
-  devBtnText: {
-    color: Colors.textSecondary,
-    fontSize: 11,
-    letterSpacing: 0.3,
-  },
   legal: {
     textAlign: 'center',
     lineHeight: 16,

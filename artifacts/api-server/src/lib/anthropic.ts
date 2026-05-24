@@ -11,10 +11,58 @@ if (!apiKey) {
   logger.warn("ANTHROPIC_API_KEY not set — AI fallback will fail");
 }
 
-const client = new Anthropic({ apiKey: apiKey ?? "" });
+// v4 — Timeout 8s : SLA Anthropic typique = 1-3s sur Haiku. À 8s on couvre
+// les pires cas de slow path sans laisser un /scan mobile bloquer >10s (le
+// client mobile timeout HTTP ~15s). maxRetries 2 : le SDK fait du backoff
+// exponentiel automatique sur 5xx/429 transients.
+const client = new Anthropic({
+  apiKey: apiKey ?? "",
+  timeout: 8000,
+  maxRetries: 2,
+});
 
 const MODEL = "claude-haiku-4-5";
 const MAX_TOKENS = 400; // hard cap to bound cost per call
+
+// ─── Circuit breaker (v4) ───────────────────────────────────────────────────
+// Si Anthropic entre en vraie panne (>5 erreurs SDK en 60s), on stoppe de
+// les hammer pendant 2 minutes. Pendant ce délai :
+//   - analyzeWithClaude throw `anthropic_circuit_open` → /scan tombe sur
+//     indeterminateResponse côté caller (caution mais pas safe — médical).
+//   - selectSafeAlternativesWithClaude renvoie `outcome: "infra_error"` →
+//     /alternatives renvoie [] gracieusement.
+// Évite d'aggraver la situation pendant un outage (chaque retry × N requêtes
+// concurrentes empire l'incident sans valeur ajoutée).
+const ERROR_WINDOW_MS = 60_000;
+const ERROR_THRESHOLD = 5;
+const BREAKER_OPEN_MS = 2 * 60_000;
+let errorTimestamps: number[] = [];
+let breakerOpenUntil = 0;
+
+function isBreakerOpen(): boolean {
+  return Date.now() < breakerOpenUntil;
+}
+
+function recordAnthropicError(): void {
+  const now = Date.now();
+  // Sliding window : on évince les erreurs >60s.
+  errorTimestamps = errorTimestamps.filter((t) => now - t < ERROR_WINDOW_MS);
+  errorTimestamps.push(now);
+  if (errorTimestamps.length >= ERROR_THRESHOLD) {
+    breakerOpenUntil = now + BREAKER_OPEN_MS;
+    errorTimestamps = [];
+    logger.error(
+      { openUntil: new Date(breakerOpenUntil).toISOString() },
+      "anthropic circuit breaker OPENED — short-circuiting for 2min",
+    );
+  }
+}
+
+/** Exposé pour les tests : remet le breaker à zéro. */
+export function _resetCircuitBreakerForTests(): void {
+  errorTimestamps = [];
+  breakerOpenUntil = 0;
+}
 
 export interface AiVerdict {
   status: "autorise" | "a_eviter" | "interdit";
@@ -63,6 +111,14 @@ export async function analyzeWithClaude(params: {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
   const log = params.log ?? logger;
+  // v4 — Circuit breaker : si Anthropic est down, on ne tape plus l'API et
+  // on remonte immédiatement une erreur typée pour que le caller (scan.ts)
+  // bascule sur indeterminateResponse sans attendre les retries SDK.
+  if (isBreakerOpen()) {
+    emitMetric(log, "scan_ai_error", { model: MODEL, error_kind: "circuit_open" });
+    throw new Error("anthropic_circuit_open");
+  }
+
   const t = mark();
 
   let response: Anthropic.Messages.Message;
@@ -85,6 +141,7 @@ export async function analyzeWithClaude(params: {
     });
   } catch (err) {
     const errorKind = classifyAnthropicError(err);
+    recordAnthropicError(); // v4 — alimente le circuit breaker
     emitMetric(log, "scan_ai_error", {
       ms: t(),
       model: MODEL,
@@ -247,6 +304,17 @@ export async function selectSafeAlternativesWithClaude(params: {
   if (params.candidates.length === 0) {
     return { barcodes: [], picks: [], outcome: "no_candidates" };
   }
+  // v4 — Circuit breaker : short-circuit silencieux côté alternatives (le
+  // mobile n'a pas besoin de savoir, on renvoie [] comme un "rien trouvé"
+  // standard, le frontend gère déjà cet état avec l'EducationalEmptyState).
+  if (isBreakerOpen()) {
+    log.warn("anthropic circuit open — alternatives sniper short-circuit");
+    emitMetric(log, "alternatives_ai_error", {
+      model: MODEL,
+      error_kind: "circuit_open",
+    });
+    return { barcodes: [], picks: [], outcome: "infra_error" };
+  }
 
   const phaseLabel =
     params.trimester === "breastfeeding"
@@ -293,6 +361,7 @@ export async function selectSafeAlternativesWithClaude(params: {
     });
   } catch (err) {
     const errorKind = classifyAnthropicError(err);
+    recordAnthropicError(); // v4 — alimente le circuit breaker partagé
     emitMetric(log, "alternatives_ai_error", {
       ms: t(),
       model: MODEL,

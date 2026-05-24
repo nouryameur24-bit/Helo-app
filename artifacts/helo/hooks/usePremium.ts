@@ -31,12 +31,6 @@ interface UsePremiumReturn {
   purchase: (planId: PlanId) => Promise<boolean>;
   restore: () => Promise<boolean>;
   refresh: () => Promise<void>;
-  /**
-   * Étape 3 — M2 : bypass dev pour tester le flow Premium sans passer par
-   * RevenueCat / l'IAP. Active la clé locale PREMIUM_KEY uniquement.
-   * À masquer/retirer pour le build production.
-   */
-  devActivate: () => Promise<void>;
 }
 
 export function usePremium(): UsePremiumReturn {
@@ -117,11 +111,6 @@ export function usePremium(): UsePremiumReturn {
     [],
   );
 
-  const devActivate = useCallback(async (): Promise<void> => {
-    await AsyncStorage.setItem(PREMIUM_KEY, 'true');
-    setIsPremium(true);
-  }, []);
-
   const restore = useCallback(async (): Promise<boolean> => {
     const success = await restorePurchases();
     if (success) {
@@ -145,6 +134,5 @@ export function usePremium(): UsePremiumReturn {
     purchase,
     restore,
     refresh,
-    devActivate,
   };
 }

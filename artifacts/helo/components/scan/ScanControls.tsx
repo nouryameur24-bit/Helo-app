@@ -65,6 +65,11 @@ const ctrl = StyleSheet.create({
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     borderRadius: Radius.full,
+    // iOS HIG / Material Design : 44pt minimum touch target. Important pour
+    // les utilisatrices enceintes (motricité fine altérée en T3) qui pourraient
+    // rater un mode tap si la chip est trop petite verticalement.
+    minHeight: 44,
+    justifyContent: 'center',
   },
   chipActive: { backgroundColor: Colors.accent },
   chipInactive: { backgroundColor: 'rgba(255,255,255,0.82)' },

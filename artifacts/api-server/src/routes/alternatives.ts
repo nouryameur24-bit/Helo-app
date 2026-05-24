@@ -760,6 +760,10 @@ const TOO_GENERIC_TAGS = new Set([
   "en:beverages", "en:meats", "en:meals", "en:snacks", "en:foods",
   "en:dairies", "en:fats", "en:cereals-and-potatoes",
   "en:cosmetics", "en:body", "en:hair", "en:face", "en:skin",
+  // v4 — racines OFF couramment retournées qui amenaient à des candidats
+  // hors-périmètre (ex. "sauces" → ketchup proposé en alt à une moutarde).
+  "en:condiments", "en:sauces", "en:processed-foods",
+  "en:cleansers", "en:moisturizers",
 ]);
 
 /**
@@ -811,9 +815,12 @@ function pickMostSpecificCategoryTag(tags: string[]): string | null {
   for (let i = tags.length - 1; i >= 0; i--) {
     const t = tags[i]!;
     if (TOO_GENERIC_TAGS.has(t)) continue;
-    // Tag i18n minimum : "en:foo-bar" (≥ 6 chars segment)
+    // v4 — slug ≥ 6 chars (vs ≥ 4 en v3). Filtre les racines OFF courtes
+    // qui passaient à travers TOO_GENERIC_TAGS (ex. "fats", "body", "hair",
+    // "face", "skin") tout en gardant les catégories légitimes courantes
+    // ("mustards", "yogurts", "pastas", "sauces", "shampoos" — tous ≥ 6).
     const seg = t.includes(":") ? t.split(":").slice(1).join(":") : t;
-    if (seg.length >= 4) return t;
+    if (seg.length >= 6) return t;
   }
   return null;
 }

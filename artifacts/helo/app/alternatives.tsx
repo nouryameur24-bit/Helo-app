@@ -507,6 +507,12 @@ export default function AlternativesScreen() {
   const [loading, setLoading] = useState(true);
   const [showSuggestionForm, setShowSuggestionForm] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  // v4 — état d'erreur backend visible côté UI quand un user premium a basculé
+  // sur le fallback local (vs sur "vraiment rien trouvé"). Sans ça, un crash
+  // backend silencieux donne l'impression à une payante qu'aucune alternative
+  // n'existe → mauvaise note App Store.
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
 
   // Stable keys for memo/effect deps that depend on flagged arrays
@@ -517,6 +523,7 @@ export default function AlternativesScreen() {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setRemoteError(null); // v4 — reset à chaque fetch
 
       // ── BACKEND-FIRST : on lance en parallèle l'appel backend ET les
       //    explications d'ingrédients (toujours via Supabase direct, c'est
@@ -570,6 +577,9 @@ export default function AlternativesScreen() {
             remote.error.kind,
           );
         }
+        // v4 — On expose l'erreur côté UI : un user premium voit un banner
+        // "Mode dégradé · Réessayer" plutôt que "aucune alternative".
+        setRemoteError(remote.error.kind);
         results = await getAlternativesByBarcode(
           barcode,
           { danger: flaggedDanger, caution: flaggedCaution },
@@ -587,7 +597,11 @@ export default function AlternativesScreen() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [barcode, isPremium, trimester, flaggedDangerKey, flaggedCautionKey]);
+  }, [barcode, isPremium, trimester, flaggedDangerKey, flaggedCautionKey, retryNonce]);
+
+  const handleRetry = useCallback(() => {
+    setRetryNonce((n) => n + 1);
+  }, []);
 
   const ingredientReasons = useMemo(
     () => buildIngredientReasons(explanations.danger),
@@ -642,6 +656,23 @@ export default function AlternativesScreen() {
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
           Alternatives compatibles avec votre grossesse (T{trimester})
         </ThemedText>
+
+        {/* v4 — Banner d'erreur réseau : informe l'utilisatrice premium quand
+            le backend a planté et qu'on est tombé sur le fallback local. Sans
+            ça elle interprétait "aucune alternative" comme un fait métier au
+            lieu d'un crash. Tap → retry. */}
+        {remoteError && !loading ? (
+          <TouchableOpacity onPress={handleRetry} style={styles.errorBanner} activeOpacity={0.7}>
+            <Feather name="wifi-off" size={14} color={Colors.caution} />
+            <ThemedText
+              variant="bodySmall"
+              style={{ flex: 1, marginLeft: 8, color: Colors.textSecondary }}
+            >
+              Mode dégradé — résultats partiels. Touchez pour réessayer.
+            </ThemedText>
+            <Feather name="rotate-cw" size={14} color={Colors.accent} />
+          </TouchableOpacity>
+        ) : null}
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -761,6 +792,18 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.xl,
     marginTop: Spacing.xl,
     marginBottom: Spacing.lg,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
   carouselContent: {
     paddingHorizontal: 32,

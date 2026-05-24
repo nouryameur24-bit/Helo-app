@@ -156,6 +156,13 @@ export function PartnerSection() {
             <Divider />
             <SettingRow icon="share-2" title="Partager mon code" onPress={handleShareCode} />
             <Divider />
+            <SettingRow
+              icon="grid"
+              title="Afficher le QR code"
+              subtitle="Plus rapide qu'un code à taper"
+              onPress={() => router.push('/partner-share')}
+            />
+            <Divider />
             <SettingRow icon="refresh-cw" title="Régénérer le code" subtitle="Déconnecte le partenaire actuel" onPress={handleRegenerateCode} />
             {linkedUserId && (
               <>

@@ -48,6 +48,24 @@ function useWidgetDeepLinks() {
         router.push('/(tabs)');
       } else if (url === 'helo://scan') {
         router.push('/(tabs)/scan');
+      } else if (url.startsWith('helo://pair')) {
+        // Partner QR pairing deep link — `helo://pair?code=ABC123`. We hand the
+        // code to the partner-code onboarding screen, which auto-submits via
+        // its useEffect on `prefilledCode`. Falling back to the entry screen
+        // (no code param) is fine — the user just sees the manual input.
+        const queryStart = url.indexOf('?');
+        const params = queryStart === -1
+          ? new URLSearchParams()
+          : new URLSearchParams(url.slice(queryStart + 1));
+        const code = params.get('code');
+        if (code && /^[A-Z0-9]{6}$/i.test(code)) {
+          router.push({
+            pathname: '/onboarding/partner-code',
+            params: { code: code.toUpperCase(), source: 'deeplink' },
+          });
+        } else {
+          router.push('/onboarding/partner-code');
+        }
       }
     };
 
@@ -228,6 +246,22 @@ function RootLayoutNav() {
           options={{
             headerShown: false,
             animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen
+          name="partner-share"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="partner-scan"
+          options={{
+            headerShown: false,
+            presentation: 'fullScreenModal',
+            animation: 'slide_from_bottom',
           }}
         />
       </Stack>

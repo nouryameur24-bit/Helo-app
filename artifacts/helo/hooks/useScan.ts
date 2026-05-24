@@ -33,6 +33,7 @@ import {
 } from '@/lib/offline';
 import { PREMIUM_KEY } from '@/lib/purchases';
 import { track } from '@/lib/analytics';
+import { incrementPartnerScanCount } from '@/lib/partnerStats';
 import type {
   MatchResult,
   Phase,
@@ -40,7 +41,7 @@ import type {
   ScanCache,
   VerdictResult,
 } from '@/types';
-import { scanCacheKey } from '@/lib/storageKeys';
+import { scanCacheKey, STORAGE_KEYS } from '@/lib/storageKeys';
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -118,6 +119,26 @@ function adaptBackendResponse(
   };
 
   return { product, matches, verdict };
+}
+
+/**
+ * Bump the local "héros UX" partner-scan counter if the current user is in
+ * partner mode. Read directly from AsyncStorage rather than threading a
+ * `role` argument through every `scanBarcode` call site — keeps the public
+ * scan API role-agnostic and means future scan entry points get the
+ * behaviour for free.
+ *
+ * Failure modes are all silent on purpose: a counter glitch must never
+ * surface as a scan error. Worst case the badge updates one scan late.
+ */
+async function bumpPartnerCounterIfRelevant(): Promise<void> {
+  try {
+    const role = await AsyncStorage.getItem(STORAGE_KEYS.userRole);
+    if (role !== 'partner') return;
+    await incrementPartnerScanCount();
+  } catch {
+    // Counter glitch is non-critical — never block or surface here.
+  }
 }
 
 async function writeCache(
@@ -201,6 +222,7 @@ export function useScan(): UseScanReturn {
             verdict: verdict.verdict,
             phase,
           }).catch(() => {});
+          bumpPartnerCounterIfRelevant();
           return;
         }
 
@@ -239,6 +261,7 @@ export function useScan(): UseScanReturn {
             verdict: verdict.verdict,
             phase,
           }).catch(() => {});
+          bumpPartnerCounterIfRelevant();
           return;
         }
 
@@ -270,6 +293,7 @@ export function useScan(): UseScanReturn {
           verdict: cached.verdict.verdict,
           phase,
         }).catch(() => {});
+        bumpPartnerCounterIfRelevant();
         return;
       }
 
@@ -299,6 +323,7 @@ export function useScan(): UseScanReturn {
             phase,
             ai_source: verdict.aiSource,
           }).catch(() => {});
+          bumpPartnerCounterIfRelevant();
           return;
         }
         // Erreurs métier "terminales" : pas la peine de retomber sur le local
@@ -367,6 +392,7 @@ export function useScan(): UseScanReturn {
         verdict: verdict.verdict,
         phase,
       }).catch(() => {});
+      bumpPartnerCounterIfRelevant();
     } catch (err: unknown) {
       const message =
         err instanceof Error

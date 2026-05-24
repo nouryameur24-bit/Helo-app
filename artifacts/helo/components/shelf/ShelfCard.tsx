@@ -27,6 +27,10 @@ export interface ShelfProduct {
   category?: ShelfCategory;
   verdictChanged: boolean;
   baby_product?: boolean;
+  /** v4 Lot 13 — true si le produit a été scanné par le partenaire pour
+   *  l'enceinte. Affiché avec un petit badge "💛" pour valoriser sa
+   *  contribution + créer du lien émotionnel. */
+  added_by_partner?: boolean;
 }
 
 interface ShelfCardProps {
@@ -99,6 +103,13 @@ export const ShelfCard = React.memo(function ShelfCard({ product, onPress, onRem
           </View>
         )}
         {product.verdictChanged && <View style={styles.changedDot} />}
+        {/* v4 Lot 13 — Badge "ajouté par partenaire" : 💛 en haut à gauche.
+            Crée le lien émotionnel ("Thomas a scanné ça pour moi"). */}
+        {product.added_by_partner && (
+          <View style={styles.partnerBadge}>
+            <ThemedText style={styles.partnerBadgeEmoji}>💛</ThemedText>
+          </View>
+        )}
       </View>
 
       <View style={styles.info}>
@@ -131,6 +142,22 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     backgroundColor: Colors.surfaceElevated,
     position: 'relative',
+  },
+  partnerBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.soft,
+  },
+  partnerBadgeEmoji: {
+    fontSize: 13,
+    lineHeight: 16,
   },
   image: {
     width: '100%',

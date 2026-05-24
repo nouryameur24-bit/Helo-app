@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/Card';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { GlowScoreCircle } from '@/components/GlowScoreCircle';
+import { PartnerHeroBadge } from '@/components/partner/PartnerHeroBadge';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { calculateGlowScore } from '@/lib/glowscore';
 import { calculateTrimester } from '@/lib/trimester';
@@ -63,6 +64,11 @@ export function PartnerHomeScreen() {
             </IconButton>
           </View>
         </Animated.View>
+
+        {/* Hero badge — partner-as-hero recognition. Anchored right under
+            the greeting so it's the first thing Thomas sees on home.
+            Empty-state acts as a primer-tour pulling toward the first scan. */}
+        <PartnerHeroBadge />
 
         <Animated.View entering={FadeInDown.delay(80).duration(500)}>
           <View style={partnerStyles.tipBanner}>

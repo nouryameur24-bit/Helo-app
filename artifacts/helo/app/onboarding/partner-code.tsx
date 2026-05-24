@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 
 import { Button } from "@/components/ui/Button";
 import { ThemedText } from "@/components/ui/ThemedText";
@@ -26,12 +27,23 @@ const CODE_LENGTH = 6;
 export default function PartnerCodeScreen() {
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  // `code` is route-param-injected by /partner-scan (or the helo://pair deep
+  // link) after a successful QR read. We prefill the PIN inputs and submit
+  // automatically — see the `useEffect` further down.
+  const { code: prefilledCode } = useLocalSearchParams<{
+    code?: string;
+    source?: string;
+  }>();
   const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const [myFirstName, setMyFirstName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRefs = useRef<Array<TextInput | null>>(Array(CODE_LENGTH).fill(null));
   const shakeX = useSharedValue(0);
+  // One-shot guard — the prefilled code should auto-submit on first paint only.
+  // Without this, every re-render (e.g. typing in the name field after the QR
+  // returns) would retrigger the submission flow.
+  const autoSubmittedRef = useRef(false);
 
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }));
 
@@ -71,13 +83,13 @@ export default function PartnerCodeScreen() {
   const fullCode = code.join("");
   const isComplete = fullCode.length === CODE_LENGTH;
 
-  const handleSubmit = async () => {
-    if (!isComplete || loading) return;
+  const submitCode = async (codeToSubmit: string) => {
+    if (codeToSubmit.length !== CODE_LENGTH || loading) return;
     setLoading(true);
     setError(null);
 
     try {
-      const result = await lookupPartnerCode(fullCode);
+      const result = await lookupPartnerCode(codeToSubmit);
       if (!result) {
         setError("Code invalide. Vérifiez le code et réessayez.");
         triggerShake();
@@ -125,6 +137,29 @@ export default function PartnerCodeScreen() {
     }
   };
 
+  const handleSubmit = () => {
+    if (!isComplete) return;
+    void submitCode(fullCode);
+  };
+
+  // QR scan handoff — when /partner-scan pushes back to this screen with a
+  // `code` param, prefill the PIN inputs and submit automatically. We funnel
+  // through `submitCode` so an invalid (but well-formed) code still surfaces
+  // the same shake + error UX as a manually-typed entry.
+  useEffect(() => {
+    if (autoSubmittedRef.current) return;
+    if (!prefilledCode || typeof prefilledCode !== "string") return;
+    const clean = prefilledCode
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, CODE_LENGTH);
+    if (clean.length !== CODE_LENGTH) return;
+    autoSubmittedRef.current = true;
+    setCode(clean.split(""));
+    void submitCode(clean);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefilledCode]);
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: Colors.background }}
@@ -149,6 +184,48 @@ export default function PartnerCodeScreen() {
             Demandez à votre proche de partager son code à 6 caractères depuis l'application.
           </ThemedText>
         </Animated.View>
+
+        {Platform.OS !== "web" && (
+          <Animated.View entering={FadeInDown.delay(40).duration(400)}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/partner-scan");
+              }}
+              style={({ pressed }) => [
+                styles.scanCta,
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Scanner le QR code de ma partenaire"
+            >
+              <View style={styles.scanCtaIcon}>
+                <Feather name="maximize" size={18} color={Colors.accentDark} />
+              </View>
+              <View style={styles.scanCtaText}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Scanner le QR de ma partenaire
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">
+                  Plus rapide que de taper le code
+                </ThemedText>
+              </View>
+              <Feather name="chevron-right" size={18} color={Colors.textTertiary} />
+            </Pressable>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <ThemedText
+                variant="labelSmall"
+                color="textTertiary"
+                style={styles.dividerLabel}
+              >
+                OU SAISIR LE CODE
+              </ThemedText>
+              <View style={styles.dividerLine} />
+            </View>
+          </Animated.View>
+        )}
 
         <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.nameField}>
           <ThemedText variant="labelSmall" color="textSecondary" style={styles.nameLabel}>
@@ -286,5 +363,41 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     ...Typography.bodyLarge,
     color: Colors.textPrimary,
+  },
+  scanCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    padding: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+  },
+  scanCtaIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.accentLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanCtaText: {
+    flex: 1,
+    gap: 2,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.borderLight,
+  },
+  dividerLabel: {
+    letterSpacing: 1.2,
   },
 });

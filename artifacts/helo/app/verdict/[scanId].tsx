@@ -36,6 +36,7 @@ import { ReportBottomSheet } from '@/components/verdict/ReportBottomSheet';
 import { GhostCaptureModal } from '@/components/verdict/GhostCaptureModal';
 import { GhostContributionCard } from '@/components/verdict/GhostContributionCard';
 import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
+import { OverrideBanner, AcceptOverrideButton } from '@/components/verdict/AcceptOverrideSheet';
 import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
 import {
   getVerdictColor,
@@ -598,6 +599,10 @@ export default function VerdictScreen() {
             })()}
           </View>
 
+          {/* v4 Lot 12 — Banner si l'utilisatrice a déjà accepté ce produit
+              auparavant. Le composant s'auto-cache si pas d'override. */}
+          <OverrideBanner barcode={barcode} />
+
           <View style={styles.productRow}>
             {product.imageUrl ? (
               <Image
@@ -749,6 +754,15 @@ export default function VerdictScreen() {
               Signaler une erreur
             </ThemedText>
           </TouchableOpacity>
+
+          {/* v4 Lot 12 — "J'achète quand même" pour les verdicts caution/danger.
+              Le composant s'auto-cache si déjà overridden (le banner suffit). */}
+          {(displayVerdict?.verdict ?? verdict.verdict) !== 'safe' && (
+            <AcceptOverrideButton
+              barcode={barcode}
+              verdict={(displayVerdict?.verdict ?? verdict.verdict) as 'caution' | 'danger'}
+            />
+          )}
         </View>
       </ScrollView>
 

@@ -108,6 +108,13 @@ const TRIMESTER_EXTRA_EXCLUSIONS: Record<Trimester, string[]> = {
 
 // ─── FILTER & SCORE ───────────────────────────────────────────────────────────
 
+// NOTE v13 — Le backend (routes/alternatives.ts) porte la logique
+// faisant autorité : plancher absolu à 80 + gate adaptatif (origine + 10
+// si origine < 70). Ce fallback mobile tourne UNIQUEMENT quand le backend
+// est injoignable ET pour les utilisatrices premium. On ne réplique pas
+// le score gate ici (drift garanti vs backend, parser ingrédients dupliqué).
+// La diversification par marque/badge + exclusion danger est suffisante
+// vu la rareté du chemin.
 function filterAndScore(
   candidates: ProductCandidate[],
   flagged: FlaggedIngredients,

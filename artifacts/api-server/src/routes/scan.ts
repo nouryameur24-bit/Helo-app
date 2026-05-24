@@ -11,6 +11,7 @@ import {
   type Verdict,
   type MatchResult,
   type RiskLevel,
+  type IngredientDomain,
 } from "../lib/matcher";
 import { analyzeWithClaude, type AiVerdict } from "../lib/anthropic";
 import { emitMetric } from "../lib/metrics";
@@ -80,7 +81,7 @@ function aiStatusToVerdict(s: AiVerdict["status"]): Verdict {
   return "danger";
 }
 
-const MATCHER_VERSION = "v2";
+const MATCHER_VERSION = "v3";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -108,7 +109,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
     // ── 1. Lookup product in our curated Supabase table ───────────────────
     const { data: product, error: lookupError } = await supabaseAdmin
       .from("products")
-      .select("barcode, name, brand, ingredients_raw, image_url, analysis_cache")
+      .select("barcode, name, brand, category, ingredients_raw, image_url, analysis_cache")
       .eq("barcode", barcode)
       .maybeSingle();
 
@@ -158,6 +159,12 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
     emitMetric(req.log, "scan_cache", { hit: false, barcode, cacheKey });
 
     // ── 3. Fallback to OpenFoodFacts if product missing or has no ingredients
+    // v3 — On capture `offSource` au scope extérieur pour pouvoir l'utiliser
+    // ensuite dans le choix du domaine matcher (food vs cosmetic). Sans ça,
+    // un barcode trouvé via OpenBeautyFacts (cosmétique) tomberait sur le
+    // fallback `food` et appliquerait des règles alimentaires sur des INCI
+    // cosmétiques → risque de sous-détection.
+    let offSource: "openfoodfacts" | "openbeautyfacts" | null = null;
     if (!product || !ingredientsRaw || !ingredientsRaw.trim()) {
       const off = await fetchFromOpenFacts(barcode);
       if (!off) {
@@ -168,6 +175,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
       productBrand = off.brand;
       productImage = off.imageUrl;
       ingredientsRaw = off.ingredientsRaw;
+      offSource = off.source;
     }
 
     // ── 4. Deterministic engine ──────────────────────────────────────────
@@ -177,7 +185,28 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
       return;
     }
 
-    const det = await matchDeterministic(ingredientsList, trimester);
+    // v3 — Détermination du domaine pour isolation du dictionnaire matcher.
+    // CRITIQUE : sans ce passage, FOOD_CONTEXT_OVERRIDES (alcool standalone,
+    // E-numbers safe…) ne se déclenche jamais car gated sur `domain === 'food'`.
+    // Ordre de priorité :
+    //   1. products.category (source de vérité applicative quand le produit
+    //      est en base curée Supabase)
+    //   2. offSource (openbeautyfacts → cosmetic, openfoodfacts → food) pour
+    //      les barcodes inconnus en base — évite le drift safety cosmétique
+    //      identifié au code review v13.
+    //   3. food par défaut (cas dégénéré : ne dégrade pas le comportement).
+    const productCategory = String(product?.category ?? "").toLowerCase();
+    const beltDomain: IngredientDomain =
+      productCategory === "cosmetic"
+        ? "cosmetic"
+        : productCategory === "medication"
+          ? "medication"
+          : productCategory === "food"
+            ? "food"
+            : offSource === "openbeautyfacts"
+              ? "cosmetic"
+              : "food";
+    const det = await matchDeterministic(ingredientsList, trimester, beltDomain);
 
     // Helper: conservative "analysis unavailable" verdict. NEVER returns safe.
     // Used when our knowledge sources cannot give a confident answer.

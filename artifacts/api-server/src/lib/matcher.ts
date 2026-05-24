@@ -126,6 +126,55 @@ function matchSafeOverride(
   return null;
 }
 
+// ─── FOOD_CONTEXT_OVERRIDES (alcool standalone, E-numbers safe…) ────────────
+//
+// Couvre les cas non-pris par SAFE_OVERRIDES (qui gère les noms composés
+// type "vinaigre d'alcool"). Ici on traite :
+//   - le token nu "alcool" / "alcohol" / "éthanol" (résidu de fabrication
+//     < 0.5% en alimentaire) → caution avec label défensif (OMS = zéro alcool
+//     grossesse, donc on dit "à vérifier" plutôt que "safe" tout court).
+//   - les E-numbers régulés EU sûrs par défaut (E322 lécithine, E330 acide
+//     citrique, E300 vit C, E150a caramel simple, E440 pectine).
+//   - les additifs/auxiliaires alimentaires communs et sûrs.
+//
+// Appliqué UNIQUEMENT quand domain === 'food'. Tourne APRÈS SAFE_OVERRIDES
+// et AVANT le matching principal. Sans ce filtre, le matcher renvoyait
+// "alcool" → danger T1 sur Moutarde Amora (score 27/100 alors qu'elle est sûre).
+const FOOD_CONTEXT_OVERRIDES: {
+  pattern: RegExp;
+  label: string;
+  riskLevel: "safe" | "caution";
+}[] = [
+  // Alcool standalone — étiquettes défensives médico-légales
+  { pattern: /^alcool$/iu, label: "Alcool (présence à vérifier sur l'étiquette)", riskLevel: "caution" },
+  { pattern: /^alcohol$/iu, label: "Alcohol (check label percentage)", riskLevel: "caution" },
+  { pattern: /^[ée]thanol$/iu, label: "Éthanol (vérifier le pourcentage)", riskLevel: "caution" },
+  { pattern: /\balcool\s+[ée]thylique\b/iu, label: "Alcool éthylique (vérifier %)", riskLevel: "caution" },
+  // E-numbers régulés EU sûrs par défaut
+  { pattern: /\bE\s?322\b/iu, label: "E322 Lécithine", riskLevel: "safe" },
+  { pattern: /\bE\s?330\b/iu, label: "E330 Acide citrique", riskLevel: "safe" },
+  { pattern: /\bE\s?300\b/iu, label: "E300 Vitamine C", riskLevel: "safe" },
+  { pattern: /\bE\s?150a\b/iu, label: "E150a Caramel simple", riskLevel: "safe" },
+  { pattern: /\bE\s?440\b/iu, label: "E440 Pectine", riskLevel: "safe" },
+  // Ingrédients alimentaires communs et sûrs
+  { pattern: /\bl[ée]cithine\s+de\s+soja\b/iu, label: "Lécithine de soja (émulsifiant)", riskLevel: "safe" },
+  { pattern: /\bl[ée]cithines?\b/iu, label: "Lécithine", riskLevel: "safe" },
+  { pattern: /\bacide\s+citrique\b/iu, label: "Acide citrique (E330)", riskLevel: "safe" },
+  { pattern: /\bacide\s+ascorbique\b/iu, label: "Vitamine C", riskLevel: "safe" },
+  { pattern: /\bcolorant\s+caramel\b/iu, label: "Colorant caramel", riskLevel: "safe" },
+  { pattern: /\bar[oô]mes?\s+naturel/iu, label: "Arôme naturel", riskLevel: "safe" },
+  { pattern: /\bgomme\s+(?:xanthane|guar|arabique|caroube)\b/iu, label: "Gomme épaississante", riskLevel: "safe" },
+];
+
+function matchFoodContextOverride(
+  ingredientName: string,
+): { matched: true; label: string; riskLevel: "safe" | "caution" } | null {
+  for (const { pattern, label, riskLevel } of FOOD_CONTEXT_OVERRIDES) {
+    if (pattern.test(ingredientName)) return { matched: true, label, riskLevel };
+  }
+  return null;
+}
+
 // ─── Word-boundary matcher (Bug substring) ──────────────────────────────────
 //
 // Échappe les caractères regex puis normalise les espaces et apostrophes
@@ -222,6 +271,22 @@ export async function matchDeterministic(
         matchedIngredientName: safeOverride.label,
         riskLevel: "safe" as const,
       };
+    }
+
+    // 0bis. Food context overrides (alcool standalone → caution défensif,
+    //       E-numbers régulés EU → safe, lécithine/citrique/etc. → safe).
+    //       Domaine gated : ne s'applique qu'à l'alimentaire pour éviter
+    //       qu'un "alcool" cosmétique (rare) soit downgradé par erreur.
+    if (domain === "food") {
+      const foodOverride = matchFoodContextOverride(ingredientName);
+      if (foodOverride) {
+        return {
+          ingredientName,
+          matched: true,
+          matchedIngredientName: foodOverride.label,
+          riskLevel: foodOverride.riskLevel,
+        };
+      }
     }
 
     // 1. Matching word-boundary bi-directionnel (au lieu de substring).

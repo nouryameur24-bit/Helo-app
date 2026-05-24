@@ -40,11 +40,21 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v12";
+const MATCHER_VERSION = "v13";
+// v13 — Version du cache écrit par routes/scan.ts. DOIT rester synchronisée
+// avec MATCHER_VERSION dans scan.ts (actuellement "v3"). Sert UNIQUEMENT
+// à relire le glow_score d'origine pour le gate adaptatif — clé partagée
+// dans la même colonne JSONB analysis_cache.
+const SCAN_MATCHER_VERSION = "v3";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
   return `${base}_${MATCHER_VERSION}`;
+}
+
+function scanCacheKey(t: Phase): string {
+  const base = typeof t === "number" ? `t${t}` : t;
+  return `${base}_${SCAN_MATCHER_VERSION}`;
 }
 
 // ─── Response shape (mirrors mobile AlternativeProduct) ─────────────────────
@@ -69,6 +79,12 @@ interface AlternativeProductDto {
   price_range: string;
   popularity_count: number;
   origin_badge: OriginBadge;
+  /**
+   * v13 — GlowScore 0..100 calculé par la Ceinture sur la liste d'ingrédients
+   * du candidat. Garanti ≥80 (plancher absolu, cf. belt loop). Exposé pour
+   * que le mobile affiche le score dans la carte alternative.
+   */
+  glow_score: number;
 }
 
 // ─── Keyword extraction (unchanged from previous filet) ─────────────────────
@@ -1049,6 +1065,17 @@ router.get(
       const byBarcode = new Map(liveCandidates.map((c) => [c.barcode, c]));
       const safeCandidates: LiveCandidate[] = [];
       const beltRejections: Array<{ barcode: string; ingredient: string }> = [];
+      // v13 — Score map (même pattern que reasonByBarcode, pas de mutation).
+      const scoreByBarcode = new Map<string, number>();
+      // v13 — Score origine récupéré du cache SCAN (clé `tX_v3`), pas
+      // de l'alternatives cache (`tX_v13`). Ces deux caches cohabitent dans
+      // la même colonne JSONB `analysis_cache` mais sont versionnés
+      // indépendamment. Sans cette double lecture, originGlowScore était
+      // toujours null et le gate adaptatif inopérant.
+      const scanPhaseCache = cache[scanCacheKey(phase)] as
+        | { glow_score?: number }
+        | undefined;
+      const originGlowScore: number | null = scanPhaseCache?.glow_score ?? null;
       for (const b of validatedBarcodes) {
         const cand = byBarcode.get(b);
         if (!cand) continue; // Claude hallucinated a barcode not in the input
@@ -1061,6 +1088,64 @@ router.get(
           });
           continue;
         }
+
+        // ── v13 — Calcul du GlowScore du candidat ───────────────────────
+        // Même formule que computeVerdict (matcher.ts) : 100 baseline,
+        // -50 par danger (déjà filtré ci-dessus), -15 par caution,
+        // -2 par unknown.
+        const candidateDangerCount = belt.matches.filter((m) => m.riskLevel === "danger").length;
+        const candidateCautionCount = belt.matches.filter((m) => m.riskLevel === "caution").length;
+        const candidateUnknownCount = belt.matches.filter((m) => !m.matched).length;
+        const candidateGlowScore = Math.max(
+          0,
+          Math.min(
+            100,
+            100 - candidateDangerCount * 50 - candidateCautionCount * 15 - candidateUnknownCount * 2,
+          ),
+        );
+
+        // ── v13 — Plancher absolu à 80 ──────────────────────────────────
+        // Jamais d'alternative "jaune" affichée — cohérence UX (une alt en
+        // jaune induit "pourquoi tu me la proposes alors ?").
+        if (candidateGlowScore < 80) {
+          req.log.info(
+            {
+              action: "rejected_below_safe_floor",
+              candidateBarcode: b,
+              candidateScore: candidateGlowScore,
+            },
+            "alternative rejected: not safe enough to display",
+          );
+          continue;
+        }
+
+        // ── v13 — Gate adaptatif unifié ─────────────────────────────────
+        // Quand on connaît le score origine, on exige une vraie amélioration
+        // de +10 points minimum, MAIS toujours au-dessus du plancher 80
+        // (Math.max). Sans le Math.max, origine<70 → seuil<80 → déjà filtré
+        // par le floor au-dessus, donc gate sans effet (bug v13 initial).
+        // Avec, le gate ajoute du travail réel sur les origines moyennes
+        // (ex: origine=85 → exige candidate≥95, origine=60 → exige ≥80).
+        if (originGlowScore !== null) {
+          const requiredMinScore = Math.max(80, originGlowScore + 10);
+          if (candidateGlowScore < requiredMinScore) {
+            req.log.info(
+              {
+                action: "rejected_insufficient_improvement",
+                candidateBarcode: b,
+                candidateScore: candidateGlowScore,
+                originScore: originGlowScore,
+                threshold: requiredMinScore,
+              },
+              "alternative rejected: insufficient improvement vs origin",
+            );
+            continue;
+          }
+        }
+
+        // Mémorise le score pour le mapping DTO (pas de mutation sur cand).
+        scoreByBarcode.set(b, candidateGlowScore);
+
         // Garde-fou catégorie CONTEXT-AWARE :
         //  - strategy "category_primary" / "category_then_kw" : OFF a filtré
         //    server-side par categoryTag, on lui fait confiance. Si le champ
@@ -1083,21 +1168,21 @@ router.get(
             continue;
           }
         }
-        // Identifiabilité : on accepte SOIT une photo SOIT une vraie marque.
-        // Mais on rejette les "marques bidon" où OFF a recopié la catégorie
-        // dans le champ brand (ex. brand="Moutarde" pour la catégorie moutarde,
-        // brand="Yaourt", brand="Whole Grain Mustard"). Détection :
-        //  - brand identique (insensible casse/espaces) à la catégorie, OU
-        //  - brand contenu mot-à-mot dans le nom du produit.
+        // v13 — Filtre marques bidon AMÉLIORÉ : on relabelise "Marque
+        // distributeur" plutôt que de rejeter quand OFF a recopié la
+        // catégorie dans le champ brand (ex. brand="Moutarde"), ou quand
+        // la brand est vide. Garde le candidat affichable au lieu de
+        // perdre une alternative légitime à cause d'une junk row OFF.
         const brandNorm = cand.brand.trim().toLowerCase();
         const categoryNorm = cand.category.trim().toLowerCase();
-        const nameNorm = cand.name.trim().toLowerCase();
-        const isJunkBrand =
-          brandNorm.length === 0 ||
-          brandNorm === categoryNorm ||
-          nameNorm.includes(brandNorm);
-        if (!cand.image_url && isJunkBrand) {
-          continue;
+        if (brandNorm.length < 2) {
+          // Pas de marque exploitable → on garde uniquement si on a une photo
+          // (identifiable visuellement en rayon), sinon trop ambigu.
+          if (!cand.image_url) continue;
+          cand.brand = "Marque distributeur";
+        } else if (brandNorm === categoryNorm) {
+          // brand = catégorie (junk OFF) → relabel propre
+          cand.brand = "Marque distributeur";
         }
         safeCandidates.push(cand);
       }
@@ -1115,13 +1200,18 @@ router.get(
 
       // ── 7. Build DTOs in-memory (no Supabase hydration) ────────────────
       const dtos: AlternativeProductDto[] = safeCandidates.map((c) => {
-        const { score, originBadge } = scoreAndBadge(
+        const { score: badgeScore, originBadge } = scoreAndBadge(
           c.name,
           c.brand,
           c.ingredients_raw,
           c.labels_tags,
         );
         const reason = reasonByBarcode.get(c.barcode) ?? "";
+        // v13 — score du candidat calculé pendant la passe Ceinture
+        // (Map pattern, pas de mutation). Default 100 = filet de sécurité
+        // mais ne devrait jamais arriver (tous les push sont précédés d'un
+        // scoreByBarcode.set).
+        const candidateScore = scoreByBarcode.get(c.barcode) ?? 100;
         return {
           id: c.barcode, // OFF barcodes are globally unique → use as id
           name: c.name,
@@ -1131,10 +1221,13 @@ router.get(
           image_url: c.image_url,
           description_fr: null,
           reason: reason.length > 0 ? reason : null, // M3
+          // v13 — plancher 80 garantit cet invariant.
           overall_risk: "safe",
           price_range: "",
-          popularity_count: score,
+          // popularity_count = score sécurité + bonus badge (pharma/bio/fr)
+          popularity_count: candidateScore + badgeScore,
           origin_badge: originBadge,
+          glow_score: candidateScore,
         };
       });
 

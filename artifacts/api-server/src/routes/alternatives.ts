@@ -40,12 +40,12 @@ function parsePhase(raw: string): Phase {
   return raw as "breastfeeding" | "baby";
 }
 
-const MATCHER_VERSION = "v13";
+const MATCHER_VERSION = "v14";
 // v13 — Version du cache écrit par routes/scan.ts. DOIT rester synchronisée
-// avec MATCHER_VERSION dans scan.ts (actuellement "v3"). Sert UNIQUEMENT
+// avec MATCHER_VERSION dans scan.ts (actuellement "v4"). Sert UNIQUEMENT
 // à relire le glow_score d'origine pour le gate adaptatif — clé partagée
 // dans la même colonne JSONB analysis_cache.
-const SCAN_MATCHER_VERSION = "v3";
+const SCAN_MATCHER_VERSION = "v4";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;
@@ -346,8 +346,11 @@ function tagsToIngredientsText(tags: string[]): string {
   return tags
     .map((t) => {
       const colon = t.indexOf(":");
-      const segment = colon >= 0 ? t.slice(colon + 1) : t;
-      return segment.replace(/-/g, " ").trim();
+      // Ignore les tags mal formés (sans préfixe i18n "xx:") : sans le
+      // ":", on ne sait pas où finit le préfixe de langue et on polluait
+      // ingredients_raw avec "en natural flavouring" (bug v3).
+      if (colon < 0) return "";
+      return t.slice(colon + 1).replace(/-/g, " ").trim();
     })
     .filter((s) => s.length > 0)
     .join(", ");
@@ -1146,14 +1149,16 @@ router.get(
         // Mémorise le score pour le mapping DTO (pas de mutation sur cand).
         scoreByBarcode.set(b, candidateGlowScore);
 
-        // Garde-fou catégorie CONTEXT-AWARE :
-        //  - strategy "category_primary" / "category_then_kw" : OFF a filtré
-        //    server-side par categoryTag, on lui fait confiance. Si le champ
-        //    categories_tags est absent côté candidat (ES peut le tronquer
-        //    selon les fields), on bypass — validité héritée.
-        //  - strategy "keywords" : recherche full-text pure, risque de drift
-        //    (Mayo Amora pour "amora moutarde"). On EXIGE la présence du tag.
-        if (categoryTag && liveStrategy === "keywords") {
+        // Garde-fou catégorie STRICT (v4) :
+        // On NE FAIT PLUS confiance au filtrage server-side d'OFF, même en
+        // strategy "category_primary". L'API cgi utilise tag_contains_0=
+        // "contains" qui matche en substring : "mustards" matche aussi
+        // "mustard-mayonnaises", "ravioli-with-mustard", etc. → bug v3
+        // "Moutarde → Mayonnaise". On exige donc TOUJOURS la présence
+        // exacte du categoryTag dans les categories_tags du candidat,
+        // quelle que soit la strategy. Coût : zéro (30 candidats max,
+        // filtre O(n) en mémoire). Gain : zéro cross-catégorie.
+        if (categoryTag) {
           const tags = cand.categories_tags || [];
           if (!tags.includes(categoryTag)) {
             req.log.info(

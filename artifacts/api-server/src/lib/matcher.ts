@@ -38,8 +38,13 @@ interface IngredientRow {
  */
 export function sourceToDomain(source: string | null): IngredientDomain {
   const s = (source ?? "").toLowerCase();
-  if (/\befsa\b/.test(s)) return "food";
-  if (/(anses|ansm|crat|bdpm|fda|\bhas\b|\boms\b|circ|inrs|aromathérapie)/.test(s)) {
+  // Food bucket : agences couvrant l'alimentaire (EFSA + ANSES, CIQUAL,
+  // OMS, FDA). ANSES couvre alimentaire + cosmétique + médicaments en
+  // France — la traiter comme "medication" amputait ~50% du dico food
+  // au runtime (régression v3 : scan inutilisable hors EFSA strict).
+  if (/(\befsa\b|\bciqual\b|\banses\b|\boms\b|\bfda\b)/.test(s)) return "food";
+  // Medication bucket : agences strictement médicaments / pharmacovigilance.
+  if (/(\bansm\b|\bcrat\b|\bbdpm\b|\bhas\b|circ|inrs|aromathérapie)/.test(s)) {
     return "medication";
   }
   return "cosmetic"; // cosing, sccs, echa, ewg, ifra, cir, default

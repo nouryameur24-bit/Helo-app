@@ -81,7 +81,7 @@ function aiStatusToVerdict(s: AiVerdict["status"]): Verdict {
   return "danger";
 }
 
-const MATCHER_VERSION = "v3";
+const MATCHER_VERSION = "v4";
 
 function trimesterCacheKey(t: Phase): string {
   const base = typeof t === "number" ? `t${t}` : t;

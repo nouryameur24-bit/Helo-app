@@ -25,6 +25,7 @@ import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
 
 import { LoadingScreen, ScoreCircle, VerdictLabel, Toast } from '@/components/verdict/VerdictAnimations';
+import { ContributionRewardToast } from '@/components/verdict/ContributionRewardToast';
 import { VellumTexture } from '@/components/verdict/VellumTexture';
 import { getContextualQuote } from '@/lib/contextualQuotes';
 import { CircleShareRow } from '@/components/verdict/CircleShareRow';
@@ -66,12 +67,23 @@ import type { MatchResult, Phase, VerdictResult } from '@/types';
 import { STORAGE_KEYS, ocrResultKey } from '@/lib/storageKeys';
 
 export default function VerdictScreen() {
-  const { scanId, ghostThanks, ghostBarcode: ghostBarcodeParam } = useLocalSearchParams<{
+  const {
+    scanId,
+    ghostThanks,
+    ghostBarcode: ghostBarcodeParam,
+    ghostContribCount: ghostContribCountParam,
+  } = useLocalSearchParams<{
     scanId: string;
     ghostThanks?: string;
     ghostBarcode?: string;
+    ghostContribCount?: string;
   }>();
   const ghostBarcode = ghostBarcodeParam ? decodeURIComponent(ghostBarcodeParam) : '';
+  const ghostContribCount = (() => {
+    if (!ghostContribCountParam) return 0;
+    const n = parseInt(ghostContribCountParam, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  })();
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();
   const { loading, product, matches, verdict, error, notFound, scanBarcode, setDirectResult } = useScan();
@@ -90,21 +102,31 @@ export default function VerdictScreen() {
   const [shareVisible, setShareVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('Ajouté à votre placard ✓');
+  const [rewardToastVisible, setRewardToastVisible] = useState(false);
   const ghostThanksShownRef = useRef(false);
 
-  // ── Ghost Capture "merci" toast ─────────────────────────────────────────────
+  // ── Ghost Capture "merci" celebration ───────────────────────────────────────
   // Triggered when the user arrives from the OCR review flow with ghostThanks=1.
-  // Non-blocking, plays a success haptic and auto-hides after 3s.
+  // Two paths:
+  //   • ghostContribCount > 0 → render the dedicated ContributionRewardToast
+  //     (rich, dismissable, includes ordinal — the reciprocity moment).
+  //   • count == 0 (legacy entry without param) → fall back to the generic
+  //     single-line Toast so older deep links don't regress.
+  // Both play a success haptic exactly once per navigation.
   useEffect(() => {
     if (ghostThanks !== '1' || ghostThanksShownRef.current) return;
     if (loading) return;
     ghostThanksShownRef.current = true;
-    setToastMessage("✨ Merci ! Vous venez d'aider la communauté Hēlo");
-    setToastVisible(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(swallow);
-    const t = setTimeout(() => setToastVisible(false), 3000);
-    return () => clearTimeout(t);
-  }, [ghostThanks, loading]);
+    if (ghostContribCount > 0) {
+      setRewardToastVisible(true);
+    } else {
+      setToastMessage("✨ Merci ! Vous venez d'aider la communauté Hēlo");
+      setToastVisible(true);
+      const t = setTimeout(() => setToastVisible(false), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [ghostThanks, ghostContribCount, loading]);
   const [phase, setPhase] = useState<Phase>(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
   const [isPhotoMode, setIsPhotoMode] = useState(false);
@@ -380,6 +402,12 @@ export default function VerdictScreen() {
   return (
     <View style={styles.root}>
       <Toast visible={toastVisible} message={toastMessage} />
+
+      <ContributionRewardToast
+        visible={rewardToastVisible}
+        count={ghostContribCount}
+        onDismiss={() => setRewardToastVisible(false)}
+      />
 
       <ShelfBottomSheet
         visible={sheetVisible}

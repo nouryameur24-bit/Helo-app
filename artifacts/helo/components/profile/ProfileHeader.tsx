@@ -1,7 +1,7 @@
 import { swallow } from '@/lib/swallow';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { GlowScoreMini } from '@/components/GlowScoreMini';
@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import { useBreastfeeding } from '@/hooks/useBreastfeeding';
+import { useContributions } from '@/hooks/useContributions';
 import { useProfile } from './ProfileContext';
 import { useShelfData } from '@/hooks/useShelfData';
 import { calculateGlowScore } from '@/lib/glowscore';
@@ -29,6 +30,11 @@ export function ProfileHeader() {
   const { score: glowScore } = calculateGlowScore(profileShelf);
 
   const { contributionCount, scanCount, safeCount } = useProfileStats(userId, isPartner);
+
+  // Local Ghost Capture counter (AsyncStorage) — independent from the server
+  // `contributionCount` because we need offline-safe, latency-free badge
+  // updates the moment a contribution is saved.
+  const { count: localContribCount, tier } = useContributions();
 
   useEffect(() => {
     if (!userId || isPartner || !firstName) return;
@@ -76,12 +82,26 @@ export function ProfileHeader() {
           ) : weekAndTrimesterLabel ? (
             <ThemedText variant="bodyMedium" color="textSecondary">{weekAndTrimesterLabel}</ThemedText>
           ) : null}
-          {!isPartner && contributionCount >= 5 && (
-            <View style={styles.contributriceBadge}>
+          {!isPartner && localContribCount > 0 && (
+            <Pressable
+              onPress={() =>
+                Alert.alert(
+                  'Vos contributions',
+                  `Vous avez contribué à ${localContribCount} produit${localContribCount > 1 ? 's' : ''}. Merci !`,
+                )
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`Badge ${tier.label}, ${localContribCount} contributions`}
+              style={({ pressed }) => [
+                styles.contributriceBadge,
+                pressed && { opacity: 0.7 },
+              ]}
+              hitSlop={6}
+            >
               <ThemedText variant="labelSmall" style={styles.contributriceBadgeText}>
-                Contributrice Hēlo 🏅
+                {'⭐'.repeat(tier.stars)} {tier.label}
               </ThemedText>
-            </View>
+            </Pressable>
           )}
         </View>
       </Animated.View>

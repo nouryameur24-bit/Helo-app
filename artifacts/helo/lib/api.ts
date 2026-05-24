@@ -323,3 +323,60 @@ export async function fetchAlternativesRemote(
     clearTimeout(timeout);
   }
 }
+
+// ─── /api/ocr-cleanup ───────────────────────────────────────────────────────
+// v4 Lot 10 — Demande au backend (Claude Haiku) de nettoyer un texte OCR
+// brut avant de le passer au matcher. Boost coverage immédiat sur les ghost
+// captures sans grossir le dico (corrige fautes OCR, accents, mots cassés).
+// Fallback gracieux : si le backend rate, on retourne le texte brut tel
+// quel — l'app continue de fonctionner avec un OCR moins propre, c'est tout.
+
+const OCR_CLEANUP_TIMEOUT_MS = 6000;
+
+/**
+ * Demande à l'API de nettoyer le texte OCR via Claude. Ne throw JAMAIS —
+ * en cas d'erreur ou de backend non configuré, renvoie le rawText tel quel.
+ * L'appelant n'a donc pas besoin d'else / try-catch.
+ */
+export async function cleanOcrTextRemote(
+  rawText: string,
+  locale: 'fr' | 'en' | 'auto' = 'auto',
+): Promise<{ cleaned: string; source: 'ai' | 'passthrough' }> {
+  if (!isBackendConfigured || !rawText.trim()) {
+    return { cleaned: rawText, source: 'passthrough' };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), OCR_CLEANUP_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE}/api/ocr-cleanup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-helo-app-secret': APP_SECRET,
+      },
+      body: JSON.stringify({ rawText, locale }),
+      signal: controller.signal,
+    });
+
+    if (response.status !== 200) {
+      return { cleaned: rawText, source: 'passthrough' };
+    }
+    const data = (await response.json()) as {
+      cleanedIngredients?: string;
+      source?: string;
+    };
+    if (typeof data.cleanedIngredients !== 'string' || !data.cleanedIngredients.trim()) {
+      return { cleaned: rawText, source: 'passthrough' };
+    }
+    return {
+      cleaned: data.cleanedIngredients,
+      source: data.source === 'ai' ? 'ai' : 'passthrough',
+    };
+  } catch {
+    return { cleaned: rawText, source: 'passthrough' };
+  } finally {
+    clearTimeout(timeout);
+  }
+}

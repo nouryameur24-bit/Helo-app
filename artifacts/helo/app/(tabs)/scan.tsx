@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -315,6 +316,21 @@ export default function ScanScreen() {
 
       <ScanOverlay vfX={vfX} vfY={vfY} vfW={vfW} vfH={vfH} />
 
+      {/* OCR mode guidance label — above the viewfinder, fades in on mode switch.
+          Engaging tone to encourage the framing gesture that powers Ghost Capture. */}
+      {isOCRMode && (
+        <Animated.View
+          key="ocr-guidance"
+          entering={FadeIn.duration(300)}
+          style={[styles.ocrGuidanceWrapper, { top: vfY - 60 }]}
+          pointerEvents="none"
+        >
+          <View style={styles.ocrGuidancePill}>
+            <Text style={styles.ocrGuidanceText}>📋 Cadrez la liste d'ingrédients</Text>
+          </View>
+        </Animated.View>
+      )}
+
       <View
         style={[styles.viewfinderContainer, { top: vfY, left: vfX, width: vfW, height: vfH }]}
         pointerEvents="none"
@@ -597,6 +613,25 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
   },
   hintText: { fontFamily: 'PlusJakartaSans_400Regular', fontSize: Typography.bodySmall.fontSize, color: '#fff' },
+  ocrGuidanceWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 11,
+  },
+  ocrGuidancePill: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: 12,
+  },
+  ocrGuidanceText: {
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: Typography.bodyMedium.fontSize,
+    color: '#fff',
+    letterSpacing: 0.2,
+  },
   shutterWrapper: { position: 'absolute', left: 0, right: 0, alignItems: 'center', zIndex: 10 },
   bottomBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

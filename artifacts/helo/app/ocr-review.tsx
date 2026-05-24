@@ -22,7 +22,9 @@ import { logError } from '@/lib/logger';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { incrementContributionCount } from '@/lib/contributions';
 import { matchIngredients, getVerdict, ghostCaptureSave } from '@/lib/productLookup';
+import { cleanOcrTextRemote } from '@/lib/api';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
 import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
@@ -118,9 +120,16 @@ export default function OcrReviewScreen() {
     try {
       if (!b64) throw new Error('NO_TEXT_DETECTED');
       const raw = await processOCRImage(b64);
-      const cleaned = cleanOCRText(raw);
-      const ingredients = parseINCI(cleaned);
-      setOcrText(cleaned);
+      const locallyCleaned = cleanOCRText(raw);
+
+      // v4 Lot 10 — AI cleanup : Claude relit le texte OCR pour corriger
+      // les fautes (lettres mal lues, accents perdus, mots collés). Fallback
+      // gracieux : si l'endpoint rate ou backend non configuré, on garde le
+      // texte nettoyé localement — pas de régression possible.
+      const { cleaned: aiCleaned } = await cleanOcrTextRemote(locallyCleaned, 'auto');
+
+      const ingredients = parseINCI(aiCleaned);
+      setOcrText(aiCleaned);
       setParsedCount(ingredients.length);
       if (ingredients.length < 3) {
         setOcrWarning(
@@ -204,13 +213,32 @@ export default function OcrReviewScreen() {
         savedAt: Date.now(),
       }));
 
+      // Increment the LOCAL contribution counter BEFORE navigation when we
+      // have a ghostBarcode (the only case that yields a real DB submission).
+      // AsyncStorage read+write is fast (a few ms); doing it here means the
+      // verdict screen receives the new count synchronously via URL param
+      // and can render the reward toast on first paint without a re-read.
+      let newContribCount: number | null = null;
+      if (ghostBarcode) {
+        try {
+          newContribCount = await incrementContributionCount();
+        } catch (err) {
+          // Counter failure is non-critical — the toast simply won't include
+          // the ordinal. ghostCaptureSave still runs and the DB row is created.
+          logError('ocrReview.incrementContribution', err);
+        }
+      }
+
       // Navigate to verdict with ocr_ prefix; pass ghostThanks=1 + the original
       // ghostBarcode so the verdict screen can render the "merci" toast and
       // (after 1s) the contribution card that updates the same DB row.
       const verdictPath = `/verdict/${encodeURIComponent(`ocr_${id}`)}`;
       if (ghostBarcode) {
+        const contribParam = newContribCount !== null
+          ? `&ghostContribCount=${newContribCount}`
+          : '';
         router.replace(
-          `${verdictPath}?ghostThanks=1&ghostBarcode=${encodeURIComponent(ghostBarcode)}`,
+          `${verdictPath}?ghostThanks=1&ghostBarcode=${encodeURIComponent(ghostBarcode)}${contribParam}`,
         );
       } else {
         router.replace(verdictPath);

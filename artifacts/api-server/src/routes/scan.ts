@@ -318,38 +318,59 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
     );
 
     if (shouldCache) {
-      // NOTE: read-modify-write on the JSONB column is not atomic. Concurrent
-      // scans of the same barcode across different phases can lose one write.
-      // Acceptable for v1 — worst case is one re-computation on next scan.
-      // For atomic merge, install the `merge_analysis_cache` Postgres RPC
-      // (see docs/supabase-rpc.sql) and switch to .rpc() here.
-      const newCache = {
-        ...cache,
-        [cacheKey]: {
-          status: response.status,
-          verdict: response.verdict,
-          glow_score: response.glow_score,
-          explanation: response.explanation,
-          source: response.source,
-          search_keyword: response.search_keyword,
-          product: response.product,
-          matches: response.matches,
-          analyzed_at: new Date().toISOString(),
-        },
+      const payload = {
+        status: response.status,
+        verdict: response.verdict,
+        glow_score: response.glow_score,
+        explanation: response.explanation,
+        source: response.source,
+        search_keyword: response.search_keyword,
+        product: response.product,
+        matches: response.matches,
+        analyzed_at: new Date().toISOString(),
       };
-      const { error: writeErr } = product
-        ? await supabaseAdmin
+
+      // v4 — Cas produit existant : tentative atomique via RPC Postgres.
+      // Si la RPC `merge_analysis_cache` n'est pas déployée (cf.
+      // docs/supabase-rpc.sql), on retombe sur le read-modify-write legacy
+      // qui a une race condition documentée mais reste fonctionnel.
+      let writeErr: unknown = null;
+      if (product) {
+        const rpcResult = await supabaseAdmin.rpc("merge_analysis_cache", {
+          p_barcode: barcode,
+          p_phase_key: cacheKey,
+          p_payload: payload,
+        });
+        if (rpcResult.error) {
+          // Code 42883 = function does not exist → RPC pas encore déployée,
+          // fallback transparent. Autres erreurs = vraies, on log et fallback
+          // aussi pour ne pas perdre l'écriture.
+          if (rpcResult.error.code !== "42883") {
+            req.log.warn(
+              { err: rpcResult.error },
+              "merge_analysis_cache RPC failed — falling back to read-modify-write",
+            );
+          }
+          const newCache = { ...cache, [cacheKey]: payload };
+          const fallback = await supabaseAdmin
             .from("products")
             .update({ analysis_cache: newCache })
-            .eq("barcode", barcode)
-        : await supabaseAdmin.from("products").insert({
-            barcode,
-            name: productName,
-            brand: productBrand,
-            ingredients_raw: ingredientsRaw,
-            image_url: productImage,
-            analysis_cache: newCache,
-          });
+            .eq("barcode", barcode);
+          writeErr = fallback.error;
+        }
+      } else {
+        // Cas produit absent : insert simple (pas de concurrent possible sur
+        // un row qui n'existe pas encore).
+        const insert = await supabaseAdmin.from("products").insert({
+          barcode,
+          name: productName,
+          brand: productBrand,
+          ingredients_raw: ingredientsRaw,
+          image_url: productImage,
+          analysis_cache: { [cacheKey]: payload },
+        });
+        writeErr = insert.error;
+      }
       if (writeErr) {
         req.log.warn({ err: writeErr }, "analysis_cache write failed");
       }

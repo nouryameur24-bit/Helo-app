@@ -12,6 +12,7 @@
 
 import type { Category, MatchResult, Phase, RiskLevel, Verdict } from '@/types';
 import type { AlternativeProduct, OriginBadge } from '@/lib/alternatives';
+import { getAppUserID } from '@/lib/purchases';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -264,14 +265,25 @@ export async function fetchAlternativesRemote(
       barcode,
     )}?trimester=${encodeURIComponent(String(phaseToApi(phase)))}`;
 
+    // v4 — Récupère l'App-User-ID RevenueCat pour la validation server-side
+    // stricte. Le backend (middleware requirePremium.ts) appelle RC API pour
+    // vérifier que `entitlements.helo_premium` est actif. Si null (web, RC
+    // pas initialisé, premier launch), le backend retombe sur le header
+    // legacy `x-helo-is-premium` qui n'est pas un vrai bouclier.
+    const rcUserId = await getAppUserID().catch(() => null);
+
+    const headers: Record<string, string> = {
+      'x-helo-app-secret': APP_SECRET,
+      // Étape 3 — M1 : signal Premium legacy (fallback si RC pas dispo).
+      'x-helo-is-premium': isPremium ? 'true' : 'false',
+    };
+    if (rcUserId) {
+      headers['x-helo-rc-user-id'] = rcUserId;
+    }
+
     const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        'x-helo-app-secret': APP_SECRET,
-        // Étape 3 — M1 : signal Premium pour le bouclier FinOps backend.
-        // En non-premium, le backend renvoie 403 sans appeler Claude.
-        'x-helo-is-premium': isPremium ? 'true' : 'false',
-      },
+      headers,
       signal: controller.signal,
     });
 

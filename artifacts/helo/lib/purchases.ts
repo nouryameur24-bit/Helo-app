@@ -93,6 +93,7 @@ interface RCModule {
   purchasePackage(pkg: RCPackage): Promise<{ customerInfo: RCCustomerInfo }>;
   getCustomerInfo(): Promise<RCCustomerInfo | null>;
   restorePurchases(): Promise<RCCustomerInfo>;
+  getAppUserID(): Promise<string>;
 }
 
 // ─── RC loader (lazy-loaded to avoid web crash) ───────────────────────────────
@@ -182,6 +183,25 @@ export async function purchasePlan(planId: PlanId): Promise<boolean> {
     // PurchasesErrorCode.purchaseCancelledError = 1
     if ((e as { code?: number })?.code === 1) return false; // user cancelled
     throw e;
+  }
+}
+
+// ─── App User ID (RevenueCat) ─────────────────────────────────────────────────
+// v4 — Exposé pour permettre au backend de valider le tier Premium côté
+// serveur via RC API au lieu du header falsifiable `x-helo-is-premium`.
+// Le mobile passe cet ID dans le header `x-helo-rc-user-id` ; le backend
+// l'utilise pour query `GET /v1/subscribers/{id}` sur RC API.
+let _cachedAppUserId: string | null = null;
+export async function getAppUserID(): Promise<string | null> {
+  if (_cachedAppUserId) return _cachedAppUserId;
+  const RC = await getRC();
+  if (!RC || !_initialized) return null;
+  try {
+    const id = await RC.getAppUserID();
+    _cachedAppUserId = id;
+    return id;
+  } catch {
+    return null;
   }
 }
 

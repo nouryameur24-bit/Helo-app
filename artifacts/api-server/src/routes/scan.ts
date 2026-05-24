@@ -208,6 +208,37 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
               : "food";
     const det = await matchDeterministic(ingredientsList, trimester, beltDomain);
 
+    // v4-Lot9 — Observability coverage : on émet le taux de match du
+    // dictionnaire + un échantillon des ingrédients inconnus. Permet de
+    // tracker en prod (a) quel % de produits trouve une majorité d'ingrédients
+    // dans notre dico, (b) quels ingrédients récurrents sont à enrichir.
+    const nMatched = det.matches.filter((m) => m.matched).length;
+    const nTotal = det.matches.length;
+    const matchRate = nTotal > 0 ? Math.round((nMatched / nTotal) * 100) : 0;
+    emitMetric(req.log, "scan_coverage", {
+      barcode,
+      domain: beltDomain,
+      n_total: nTotal,
+      n_matched: nMatched,
+      n_unknown: nTotal - nMatched,
+      match_rate_pct: matchRate,
+    });
+    // Sample jusqu'à 5 ingrédients inconnus pour identifier la queue à
+    // enrichir. Pas de PII (les ingrédients ne sont pas des données
+    // personnelles), et c'est ce qu'on a de plus utile pour prioriser
+    // les ajouts au dico.
+    const unknownSamples = det.matches
+      .filter((m) => !m.matched)
+      .slice(0, 5)
+      .map((m) => m.ingredientName);
+    if (unknownSamples.length > 0) {
+      emitMetric(req.log, "scan_no_signal_sample", {
+        barcode,
+        domain: beltDomain,
+        samples: unknownSamples,
+      });
+    }
+
     // Helper: conservative "analysis unavailable" verdict. NEVER returns safe.
     // Used when our knowledge sources cannot give a confident answer.
     const matchesDto: ScanMatchDto[] = det.matches.map(toMatchDto);

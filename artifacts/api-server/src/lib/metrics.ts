@@ -28,6 +28,8 @@ export type MetricEvent =
   | "scan_cache"
   | "scan_ai_call"
   | "scan_ai_error"
+  | "scan_coverage"
+  | "scan_no_signal_sample"
   | "alternatives_cache"
   | "alternatives_ai_call"
   | "alternatives_ai_error"

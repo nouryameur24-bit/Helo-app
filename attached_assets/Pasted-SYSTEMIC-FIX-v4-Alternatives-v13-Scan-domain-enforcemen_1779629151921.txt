@@ -1,0 +1,290 @@
+SYSTEMIC FIX v4 — Alternatives v13 + Scan domain enforcement.
+
+CONTEXT:
+- Standalone "alcool" in food context triggers false DANGER (Moutarde Amora → 27/100)
+- Belt accepts same-score candidates → no real improvement
+- Junk brands sneak through → relabel as "Marque distributeur"
+- CRITICAL: scan.ts doesn't pass domain to matcher → fix Part 1 never fires
+
+ARCHITECTURE NOTES (from 2 reviews):
+- Use Map<string, number> pattern (consistent with reasonByBarcode), 
+  NO mutation via (cand as any)._field
+- Absolute floor: only display alternatives with score >= 80 
+  (no "yellow caution" alternatives shown)
+- Adaptive gate only when origin < 70
+- scan.ts MUST pass domain to matcher (or FOOD_CONTEXT_OVERRIDES never trigger)
+
+═══════════════════════════════════════════════════════════
+PART 1 — matcher.ts: FOOD_CONTEXT_OVERRIDES (defensive labels)
+═══════════════════════════════════════════════════════════
+
+FILE: artifacts/api-server/src/lib/matcher.ts
+
+After existing SAFE_OVERRIDES array, ADD:
+
+const FOOD_CONTEXT_OVERRIDES: { 
+  pattern: RegExp; 
+  label: string; 
+  riskLevel: 'safe' | 'caution';
+}[] = [
+  // ─── Standalone alcohol — DEFENSIVE LABELS (medico-legal) ─
+  // OMS recommends zero alcohol during pregnancy. We downgrade
+  // standalone "alcool" to caution (not danger) because it's 
+  // typically <0.5% manufacturing residual in food products.
+  // Defensive labels prompt the user to verify the percentage.
+  { 
+    pattern: /^alcool$/iu, 
+    label: 'Alcool (présence à vérifier sur l\'étiquette)', 
+    riskLevel: 'caution' 
+  },
+  { 
+    pattern: /^alcohol$/iu, 
+    label: 'Alcohol (check label percentage)', 
+    riskLevel: 'caution' 
+  },
+  { 
+    pattern: /^[ée]thanol$/iu, 
+    label: 'Éthanol (vérifier le pourcentage)', 
+    riskLevel: 'caution' 
+  },
+  { 
+    pattern: /\balcool\s+[ée]thylique\b/iu, 
+    label: 'Alcool éthylique (vérifier %)', 
+    riskLevel: 'caution' 
+  },
+  
+  // ─── E-numbers safe by default (regulated EU additives) ──
+  { pattern: /\bE\s?322\b/iu, label: 'E322 Lécithine', riskLevel: 'safe' },
+  { pattern: /\bE\s?330\b/iu, label: 'E330 Acide citrique', riskLevel: 'safe' },
+  { pattern: /\bE\s?300\b/iu, label: 'E300 Vitamine C', riskLevel: 'safe' },
+  { pattern: /\bE\s?150a\b/iu, label: 'E150a Caramel simple', riskLevel: 'safe' },
+  { pattern: /\bE\s?440\b/iu, label: 'E440 Pectine', riskLevel: 'safe' },
+  
+  // ─── Common safe food ingredients ─────────────────────────
+  { pattern: /\bl[ée]cithine\s+de\s+soja\b/iu, label: 'Lécithine de soja (émulsifiant)', riskLevel: 'safe' },
+  { pattern: /\bl[ée]cithines?\b/iu, label: 'Lécithine', riskLevel: 'safe' },
+  { pattern: /\bacide\s+citrique\b/iu, label: 'Acide citrique (E330)', riskLevel: 'safe' },
+  { pattern: /\bacide\s+ascorbique\b/iu, label: 'Vitamine C', riskLevel: 'safe' },
+  { pattern: /\bcolorant\s+caramel\b/iu, label: 'Colorant caramel', riskLevel: 'safe' },
+  { pattern: /\bar[oô]mes?\s+naturel/iu, label: 'Arôme naturel', riskLevel: 'safe' },
+  { pattern: /\bgomme\s+(?:xanthane|guar|arabique|caroube)\b/iu, label: 'Gomme épaississante', riskLevel: 'safe' },
+];
+
+function matchFoodContextOverride(
+  ingredientName: string,
+): { matched: true; label: string; riskLevel: 'safe' | 'caution' } | null {
+  for (const { pattern, label, riskLevel } of FOOD_CONTEXT_OVERRIDES) {
+    if (pattern.test(ingredientName)) return { matched: true, label, riskLevel };
+  }
+  return null;
+}
+
+In matchDeterministic(), AFTER existing SAFE_OVERRIDES check and 
+BEFORE main matching loop, add:
+
+  // Food context overrides (alcool standalone, E-numbers safe, etc.)
+  if (domain === 'food') {
+    const foodOverride = matchFoodContextOverride(ingredientName);
+    if (foodOverride) {
+      return {
+        ingredientName,
+        matched: true,
+        matchedIngredientName: foodOverride.label,
+        riskLevel: foodOverride.riskLevel,
+      };
+    }
+  }
+
+═══════════════════════════════════════════════════════════
+PART 2 — alternatives.ts: Adaptive gate + absolute floor (Map pattern)
+═══════════════════════════════════════════════════════════
+
+FILE: artifacts/api-server/src/routes/alternatives.ts
+
+A. Add glow_score to AlternativeProductDto:
+
+  interface AlternativeProductDto {
+    // ... existing fields ...
+    glow_score: number;
+  }
+
+B. BEFORE the belt loop, declare the score map:
+
+  // Score map (consistent with reasonByBarcode pattern, no mutation)
+  const scoreByBarcode = new Map<string, number>();
+
+C. REPLACE the belt loop body with:
+
+  for (const b of sniperResult.barcodes) {
+    const cand = byBarcode.get(b);
+    if (!cand) continue;
+    const parsed = parseIngredients(cand.ingredients_raw);
+    const belt = await matchDeterministic(parsed, phase, beltDomain);
+    if (belt.dangerousMatch) continue;
+    
+    // ── Compute candidate's GlowScore ────────────────────
+    const candidateDangerCount = belt.matches.filter(m => m.riskLevel === 'danger').length;
+    const candidateCautionCount = belt.matches.filter(m => m.riskLevel === 'caution').length;
+    const candidateUnknownCount = belt.matches.filter(m => !m.matched).length;
+    const candidateGlowScore = Math.max(0, Math.min(100,
+      100 - (candidateDangerCount * 50) - (candidateCautionCount * 15) - (candidateUnknownCount * 2)
+    ));
+    
+    // ── ABSOLUTE FLOOR: only display safe alternatives ───
+    // Never show a "yellow caution" alternative — UX consistency
+    if (candidateGlowScore < 80) {
+      req.log.info({
+        action: 'rejected_below_safe_floor',
+        candidateBarcode: b,
+        candidateScore: candidateGlowScore,
+      }, 'alternative rejected: not safe enough to display');
+      continue;
+    }
+    
+    // ── ADAPTIVE GATE: only when origin is problematic ───
+    const originGlowScore: number | null = (phaseCache as any)?.glow_score ?? null;
+    const requireImprovement = originGlowScore !== null && originGlowScore < 70;
+    if (requireImprovement && candidateGlowScore < originGlowScore + 10) {
+      req.log.info({
+        action: 'rejected_insufficient_improvement',
+        candidateBarcode: b,
+        candidateScore: candidateGlowScore,
+        originScore: originGlowScore,
+        threshold: originGlowScore + 10,
+      }, 'alternative rejected');
+      continue;
+    }
+    
+    // Store computed score for DTO (Map pattern)
+    scoreByBarcode.set(b, candidateGlowScore);
+    
+    // ── Existing categoryTag check ────────────────────────
+    if (categoryTag && liveStrategy === 'keywords' 
+        && !cand.categories_tags.includes(categoryTag)) {
+      continue;
+    }
+    
+    // ── IMPROVED junk brand filter ───────────────────────
+    const brandNorm = cand.brand.trim().toLowerCase();
+    const categoryNorm = cand.category.trim().toLowerCase();
+    
+    if (brandNorm.length < 2) {
+      if (!cand.image_url) continue;
+      cand.brand = 'Marque distributeur';
+    } else if (brandNorm === categoryNorm) {
+      cand.brand = 'Marque distributeur';
+    }
+    
+    safeCandidates.push(cand);
+  }
+
+D. In DTO mapping, use the Map:
+
+  const dtos: AlternativeProductDto[] = safeCandidates.map(c => {
+    const { score: badgeScore, originBadge } = scoreAndBadge(
+      c.name, c.brand, c.ingredients_raw, c.labels_tags
+    );
+    const computedScore = scoreByBarcode.get(c.barcode) ?? 100;
+    return {
+      id: c.barcode,
+      name: c.name,
+      brand: c.brand,
+      category: c.category,
+      barcode: c.barcode,
+      image_url: c.image_url,
+      description_fr: null,
+      reason: reasonByBarcode.get(c.barcode) ?? null,
+      overall_risk: 'safe',  // floor at 80 guarantees this
+      price_range: '',
+      popularity_count: computedScore + badgeScore,
+      origin_badge: originBadge,
+      glow_score: computedScore,
+    };
+  });
+
+E. Bump version:
+  const MATCHER_VERSION = "v13";
+
+═══════════════════════════════════════════════════════════
+PART 3 — scan.ts: CRITICAL — Pass domain to matcher
+═══════════════════════════════════════════════════════════
+
+FILE: artifacts/api-server/src/routes/scan.ts
+
+WITHOUT THIS PART, THE ALCOOL FIX IN PART 1 NEVER FIRES.
+The FOOD_CONTEXT_OVERRIDES check `if (domain === 'food')` and 
+the scan route currently calls matchDeterministic without domain.
+
+A. Import IngredientDomain at the top:
+
+   import {
+     matchDeterministic,
+     computeVerdict,
+     type Phase,
+     type Verdict,
+     type MatchResult,
+     type RiskLevel,
+     type IngredientDomain,  // ADD THIS
+   } from "../lib/matcher";
+
+B. Read product category for domain detection.
+   First, ALSO select 'category' in the products query:
+
+   const { data: product, error: lookupError } = await supabaseAdmin
+     .from("products")
+     .select("barcode, name, brand, category, ingredients_raw, image_url, analysis_cache")
+     // ↑ ADD "category" to the SELECT
+     .eq("barcode", barcode)
+     .maybeSingle();
+
+C. Before calling matchDeterministic, determine the domain:
+
+   const productCategory = String((product as any)?.category ?? '').toLowerCase();
+   const beltDomain: IngredientDomain = 
+     productCategory === 'cosmetic' ? 'cosmetic' :
+     productCategory === 'medication' ? 'medication' : 'food';
+
+D. Pass domain to matchDeterministic:
+
+   // Old: const det = await matchDeterministic(ingredientsList, trimester);
+   const det = await matchDeterministic(ingredientsList, trimester, beltDomain);
+
+E. Bump MATCHER_VERSION:
+
+   const MATCHER_VERSION = "v3";  // bumped: domain enforcement + FOOD_CONTEXT_OVERRIDES
+
+═══════════════════════════════════════════════════════════
+PART 4 — Mobile fallback (alternatives.ts mobile)
+═══════════════════════════════════════════════════════════
+
+FILE: artifacts/helo/lib/alternatives.ts
+
+The mobile fallback is offline-only, premium-only, and rare. We do 
+NOT replicate the backend score gate (would drift).
+
+Add comment in filterAndScore():
+
+  // NOTE: Backend has the authoritative score gate + absolute floor 
+  // at 80 (routes/alternatives.ts). This mobile fallback diversifies 
+  // by brand/badge only. Drift acceptable as fallback is rare.
+
+═══════════════════════════════════════════════════════════
+DEPLOYMENT NOTE
+═══════════════════════════════════════════════════════════
+
+⚠️ DOUBLE CACHE INVALIDATION:
+- scan MATCHER_VERSION v2 → v3 → invalidates all scan caches
+- alternatives MATCHER_VERSION v12 → v13 → invalidates all alternatives caches
+First scan post-deploy will take 5-10s per product.
+
+═══════════════════════════════════════════════════════════
+VERIFICATION REQUIRED
+═══════════════════════════════════════════════════════════
+
+After applying changes:
+1. Run: npx tsc --noEmit → 0 errors required
+2. Confirm what was changed in each file (matcher.ts, alternatives.ts, scan.ts)
+3. Show the new MATCHER_VERSION constants ('v3' in scan, 'v13' in alternatives)
+4. Verify FOOD_CONTEXT_OVERRIDES is in matcher.ts
+5. Verify scoreByBarcode Map is in alternatives.ts
+6. Verify beltDomain is computed and passed in scan.ts

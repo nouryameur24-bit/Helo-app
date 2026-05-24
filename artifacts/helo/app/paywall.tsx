@@ -19,6 +19,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { PLANS, type PlanId, type Plan } from '@/lib/purchases';
 import { usePremium } from '@/hooks/usePremium';
+import { useSafeBack } from '@/hooks/useSafeBack';
 import { track } from '@/lib/analytics';
 
 // ─── Feature comparison data ──────────────────────────────────────────────────
@@ -145,6 +146,10 @@ export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const { trigger } = useLocalSearchParams<{ trigger?: string }>();
   const { purchase, restore, isPremium } = usePremium();
+  // Lot 15B5 — paywall peut être atteint depuis 8+ entry points différents
+  // (scan limit, shelf-scan, photo mode, etc.). useSafeBack fallback /(tabs)
+  // pour ne jamais laisser l'utilisatrice avec un bouton qui no-ope.
+  const safeBack = useSafeBack('/(tabs)');
 
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('annual');
   const [purchasing, setPurchasing] = useState(false);
@@ -153,9 +158,9 @@ export default function PaywallScreen() {
   // Already premium — shouldn't be here, go back (must be in useEffect, not during render)
   useEffect(() => {
     if (isPremium) {
-      router.back();
+      safeBack();
     }
-  }, [isPremium]);
+  }, [isPremium, safeBack]);
 
   // Analytics : un seul `paywall_viewed` par mount du screen. Inclut le
   // déclencheur (`scan_limit`, `feature`, etc.) pour mesurer la conversion
@@ -186,7 +191,7 @@ export default function PaywallScreen() {
           plan: selectedPlan,
           trigger: trigger ?? 'direct',
         }).catch(() => {});
-        router.back();
+        safeBack();
       }
     } catch {
       Alert.alert(
@@ -205,7 +210,7 @@ export default function PaywallScreen() {
       const success = await restore();
       if (success) {
         Alert.alert('Achats restaurés', 'Votre abonnement Premium a été rétabli.');
-        router.back();
+        safeBack();
       } else {
         Alert.alert('Aucun achat trouvé', 'Aucun abonnement Premium actif trouvé sur ce compte.');
       }
@@ -225,7 +230,7 @@ export default function PaywallScreen() {
         <Pressable
           onPress={() => {
             track('paywall_dismissed', { trigger: trigger ?? 'direct', selected_plan: selectedPlan }).catch(() => {});
-            router.back();
+            safeBack();
           }}
           style={s.closeBtn}
         >

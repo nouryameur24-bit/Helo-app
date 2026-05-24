@@ -1,6 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ROUTES } from '@/types/routes';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -14,9 +15,13 @@ import { Feather } from '@expo/vector-icons';
 
 import { MaListeView } from '@/components/shelf/MaListeView';
 import { MonPlacardView } from '@/components/shelf/MonPlacardView';
+import { ShelfExplainerModal } from '@/components/shelf/ShelfExplainerModal';
+import { PartnerModeBadge } from '@/components/partner/PartnerModeBadge';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
+import { useProfile } from '@/hooks/useProfile';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 type Tab = 'placard' | 'liste';
 
@@ -32,7 +37,11 @@ function SegmentedControl({
       <Pressable
         style={[styles.segment, selected === 'placard' && styles.segmentActive]}
         onPress={() => onSelect('placard')}
+        accessibilityRole="tab"
+        accessibilityLabel="Mon placard — produits que j'ai déjà"
+        accessibilityState={{ selected: selected === 'placard' }}
       >
+        <ThemedText style={styles.segmentEmoji}>📦</ThemedText>
         <ThemedText
           variant="labelLarge"
           color={selected === 'placard' ? 'accentDark' : 'textTertiary'}
@@ -43,12 +52,16 @@ function SegmentedControl({
       <Pressable
         style={[styles.segment, selected === 'liste' && styles.segmentActive]}
         onPress={() => onSelect('liste')}
+        accessibilityRole="tab"
+        accessibilityLabel="À acheter — ma liste de courses"
+        accessibilityState={{ selected: selected === 'liste' }}
       >
+        <ThemedText style={styles.segmentEmoji}>🛒</ThemedText>
         <ThemedText
           variant="labelLarge"
           color={selected === 'liste' ? 'accentDark' : 'textTertiary'}
         >
-          Ma liste
+          À acheter
         </ThemedText>
       </Pressable>
     </View>
@@ -61,6 +74,31 @@ export default function ShelfScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('placard');
   const { highlight } = useLocalSearchParams<{ highlight?: string }>();
   const { isPremium } = usePremium();
+  const { role, linkedFirstName } = useProfile();
+  const isPartner = role === 'partner';
+
+  // Lot 15A4 — Au tout premier visit de l'onglet Placard, on affiche un
+  // explainer ("📦 Mon placard = j'ai déjà / 🛒 À acheter = je veux") pour
+  // poser le mental model. Persisté en AsyncStorage pour ne plus jamais
+  // re-show.
+  const [explainerVisible, setExplainerVisible] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEYS.shelfExplainerSeen)
+      .then((seen) => {
+        if (seen !== '1') {
+          // Petit délai pour laisser la transition de tab s'achever avant
+          // de pop la modale (sinon ça flashe sur la transition).
+          setTimeout(() => setExplainerVisible(true), 350);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleExplainerClose = () => {
+    setExplainerVisible(false);
+    AsyncStorage.setItem(STORAGE_KEYS.shelfExplainerSeen, '1').catch(() => {});
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
@@ -68,6 +106,12 @@ export default function ShelfScreen() {
         entering={FadeInDown.duration(400)}
         style={[styles.headerContainer, { paddingTop: topPadding + Spacing.lg }]}
       >
+        {/* Lot 15A2 — Mode accompagnant : pastille discrète au-dessus
+            du segmented control pour rappeler que le placard affiché est
+            celui de la maman (read-only pour le partner). */}
+        {isPartner && (
+          <PartnerModeBadge linkedFirstName={linkedFirstName} variant="compact" />
+        )}
         <SegmentedControl selected={activeTab} onSelect={setActiveTab} />
 
         {/* Shelf scanner button */}
@@ -92,6 +136,12 @@ export default function ShelfScreen() {
       ) : (
         <MaListeView />
       )}
+
+      {/* Lot 15A4 — Explainer "Placard vs À acheter", first-visit only. */}
+      <ShelfExplainerModal
+        visible={explainerVisible}
+        onClose={handleExplainerClose}
+      />
     </View>
   );
 }
@@ -116,6 +166,13 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm + 2,
     alignItems: 'center',
     borderRadius: Radius.sm,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  segmentEmoji: {
+    fontSize: 14,
+    lineHeight: 18,
   },
   segmentActive: {
     backgroundColor: Colors.surface,

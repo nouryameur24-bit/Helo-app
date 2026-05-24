@@ -1,25 +1,26 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Feather } from '@expo/vector-icons';
 
 import { ShareBottomSheet } from '@/components/share/ShareBottomSheet';
 import { GlowScoreShareCard } from '@/components/share/GlowScoreShareCard';
 import { BreastfeedingTransition } from '@/components/BreastfeedingTransition';
 import { WelcomeOverlay } from '@/components/WelcomeOverlay';
-import { PactWidget } from '@/components/PactWidget';
 import { PartnerHomeScreen } from '@/components/home/PartnerHomeScreen';
 import { BreastfeedingBanners } from '@/components/home/BreastfeedingBanners';
-import { FeatureGrid } from '@/components/home/FeatureGrid';
 import { GlowScoreSection } from '@/components/home/GlowScoreSection';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { HomeHeroCTA } from '@/components/home/HomeHeroCTA';
-import { HomeQuickActions } from '@/components/home/HomeQuickActions';
-import { HomeShelfScanCTA } from '@/components/home/HomeShelfScanCTA';
-import { HomeStatsRow } from '@/components/home/HomeStatsRow';
 import { HomeWeeklyBrief } from '@/components/home/HomeWeeklyBrief';
 import { HomeRecentScans } from '@/components/home/HomeRecentScans';
 import { HomeDisclaimer } from '@/components/home/HomeDisclaimer';
+import { MoreToolsSheet } from '@/components/home/MoreToolsSheet';
+import { GlowScoreDeltaToast } from '@/components/home/GlowScoreDeltaToast';
+import { ThemedText } from '@/components/ui/ThemedText';
 import { styles } from '@/components/home/homeStyles';
+import { Radius } from '@/constants/theme';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { calculateGlowScore } from '@/lib/glowscore';
@@ -66,11 +67,18 @@ export default function HomeScreen() {
 
   const welcome = useWelcomeOverlay();
   const [glowShareVisible, setGlowShareVisible] = useState(false);
+  // Lot 15C — Plus d'outils sheet : groupe les features secondaires
+  // (Voyage, Nutrition, Maison, Timeline, Widget Glow) qui surchargeaient
+  // le home avec un FeatureGrid de 6 cellules. Le user voit "Plus d'outils ▼",
+  // tap → sheet → choisit, et le home reste épuré.
+  const [moreToolsVisible, setMoreToolsVisible] = useState(false);
 
   // Stable handlers — without useCallback the inline arrows would change on
   // every render and defeat React.memo on the memoised sub-components.
   const handleShareGlow = useCallback(() => setGlowShareVisible(true), []);
   const handleCloseShare = useCallback(() => setGlowShareVisible(false), []);
+  const handleOpenMoreTools = useCallback(() => setMoreToolsVisible(true), []);
+  const handleCloseMoreTools = useCallback(() => setMoreToolsVisible(false), []);
   const displayName = firstName || 'Hēlo';
 
   if (isPartner) {
@@ -114,6 +122,20 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
+        {/* ── Lot 15C — Home refonte : 12 sections → 6 ──
+            Sections gardées (essentielles) :
+              1. Header (greeting + week)
+              2. BreastfeedingBanners (conditionnel, fonctionnel)
+              3. Hero CTA "Scanner maintenant" (action primaire)
+              4. GlowScoreSection (signature feature + stats inline)
+              5. WeeklyBrief (personalization)
+              6. RecentScans (proof of activity)
+              7. "Plus d'outils ▼" → MoreToolsSheet (Nutrition, Maison,
+                 Voyage, Timeline, Widget Glow — toutes les secondaires)
+              8. Disclaimer (footer subtle)
+            Retirées : PactWidget (feature-flagged), HomeQuickActions,
+            HomeShelfScanCTA, HomeStatsRow (mergé), FeatureGrid (→ sheet). */}
+
         <HomeHeader displayName={displayName} weekOfPregnancy={weekOfPregnancy} />
 
         <BreastfeedingBanners
@@ -125,36 +147,87 @@ export default function HomeScreen() {
 
         <HomeHeroCTA />
 
-        <PactWidget />
-
-        <HomeQuickActions />
-
-        <FeatureGrid isPremium={isPremium} />
-
-        <HomeShelfScanCTA isPremium={isPremium} />
-
-        <HomeStatsRow
-          total={total}
-          countSafe={countSafe}
-          countCaution={countCaution}
-          countDanger={countDanger}
-        />
+        <View style={{ position: 'relative' }}>
+          {/* Lot 16-12 — Toast "+N ✨" / "−N ⚠️" qui flash quand le score
+              change. Overlay positionné sur le wrapper relative au-dessus
+              de la GlowScoreSection. */}
+          <GlowScoreDeltaToast score={score} />
+          <GlowScoreSection
+            score={score}
+            total={total}
+            countSafe={countSafe}
+            countCaution={countCaution}
+            countDanger={countDanger}
+            onShare={handleShareGlow}
+          />
+        </View>
 
         <HomeWeeklyBrief weekOfPregnancy={weekOfPregnancy} isNew={isNew} />
 
-        <GlowScoreSection
-          score={score}
-          total={total}
-          countSafe={countSafe}
-          countCaution={countCaution}
-          countDanger={countDanger}
-          onShare={handleShareGlow}
-        />
-
         <HomeRecentScans shelf={shelf} />
+
+        {/* "Plus d'outils" — bouton minimaliste qui ouvre la sheet. */}
+        <Animated.View entering={FadeInDown.delay(220).duration(400)}>
+          <Pressable
+            onPress={handleOpenMoreTools}
+            accessibilityRole="button"
+            accessibilityLabel="Voir tous les outils Hēlo"
+            style={({ pressed }) => [
+              moreToolsBtn.btn,
+              { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+          >
+            <View style={moreToolsBtn.row}>
+              <View style={moreToolsBtn.iconWrap}>
+                <Feather name="grid" size={18} color={Colors.accentDark} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <ThemedText variant="labelLarge" color="textPrimary">
+                  Plus d'outils
+                </ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">
+                  Nutrition, voyage, timeline...
+                </ThemedText>
+              </View>
+              <Feather name="chevron-down" size={18} color={Colors.textTertiary} />
+            </View>
+          </Pressable>
+        </Animated.View>
 
         <HomeDisclaimer />
       </ScrollView>
+
+      <MoreToolsSheet
+        visible={moreToolsVisible}
+        onClose={handleCloseMoreTools}
+        isPremium={isPremium}
+      />
     </View>
   );
 }
+
+// Lot 15C — Bouton "Plus d'outils" inline du home.
+const moreToolsBtn = StyleSheet.create({
+  btn: {
+    marginTop: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent + '22',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.accentLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

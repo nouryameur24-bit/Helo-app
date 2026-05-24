@@ -3,8 +3,9 @@ import { ROUTES } from '@/types/routes';
 import * as Haptics from 'expo-haptics';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as Sharing from 'expo-sharing';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -43,7 +44,16 @@ import {
 } from '@/components/ar-mirror/arMirrorTypes';
 
 export default function ARMirrorScreen() {
-  if (!isFeatureEnabled('arMirror')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('arMirror')) {
+    return (
+      <ComingSoonScreen
+        title="AR Mirror"
+        subtitle="Disponible en v1.2"
+        emoji="✨"
+        description="Visualise ton baby bump semaine après semaine en réalité augmentée. On y travaille."
+      />
+    );
+  }
   const __discovery_ar_mirror = useFeatureDiscovery('ar_mirror');
   const insets = useSafeAreaInsets();
   const { isPremium } = usePremium();

@@ -9,6 +9,7 @@ import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
+import { useChatUnread } from "@/hooks/useChatUnread";
 
 function NativeTabLayout() {
   return (
@@ -41,6 +42,10 @@ function ClassicTabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  // Lot 16-10 — Badge unread sur l'icône Chat. Le hook expose le nombre
+  // de messages IA reçus pendant que l'utilisatrice n'était PAS sur le
+  // chat tab. Reset automatique à l'ouverture du chat (useFocusEffect).
+  const chatUnread = useChatUnread();
 
   return (
     <Tabs
@@ -114,6 +119,13 @@ function ClassicTabLayout() {
         options={{
           title: "Chat IA",
           tabBarHideOnKeyboard: true,
+          tabBarBadge: chatUnread > 0 ? chatUnread : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: Colors.danger,
+            color: '#FFFFFF',
+            fontSize: 11,
+            fontWeight: '700',
+          },
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="message" tintColor={color} size={24} />

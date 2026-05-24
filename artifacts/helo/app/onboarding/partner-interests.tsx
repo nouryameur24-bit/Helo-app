@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { ThemedText } from '@/components/ui/ThemedText';
+import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 
@@ -52,7 +53,13 @@ export default function PartnerInterestsScreen() {
         { paddingTop: topPadding + Spacing.huge, paddingBottom: bottomPadding + Spacing.xxl },
       ]}
     >
-      <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
+      {/* Lot 15B4 — Progress "Étape 3 sur 3" — dernière étape avant
+          d'entrer dans l'app. Rassure : "encore un effort, c'est presque fini". */}
+      <Animated.View entering={FadeInDown.delay(0).duration(400)} style={{ marginBottom: Spacing.lg }}>
+        <OnboardingProgress step={3} total={3} label="Connexion partenaire" />
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.header}>
         <ThemedText variant="displayMedium" color="textPrimary" style={styles.title}>
           Vos centres d'intérêt
         </ThemedText>

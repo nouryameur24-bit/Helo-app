@@ -18,6 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { PermissionScreen, WebPlaceholder } from '@/components/scan/ScanStatusUI';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+import { useSafeBack } from '@/hooks/useSafeBack';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const VIEWFINDER_SIZE = Math.min(SCREEN_W - Spacing.huge * 2, 280);
@@ -68,6 +69,9 @@ export default function PartnerScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [isActive, setIsActive] = useState(false);
   const lastScanned = useRef<string | null>(null);
+  // Lot 15B3 — sortie sûre : si pas d'historique (deep-link via notif),
+  // fallback vers l'onboarding partner-code (saisie manuelle).
+  const safeBack = useSafeBack('/onboarding/partner-code');
 
   useFocusEffect(
     useCallback(() => {
@@ -157,7 +161,7 @@ export default function PartnerScanScreen() {
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + Spacing.sm }]}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={safeBack}
           style={({ pressed }) => [styles.closeBtn, { opacity: pressed ? 0.7 : 1 }]}
           accessibilityRole="button"
           accessibilityLabel="Fermer le scanner"
@@ -166,7 +170,7 @@ export default function PartnerScanScreen() {
           <Feather name="x" size={22} color="#FFFFFF" />
         </Pressable>
         <ThemedText variant="labelLarge" color="surface" style={styles.topTitle}>
-          Scanner le QR
+          Scannez le QR de votre partenaire
         </ThemedText>
         <View style={styles.closeBtnSpacer} />
       </View>
@@ -193,7 +197,7 @@ export default function PartnerScanScreen() {
         ]}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={safeBack}
           style={({ pressed }) => [styles.fallbackBtn, { opacity: pressed ? 0.85 : 1 }]}
           accessibilityRole="button"
         >

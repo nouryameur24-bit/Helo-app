@@ -1,8 +1,9 @@
 // ─── Chat IA — Hēlo ──────────────────────────────────────────────────────────
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ROUTES } from '@/types/routes';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { clearChatUnread } from '@/hooks/useChatUnread';
 import {
   ActivityIndicator,
   Alert,
@@ -123,6 +124,15 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const [chatCount, setChatCount] = useState(0);
   const [initialized, setInitialized] = useState(false);
+
+  // Lot 16-10 — Reset le badge unread quand l'utilisatrice arrive sur le
+  // chat tab. useFocusEffect = call à chaque fois que le tab est focus,
+  // pas juste au mount.
+  useFocusEffect(
+    useCallback(() => {
+      clearChatUnread();
+    }, []),
+  );
 
   // ── Load history ──────────────────────────────────────────────────────────
   useEffect(() => {

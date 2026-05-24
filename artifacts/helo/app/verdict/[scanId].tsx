@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Platform,
   ScrollView,
+  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -38,6 +39,9 @@ import { GhostContributionCard } from '@/components/verdict/GhostContributionCar
 import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
 import { OverrideBanner, AcceptOverrideButton } from '@/components/verdict/AcceptOverrideSheet';
 import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
+import { OnboardingCompleteModal } from '@/components/onboarding/OnboardingCompleteModal';
+import { useSafeBack } from '@/hooks/useSafeBack';
+import { BlurView } from 'expo-blur';
 import {
   getVerdictColor,
   getVerdictBg,
@@ -91,6 +95,9 @@ export default function VerdictScreen() {
   const { loading, product, matches, verdict, error, notFound, scanBarcode, setDirectResult } = useScan();
   const { isPremium, requirePremium } = usePremium();
   const { isOffline } = useOffline();
+  // Lot 15B2 — back centralisé : si pas d'historique (deep-link, cold start),
+  // route vers le scan tab plutôt que de no-op silencieux.
+  const safeBack = useSafeBack('/(tabs)/scan');
 
   const { role, userId, trimester: profileTrimester, linkedUserId, firstName } = useProfile();
   const isPartner = role === 'partner';
@@ -106,6 +113,10 @@ export default function VerdictScreen() {
   const [toastMessage, setToastMessage] = useState('Ajouté à votre placard ✓');
   const [rewardToastVisible, setRewardToastVisible] = useState(false);
   const ghostThanksShownRef = useRef(false);
+  // Lot 15A1 — célébration "🎉 Setup terminé" affichée UNE SEULE FOIS après
+  // le verdict du tout premier scan (entrée via onboarding/first-scan).
+  const [onboardingCelebrationVisible, setOnboardingCelebrationVisible] = useState(false);
+  const onboardingCelebrationShownRef = useRef(false);
 
   // ── Ghost Capture "merci" celebration ───────────────────────────────────────
   // Triggered when the user arrives from the OCR review flow with ghostThanks=1.
@@ -267,8 +278,51 @@ export default function VerdictScreen() {
     }).catch(() => {});
   }, [verdict]);
 
+  // ── Lot 15A1 — célébration "Setup terminé" après le 1er scan ───────────────
+  // Déclenchée UNE SEULE FOIS : à l'arrivée sur le verdict du tout premier
+  // scan (lancé via onboarding/first-scan), on affiche la modale OnboardingComplete
+  // avec un mini-tour des onglets. Le drapeau `firstScanCompleted` empêche
+  // toute ré-affichage les scans suivants.
+  useEffect(() => {
+    if (!verdict || onboardingCelebrationShownRef.current) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [pending, alreadyDone] = await Promise.all([
+          AsyncStorage.getItem(STORAGE_KEYS.pendingFirstScan),
+          AsyncStorage.getItem(STORAGE_KEYS.firstScanCompleted),
+        ]);
+        if (cancelled) return;
+        if (pending !== '1' || alreadyDone === '1') return;
+        onboardingCelebrationShownRef.current = true;
+        // Laisser respirer le verdict animations (~700ms) avant de pop la modale
+        // pour que l'utilisatrice voie d'abord son score puis la célébration.
+        setTimeout(() => {
+          if (!cancelled) setOnboardingCelebrationVisible(true);
+        }, 750);
+        // Consume + persist : flag pending = utilisé, flag completed = définitif
+        await AsyncStorage.multiSet([
+          [STORAGE_KEYS.pendingFirstScan, ''],
+          [STORAGE_KEYS.firstScanCompleted, '1'],
+        ]);
+        track('onboarding_first_scan_celebrated', {
+          verdict: verdict.verdict,
+        }).catch(() => {});
+      } catch (err) {
+        if (__DEV__) console.warn('[verdict] first-scan celebration check failed:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [verdict]);
+
   const handleShelfSelect = useCallback(async (category: string) => {
     setSheetVisible(false);
+
+    // Lot 16-06 — Haptic Success quand le produit atterrit dans le placard.
+    // Avant : pure silence côté tactile, l'action semblait ne "rien faire".
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
     const shelfUserId = effectiveUserId;
     const productName = product?.name ?? 'Produit';
@@ -449,6 +503,57 @@ export default function VerdictScreen() {
         />
       )}
 
+      {/* ── Lot 15B2 — Sticky header ──
+          Avant : l'écran verdict n'avait QU'UN bouton retour caché dans
+          le hero gradient → scroll → disparaît → l'utilisatrice ne sait
+          plus comment sortir ni quel produit elle regarde. Maintenant
+          ce header reste TOUJOURS visible en haut avec :
+          (chevron retour | nom du produit centré | espace pour menu).
+          BlurView pour rester lisible par-dessus n'importe quel fond. */}
+      <View
+        style={[
+          stickyHeaderStyles.wrap,
+          { paddingTop: (Platform.OS === 'web' ? 67 : insets.top) },
+        ]}
+        pointerEvents="box-none"
+      >
+        <BlurView
+          intensity={Platform.OS === 'ios' ? 60 : 80}
+          tint="light"
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={stickyHeaderStyles.row}>
+          <TouchableOpacity
+            onPress={safeBack}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
+            style={stickyHeaderStyles.backBtn}
+          >
+            <Feather name="chevron-left" size={22} color={Colors.textPrimary} />
+          </TouchableOpacity>
+
+          <ThemedText
+            variant="labelLarge"
+            color="textPrimary"
+            numberOfLines={1}
+            style={stickyHeaderStyles.title}
+          >
+            {product?.name ?? 'Analyse du produit'}
+          </ThemedText>
+
+          <TouchableOpacity
+            onPress={handleShare}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Partager"
+            style={stickyHeaderStyles.menuBtn}
+          >
+            <Feather name="share" size={18} color={Colors.textPrimary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
@@ -460,19 +565,18 @@ export default function VerdictScreen() {
         {/* ── HERO ── */}
         <LinearGradient
           colors={[verdictBgColor, Colors.background]}
-          style={styles.hero}
+          style={[
+            styles.hero,
+            // Lot 15B2 — padding-top = safe-area + hauteur du sticky header
+            // (~60px) pour que le contenu du hero démarre juste sous celui-ci.
+            { paddingTop: (Platform.OS === 'web' ? 67 : insets.top) + 64 },
+          ]}
         >
           {/* Texture papier vélin (~5% opacité) — Moment 1 brief v1.1 */}
           <VellumTexture />
-          <TouchableOpacity
-            style={[styles.backRow, { marginTop: (Platform.OS === 'web' ? 67 : insets.top) + Spacing.sm }]}
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel="Retour"
-          >
-            <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
-            <ThemedText variant="bodyMedium" style={styles.backRowText}>Retour</ThemedText>
-          </TouchableOpacity>
+          {/* Lot 15B2 — La back-row interne est supprimée car redondante
+              avec le sticky header au-dessus. Le hero commence directement
+              avec un padding-top compensant la hauteur du sticky header. */}
 
           <View style={styles.heroCenter}>
             <ScoreCircle
@@ -783,6 +887,60 @@ export default function VerdictScreen() {
         scanId={barcode}
         productName={product?.name ?? ''}
       />
+
+      {/* Lot 15A1 — Célébration "🎉 Setup terminé" après le 1er scan.
+          Affichée UNE SEULE FOIS (drapeau AsyncStorage `firstScanCompleted`).
+          CTA principal "Découvrir mon placard" route vers /(tabs)/shelf. */}
+      <OnboardingCompleteModal
+        visible={onboardingCelebrationVisible}
+        onClose={() => setOnboardingCelebrationVisible(false)}
+        firstName={firstName}
+      />
     </View>
   );
 }
+
+// Lot 15B2 — Styles du header sticky du verdict screen.
+// Positionné absolute + zIndex haut pour rester au-dessus de tous les
+// éléments du hero. BlurView lui donne le voile iOS-style.
+const stickyHeaderStyles = StyleSheet.create({
+  wrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0, 0, 0, 0.06)',
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    flex: 1,
+    textAlign: 'center',
+    paddingHorizontal: Spacing.xs,
+  },
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

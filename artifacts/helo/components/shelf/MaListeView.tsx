@@ -15,6 +15,8 @@ import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 
+import { router } from 'expo-router';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 
@@ -112,15 +114,13 @@ export function MaListeView() {
 
   if (items.length === 0) {
     return (
-      <View style={styles.emptyRoot}>
-        <Feather name="shopping-cart" size={48} color={Colors.textTertiary} />
-        <ThemedText variant="headlineLarge" color="textPrimary" style={styles.emptyTitle}>
-          Votre liste est vide
-        </ThemedText>
-        <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
-          Ajoutez des alternatives depuis les résultats de scan pour créer votre liste de courses.
-        </ThemedText>
-      </View>
+      <EmptyState
+        emoji="🛒"
+        title="Ta liste de courses est vide"
+        subtitle="Quand tu finis un flacon, ajoute-le ici pour le racheter. La liste te suit en magasin."
+        ctaLabel="Découvrir mon placard"
+        onCta={() => router.push('/(tabs)/shelf')}
+      />
     );
   }
 

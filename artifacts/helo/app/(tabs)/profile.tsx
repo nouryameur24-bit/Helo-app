@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AccountActions } from '@/components/profile/AccountActions';
 import { CircleSection } from '@/components/profile/CircleSection';
+import { FeedbackSection } from '@/components/profile/FeedbackSection';
 import { OverlayGates } from '@/components/profile/OverlayGates';
 import { PartnerSection } from '@/components/profile/PartnerSection';
 import { PreferencesSection } from '@/components/profile/PreferencesSection';
@@ -33,6 +34,9 @@ export default function ProfileScreen() {
           <CircleSection />
           <PartnerSection />
           <PreferencesSection />
+          {/* Lot 16-03 — Aide & Feedback : critique pour collecter les
+              retours beta. Mailto direct + StoreReview natif iOS. */}
+          <FeedbackSection />
           <AccountActions />
         </ScrollView>
       </View>

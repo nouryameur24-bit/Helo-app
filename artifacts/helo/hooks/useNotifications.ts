@@ -40,13 +40,25 @@ function handleNotificationRoute(
   response: Notifications.NotificationResponse,
 ) {
   const data = response.notification.request.content.data as NotificationPayload | undefined;
-  if (data?.type) {
-    const payload = data.data as Record<string, string | number | boolean> | undefined;
-    const route = getDeepLinkRoute(data.type, payload);
-    try {
-      router.push(route as Parameters<typeof router.push>[0]);
-    } catch (err) { swallow(err); }
-  }
+  if (!data?.type) return;
+  const payload = data.data as Record<string, string | number | boolean> | undefined;
+  const route = getDeepLinkRoute(data.type, payload);
+  try {
+    // Lot 15B5 — `router.replace` au lieu de `router.push` :
+    //   • Évite la pollution de stack quand plusieurs notifs sont tapées
+    //     en séquence (sinon back doit dépiler N entries).
+    //   • Si la notif est tapée alors que l'app est cold-started, replace
+    //     positionne la nouvelle route comme racine, pas comme dépendant
+    //     d'un état historique vide.
+    // Fallback explicite si getDeepLinkRoute renvoie undefined : on route
+    // vers le home plutôt que d'être un no-op silencieux.
+    if (route) {
+      router.replace(route as Parameters<typeof router.replace>[0]);
+    } else {
+      if (__DEV__) console.warn(`[useNotifications] Unmapped notification type: ${data.type}`);
+      router.replace('/(tabs)');
+    }
+  } catch (err) { swallow(err); }
 }
 
 export function useNotificationTapRouting() {

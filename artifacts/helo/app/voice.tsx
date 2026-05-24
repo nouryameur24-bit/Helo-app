@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { ROUTES } from '@/types/routes';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import * as Speech from 'expo-speech';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
@@ -62,7 +63,16 @@ function stripMarkdown(text: string): string {
 }
 
 export default function VoiceScreen() {
-  if (!isFeatureEnabled('voice')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('voice')) {
+    return (
+      <ComingSoonScreen
+        title="Assistant Vocal"
+        subtitle="Disponible en v1.1"
+        emoji="🎙️"
+        description="Parle à ta Sage-Femme IA. Pose tes questions à voix haute, écoute les réponses. Bientôt."
+      />
+    );
+  }
   const __discovery_voice = useFeatureDiscovery('voice');
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;

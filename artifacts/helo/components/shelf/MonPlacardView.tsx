@@ -1,12 +1,13 @@
 import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { FlatList, RefreshControl, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { IllustrationShelf } from '@/components/illustrations/IllustrationShelf';
 import { FilterSheet, FilterState, DEFAULT_FILTERS } from '@/components/shelf/FilterSheet';
+import { LongPressHint } from '@/components/shelf/LongPressHint';
 import { ShelfCard, ShelfProduct } from '@/components/shelf/ShelfCard';
 import { ShimmerCard } from '@/components/shelf/ShimmerCard';
 import { Button } from '@/components/ui/Button';
@@ -57,6 +58,7 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   const isPartner = role === 'partner' && !!linkedUserId;
 
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [products, setProducts] = useState<ShelfProduct[]>([]);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
@@ -174,6 +176,22 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
     return result;
   }, [products, filters]);
 
+  // Lot 16-02 — Pull-to-refresh : recharge le shelf (partner = Supabase,
+  // mom = local AsyncStorage déjà mémorisé par le hook parent).
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (isPartner && linkedUserId) {
+        await loadMotherShelf(linkedUserId);
+      }
+      // Mom mode : le shelf vient du hook parent. Petit délai pour montrer
+      // visuellement que l'action a été reçue.
+      await new Promise((r) => setTimeout(r, 600));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [isPartner, linkedUserId]);
+
   const compatibleCount = products.filter((p) => p.verdict === 'safe').length;
   const compatiblePercent = products.length > 0 ? Math.round((compatibleCount / products.length) * 100) : 0;
 
@@ -236,12 +254,12 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
       <View style={styles.emptyRoot}>
         <IllustrationShelf size={180} />
         <ThemedText variant="headlineLarge" color="textPrimary" style={styles.emptyTitle}>
-          {isPartner ? `Le placard de ${linkedFirstName ?? 'votre proche'} est vide` : 'Votre placard est vide'}
+          {isPartner ? `Le placard de ${linkedFirstName ?? 'ta moitié'} est vide` : 'Ton placard est vide'}
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
           {isPartner
-            ? 'Scannez des produits pour votre proche et ajoutez-les à son placard.'
-            : 'Scannez vos produits et ajoutez-les à votre placard pour les retrouver ici.'}
+            ? `Scanne des produits pour ${linkedFirstName ?? 'ta moitié'} et ajoute-les à son placard.`
+            : 'Scanne tes produits et ajoute-les à ton placard pour les retrouver ici.'}
         </ThemedText>
         <Button variant="primary" onPress={() => router.push('/(tabs)/scan')}>
           Scanner un produit
@@ -265,6 +283,14 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
           gap: Spacing.md,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={Colors.accent}
+            colors={[Colors.accent]}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.header}>
             {isPartner && (
@@ -321,6 +347,10 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
           </ScrollView>
         </View>
       )}
+
+      {/* Lot 16-13 — Hint discret pour éduquer au geste long-press.
+          Affiché une seule fois (AsyncStorage flag), auto-dismiss 5s. */}
+      <LongPressHint enabled={products.length > 0} />
     </View>
   );
 }

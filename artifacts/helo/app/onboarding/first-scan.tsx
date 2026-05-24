@@ -64,6 +64,10 @@ export default function FirstScanScreen() {
   const handleScan = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await AsyncStorage.setItem(WELCOME_FLAG, "1");
+    // Lot 15A1 — marque ce scan comme "le premier" pour que l'écran de
+    // verdict affiche la modale "🎉 Setup terminé" + tour des onglets.
+    // Le flag est consommé une seule fois côté verdict puis supprimé.
+    await AsyncStorage.setItem(STORAGE_KEYS.pendingFirstScan, "1");
     router.replace("/(tabs)/scan");
   };
 

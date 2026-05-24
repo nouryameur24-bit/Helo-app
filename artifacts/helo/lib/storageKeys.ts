@@ -23,6 +23,23 @@ export const STORAGE_KEYS = {
   disclaimerAccepted: 'disclaimer_accepted',
   disclaimerAcceptedVersion: 'disclaimer_accepted_version',
   showWelcomeOverlay: '@helo_show_welcome_overlay',
+  /** Set to '1' when user taps "Scanner mon premier produit" from
+   *  onboarding/first-scan. Read once on the next verdict screen so we
+   *  can show the OnboardingCompleteModal, then cleared. */
+  pendingFirstScan: '@helo_pending_first_scan',
+  /** Set to '1' after OnboardingCompleteModal has been shown to the
+   *  user. Prevents the celebration from re-showing on every scan. */
+  firstScanCompleted: '@helo_first_scan_completed',
+  /** Set to '1' after the user has seen the "Placard vs À acheter"
+   *  explainer modal in the shelf tab. Prevents re-showing on every
+   *  subsequent visit. */
+  shelfExplainerSeen: '@helo_shelf_explainer_seen',
+  /** Dernière version vue par l'utilisateur. Comparé à la version
+   *  bundle au boot — si différent, on affiche le WhatsNewModal. */
+  lastSeenVersion: '@helo_last_seen_version',
+  /** Set à '1' après que l'utilisateur a vu (et automatiquement dismissé)
+   *  le hint "Maintiens un produit pour les options" dans le placard. */
+  shelfLongPressHintSeen: '@helo_shelf_long_press_hint_seen',
   userRole: '@helo_user_role',
   linkedUserId: '@helo_linked_user_id',
   linkedFirstName: '@helo_linked_first_name',

@@ -9,6 +9,7 @@ import { PartnerQRCard } from '@/components/partner/PartnerQRCard';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { useSafeBack } from '@/hooks/useSafeBack';
 
 /**
  * Full-screen share view for the pregnant user's partner code. The same UI is
@@ -22,12 +23,15 @@ export default function PartnerShareScreen() {
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
   const { partnerCode, isLoading, firstName } = useProfile();
+  // Lot 15B5 — partner-share peut être atteint depuis le profil OU depuis
+  // une notif push en cold-start. Safe back évite le no-op silencieux.
+  const safeBack = useSafeBack('/(tabs)/profile');
 
   return (
     <View style={[styles.root, { paddingTop: topPadding }]}>
       <View style={styles.topBar}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={safeBack}
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
           accessibilityRole="button"
           accessibilityLabel="Retour"

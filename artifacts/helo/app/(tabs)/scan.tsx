@@ -59,6 +59,7 @@ import {
 } from '@/components/scan/scanConstants';
 import { FlashingViewfinder, ScanOverlay } from '@/components/scan/ScanViewfinder';
 import { ModeChip, ShutterButton } from '@/components/scan/ScanControls';
+import { MoreScanModesSheet, type ScanModeOption } from '@/components/scan/MoreScanModesSheet';
 
 import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
 import { useFeatureDiscovery } from '@/hooks/useFeatureDiscovery';
@@ -97,6 +98,10 @@ export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [torchOn, setTorchOn] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>('barcode');
+  // Lot 15A3 — Sheet listant les modes secondaires (Ingrédients, Menu,
+  // Ordonnance, Photo). Ouvert via le chip "Plus d'options ▼" pour réduire
+  // la charge cognitive (avant : 5 chips au même niveau).
+  const [moreModesVisible, setMoreModesVisible] = useState(false);
   const [isActive, setIsActive] = useState(false);
   const [takingPhoto, setTakingPhoto] = useState(false);
   const [syncToastVisible, setSyncToastVisible] = useState(false);
@@ -509,46 +514,31 @@ export default function ScanScreen() {
         </View>
       )}
 
-      {/* ── Bottom mode chips ── */}
+      {/* ── Bottom mode chips (Lot 15A3 — refonte hiérarchique) ──
+          Avant : 5 chips au même niveau (Code-barres / Ingrédients / Menu /
+          Ordonnance / Photo) → surcharge cognitive pour les newcomers.
+          Après : "Code-barres" en primary + "Plus d'options ▼" qui ouvre
+          un BottomSheet listant les modes secondaires avec descriptions. */}
       <View style={[styles.bottomBar, { paddingBottom: bottomOffset + Spacing.lg }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsRow}
         >
-          <ModeChip label="Code-barres" active={scanMode === 'barcode'} onPress={() => setScanMode('barcode')} />
           <ModeChip
-            label="Ingrédients"
-            active={scanMode === 'ingredients'}
-            onPress={() => {
-              setScanMode('ingredients');
-              void fdOcr.trigger();
-            }}
+            label="Code-barres"
+            active={scanMode === 'barcode'}
+            onPress={() => setScanMode('barcode')}
           />
           <ModeChip
-            label="Menu"
-            active={scanMode === 'menu'}
-            onPress={() => {
-              setScanMode('menu');
-              void fdRestaurant.trigger();
-            }}
-          />
-          <ModeChip
-            label="💊 Ordonnance"
-            active={false}
-            onPress={() => {
-              void fdPrescription.trigger();
-              router.push(ROUTES.prescriptionScan);
-            }}
-          />
-          <ModeChip
-            label="📷 Photo"
-            active={scanMode === 'photo'}
-            onPress={() => {
-              if (requirePremium('photo_scan')) return;
-              setScanMode('photo');
-              void fdPhoto.trigger();
-            }}
+            label={
+              scanMode === 'ingredients' ? 'Ingrédients ▼' :
+              scanMode === 'menu' ? 'Menu ▼' :
+              scanMode === 'photo' ? '📷 Photo ▼' :
+              'Plus d\'options ▼'
+            }
+            active={scanMode !== 'barcode'}
+            onPress={() => setMoreModesVisible(true)}
           />
         </ScrollView>
         {isMenuMode && menuPhotos.length > 0 && (
@@ -557,6 +547,34 @@ export default function ScanScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Sheet des modes secondaires — listé avec descriptions claires +
+          badge Premium pour le mode photo. */}
+      <MoreScanModesSheet
+        visible={moreModesVisible}
+        onClose={() => setMoreModesVisible(false)}
+        currentMode={
+          scanMode === 'ingredients' || scanMode === 'menu' || scanMode === 'photo'
+            ? (scanMode as ScanModeOption)
+            : null
+        }
+        onSelect={(mode) => {
+          if (mode === 'ingredients') {
+            setScanMode('ingredients');
+            void fdOcr.trigger();
+          } else if (mode === 'menu') {
+            setScanMode('menu');
+            void fdRestaurant.trigger();
+          } else if (mode === 'prescription') {
+            void fdPrescription.trigger();
+            router.push(ROUTES.prescriptionScan);
+          } else if (mode === 'photo') {
+            if (requirePremium('photo_scan')) return;
+            setScanMode('photo');
+            void fdPhoto.trigger();
+          }
+        }}
+      />
 
       {/* Single-sheet arbitration: render only the first visible discovery
           to avoid stacked RN Modals when timers and chip taps overlap. */}

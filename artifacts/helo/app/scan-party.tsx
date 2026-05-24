@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Redirect } from 'expo-router';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Platform, View } from 'react-native';
@@ -18,7 +18,16 @@ import ExportCard from '@/components/scan-party/ExportCard';
 import PaywallModal from '@/components/scan-party/PaywallModal';
 
 export default function ScanPartyScreen() {
-  if (!isFeatureEnabled('scanParty')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('scanParty')) {
+    return (
+      <ComingSoonScreen
+        title="Scan Party"
+        subtitle="Disponible en v1.1"
+        emoji="🎉"
+        description="Une expérience scan collective entre copines. Plus d'infos très bientôt."
+      />
+    );
+  }
   const { trimester } = useProfile();
   const [phase, setPhase] = useState<Phase>('config');
   const [selectedTheme, setSelectedTheme] = useState<Theme>('libre');

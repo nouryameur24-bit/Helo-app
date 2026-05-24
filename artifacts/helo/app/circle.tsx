@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -36,7 +37,16 @@ import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
   
 
 export default function CircleScreen() {
-  if (!isFeatureEnabled('circle')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('circle')) {
+    return (
+      <ComingSoonScreen
+        title="Mon Cercle"
+        subtitle="Disponible en v1.1"
+        emoji="💞"
+        description="Un espace privé pour partager ton parcours avec tes proches choisis. Pas d'inconnus, jamais."
+      />
+    );
+  }
   const __discovery_circle = useFeatureDiscovery('circle');
   const insets = useSafeAreaInsets();
   const { userId, firstName } = useProfile();

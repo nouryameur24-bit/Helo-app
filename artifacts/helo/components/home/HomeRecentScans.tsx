@@ -74,16 +74,49 @@ export const HomeRecentScans = React.memo(function HomeRecentScans({ shelf }: Pr
 
       <View style={styles.scanList}>
         {shelf.length === 0 ? (
+          // Lot 16-01 — Empty state polish : avant un simple Pressable
+          // "Scannez votre premier produit", maintenant une vraie carte
+          // avec icone, baseline rassurante et CTA explicite.
           <Pressable
-            onPress={() => router.push('/scan')}
-            style={[styles.scanCard, { backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center', paddingVertical: Spacing.xl }]}
+            onPress={() => router.push('/(tabs)/scan')}
+            style={[
+              styles.scanCard,
+              {
+                backgroundColor: Colors.surface,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingVertical: Spacing.xl + Spacing.sm,
+                gap: Spacing.sm,
+                borderWidth: 1,
+                borderColor: Colors.accent + '22',
+                borderStyle: 'dashed',
+              },
+            ]}
             accessibilityRole="button"
-            accessibilityLabel="Scanner votre premier produit"
+            accessibilityLabel="Scanner ton premier produit"
           >
-            <Feather name="camera" size={24} color={Colors.accent} />
-            <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
-              Scannez votre premier produit
+            <ThemedText style={{ fontSize: 32, lineHeight: 36 }}>📦</ThemedText>
+            <ThemedText variant="labelLarge" color="textPrimary" style={{ textAlign: 'center' }}>
+              Aucun scan pour le moment
             </ThemedText>
+            <ThemedText variant="bodySmall" color="textTertiary" style={{ textAlign: 'center', maxWidth: 240 }}>
+              Scanne ton premier produit — il apparaîtra ici.
+            </ThemedText>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: Spacing.xs,
+              backgroundColor: Colors.accentLight,
+              paddingHorizontal: Spacing.md,
+              paddingVertical: Spacing.xs,
+              borderRadius: 999,
+            }}>
+              <Feather name="camera" size={14} color={Colors.accentDark} />
+              <ThemedText variant="labelSmall" style={{ color: Colors.accentDark }}>
+                Scanner maintenant
+              </ThemedText>
+            </View>
           </Pressable>
         ) : (
           shelf.slice(0, 3).map((item, index) => (

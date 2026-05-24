@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { ROUTES } from '@/types/routes';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import React, { type ComponentProps, useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
@@ -292,7 +293,16 @@ function ListHeader({ showUnavailableBanner, isOffline }: ListHeaderProps) {
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function CommunityScreen() {
-  if (!isFeatureEnabled('community')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('community')) {
+    return (
+      <ComingSoonScreen
+        title="La Communauté Hēlo"
+        subtitle="Disponible en v1.1"
+        emoji="🌸"
+        description="Un fil bienveillant entre mamans, modéré par des sages-femmes. Patience, on prépare un espace safe."
+      />
+    );
+  }
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const { isOffline } = useOffline();

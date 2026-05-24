@@ -12,6 +12,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { GlowScoreCircle } from '@/components/GlowScoreCircle';
 import { PartnerHeroBadge } from '@/components/partner/PartnerHeroBadge';
+import { PartnerModeBadge } from '@/components/partner/PartnerModeBadge';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { calculateGlowScore } from '@/lib/glowscore';
 import { calculateTrimester } from '@/lib/trimester';
@@ -48,7 +49,14 @@ export function PartnerHomeScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.header}>
+        {/* Lot 15A2 — Pastille discrète "Accompagnant · {momName}" en haut.
+            Pose le contexte AVANT le greeting pour que Thomas ne croie pas
+            voir ses propres données. Cliquable → settings de pairing. */}
+        <Animated.View entering={FadeInDown.delay(0).duration(400)} style={{ marginBottom: Spacing.sm }}>
+          <PartnerModeBadge linkedFirstName={linkedFirstName} variant="compact" />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(40).duration(500)} style={styles.header}>
           <View style={{ flex: 1 }}>
             <ThemedText variant="bodySmall" color="textTertiary">
               Placard de {momName} · Semaine {week}

@@ -25,6 +25,7 @@ import { Feather } from '@expo/vector-icons';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
+import { useSafeBack } from '@/hooks/useSafeBack';
 import { scanShelf } from '@/lib/visionScan';
 import type { ShelfDetectedProduct } from '@/lib/visionScan';
 
@@ -43,6 +44,9 @@ export default function ShelfScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const { requirePremium, isPremium, isLoading } = usePremium();
   const cameraRef = useRef<CameraView>(null);
+  // Lot 15B3 — sortie sûre : fallback vers le placard (point d'entrée le
+  // plus probable d'où l'utilisatrice arrive sur shelf-scan).
+  const safeBack = useSafeBack('/(tabs)/shelf');
 
   const [capturing, setCapturing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -66,11 +70,14 @@ export default function ShelfScanScreen() {
   }));
 
   // ── Premium gate ──────────────────────────────────────────────────────────
+  // Lot 15B3/B5 — Avant : `router.back()` aveugle qui jetait l'utilisatrice
+  // n'importe où selon d'où elle venait. Maintenant : retour explicite vers
+  // le placard (point d'entrée principal de l'écran shelf-scan).
   useEffect(() => {
     if (isLoading) return;
     if (!isPremium) {
       requirePremium('shelf_scan');
-      router.back();
+      router.replace('/(tabs)/shelf');
     }
   }, [isPremium, isLoading, requirePremium]);
 
@@ -200,8 +207,10 @@ export default function ShelfScanScreen() {
       >
         <TouchableOpacity
           style={styles.closeBtn}
-          onPress={() => router.back()}
+          onPress={safeBack}
           hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Fermer le scanner d'étagère"
         >
           <Feather name="x" size={22} color="#FFFFFF" />
         </TouchableOpacity>

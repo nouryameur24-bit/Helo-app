@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
+import { useSafeBack } from '@/hooks/useSafeBack';
 import { useTrimester } from '@/hooks/useTrimester';
 import { getTrimesterPalette } from '@/lib/trimester';
 
@@ -61,6 +62,9 @@ const TRIMESTER_INFO = {
 export default function TrimesterMilestoneScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  // Lot 15B5 — milestone-screen est souvent atteint via notif weekly,
+  // donc le user peut arriver en cold start sans historique → safeBack.
+  const safeBack = useSafeBack('/(tabs)');
   const { trimester, weekOfPregnancy } = useTrimester();
   const palette = getTrimesterPalette(trimester);
   const info = TRIMESTER_INFO[trimester];
@@ -78,9 +82,11 @@ export default function TrimesterMilestoneScreen() {
       >
         <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={safeBack}
             style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.6 : 1 }]}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Retour"
           >
             <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
           </Pressable>

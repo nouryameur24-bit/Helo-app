@@ -207,15 +207,32 @@ export default function BasketResultsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
-      {/* Header */}
+      {/* Header (Lot 15B3) — Back via router.replace pour sortir proprement
+          du double-modal basket-scan + basket-results. Avant : `router.back()`
+          unwind les deux modals d'un coup et jetait l'utilisatrice à l'accueil.
+          Maintenant : retour explicite vers /(tabs) + titre enrichi avec le
+          compteur "Mon Panier · X produits". */}
       <Animated.View
         entering={FadeInUp.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
-          <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
+        <TouchableOpacity
+          onPress={() => router.replace('/(tabs)')}
+          hitSlop={12}
+          style={styles.backBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Fermer et retourner à l'accueil"
+        >
+          <Feather name="x" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
-        <ThemedText variant="headlineMedium">Mon Panier</ThemedText>
+        <View style={{ flex: 1, alignItems: 'center' }}>
+          <ThemedText variant="headlineMedium">Mon Panier</ThemedText>
+          {items.length > 0 && (
+            <ThemedText variant="bodySmall" color="textTertiary">
+              {items.length} produit{items.length > 1 ? 's' : ''} analysé{items.length > 1 ? 's' : ''}
+            </ThemedText>
+          )}
+        </View>
         <TouchableOpacity onPress={handleShare} hitSlop={12} style={styles.shareBtn}>
           <Feather name="share-2" size={20} color={Colors.accent} />
         </TouchableOpacity>

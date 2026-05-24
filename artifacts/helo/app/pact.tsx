@@ -2,8 +2,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
@@ -48,7 +49,16 @@ const DURATIONS: { days: number; label: string; sub: string }[] = [
 ];
 
 export default function PactScreen() {
-  if (!isFeatureEnabled('pact')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('pact')) {
+    return (
+      <ComingSoonScreen
+        title="Le Pacte Hēlo"
+        subtitle="Disponible en v1.2"
+        emoji="🤝"
+        description="Un engagement quotidien partagé avec ta sage-femme pour rester sur la durée. Bientôt avec toi."
+      />
+    );
+  }
   const __discovery_pact = useFeatureDiscovery('pact');
   const insets = useSafeAreaInsets();
   const { userId, firstName } = useProfile();

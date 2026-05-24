@@ -12,7 +12,7 @@ import { router, Stack, usePathname, useGlobalSearchParams } from "expo-router";
 import { ensureAnonymousSession } from "@/lib/supabase";
 import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PostHogProvider } from "posthog-react-native";
@@ -21,6 +21,9 @@ import { DisclaimerModal } from "@/components/DisclaimerModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RecallAlertModal } from "@/components/RecallAlertModal";
 import { TrimesterTransition } from "@/components/TrimesterTransition";
+import { WhatsNewModal } from "@/components/WhatsNewModal";
+import { CURRENT_VERSION, getChangelog, type WhatsNewEntry } from "@/constants/whatsNew";
+import { STORAGE_KEYS } from "@/lib/storageKeys";
 import { Colors } from "@/constants/theme";
 import { useNotificationTapRouting } from "@/hooks/useNotifications";
 import { usePremium } from "@/hooks/usePremium";
@@ -110,6 +113,51 @@ function RootLayoutNav() {
     // cold start). No-op tant qu'EXPO_PUBLIC_POSTHOG_KEY n'est pas définie.
     track('app_opened').catch(swallow);
   }, []);
+
+  // ── Lot 16-11 — "What's new" modal après update ────────────────────────────
+  // Compare la version courante (constants/whatsNew) à `lastSeenVersion`
+  // (AsyncStorage). Si différent, et qu'on a une entrée de changelog
+  // pour cette version, affiche le modal. Sinon no-op silencieux.
+  // Volontairement déclenché APRÈS le delay d'app_opened pour ne pas
+  // racer avec d'autres overlays (DisclaimerModal, WelcomeOverlay…).
+  const [whatsNewVisible, setWhatsNewVisible] = useState(false);
+  const [whatsNewEntry, setWhatsNewEntry] = useState<WhatsNewEntry | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const lastSeen = await AsyncStorage.getItem(STORAGE_KEYS.lastSeenVersion);
+        if (cancelled || lastSeen === CURRENT_VERSION) return;
+        const entry = getChangelog(CURRENT_VERSION);
+        if (!entry) {
+          // Pas d'entrée pour cette version — persiste quand même la valeur
+          // pour ne pas re-checker à chaque cold start.
+          await AsyncStorage.setItem(STORAGE_KEYS.lastSeenVersion, CURRENT_VERSION);
+          return;
+        }
+        // Délai pour laisser le disclaimer + le welcome overlay apparaître
+        // en premier (priorité d'onboarding > celebration d'update).
+        setTimeout(() => {
+          if (!cancelled) {
+            setWhatsNewEntry(entry);
+            setWhatsNewVisible(true);
+          }
+        }, 1200);
+      } catch {
+        // Silent fail — pas critique.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleWhatsNewClose = () => {
+    setWhatsNewVisible(false);
+    // Persiste la version comme vue pour ne plus re-show.
+    AsyncStorage.setItem(STORAGE_KEYS.lastSeenVersion, CURRENT_VERSION).catch(swallow);
+  };
 
   return (
     <>
@@ -276,6 +324,12 @@ function RootLayoutNav() {
         alert={activeAlert}
         onDismiss={dismiss}
         onRemoveFromShelf={removeFromShelf}
+      />
+      {/* Lot 16-11 — Quoi de neuf après une update d'app. */}
+      <WhatsNewModal
+        visible={whatsNewVisible}
+        entry={whatsNewEntry}
+        onClose={handleWhatsNewClose}
       />
     </>
   );

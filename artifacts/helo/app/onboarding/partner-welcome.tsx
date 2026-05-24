@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { ThemedText } from '@/components/ui/ThemedText';
+import { OnboardingProgress } from '@/components/onboarding/OnboardingProgress';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 
@@ -57,7 +58,13 @@ export default function PartnerWelcomeScreen() {
         { paddingTop: topPadding + Spacing.massive, paddingBottom: bottomPadding + Spacing.xxl },
       ]}
     >
-      <Animated.View entering={FadeInDown.delay(0).duration(500)} style={styles.heroWrap}>
+      {/* Lot 15B4 — Progress "Étape 2 sur 3" — la connexion est réussie,
+          il reste juste à choisir les centres d'intérêt. */}
+      <Animated.View entering={FadeInDown.delay(0).duration(400)} style={{ marginBottom: Spacing.xl }}>
+        <OnboardingProgress step={2} total={3} label="Connexion partenaire" />
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(60).duration(500)} style={styles.heroWrap}>
         <ThemedText style={styles.emoji}>💙</ThemedText>
         <View style={styles.confettiRow}>
           <ThemedText style={styles.confetti}>🎉</ThemedText>

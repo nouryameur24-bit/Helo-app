@@ -17,6 +17,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { Button } from "@/components/ui/Button";
 import { ThemedText } from "@/components/ui/ThemedText";
+import { OnboardingProgress } from "@/components/onboarding/OnboardingProgress";
 import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
 import { lookupPartnerCode, linkPartner } from "@/lib/partnerUtils";
 import { getOrCreateUserId, setUserRole } from "@/hooks/useProfile";
@@ -175,7 +176,13 @@ export default function PartnerCodeScreen() {
           <ThemedText variant="bodyMedium" color="accent">← Retour</ThemedText>
         </Pressable>
 
-        <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
+        {/* Lot 15B4 — Progress "Étape 1 sur 3" pour situer l'utilisateur
+            dans le flow de pairing partenaire (code → welcome → interests). */}
+        <Animated.View entering={FadeInDown.delay(0).duration(400)} style={{ marginBottom: Spacing.lg }}>
+          <OnboardingProgress step={1} total={3} label="Connexion partenaire" />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.header}>
           <ThemedText style={styles.emoji}>💙</ThemedText>
           <ThemedText variant="displayMedium" color="textPrimary" style={styles.title}>
             Entrez le code

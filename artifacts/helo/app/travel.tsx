@@ -6,8 +6,9 @@
 
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -248,7 +249,16 @@ const hc = StyleSheet.create({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function TravelScreen() {
-  if (!isFeatureEnabled('travel')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('travel')) {
+    return (
+      <ComingSoonScreen
+        title="Mode Voyage"
+        subtitle="Disponible en v1.1"
+        emoji="✈️"
+        description="Briefings santé personnalisés par destination — vaccins, eau, plats à éviter. Premium à venir."
+      />
+    );
+  }
   const __discovery_travel = useFeatureDiscovery('travel');
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;

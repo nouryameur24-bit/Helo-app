@@ -19,8 +19,15 @@ import styles from './verdictStyles';
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export function LoadingScreen() {
+  // Lot 16-04 — Loading skeleton enrichi.
+  // Avant : juste un cercle pulsant + texte. Manquait l'effet "le contenu
+  // se prépare". Maintenant : cercle qui pulse (rappelle ScoreCircle) +
+  // skeleton bars qui shimmer (rappellent les sections d'analyse) →
+  // l'utilisatrice voit visuellement que "le verdict charge".
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0.6);
+  const shimmer = useSharedValue(0);
+
   useEffect(() => {
     scale.value = withTiming(1.15, { duration: 900 });
     opacity.value = withTiming(1, { duration: 900 });
@@ -28,18 +35,37 @@ export function LoadingScreen() {
       scale.value = withTiming(scale.value > 1.05 ? 1 : 1.15, { duration: 900 });
       opacity.value = withTiming(opacity.value > 0.8 ? 0.6 : 1, { duration: 900 });
     }, 900);
-    return () => clearInterval(interval);
-  }, [scale, opacity]);
+    // Shimmer cycle plus rapide pour donner du rythme aux skeleton bars.
+    shimmer.value = withTiming(1, { duration: 1200 });
+    const shimmerInterval = setInterval(() => {
+      shimmer.value = withTiming(shimmer.value > 0.5 ? 0 : 1, { duration: 1200 });
+    }, 1200);
+    return () => {
+      clearInterval(interval);
+      clearInterval(shimmerInterval);
+    };
+  }, [scale, opacity, shimmer]);
+
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: opacity.value,
   }));
+  const barStyle = useAnimatedStyle(() => ({
+    opacity: 0.3 + shimmer.value * 0.4,
+  }));
+
   return (
     <View style={styles.loadingRoot}>
       <Animated.View style={[styles.loadingCircle, animStyle]} />
       <ThemedText variant="bodyMedium" color="textSecondary" style={styles.loadingText}>
         Analyse en cours…
       </ThemedText>
+      {/* Skeleton bars mimant les sections d'analyse à venir. */}
+      <View style={{ width: '70%', alignItems: 'center', gap: 12, marginTop: 32 }}>
+        <Animated.View style={[barStyle, { height: 14, width: '85%', borderRadius: 7, backgroundColor: Colors.backgroundSecondary }]} />
+        <Animated.View style={[barStyle, { height: 14, width: '60%', borderRadius: 7, backgroundColor: Colors.backgroundSecondary }]} />
+        <Animated.View style={[barStyle, { height: 14, width: '75%', borderRadius: 7, backgroundColor: Colors.backgroundSecondary }]} />
+      </View>
     </View>
   );
 }

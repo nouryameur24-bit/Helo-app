@@ -23,7 +23,11 @@ export type AnalyticsEvent =
   | 'product_added_to_shelf'
   | 'chat_message_sent'
   | 'onboarding_step_completed'
-  | 'feature_discovered';
+  | 'onboarding_first_scan_celebrated'
+  | 'feature_discovered'
+  | 'feedback_bug_tapped'
+  | 'feedback_suggestion_tapped'
+  | 'feedback_rate_tapped';
 
 // `JsonProps` reprend le type accepté par PostHog (récursif, supporte
 // arrays et objects nested) sans dépendre des exports internes du SDK.

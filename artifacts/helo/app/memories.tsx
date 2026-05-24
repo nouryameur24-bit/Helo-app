@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
@@ -48,7 +49,16 @@ type ScreenMode = 'list' | 'create' | 'sealing' | 'opening' | 'viewing';
 type CreateStep = 0 | 1 | 2;
 
 export default function MemoriesScreen() {
-  if (!isFeatureEnabled('memories')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('memories')) {
+    return (
+      <ComingSoonScreen
+        title="Mémoires Hēlo"
+        subtitle="Disponible en v1.2"
+        emoji="📔"
+        description="Une capsule temporelle pour ta grossesse. Photos, mots, émotions — à ouvrir dans 18 ans."
+      />
+    );
+  }
   const __discovery_memories = useFeatureDiscovery('memories');
   const insets = useSafeAreaInsets();
   const { firstName, dueDate, trimester } = useProfile();

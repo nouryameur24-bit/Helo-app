@@ -4,8 +4,9 @@
  * Affiche le briefing par sections avec checklist interactive, chargé depuis AsyncStorage.
  */
 
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
+import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Platform,
@@ -267,7 +268,16 @@ const sk = StyleSheet.create({
 });
 
 export default function TravelBriefingScreen() {
-  if (!isFeatureEnabled('travel')) return <Redirect href="/" />;
+  if (!isFeatureEnabled('travel')) {
+    return (
+      <ComingSoonScreen
+        title="Mode Voyage"
+        subtitle="Disponible en v1.1"
+        emoji="✈️"
+        description="Briefings santé personnalisés par destination. Premium à venir."
+      />
+    );
+  }
   const insets = useSafeAreaInsets();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const params = useLocalSearchParams<{

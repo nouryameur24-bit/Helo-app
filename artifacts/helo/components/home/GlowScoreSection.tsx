@@ -59,7 +59,7 @@ export const GlowScoreSection = React.memo(function GlowScoreSection({ score, to
   return (
     <Animated.View entering={FadeInDown.delay(240).duration(500)}>
       <View style={styles.sectionHeader}>
-        <ThemedText variant="headlineMedium" color="textPrimary">Votre Glow Score</ThemedText>
+        <ThemedText variant="headlineMedium" color="textPrimary">Ton Glow Score</ThemedText>
         <IconButton size={36} onPress={onShare} accessibilityLabel="Partager le Glow Score">
           <Feather name="share-2" size={16} color={Colors.textSecondary} />
         </IconButton>
@@ -86,8 +86,8 @@ export const GlowScoreSection = React.memo(function GlowScoreSection({ score, to
         )}
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.glowSubtitle}>
           {total === 0
-            ? 'Scannez votre premier produit pour découvrir votre Glow Score'
-            : `Basé sur ${total} produit${total > 1 ? 's' : ''} de votre placard`}
+            ? 'Scanne ton premier produit pour découvrir ton Glow Score'
+            : `Basé sur ${total} produit${total > 1 ? 's' : ''} de ton placard`}
         </ThemedText>
 
         {total > 0 && (
@@ -109,7 +109,7 @@ export const GlowScoreSection = React.memo(function GlowScoreSection({ score, to
             onPress={() => router.push('/(tabs)/shelf')}
             style={({ pressed }) => [styles.improveCard, { opacity: pressed ? 0.85 : 1 }]}
             accessibilityRole="button"
-            accessibilityLabel="Améliorez votre score"
+            accessibilityLabel="Améliore ton score"
           >
             <View style={styles.improveCardLeft}>
               <View style={styles.improveIcon}>
@@ -117,7 +117,7 @@ export const GlowScoreSection = React.memo(function GlowScoreSection({ score, to
               </View>
               <View style={{ flex: 1 }}>
                 <ThemedText variant="labelLarge" color="textPrimary">
-                  Améliorez votre score
+                  Améliore ton score
                 </ThemedText>
                 <ThemedText variant="bodySmall" color="textSecondary">
                   {countDanger + countCaution} produit{countDanger + countCaution > 1 ? 's' : ''} à risque · voir les alternatives

@@ -22,6 +22,20 @@ export interface AlternativeProduct {
   price_range: string;
   popularity_count: number;
   origin_badge: OriginBadge;
+  /**
+   * v4 Lot 11 — Liens d'achat suggérés (affiliate-ready). Tous optionnels.
+   * Frontend affiche un bouton par lien présent.
+   *   - amazon : lien Amazon FR avec tag affiliate (à câbler avec Amazon Associates)
+   *   - drive : lien Carrefour Drive / Monoprix Drive selon dispo
+   *   - brand : lien direct du site officiel (sephora.fr, larocheposay.fr…)
+   * Format vide pour l'instant côté backend ; sera rempli quand les programmes
+   * affiliate seront activés (cf. roadmap monétisation passive).
+   */
+  purchase_links?: {
+    amazon?: string;
+    drive?: string;
+    brand?: string;
+  };
 }
 
 export interface FlaggedIngredients {

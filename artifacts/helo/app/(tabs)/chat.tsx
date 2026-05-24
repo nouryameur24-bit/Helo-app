@@ -33,6 +33,7 @@ import {
   saveChatHistory,
   sendMessage,
 } from '@/lib/anthropic';
+import { track } from '@/lib/analytics';
 import { isRateLimitError } from '@/lib/errors';
 import {
   canChatFree,
@@ -162,6 +163,15 @@ export default function ChatScreen() {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setIsTyping(true);
+
+    // Analytics : envoi côté utilisateur. On émet ici (avant la réponse
+    // assistant) pour ne pas perdre l'event si Claude timeout. `length` est
+    // utile pour distinguer questions courtes vs prompts élaborés.
+    track('chat_message_sent', {
+      is_premium: isPremium,
+      message_length: question.length,
+      history_size: messages.length,
+    }).catch(() => {});
 
     if (!isPremium) {
       const newCount = await incrementChatCount();

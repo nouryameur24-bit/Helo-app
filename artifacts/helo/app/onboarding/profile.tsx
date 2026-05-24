@@ -164,8 +164,9 @@ export default function ProfileSetupScreen() {
 
       // ── 2. Navigate immediately — app works offline ───────────────────────────
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Slide 5 du nouvel onboarding : invitation au premier scan avant le home.
-      router.replace("/onboarding/first-scan");
+      // Slide 5 : collecte des préférences (allergies / régime / sensibilités)
+      // avant l'invitation au premier scan.
+      router.replace("/onboarding/preferences");
 
       // ── 3. Sync to Supabase in the background (non-blocking) ─────────────────
       getOrCreateUserId().then((userId) => {

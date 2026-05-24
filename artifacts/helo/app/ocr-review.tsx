@@ -25,6 +25,7 @@ import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme'
 import { incrementContributionCount } from '@/lib/contributions';
 import { matchIngredients, getVerdict, ghostCaptureSave } from '@/lib/productLookup';
 import { cleanOcrTextRemote } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
 import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
@@ -259,6 +260,14 @@ export default function OcrReviewScreen() {
         }).catch((err) => {
           logError('ocrReview.ghostCaptureSave', err);
         });
+        // Analytics : la contribution Ghost Capture est partie pour la DB.
+        // On émet AVANT la résolution réelle de `ghostCaptureSave` pour
+        // capturer aussi les saves qui finiront en fallback (réseau KO).
+        track('ghost_capture_completed', {
+          category,
+          verdict: verdictResult.verdict,
+          ingredients_count: ingredients.length,
+        }).catch(() => {});
       }
     } catch (err) {
       logError('ocrReview.analyse', err);

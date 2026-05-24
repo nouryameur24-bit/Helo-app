@@ -70,6 +70,41 @@ async function buildSystemPrompt(): Promise<string> {
     : trimester === '3' ? '3ème trimestre'
     : 'trimestre inconnu';
 
+  // v4 Lot 11 — Contexte personnel : allergies + restrictions + mode allaitement.
+  // Lecture safe (catch any error → ignore). Permet à Claude de personnaliser
+  // ses réponses ("vous nous avez dit être allergique aux arachides…").
+  let personalContext = '';
+  try {
+    const prefsRaw = await AsyncStorage.getItem('@helo_user_preferences');
+    if (prefsRaw) {
+      const prefs = JSON.parse(prefsRaw) as {
+        allergies?: string[];
+        dietary?: string[];
+        cosmetic_sensitivities?: string[];
+      };
+      const lines: string[] = [];
+      const a = (prefs.allergies ?? []).filter((s) => s && s.toLowerCase() !== 'aucune');
+      const d = (prefs.dietary ?? []).filter((s) => s && s.toLowerCase() !== 'aucune');
+      const c = (prefs.cosmetic_sensitivities ?? []).filter((s) => s && s.toLowerCase() !== 'aucune');
+      if (a.length > 0) lines.push(`Allergies / intolérances déclarées : ${a.join(', ')}.`);
+      if (d.length > 0) lines.push(`Restrictions alimentaires : ${d.join(', ')}.`);
+      if (c.length > 0) lines.push(`Sensibilités cosmétiques : ${c.join(', ')}.`);
+      if (lines.length > 0) {
+        personalContext = `\n\nCONTEXTE PERSONNEL DE L'UTILISATRICE :\n- ${lines.join('\n- ')}\nTiens-en compte dans tes réponses (ex: éviter de proposer un produit contenant un allergène déclaré).`;
+      }
+    }
+  } catch {
+    // Best effort — preferences absentes ou JSON corrompu → on continue sans.
+  }
+
+  // Mode allaitement / bébé (clé partagée avec useBreastfeeding hook)
+  try {
+    const bfRaw = await AsyncStorage.getItem('@helo_breastfeeding');
+    if (bfRaw === 'true') {
+      personalContext += '\n- Phase actuelle : ALLAITEMENT (adapte tes réponses à cette phase post-natale).';
+    }
+  } catch { /* ignore */ }
+
   return `RÈGLES ABSOLUES — À RESPECTER SANS EXCEPTION :
 
 1. Tu n'es PAS un médecin. Tu as INTERDICTION FORMELLE de poser un diagnostic médical.
@@ -102,7 +137,7 @@ INGRÉDIENTS CLÉS À RISQUE :
 - Acide salicylique à haute dose : déconseillé
 - Alcool : aucune dose sûre établie
 - Caféine : max 200 mg/jour (OMS)
-- Ibuprofène / AINS : contre-indiqués à partir du 6ème mois`;
+- Ibuprofène / AINS : contre-indiqués à partir du 6ème mois${personalContext}`;
 }
 
 // ─── Medication safety pre-filter ─────────────────────────────────────────────

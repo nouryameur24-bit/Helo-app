@@ -183,6 +183,12 @@ export interface AlternativeProductDto {
   price_range: string;
   popularity_count: number;
   origin_badge: OriginBadge;
+  // v4 Lot 11 — optional purchase links (affiliate-ready)
+  purchase_links?: {
+    amazon?: string;
+    drive?: string;
+    brand?: string;
+  };
 }
 
 export interface AlternativesRemoteOk {
@@ -236,6 +242,7 @@ function dtoToAlternativeProduct(d: AlternativeProductDto): AlternativeProduct {
     price_range: d.price_range,
     popularity_count: d.popularity_count,
     origin_badge: d.origin_badge,
+    purchase_links: d.purchase_links, // v4 Lot 11 (passthrough)
   };
 }
 

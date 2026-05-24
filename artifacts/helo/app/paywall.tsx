@@ -19,6 +19,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { PLANS, type PlanId, type Plan } from '@/lib/purchases';
 import { usePremium } from '@/hooks/usePremium';
+import { track } from '@/lib/analytics';
 
 // ─── Feature comparison data ──────────────────────────────────────────────────
 
@@ -156,6 +157,13 @@ export default function PaywallScreen() {
     }
   }, [isPremium]);
 
+  // Analytics : un seul `paywall_viewed` par mount du screen. Inclut le
+  // déclencheur (`scan_limit`, `feature`, etc.) pour mesurer la conversion
+  // par source — utile pour décider quels gates renforcer.
+  useEffect(() => {
+    track('paywall_viewed', { trigger: trigger ?? 'direct' }).catch(() => {});
+  }, [trigger]);
+
   const triggerMessages: Record<string, string> = {
     scan_limit:   'Vous avez atteint vos 5 scans gratuits du jour.',
     feature:      'Fonctionnalité réservée aux abonnées Premium.',
@@ -174,6 +182,10 @@ export default function PaywallScreen() {
     try {
       const success = await purchase(selectedPlan);
       if (success) {
+        track('paywall_purchased', {
+          plan: selectedPlan,
+          trigger: trigger ?? 'direct',
+        }).catch(() => {});
         router.back();
       }
     } catch {

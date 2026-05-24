@@ -14,6 +14,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="role" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="preferences" />
       <Stack.Screen name="partner-code" />
       <Stack.Screen name="partner-welcome" />
       <Stack.Screen name="partner-interests" />

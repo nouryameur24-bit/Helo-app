@@ -29,6 +29,7 @@ import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifi
 import { downloadIngredientsDB } from "@/lib/offline";
 import { configurePurchases, PREMIUM_KEY } from "@/lib/purchases";
 import { initSentry, Sentry } from "@/lib/sentry";
+import { track } from "@/lib/analytics";
 
 // Init Sentry as early as possible so module-load errors are captured.
 initSentry();
@@ -73,6 +74,9 @@ function RootLayoutNav() {
     // Download ingredients DB for all users (free + premium) so scans never
     // require a live Supabase round-trip. Only runs when local copy is absent.
     downloadIngredientsDB().catch(swallow);
+    // Analytics : un seul `app_opened` par mount du root (~ une fois par
+    // cold start). No-op tant qu'EXPO_PUBLIC_POSTHOG_KEY n'est pas définie.
+    track('app_opened').catch(swallow);
   }, []);
 
   return (

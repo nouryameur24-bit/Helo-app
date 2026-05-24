@@ -6,6 +6,7 @@ import {
   Alert,
   Dimensions,
   KeyboardAvoidingView,
+  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
@@ -196,6 +197,42 @@ function AlternativeCard({
           ) : null}
 
           <Divider style={{ marginVertical: Spacing.md }} />
+
+          {/* v4 Lot 11 — Liens d'achat (affiliate-ready) */}
+          {alt.purchase_links && (alt.purchase_links.amazon || alt.purchase_links.drive || alt.purchase_links.brand) ? (
+            <View style={styles.purchaseLinksRow}>
+              {alt.purchase_links.brand ? (
+                <TouchableOpacity
+                  style={styles.purchaseLinkBtn}
+                  onPress={() => Linking.openURL(alt.purchase_links!.brand!).catch(() => undefined)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="external-link" size={12} color={Colors.accent} />
+                  <ThemedText variant="bodySmall" style={{ marginLeft: 4, color: Colors.accent }}>Marque</ThemedText>
+                </TouchableOpacity>
+              ) : null}
+              {alt.purchase_links.drive ? (
+                <TouchableOpacity
+                  style={styles.purchaseLinkBtn}
+                  onPress={() => Linking.openURL(alt.purchase_links!.drive!).catch(() => undefined)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="shopping-cart" size={12} color={Colors.accent} />
+                  <ThemedText variant="bodySmall" style={{ marginLeft: 4, color: Colors.accent }}>Drive</ThemedText>
+                </TouchableOpacity>
+              ) : null}
+              {alt.purchase_links.amazon ? (
+                <TouchableOpacity
+                  style={styles.purchaseLinkBtn}
+                  onPress={() => Linking.openURL(alt.purchase_links!.amazon!).catch(() => undefined)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="package" size={12} color={Colors.accent} />
+                  <ThemedText variant="bodySmall" style={{ marginLeft: 4, color: Colors.accent }}>Amazon</ThemedText>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.altActions}>
             {alt.barcode ? (
@@ -872,6 +909,22 @@ const styles = StyleSheet.create({
   altActions: {
     gap: Spacing.sm,
     alignItems: 'center',
+  },
+  purchaseLinksRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  purchaseLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.accentLight,
+    backgroundColor: Colors.surface,
   },
   dotsRow: {
     flexDirection: 'row',

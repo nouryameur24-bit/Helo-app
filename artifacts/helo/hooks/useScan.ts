@@ -32,6 +32,7 @@ import {
   matchIngredientsLocal,
 } from '@/lib/offline';
 import { PREMIUM_KEY } from '@/lib/purchases';
+import { track } from '@/lib/analytics';
 import type {
   MatchResult,
   Phase,
@@ -149,6 +150,10 @@ export function useScan(): UseScanReturn {
 
   const scanBarcode = useCallback(async (barcode: string, phase: Phase = 2, isOffline = false) => {
     setState((s) => ({ ...s, loading: true, error: null, fromCache: false }));
+    // Analytics : début d'un cycle de scan (barcode pipeline). On émet ici
+    // plutôt que côté UI pour capturer aussi les déclenchements indirects
+    // (deep link verdict/[scanId], retry, etc.).
+    track('scan_started', { phase, isOffline }).catch(() => {});
 
     try {
       // ── Offline path ──────────────────────────────────────────────────────────
@@ -192,6 +197,11 @@ export function useScan(): UseScanReturn {
             notFound: false,
             fromCache: true,
           });
+          track('scan_completed', {
+            source: 'offline_cache',
+            verdict: verdict.verdict,
+            phase,
+          }).catch(() => {});
           return;
         }
 
@@ -225,6 +235,11 @@ export function useScan(): UseScanReturn {
             notFound: false,
             fromCache: true,
           });
+          track('scan_completed', {
+            source: 'offline_lru',
+            verdict: verdict.verdict,
+            phase,
+          }).catch(() => {});
           return;
         }
 
@@ -251,6 +266,11 @@ export function useScan(): UseScanReturn {
           notFound: false,
           fromCache: true,
         });
+        track('scan_completed', {
+          source: 'cache',
+          verdict: cached.verdict.verdict,
+          phase,
+        }).catch(() => {});
         return;
       }
 
@@ -274,6 +294,12 @@ export function useScan(): UseScanReturn {
             notFound: false,
             fromCache: false,
           });
+          track('scan_completed', {
+            source: 'backend',
+            verdict: verdict.verdict,
+            phase,
+            ai_source: verdict.aiSource,
+          }).catch(() => {});
           return;
         }
         // Erreurs métier "terminales" : pas la peine de retomber sur le local
@@ -337,6 +363,11 @@ export function useScan(): UseScanReturn {
         notFound: false,
         fromCache: false,
       });
+      track('scan_completed', {
+        source: 'legacy_local',
+        verdict: verdict.verdict,
+        phase,
+      }).catch(() => {});
     } catch (err: unknown) {
       const message =
         err instanceof Error

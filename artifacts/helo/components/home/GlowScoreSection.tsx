@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
@@ -9,7 +9,9 @@ import { Divider } from '@/components/ui/Divider';
 import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { GlowScoreCircle } from '@/components/GlowScoreCircle';
+import { GlowScoreTrend } from '@/components/GlowScoreTrend';
 import { Colors, Spacing } from '@/constants/theme';
+import { recordGlowScore } from '@/lib/glowScoreHistory';
 import { styles } from './homeStyles';
 
 function CompositionBar({ count, total, color, label }: {
@@ -45,6 +47,15 @@ interface Props {
 
 export const GlowScoreSection = React.memo(function GlowScoreSection({ score, total, countSafe, countCaution, countDanger, onShare }: Props) {
   const hasRisk = countDanger > 0 || countCaution > 0;
+
+  // v4 Lot 11 — record du score dans l'historique pour le trend. Best-effort,
+  // dedup interne 1h pour ne pas saturer si la home re-render.
+  useEffect(() => {
+    if (total > 0 && score > 0) {
+      void recordGlowScore(score);
+    }
+  }, [score, total]);
+
   return (
     <Animated.View entering={FadeInDown.delay(240).duration(500)}>
       <View style={styles.sectionHeader}>
@@ -65,6 +76,14 @@ export const GlowScoreSection = React.memo(function GlowScoreSection({ score, to
             breathing={total > 0}
           />
         </View>
+
+        {/* v4 Lot 11 — Trend sparkline. Affiché uniquement si ≥2 mesures
+            historiques (lib/glowScoreHistory). Donne un sens de progression. */}
+        {total > 0 && (
+          <View style={{ alignItems: 'center', marginTop: Spacing.md }}>
+            <GlowScoreTrend />
+          </View>
+        )}
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.glowSubtitle}>
           {total === 0
             ? 'Scannez votre premier produit pour découvrir votre Glow Score'

@@ -39,7 +39,7 @@ export function VerdictErrorScreen({ error, barcode, topInset }: VerdictErrorScr
         </View>
 
         <ThemedText variant="headlineMedium" style={styles.centeredText}>
-          {isNotFound ? 'Produit non trouvé' : 'Erreur de chargement'}
+          {isNotFound ? 'Produit non répertorié' : 'Erreur de chargement'}
         </ThemedText>
 
         <ThemedText
@@ -48,27 +48,45 @@ export function VerdictErrorScreen({ error, barcode, topInset }: VerdictErrorScr
           style={[styles.centeredText, styles.errorSubtitle]}
         >
           {isNotFound
-            ? "Ce produit n'est pas encore dans notre base de données."
+            ? "On ne connaît pas encore ce produit, mais tu peux photographier son étiquette ingrédients pour qu'on l'analyse."
             : error}
         </ThemedText>
 
         <View style={styles.errorActions}>
           {isNotFound && (
-            <Button
-              variant="primary"
-              fullWidth
-              onPress={() => {
-                router.push({
-                  pathname: '/submit-product',
-                  params: { barcode },
-                });
-              }}
-            >
-              Contribuer — ajouter ce produit ✦
-            </Button>
+            <>
+              {/* v4 — CTA principal : OCR de l'étiquette. Bypass la couverture
+                  barcode (OBF ~40% sur les cosmétiques FR) en analysant
+                  directement les ingrédients via OCR. Toute utilisatrice peut
+                  obtenir un verdict même sur un produit inconnu. */}
+              <Button
+                variant="primary"
+                fullWidth
+                onPress={() => {
+                  router.push({
+                    pathname: '/(tabs)/scan',
+                    params: { ghostMode: 'ingredients' },
+                  });
+                }}
+              >
+                📸 Photographier l'étiquette
+              </Button>
+              <Button
+                variant="secondary"
+                fullWidth
+                onPress={() => {
+                  router.push({
+                    pathname: '/submit-product',
+                    params: { barcode },
+                  });
+                }}
+              >
+                Contribuer — ajouter ce produit ✦
+              </Button>
+            </>
           )}
           <Button
-            variant={isNotFound ? 'secondary' : 'primary'}
+            variant={isNotFound ? 'ghost' : 'primary'}
             fullWidth
             onPress={() => router.back()}
           >

@@ -439,6 +439,18 @@ function getRiskForPhase(ingredient: IngredientData, phase: Phase): RiskLevel {
   }
 }
 
+// v4 Lot 12 — Import dynamique pour éviter une dépendance circulaire avec
+// preferenceMatcher (qui importe les types depuis @/types).
+async function applyPrefsToMatches(matches: MatchResult[]): Promise<MatchResult[]> {
+  try {
+    const { applyPersonalPreferences } = await import('@/lib/preferenceMatcher');
+    const { matches: updated } = await applyPersonalPreferences(matches);
+    return updated;
+  } catch {
+    return matches; // fallback silencieux — si le module fail, on renvoie l'original
+  }
+}
+
 export async function matchIngredients(
   ingredientsList: string[],
   phase: Phase,
@@ -448,7 +460,8 @@ export async function matchIngredients(
   // ── 1. Prefer local DB (AsyncStorage) — no network, no Supabase bandwidth ──
   const localIngredients = await getLocalIngredients();
   if (localIngredients.length > 0) {
-    return matchIngredientsLocal(ingredientsList, phase);
+    const local = await matchIngredientsLocal(ingredientsList, phase);
+    return applyPrefsToMatches(local);
   }
 
   // ── 2. Fall back to Supabase live query when local DB not yet populated ─────
@@ -481,7 +494,7 @@ export async function matchIngredients(
     logError('productLookup.cacheWrite', err);
   });
 
-  return ingredientsList.map((ingredientName): MatchResult => {
+  const supabaseMatches: MatchResult[] = ingredientsList.map((ingredientName): MatchResult => {
     // Whitelist d'exceptions safe (vinaigre d'alcool, alcools gras, etc.)
     // — court-circuite la règle d'éviction du dictionnaire.
     if (matchSafeOverride(ingredientName)) {
@@ -500,6 +513,7 @@ export async function matchIngredients(
 
     return { ingredientName, matched: false, riskLevel: 'no_signal' };
   });
+  return applyPrefsToMatches(supabaseMatches);
 }
 
 // ─── 5. Compute verdict ───────────────────────────────────────────────────────

@@ -198,6 +198,49 @@ export function detectBlockedMedication(userMessage: string): string | null {
   return null;
 }
 
+// ─── v4 Lot 12 — Detection symptômes d'urgence ──────────────────────────────
+//
+// On NE PEUT PAS attendre Claude pour répondre à une urgence vitale. Le
+// pré-filtre ci-dessous court-circuite l'API call et renvoie immédiatement
+// un message d'orientation SAMU. Latence : 0ms, garantie : 100%.
+//
+// Patterns : keywords normalisés (sans accents, lowercase). On match
+// 'sympt + qualifier' pour réduire les faux positifs (ex: "douleur" seul
+// est ambigu, mais "douleur abdominale" est clairement à signaler).
+
+const EMERGENCY_PATTERNS: RegExp[] = [
+  /\b(douleur|douleurs)\s+(abdominal|ventr|pelvien|bas\s*ventre)/i,
+  /\b(saignement|sang|h[ée]morragie|perte\s+de\s+sang)/i,
+  /\b(contraction|contractions)\b/i,
+  /\b(perte\s+de\s+(liquide|eaux)|fissure|rompue|rupture)/i,
+  /\b(b[ée]b[ée]\s+(ne\s+bouge\s+plus|inactif|ne\s+r[ée]agit)|moins\s+de\s+mouvement)/i,
+  /\b(fi[èe]vre\s+(forte|élev[ée]e|au-?dessus\s+de\s+38|39|40)|t[ée]mp[ée]rature\s+élev[ée]e)/i,
+  /\b(vomissement|vomir).*(r[ée]p[ée]t|incessant|sans\s+arr[êe]t)/i,
+  /\b(mal\s+de\s+t[êe]te\s+(s[ée]v[èe]re|violent|fort)|migraine\s+(intense|atroce))/i,
+  /\b(trouble|brouillard|vision\s+floue)\s+(de\s+la\s+vue|visuel|de\s+vision)/i,
+  /\b(je\s+(perds|ai\s+perdu)\s+du\s+sang)/i,
+  /\b(évanouissement|évanouie|perte\s+de\s+connaissance|syncope)/i,
+];
+
+/** Détecte un symptôme nécessitant orientation SAMU. */
+export function detectEmergencySymptom(userMessage: string): boolean {
+  const text = userMessage.toLowerCase();
+  return EMERGENCY_PATTERNS.some((re) => re.test(text));
+}
+
+/** Réponse standardisée d'orientation SAMU. */
+function buildEmergencyResponse(): string {
+  return `⚠️ Ce que vous décrivez peut nécessiter une consultation urgente.
+
+📞 Contactez immédiatement le 15 (SAMU) ou rendez-vous à la maternité la plus proche.
+
+Ne tardez pas — votre sécurité et celle de votre bébé sont prioritaires sur toute analyse en ligne.
+
+Si vous êtes seule, demandez à un proche de vous accompagner. Préparez votre carnet de grossesse si vous l'avez sur vous.
+
+Hēlo n'est pas un service médical d'urgence et ne peut pas se substituer à un avis professionnel immédiat.`;
+}
+
 /** Pretty-cased name for display in the safe response. */
 function displayMedName(med: string): string {
   return med.charAt(0).toUpperCase() + med.slice(1);
@@ -240,6 +283,11 @@ export async function sendMessage(
   history: ChatMessage[],
   userMessage: string,
 ): Promise<string> {
+  // v4 Lot 12 — Emergency pre-filter (court-circuite Claude, 0ms latence)
+  if (detectEmergencySymptom(userMessage)) {
+    return buildEmergencyResponse();
+  }
+
   // ── Medication safety pre-filter (runs BEFORE any AI call) ──
   const blockedMed = detectBlockedMedication(userMessage);
   if (blockedMed) {

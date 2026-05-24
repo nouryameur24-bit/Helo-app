@@ -19,6 +19,7 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
+import { RichChatContent } from '@/components/chat/RichChatContent';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
@@ -78,11 +79,18 @@ function MessageBubble({ message, index }: { message: ChatMessage; index: number
           isUser ? styles.bubbleUser : styles.bubbleAi,
         ]}
       >
-        <ThemedText
-          style={[styles.bubbleText, isUser ? styles.bubbleTextUser : styles.bubbleTextAi]}
-        >
-          {message.content}
-        </ThemedText>
+        {/* v4 Lot 12 — Réponses assistant : sources médicales (CRAT, ANSM,
+            EFSA, ANSES, OMS) rendues cliquables vers l'URL officielle. */}
+        {isUser ? (
+          <ThemedText style={[styles.bubbleText, styles.bubbleTextUser]}>
+            {message.content}
+          </ThemedText>
+        ) : (
+          <RichChatContent
+            content={message.content}
+            baseStyle={[styles.bubbleText, styles.bubbleTextAi]}
+          />
+        )}
       </View>
       {isUser && <View style={styles.avatarPlaceholder} />}
     </Animated.View>

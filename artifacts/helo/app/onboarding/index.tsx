@@ -26,8 +26,10 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { IllustrationCommunity } from "@/components/illustrations/IllustrationCommunity";
 import { IllustrationMoment } from "@/components/illustrations/IllustrationMoment";
 import { IllustrationPromise } from "@/components/illustrations/IllustrationPromise";
+import { IllustrationScan } from "@/components/illustrations/IllustrationScan";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { Colors, Radius, Spacing } from "@/constants/theme";
 
@@ -69,6 +71,47 @@ const SLIDES: Slide[] = [
     accentColor: "#5BB97C",
     sources: ["CRAT", "ANSM", "EFSA", "SCCS"],
     stats: "16 799 produits · 5 000 ingrédients",
+  },
+  // ── Slide 3 — RESTAURANT (killer differentiator) ─────────────────────────
+  // v4 Lot 14 — Mode Restaurant : feature unique sur le marché FR. Yuka
+  // n'a pas. La justifier dans l'onboarding fait passer la perception
+  // "scanner basique" → "compagnon complet". Boost conversion W1.
+  {
+    key: "restaurant",
+    title: "Le menu du resto ?\nUne photo, et c'est tout.",
+    subtitle:
+      "Photographie le menu. On analyse chaque plat en 5 secondes.\nTu sais quoi commander — sans demander.",
+    Illustration: IllustrationScan,
+    gradientFrom: "#FFFAF5",
+    gradientTo: "#FFE4D6",
+    accentColor: Colors.accent,
+  },
+  // ── Slide 4 — SAGE-FEMME IA (premium value teaser) ───────────────────────
+  // v4 Lot 14 — Pose la promesse Premium AVANT le paywall. Réduit le choc
+  // de la friction d'achat plus tard.
+  {
+    key: "ai",
+    title: "Une question.\nUne réponse sourcée.",
+    subtitle:
+      "Ta Sage-Femme IA, disponible 24/7.\nAdaptée à ton trimestre, à ton allaitement, à toi.",
+    Illustration: IllustrationCommunity,
+    gradientFrom: "#FFFAF5",
+    gradientTo: "#F0F0F8",
+    accentColor: Colors.accent,
+    sources: ["CRAT", "ANSM"],
+  },
+  // ── Slide 5 — PARTNER (viralité couple) ──────────────────────────────────
+  // v4 Lot 14 — Le mari/conjoint·e est un acquisition vector. Le mentionner
+  // dans l'onboarding pousse l'utilisatrice à inviter spontanément.
+  {
+    key: "partner",
+    title: "Il t'aide.\nMême au supermarché.",
+    subtitle:
+      "Ton partenaire scanne pour toi. Vous voyez vos choix en temps réel.\nVous êtes une équipe.",
+    Illustration: IllustrationCommunity,
+    gradientFrom: "#FFFAF5",
+    gradientTo: "#EDF7F0",
+    accentColor: "#5BB97C",
   },
 ];
 

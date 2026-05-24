@@ -11,6 +11,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { CrossRefResult } from './crossref.js';
 import { chunk, log, withRetry } from './utils.js';
+import { validateBatch, enforceQualityThreshold } from './validate.js';
 
 const BATCH_SIZE = 50;
 
@@ -71,6 +72,25 @@ export async function insertIngredients(
   entries: CrossRefResult[],
 ): Promise<InsertStats> {
   log.info(`Insert — préparation de ${entries.length} ingrédients…`);
+
+  // v4-Lot6 — Validation runtime AVANT toute connexion DB. Si > 5 % des
+  // rows sont corrompues (enum invalide, name vide, etc.), on stoppe le
+  // pipeline plutôt que de polluer la base. Les samples d'anomalies sont
+  // loggés pour debug du scraper amont.
+  const { valid: validatedEntries, stats: vstats, samples } = validateBatch(entries);
+  log.info(
+    `Insert — validation: ${vstats.valid}/${vstats.total} valides, ${vstats.rejected} rejetées`,
+  );
+  if (vstats.rejected > 0) {
+    log.warn(`Insert — anomalies par raison: ${JSON.stringify(vstats.byReason)}`);
+    for (const s of samples.slice(0, 10)) {
+      log.warn(
+        `Insert — sample [${s.reason}${s.detail ? ` ${s.detail}` : ''}]: name="${s.entry.name}" inci="${s.entry.name_inci}"`,
+      );
+    }
+  }
+  enforceQualityThreshold(vstats); // throw si > 5 % rejet → stop le run
+
   const client = buildSupabaseClient();
   const stats: InsertStats = { inserted: 0, skipped: 0, errors: 0 };
 
@@ -89,15 +109,19 @@ export async function insertIngredients(
   );
   log.info(`Insert — ${manualKeys.size} entrées manuelles protégées`);
 
-  // Filtrer les doublons avec les entrées manuelles
+  // Filtrer les doublons avec les entrées manuelles (utilise validatedEntries
+  // depuis v4-Lot6, pas entries — sinon on tenterait d'insérer les rows
+  // rejetées validation).
   const toInsert: CrossRefResult[] = [];
-  for (const entry of entries) {
+  for (const entry of validatedEntries) {
     if (manualKeys.has(entry.name_inci.toUpperCase().trim())) {
       stats.skipped++;
     } else {
       toInsert.push(entry);
     }
   }
+  // v4-Lot6 — les rejets validation comptent comme errors pour la stat finale.
+  stats.errors += vstats.rejected;
 
   log.info(`Insert — ${toInsert.length} à insérer, ${stats.skipped} protégés`);
 

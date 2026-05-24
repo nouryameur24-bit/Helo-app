@@ -1,0 +1,58 @@
+# ────────────────────────────────────────────────────────────────────────────
+# Hēlo CI — typecheck + tests sur chaque push/PR vers main.
+#
+# Bloque automatiquement les merges qui cassent le build ou les tests
+# unitaires du matcher. Filet de sécurité contre les régressions v3-style
+# (qui ont demandé 5 commits "fix scan" en 24h avant l'audit).
+#
+# Performance : ~2-3 minutes par run grâce au cache pnpm store.
+# ────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel les runs précédents sur la même branche pour économiser des minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck-and-test:
+    name: Typecheck + Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript — full workspace build (project references)
+        run: pnpm run typecheck
+
+      - name: Tests — api-server matcher + parseIngredients (110+ cases)
+        run: pnpm --filter @workspace/api-server run test
+
+      # Mobile typecheck (séparé : tsconfig propre, pas dans les project refs)
+      - name: TypeScript — mobile Hēlo app
+        working-directory: artifacts/helo
+        run: npx tsc --noEmit

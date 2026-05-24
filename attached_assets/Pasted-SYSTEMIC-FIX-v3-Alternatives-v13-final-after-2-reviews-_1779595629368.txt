@@ -1,0 +1,268 @@
+SYSTEMIC FIX v3 — Alternatives v13 (final after 2 reviews).
+
+CONTEXT:
+- Standalone "alcool" in food falsely triggers DANGER → fix
+- Belt accepts same-score candidates → add adaptive gate
+- Junk brands sneak through → relabel as "Marque distributeur"
+
+ARCHITECTURE NOTES (from review):
+- Use Map<string, number> pattern (consistent with reasonByBarcode), 
+  NO mutation via (cand as any)._field
+- Absolute floor: only display alternatives with score >= 80 
+  (no "yellow caution" alternatives shown)
+- Adaptive gate only when origin < 70
+
+═══════════════════════════════════════════════════════════
+PART 1 — matcher.ts: FOOD_CONTEXT_OVERRIDES (defensive labels)
+═══════════════════════════════════════════════════════════
+
+FILE: artifacts/api-server/src/lib/matcher.ts
+
+After existing SAFE_OVERRIDES array, ADD:
+
+const FOOD_CONTEXT_OVERRIDES: { 
+  pattern: RegExp; 
+  label: string; 
+  riskLevel: 'safe' | 'caution';
+}[] = [
+  // ─── Standalone alcohol — DEFENSIVE LABELS (medico-legal) ─
+  // OMS recommends zero alcohol during pregnancy. We downgrade
+  // standalone "alcool" to caution (not danger) because it's 
+  // typically <0.5% manufacturing residual in food products.
+  // Defensive labels prompt the user to verify the percentage.
+  { 
+    pattern: /^alcool$/iu, 
+    label: 'Alcool (présence à vérifier sur l\'étiquette)', 
+    riskLevel: 'caution' 
+  },
+  { 
+    pattern: /^alcohol$/iu, 
+    label: 'Alcohol (check label percentage)', 
+    riskLevel: 'caution' 
+  },
+  { 
+    pattern: /^[ée]thanol$/iu, 
+    label: 'Éthanol (vérifier le pourcentage)', 
+    riskLevel: 'caution' 
+  },
+  { 
+    pattern: /\balcool\s+[ée]thylique\b/iu, 
+    label: 'Alcool éthylique (vérifier %)', 
+    riskLevel: 'caution' 
+  },
+  
+  // ─── E-numbers safe by default (regulated EU additives) ──
+  { pattern: /\bE\s?322\b/iu, label: 'E322 Lécithine', riskLevel: 'safe' },
+  { pattern: /\bE\s?330\b/iu, label: 'E330 Acide citrique', riskLevel: 'safe' },
+  { pattern: /\bE\s?300\b/iu, label: 'E300 Vitamine C', riskLevel: 'safe' },
+  { pattern: /\bE\s?150a\b/iu, label: 'E150a Caramel simple', riskLevel: 'safe' },
+  { pattern: /\bE\s?440\b/iu, label: 'E440 Pectine', riskLevel: 'safe' },
+  
+  // ─── Common safe food ingredients ─────────────────────────
+  { pattern: /\bl[ée]cithine\s+de\s+soja\b/iu, label: 'Lécithine de soja (émulsifiant)', riskLevel: 'safe' },
+  { pattern: /\bl[ée]cithines?\b/iu, label: 'Lécithine', riskLevel: 'safe' },
+  { pattern: /\bacide\s+citrique\b/iu, label: 'Acide citrique (E330)', riskLevel: 'safe' },
+  { pattern: /\bacide\s+ascorbique\b/iu, label: 'Vitamine C', riskLevel: 'safe' },
+  { pattern: /\bcolorant\s+caramel\b/iu, label: 'Colorant caramel', riskLevel: 'safe' },
+  { pattern: /\bar[oô]mes?\s+naturel/iu, label: 'Arôme naturel', riskLevel: 'safe' },
+  { pattern: /\bgomme\s+(?:xanthane|guar|arabique|caroube)\b/iu, label: 'Gomme épaississante', riskLevel: 'safe' },
+];
+
+function matchFoodContextOverride(
+  ingredientName: string,
+): { matched: true; label: string; riskLevel: 'safe' | 'caution' } | null {
+  for (const { pattern, label, riskLevel } of FOOD_CONTEXT_OVERRIDES) {
+    if (pattern.test(ingredientName)) return { matched: true, label, riskLevel };
+  }
+  return null;
+}
+
+In matchDeterministic(), AFTER existing SAFE_OVERRIDES check and 
+BEFORE main matching loop, add:
+
+  if (domain === 'food') {
+    const foodOverride = matchFoodContextOverride(ingredientName);
+    if (foodOverride) {
+      return {
+        ingredientName,
+        matched: true,
+        matchedIngredientName: foodOverride.label,
+        riskLevel: foodOverride.riskLevel,
+      };
+    }
+  }
+
+═══════════════════════════════════════════════════════════
+PART 2 — alternatives.ts: Adaptive gate + absolute floor (Map pattern)
+═══════════════════════════════════════════════════════════
+
+FILE: artifacts/api-server/src/routes/alternatives.ts
+
+A. Add glow_score to AlternativeProductDto:
+
+  interface AlternativeProductDto {
+    // ... existing fields ...
+    glow_score: number;
+  }
+
+B. In the belt loop, BEFORE the loop, declare the score map:
+
+  // Score map (consistent with reasonByBarcode pattern, no mutation)
+  const scoreByBarcode = new Map<string, number>();
+
+C. REPLACE the belt loop body with:
+
+  for (const b of sniperResult.barcodes) {
+    const cand = byBarcode.get(b);
+    if (!cand) continue;
+    const parsed = parseIngredients(cand.ingredients_raw);
+    const belt = await matchDeterministic(parsed, phase, beltDomain);
+    if (belt.dangerousMatch) continue;
+    
+    // ── Compute candidate's GlowScore ────────────────────
+    const candidateDangerCount = belt.matches.filter(m => m.riskLevel === 'danger').length;
+    const candidateCautionCount = belt.matches.filter(m => m.riskLevel === 'caution').length;
+    const candidateUnknownCount = belt.matches.filter(m => !m.matched).length;
+    const candidateGlowScore = Math.max(0, Math.min(100,
+      100 - (candidateDangerCount * 50) - (candidateCautionCount * 15) - (candidateUnknownCount * 2)
+    ));
+    
+    // ── ABSOLUTE FLOOR: only display safe alternatives ───
+    // Never show a "yellow caution" alternative — UX consistency
+    if (candidateGlowScore < 80) {
+      req.log.info({
+        action: 'rejected_below_safe_floor',
+        candidateBarcode: b,
+        candidateScore: candidateGlowScore,
+      }, 'alternative rejected: not safe enough to display');
+      continue;
+    }
+    
+    // ── ADAPTIVE GATE: only when origin is problematic ───
+    // - Origin score unknown → no gate (don't invent threshold)
+    // - Origin already healthy (>= 70) → no gate (diversify by brand instead)
+    // - Origin problematic (< 70) → require +10 minimum improvement
+    const originGlowScore: number | null = (phaseCache as any)?.glow_score ?? null;
+    const requireImprovement = originGlowScore !== null && originGlowScore < 70;
+    if (requireImprovement && candidateGlowScore < originGlowScore + 10) {
+      req.log.info({
+        action: 'rejected_insufficient_improvement',
+        candidateBarcode: b,
+        candidateScore: candidateGlowScore,
+        originScore: originGlowScore,
+        threshold: originGlowScore + 10,
+      }, 'alternative rejected');
+      continue;
+    }
+    
+    // Store computed score for DTO (Map pattern, no mutation)
+    scoreByBarcode.set(b, candidateGlowScore);
+    
+    // ── Existing categoryTag check ────────────────────────
+    if (categoryTag && liveStrategy === 'keywords' 
+        && !cand.categories_tags.includes(categoryTag)) {
+      continue;
+    }
+    
+    // ── IMPROVED junk brand filter ───────────────────────
+    const brandNorm = cand.brand.trim().toLowerCase();
+    const categoryNorm = cand.category.trim().toLowerCase();
+    
+    if (brandNorm.length < 2) {
+      if (!cand.image_url) continue;
+      cand.brand = 'Marque distributeur';
+    } else if (brandNorm === categoryNorm) {
+      cand.brand = 'Marque distributeur';
+    }
+    
+    safeCandidates.push(cand);
+  }
+
+D. In DTO mapping, use the Map:
+
+  const dtos: AlternativeProductDto[] = safeCandidates.map(c => {
+    const { score: badgeScore, originBadge } = scoreAndBadge(
+      c.name, c.brand, c.ingredients_raw, c.labels_tags
+    );
+    const computedScore = scoreByBarcode.get(c.barcode) ?? 100;
+    return {
+      id: c.barcode,
+      name: c.name,
+      brand: c.brand,
+      category: c.category,
+      barcode: c.barcode,
+      image_url: c.image_url,
+      description_fr: null,
+      reason: reasonByBarcode.get(c.barcode) ?? null,
+      overall_risk: 'safe',  // floor at 80 guarantees this
+      price_range: '',
+      popularity_count: computedScore + badgeScore,
+      origin_badge: originBadge,
+      glow_score: computedScore,
+    };
+  });
+
+E. Bump version:
+  const MATCHER_VERSION = "v13";
+
+═══════════════════════════════════════════════════════════
+PART 3 — scan.ts: Store glow_score in phaseCache
+═══════════════════════════════════════════════════════════
+
+In routes/scan.ts, when writing to analysis_cache for a product, 
+include glow_score:
+
+  cache[cacheKey] = {
+    ...existingPhaseData,
+    search_keyword: searchKeyword,
+    glow_score: computedScore,  // ADD THIS
+  };
+
+═══════════════════════════════════════════════════════════
+PART 4 — Mobile fallback (alternatives.ts mobile)
+═══════════════════════════════════════════════════════════
+
+FILE: artifacts/helo/lib/alternatives.ts
+
+The mobile fallback is offline-only, premium-only, and rare. We do 
+NOT replicate the backend score gate (would drift). Diversity by 
+brand/badge is sufficient.
+
+Add comment in filterAndScore():
+
+  // NOTE: Backend has the authoritative score gate + absolute floor 
+  // at 80 (routes/alternatives.ts). This mobile fallback diversifies 
+  // by brand/badge only. Drift acceptable as fallback is rare.
+
+═══════════════════════════════════════════════════════════
+DEPLOYMENT NOTE
+═══════════════════════════════════════════════════════════
+
+⚠️ MATCHER_VERSION v12 → v13 invalidates ALL phase caches.
+First scan post-deploy will take 5-10s.
+Anthropic cost spike estimated: 3-5 c$ × active products.
+DO NOT deploy during evening peak (7-10pm).
+
+═══════════════════════════════════════════════════════════
+VERIFICATION
+═══════════════════════════════════════════════════════════
+
+1. Run: npx tsc --noEmit → 0 errors
+2. Test Moutarde Amora:
+   - "alcool" → caution with label "présence à vérifier sur l'étiquette"
+   - Origin score ~85 (up from 27)
+3. Test alternatives for Moutarde Amora (origin = 85):
+   - originGlowScore (85) >= 70 → adaptive gate disabled
+   - Absolute floor 80 applies → no yellow alternatives
+   - Diversification by brand/pharmacy badge
+4. Test alternatives for a 50/100 product:
+   - originGlowScore (50) < 70 → adaptive gate enforced
+   - Only candidates with score >= max(60, 80) = 80 returned
+5. Test alternatives without phase cache:
+   - originGlowScore = null → gate disabled
+   - Absolute floor 80 still applies → no false empty state
+6. Junk brands relabeled as "Marque distributeur"
+7. All returned alternatives have overall_risk = 'safe'
+8. No (cand as any)._field mutations — clean Map<barcode, score> pattern
+
+Confirm changes, show MATCHER_VERSION = 'v13' and the scoreByBarcode Map.

@@ -222,7 +222,13 @@ export default function PaywallScreen() {
     <View style={[s.root, { backgroundColor: Colors.background }]}>
       {/* Close button */}
       <View style={[s.closeRow, { paddingTop: insets.top + Spacing.sm }]}>
-        <Pressable onPress={() => router.back()} style={s.closeBtn}>
+        <Pressable
+          onPress={() => {
+            track('paywall_dismissed', { trigger: trigger ?? 'direct', selected_plan: selectedPlan }).catch(() => {});
+            router.back();
+          }}
+          style={s.closeBtn}
+        >
           <Feather name="x" size={20} color={Colors.textSecondary} />
         </Pressable>
       </View>

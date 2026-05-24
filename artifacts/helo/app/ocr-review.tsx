@@ -116,6 +116,9 @@ export default function OcrReviewScreen() {
   const b64 = base64 ? decodeURIComponent(base64) : '';
 
   const runOCR = async () => {
+    if (ghostBarcode) {
+      track('ghost_capture_initiated', { ghost_barcode: ghostBarcode }).catch(() => {});
+    }
     setOcrLoading(true);
     setOcrWarning(null);
     try {

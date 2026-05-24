@@ -65,6 +65,7 @@ import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { MatchResult, Phase, VerdictResult } from '@/types';
 import { STORAGE_KEYS, ocrResultKey } from '@/lib/storageKeys';
+import { track } from '@/lib/analytics';
 
 export default function VerdictScreen() {
   const {
@@ -255,6 +256,14 @@ export default function VerdictScreen() {
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
+    track('scan_verdict_shown', {
+      verdict: verdict.verdict,
+      product_name: product?.name,
+      phase: String(phase),
+      is_ocr: isOCRMode,
+      is_photo: isPhotoMode,
+      glow_score: verdict.glowScoreRemote ?? null,
+    }).catch(() => {});
   }, [verdict]);
 
   const handleShelfSelect = useCallback(async (category: string) => {
@@ -339,6 +348,13 @@ export default function VerdictScreen() {
         if (__DEV__) console.warn('[verdict] shelf Supabase insert error:', err);
       }
     }
+
+    track('product_added_to_shelf', {
+      category,
+      verdict: verdict?.verdict,
+      product_name: product?.name,
+      phase: String(phase),
+    }).catch(() => {});
 
     setToastVisible(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);

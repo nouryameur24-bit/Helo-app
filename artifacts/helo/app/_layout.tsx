@@ -8,13 +8,14 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { router, Stack } from "expo-router";
+import { router, Stack, usePathname, useGlobalSearchParams } from "expo-router";
 import { ensureAnonymousSession } from "@/lib/supabase";
 import * as Linking from "expo-linking";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { PostHogProvider } from "posthog-react-native";
 
 import { DisclaimerModal } from "@/components/DisclaimerModal";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -29,7 +30,8 @@ import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifi
 import { downloadIngredientsDB } from "@/lib/offline";
 import { configurePurchases, PREMIUM_KEY } from "@/lib/purchases";
 import { initSentry, Sentry } from "@/lib/sentry";
-import { track } from "@/lib/analytics";
+import { track, identify } from "@/lib/analytics";
+import { posthog } from "@/lib/posthog";
 
 // Init Sentry as early as possible so module-load errors are captured.
 initSentry();
@@ -67,6 +69,18 @@ function RootLayoutNav() {
   const { activeAlert, dismiss, removeFromShelf } = useRecallAlerts(isPremium);
   useNotificationTapRouting();
   useWidgetDeepLinks();
+
+  const pathname = usePathname();
+  const params = useGlobalSearchParams();
+  const previousPathname = useRef<string | undefined>(undefined);
+
+  // Manual screen tracking for expo-router
+  useEffect(() => {
+    if (previousPathname.current !== pathname) {
+      posthog.screen(pathname, { previous_screen: previousPathname.current ?? null, ...params });
+      previousPathname.current = pathname;
+    }
+  }, [pathname, params]);
 
   useEffect(() => {
     initAndroidNotificationChannels().catch(swallow);
@@ -256,6 +270,7 @@ function RootLayout() {
           const userId = await ensureAnonymousSession().catch(() => null);
           if (userId) {
             registerPushToken(userId).catch(swallow);
+            identify(userId).catch(swallow);
           }
         }
       } catch {
@@ -275,9 +290,11 @@ function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
-            <RootLayoutNav />
-          </GestureHandlerRootView>
+          <PostHogProvider client={posthog} autocapture={{ captureScreens: false, captureTouches: true }}>
+            <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </PostHogProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

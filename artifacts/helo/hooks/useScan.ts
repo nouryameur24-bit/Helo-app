@@ -150,10 +150,9 @@ export function useScan(): UseScanReturn {
 
   const scanBarcode = useCallback(async (barcode: string, phase: Phase = 2, isOffline = false) => {
     setState((s) => ({ ...s, loading: true, error: null, fromCache: false }));
-    // Analytics : début d'un cycle de scan (barcode pipeline). On émet ici
-    // plutôt que côté UI pour capturer aussi les déclenchements indirects
-    // (deep link verdict/[scanId], retry, etc.).
-    track('scan_started', { phase, isOffline }).catch(() => {});
+    // Note v4 Lot 11 → wizard PostHog : on émet `scan_started` UNIQUEMENT côté
+    // UI (app/(tabs)/scan.tsx) qui a les meilleures metadata (barcode +
+    // is_premium + is_offline). Émettre ici causait du double-count.
 
     try {
       // ── Offline path ──────────────────────────────────────────────────────────

@@ -34,6 +34,7 @@ import {
   submitAlternativeSuggestion,
 } from '@/lib/alternatives';
 import { fetchAlternativesRemote } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import type { Trimester } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -629,6 +630,13 @@ export default function AlternativesScreen() {
       setAlternatives(results);
       setExplanations({ danger: dangerExpl, caution: cautionExpl });
       setLoading(false);
+      track('alternative_viewed', {
+        product_name: productName,
+        barcode,
+        alternatives_count: results.length,
+        trimester,
+        is_premium: isPremium,
+      }).catch(() => {});
     })();
     return () => {
       cancelled = true;
@@ -656,8 +664,11 @@ export default function AlternativesScreen() {
   }, []);
 
   const handleViewDetail = useCallback((bc: string | null) => {
-    if (bc) router.push(`/verdict/${encodeURIComponent(bc)}`);
-  }, []);
+    if (bc) {
+      track('alternative_swap_tapped', { alternative_barcode: bc, original_barcode: barcode, product_name: productName }).catch(() => {});
+      router.push(`/verdict/${encodeURIComponent(bc)}`);
+    }
+  }, [barcode, productName]);
 
   const handleAddToList = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

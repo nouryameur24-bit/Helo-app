@@ -26,6 +26,7 @@ import { IllustrationTrimester } from "@/components/illustrations/IllustrationTr
 import { IllustrationCommunity } from "@/components/illustrations/IllustrationCommunity";
 import { Colors, Radius, Spacing } from "@/constants/theme";
 import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { track } from '@/lib/analytics';
 
 type Role = "pregnant" | "partner";
 
@@ -146,6 +147,7 @@ export default function RoleSelectionScreen() {
     setSelected(role);
 
     await AsyncStorage.setItem(STORAGE_KEYS.userRole, role);
+    track('onboarding_step_completed', { step: 'role', role }).catch(() => {});
 
     setTimeout(() => {
       if (role === "pregnant") {

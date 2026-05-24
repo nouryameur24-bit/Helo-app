@@ -36,6 +36,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
 import { analyzeMenu } from '@/lib/restaurant';
 import { onProductScanned } from '@/lib/pact';
+import { track } from '@/lib/analytics';
 
 import {
   BARCODE_TYPES,
@@ -193,6 +194,7 @@ export default function ScanScreen() {
       }
 
       onProductScanned(scanFirstName || '').catch(swallowAs('scan.onProductScanned'));
+      track('scan_started', { barcode: data, is_premium: isPremium, is_offline: isOffline }).catch(swallow);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       flashColor.value = withSequence(
         withTiming(1, { duration: 150 }),

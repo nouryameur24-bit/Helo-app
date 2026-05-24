@@ -28,6 +28,7 @@ import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
 import { getOrCreateUserId } from "@/hooks/useProfile";
 import { upsertProfile, generatePartnerCode } from "@/lib/partnerUtils";
 import { STORAGE_KEYS } from '@/lib/storageKeys';
+import { track, identify } from '@/lib/analytics';
 import {
   firstNameSchema,
   formatDueDateInput,
@@ -164,12 +165,21 @@ export default function ProfileSetupScreen() {
 
       // ── 2. Navigate immediately — app works offline ───────────────────────────
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      track('onboarding_step_completed', {
+        step: 'profile',
+        trimester: trimesterInfo?.trimester ?? null,
+        categories: Array.from(selectedCategories),
+      }).catch(() => {});
       // Slide 5 : collecte des préférences (allergies / régime / sensibilités)
       // avant l'invitation au premier scan.
       router.replace("/onboarding/preferences");
 
       // ── 3. Sync to Supabase in the background (non-blocking) ─────────────────
       getOrCreateUserId().then((userId) => {
+        identify(userId, {
+          $set: { first_name: cleanFirstName, trimester: trimesterInfo?.trimester ?? null },
+          $set_once: { onboarding_completed_at: new Date().toISOString() },
+        }).catch(() => {});
         upsertProfile({
           userId,
           firstName: cleanFirstName,

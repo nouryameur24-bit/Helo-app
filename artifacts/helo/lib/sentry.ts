@@ -12,7 +12,7 @@
 import * as Sentry from '@sentry/react-native';
 
 const FALLBACK_DSN =
-  'https://c6dfead7227a5fdace9cd60adf1eba27@o4511434162110464.ingest.de.sentry.io/4511434172792912';
+  'https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704';
 
 let initialized = false;
 

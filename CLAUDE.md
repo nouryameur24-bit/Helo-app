@@ -371,7 +371,7 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 17. **MCPs Claude Code configurés (4)** : `~/.claude.json` scope `/Users/nouryameur/Documents/Helo-app` contient `supabase`, `github`, `sentry`. PostHog non-MCP (OAuth flow PostHog bugué) — utiliser REST API directe avec `EXPO_PUBLIC_POSTHOG_KEY=phc_qbr2WamQwtNPCZfrzgZUyJaa6Dy5BP5WNFubDAszdP6U` côté Helo. Tokens dans `.claude.json` (à régénérer si fuite). Sentry token a scopes limités (peut faire whoami/orgs/teams mais pas project:read ni event:read) — pour analytics Sentry full il faut générer un token avec scopes `project:read event:read member:read` sur https://helo-54.sentry.io/settings/account/api/auth-tokens/.
 
-18. **Sentry DSN production** est dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Verifier via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`).
+18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
 
 ---
 

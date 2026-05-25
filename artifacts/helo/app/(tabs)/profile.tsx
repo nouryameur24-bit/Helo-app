@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AccountActions } from '@/components/profile/AccountActions';
 import { CircleSection } from '@/components/profile/CircleSection';
 import { FeedbackSection } from '@/components/profile/FeedbackSection';
+import { HeloPointsSection } from '@/components/profile/HeloPointsSection';
 import { OverlayGates } from '@/components/profile/OverlayGates';
 import { PartnerSection } from '@/components/profile/PartnerSection';
 import { PreferencesSection } from '@/components/profile/PreferencesSection';
@@ -31,6 +32,7 @@ export default function ProfileScreen() {
           contentInsetAdjustmentBehavior="automatic"
         >
           <ProfileHeader />
+          <HeloPointsSection />
           <CircleSection />
           <PartnerSection />
           <PreferencesSection />

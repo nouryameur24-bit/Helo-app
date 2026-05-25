@@ -27,6 +27,7 @@ import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme'
 import { incrementContributionCount } from '@/lib/contributions';
 import { useProfile } from '@/hooks/useProfile';
 import { matchIngredients, getVerdict, ghostCaptureSave } from '@/lib/productLookup';
+import { awardPoints, POINTS } from '@/lib/heloPoints';
 import { cleanOcrTextRemote, analyzeIngredientsWithClaudeVision } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
@@ -336,6 +337,43 @@ export default function OcrReviewScreen() {
           verdict: verdictResult.verdict,
           ingredients_count: ingredients.length,
         }).catch(() => {});
+
+        // Hēlo Points (task #107) — award fire-and-forget pour chaque étape
+        // accomplie. Pas de await pour ne pas bloquer la navigation verdict.
+        if (userId) {
+          (async () => {
+            try {
+              const productHasName = product.name && product.name !== 'Produit' && product.name.trim().length > 2;
+              // Step 1: scan new barcode (toujours +5)
+              await awardPoints({
+                userId, amount: POINTS.SCAN_NEW_BARCODE,
+                reason: 'scan_new_barcode',
+                metadata: { barcode: ghostBarcode },
+              });
+              // Step 2: photo des ingrédients = LE GROS (+25)
+              await awardPoints({
+                userId, amount: POINTS.PHOTO_INGREDIENTS,
+                reason: 'photo_ingredients',
+                metadata: { barcode: ghostBarcode, source: 'ocr_review' },
+              });
+              // Step 3: name filled (+5 si pas un placeholder)
+              if (productHasName) {
+                await awardPoints({
+                  userId, amount: POINTS.NAME_FILLED,
+                  reason: 'name_filled',
+                  metadata: { barcode: ghostBarcode, name: product.name },
+                });
+              }
+              track('points_earned', {
+                source: 'ghost_capture',
+                barcode: ghostBarcode,
+                total: POINTS.SCAN_NEW_BARCODE + POINTS.PHOTO_INGREDIENTS + (productHasName ? POINTS.NAME_FILLED : 0),
+              }).catch(() => {});
+            } catch (err) {
+              logError('ocrReview.awardPoints', err);
+            }
+          })();
+        }
       }
     } catch (err) {
       logError('ocrReview.analyse', err);

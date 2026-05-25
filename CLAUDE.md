@@ -160,6 +160,17 @@ Helo-app/                                # repo root
 - Animation +N ✨ Glow Score change
 - LongPressHint discoverability
 
+### ✅ Pipeline Safety & Coverage (Lot 17) — SAFETY-CRITICAL
+- **17-01** Bannière "Composition (partiellement) inconnue" — finit le faux ✅
+- **17-02** Cross-check allergies → bannière ROUGE bloquante (anaphylaxie risk)
+- **17-03** Parallel OFF/OBF fetch → latence ÷ 2 (16s → 8s worst case)
+- **17-04** Champ `max_dose_mg_per_day` + UI pill dosage + 7 médicaments OTC seedés
+- **17-05** Seed 50 plantes médicinales CRAT (curcuma, gingembre, réglisse, sauge…)
+- **17-06** Timeout safeguard 10s sur verdict screen — plus de spinner infini
+- **17-07** Groupement ingrédients par catégorie (allergènes/additifs/colorants…)
+- **17-08** Table alias 150 E-numbers (E951 → Aspartame)
+- **17-09** RappelConso recall pour TOUS les users (gate premium retiré)
+
 ---
 
 ## 🎨 Conventions à respecter (NE PAS DÉVIER)
@@ -206,6 +217,10 @@ Helo-app/                                # repo root
 | `GlowScoreDeltaToast` | `components/home/GlowScoreDeltaToast.tsx` | Animation +N ✨ quand score change |
 | `WhatsNewModal` | `components/WhatsNewModal.tsx` | Modal après update version |
 | `FeedbackSection` | `components/profile/FeedbackSection.tsx` | Aide & Feedback dans Profil |
+| `UnknownCompositionBanner` | `components/verdict/UnknownCompositionBanner.tsx` | Bannière ⚠️ "composition (partiellement) inconnue" |
+| `AllergyWarningBanner` | `components/verdict/AllergyWarningBanner.tsx` | Bannière ROUGE allergène détecté (haptic Error) |
+| `eNumberAliases` (lib) | `lib/eNumberAliases.ts` | Map E-number → nom ingrédient (150 entrées) |
+| `categorizeIngredient` (lib) | `components/verdict/categorizeIngredient.ts` | Catégoriser ingrédient (allergène/additif/colorant/…) |
 | `useSafeBack` | `hooks/useSafeBack.ts` | Back centralisé avec fallback |
 | `useChatUnread` | `hooks/useChatUnread.ts` | Compteur unread chat (singleton) |
 
@@ -291,6 +306,14 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 8. **Verdict screen header sticky** (Lot 15B2) utilise `BlurView` avec `intensity={Platform.OS === 'ios' ? 60 : 80}`. Le padding-top du hero doit compenser : `(insets.top) + 64`.
 
+9. **SQL migration Lot 17 à appliquer** : `artifacts/helo/supabase/migration-lot17-dose-and-herbs.sql`. **Sans exécuter ça sur Supabase**, les champs `max_dose_mg_per_day` + les 50 plantes médicinales ne sont pas dans la DB. La migration est idempotente (ON CONFLICT DO NOTHING + ADD COLUMN IF NOT EXISTS). À exécuter dans Supabase Dashboard → SQL Editor.
+
+10. **Le `getVerdict` (Lot 17-01) renvoie 3 nouveaux champs** : `totalCount`, `allIngredientsUnknown`, `unknownRatio`. Tout consommateur de `VerdictResult` doit les fournir (cf. `hooks/useScan.ts` ligne 113 pour le pattern). Si tu crées une nouvelle source de verdict (backend), n'oublie pas ces champs.
+
+11. **`matchedAllergies` sur MatchResult** (Lot 17-02) : tableau de labels d'allergies déclarées qui matchent l'ingrédient (ex: `['Arachide']`). Rempli par `applyPersonalPreferences()`. Consommé par `getVerdict()` qui agrège en `allergyWarnings` au niveau verdict.
+
+12. **E-number fallback dans `findMatchingRow`** (Lot 17-08) : si match direct échoue ET l'ingrédient est un E-number, lookup via `resolveENumber()` puis re-match. Si tu changes le matcher, conserve ce fallback sinon les additifs notés "E951" perdront leur risk_level.
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -302,6 +325,9 @@ curl https://<replit-url>/api/healthz  # → "ok"
 - **Modal célébration 1er scan** : sans ça l'onboarding s'arrêtait silencieusement
 - **Sticky header verdict** : verdict screen le plus visité, perdre le bouton retour = désorientation
 - **Glow Score animation +N** : feedback tactile/visuel sur ajout au placard (avant : silence)
+- **Lot 17 — "Better uncertain than wrong falsely safe"** : principe gravé dans le pipeline scan. Avant Lot 17, un verdict "safe" pouvait masquer une vraie incertitude (0 ingrédient matché → safe par défaut). Pour une app grossesse, c'est inacceptable. La bannière "composition (partiellement) inconnue" garantit qu'on n'affiche plus de faux ✅.
+- **Lot 17 — Allergies = priorité TOP** : bannière rouge avant TOUT le reste (avant même le recall). Risque vital > risque conformité.
+- **Lot 17 — Recall gratuit pour tous** : les rappels RappelConso (DGCCRF) sont safety-critical, jamais Premium-only. Apple Review aurait pu reject sur ce point.
 
 ---
 
@@ -356,5 +382,5 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated : Lot 16 livré (43 tâches, 16 nouveaux composants, 0 erreur TS, 206/207 tests).*
+*Last updated : Lot 17 livré (52 tâches, 22+ composants/libs, 0 erreur TS, 206/207 tests).*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

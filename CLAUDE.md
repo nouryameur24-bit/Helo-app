@@ -428,6 +428,27 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
 
+25. **Audit complet codebase 25/05/2026 (task #109)** : Pass de qualité full-stack post-Hēlo Points. 4 agents parallèles → 7 critiques + 5 importants identifiés. Tous patchés (mobile + DB + api-server) :
+
+   **Mobile fixes** :
+   - **Bug #1 Logout** (`components/profile/useAccountActions.ts`) : `supabase.auth.signOut()` AVANT `AsyncStorage.clear()`. Sinon JWT persistait dans `supabase.auth.token` → session pouvait leaker au prochain `ensureAnonymousSession` (cross-user risk).
+   - **Bug #2 Delete account** : Ordre supabase deletes AVANT `AsyncStorage.clear` (`point_redemptions` → `point_transactions` → `user_points` → `scan_history` → `community_submissions` → `partner_links` → `profiles` → `signOut`) pour éviter rows orphelins si AsyncStorage clear OK mais Supabase fail.
+   - **Bug #3+4 Awards Ghost Capture séquentiels** (`app/ocr-review.tsx`) : Refactor `Promise.all` async IIFE → boucle `for...of` séquentielle. Sinon awards parallèles consommaient le cap 300 pts/jour mid-stream et les autres étaient cappés à 0. Source unique `pointsSteps` array partagée entre URL param (`pointsEarned=N`) et awards RPC.
+   - **Bug #5 URL params bornés** (`app/verdict/[scanId].tsx`) : `pointsEarned` max 500, `ghostContribCount` max 10 000. Empêche un attaquant URL d'afficher `+999999 ⭐` ou des chiffres aberrants.
+   - **Bug #8 ghostCaptureSave awaited avant awards** (`app/ocr-review.tsx`) : `await ghostCaptureSave(...)` AVANT octroi points. Si save fail (réseau, RPC down), pas d'awards → préserve cohérence `user_points` ↔ `community_submissions`. Analytics `ghost_capture_completed` track `saved:true/false` au lieu de prétendre que toutes les contributions ont réussi.
+   - **Bug #10 isFirstContributor proper logic** (`lib/heloPoints.ts`) : Query `community_submissions` (PAS `products.source`) avec `neq('user_id', currentUserId)`. Sémantique correcte : "ce user est-il le premier contributeur communautaire" même si OFF/OBF a backfilled le product. Safe default `false` si query fail (don't reward erroneously).
+
+   **api-server fixes** :
+   - **Bug #11 logClaudeApiCall retry** (`lib/apiCostTracker.ts`) : 1 retry avec backoff 500ms sur erreur transitoire Supabase. Toujours fire-and-forget (non-fatal pour le user), mais évite de perdre des lignes `api_usage` sur blip réseau pool.
+
+   **DB fix** :
+   - **Bug #7 Anti-double-award atomique** (migration `point_transactions_anti_double_award_unique`) : `CREATE UNIQUE INDEX uniq_point_transactions_user_product_reason ON point_transactions(user_id, product_id, reason) WHERE product_id IS NOT NULL`. Garde-fou DB-level même si le RPC `award_points` a un bug — pas de double-credit possible.
+
+   **Trade-offs gardés tels quels (pas de fix)** :
+   - **Bug #6 `verdict/[scanId].tsx` phase race** : Code actuel a un guard `activeScanRef.current === barcode` + debounce 50ms. Si phase change après les 50ms, scan complète avec phase initial (légère incorrection). Le fix briserait le guard anti-double-fetch. Trade-off documenté dans les commentaires du code.
+
+   **Validation** : `tsc --noEmit` mobile + api-server ✓, tests 206/207 (3 suites pre-existing supabase env var failure, cf. Gotcha #1), aucune régression.
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -498,9 +519,9 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated 26/05/2026 (nuit, fin) : **15 commits dans la journée**. Session marathon avec Hēlo Points complet end-to-end + audit qualité + fix bugs critiques.
+*Last updated 26/05/2026 (nuit, fin pass qualité) : Session marathon Hēlo Points + audit codebase complet.
 
-🎯 Réalisations clés :
+🎯 Réalisations clés (Hēlo Points + infra) :
 - MCPs (Supabase + GitHub + Sentry + PostHog REST) fully wired
 - Sentry helo-54/react-native projet créé + verified (REACT-NATIVE-1)
 - Backend prod Replit Autoscale 24/7 → asset-manager-leilaameurpro.replit.app
@@ -515,10 +536,17 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 - profiles.id vs user_id mismatch (RPC + 2 hooks) → silently failing avant
 - 38/49 auth.users sans profile → trigger + backfill
 
+🔬 Audit pass complet (task #109) :
+- Mobile : Logout signOut-before-clear, Delete account ordre fix, awards Ghost Capture séquentiels, URL params bornés (pointsEarned max 500), ghostCaptureSave awaited avant awards, isFirstContributor proper query (community_submissions neq user_id)
+- api-server : logClaudeApiCall avec 1 retry backoff 500ms
+- DB : unique index partial `(user_id, product_id, reason) WHERE product_id IS NOT NULL` sur point_transactions
+- Trade-off documenté : verdict phase race intentionnel (guard double-fetch)
+- Tests 206/207 ✓, typecheck mobile + api-server ✓
+
 🛏 Prochaine session :
 - (toi 1 clic) Republish Replit pour activer partial_metadata + apiCostTracker
 - (moi 30 min) partial_metadata mobile handler (refactor productLookup)
-- (moi 30 min) 1st-contributor multiplier ×2 dans award flow
+- (moi 30 min) Wirer isFirstContributor multiplier ×2 dans ocr-review.tsx
 - Test end-to-end depuis iPhone après tout ça
 - TestFlight prep (Apple Dev $99 + EAS build prod + App Store assets)*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

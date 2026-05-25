@@ -293,12 +293,22 @@ export default function OcrReviewScreen() {
         }
       }
 
-      // Hēlo Points (task #107) — calcul des pts en amont pour pouvoir
-      // les passer en URL params au verdict screen (affichage toast).
-      const productHasName = product.name && product.name !== 'Produit' && product.name.trim().length > 2;
-      const pointsToEarn = ghostBarcode && userId
-        ? POINTS.SCAN_NEW_BARCODE + POINTS.PHOTO_INGREDIENTS + (productHasName ? POINTS.NAME_FILLED : 0)
-        : 0;
+      // Hēlo Points (task #107 + audit fix) — Calcul unique partagé entre
+      // l'URL param (toast verdict) et les awards effectifs (RPC Supabase).
+      // Source unique de vérité pour éviter la divergence URL/RPC.
+      const productHasName = Boolean(
+        product.name && product.name !== 'Produit' && product.name.trim().length > 2,
+      );
+      const pointsSteps = ghostBarcode && userId
+        ? [
+            { amount: POINTS.SCAN_NEW_BARCODE, reason: 'scan_new_barcode' as const },
+            { amount: POINTS.PHOTO_INGREDIENTS, reason: 'photo_ingredients' as const },
+            ...(productHasName
+              ? [{ amount: POINTS.NAME_FILLED, reason: 'name_filled' as const }]
+              : []),
+          ]
+        : [];
+      const pointsToEarn = pointsSteps.reduce((acc, s) => acc + s.amount, 0);
 
       // Navigate to verdict with ocr_ prefix; pass ghostThanks=1 + the original
       // ghostBarcode so the verdict screen can render the "merci" toast and
@@ -316,7 +326,11 @@ export default function OcrReviewScreen() {
         router.replace(verdictPath);
       }
 
-      // ── Ghost Capture: background save (fire-and-forget) ──────────────────
+      // ── Ghost Capture: background save + awards (audit fix #8) ────────────
+      // L'UX reste optimiste (navigation déjà déclenchée), mais en background
+      // on AWAIT le save AVANT d'octroyer les points pour préserver l'intégrité
+      // user_points ↔ community_submissions. Si save fail → pas de points + log
+      // Sentry + analytics `saved:false` pour suivre le taux d'échec.
       if (ghostBarcode) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch((err) => {
           logError('ocrReview.haptics', err);
@@ -326,62 +340,77 @@ export default function OcrReviewScreen() {
         // même quand l'user les tape volontairement. On envoie maintenant
         // le texte BRUT que l'user a édité (state `ocrText`) pour préserver
         // toutes ses corrections + ajouts contextuels.
-        ghostCaptureSave({
-          barcode: ghostBarcode,
-          productName: product.name,
-          category,
-          ocrText: ocrText,
-          verdict: verdictResult,
-          trimester: phase,
-          userId: userId ?? null,
-        }).catch((err) => {
-          logError('ocrReview.ghostCaptureSave', err);
-        });
-        // Analytics : la contribution Ghost Capture est partie pour la DB.
-        // On émet AVANT la résolution réelle de `ghostCaptureSave` pour
-        // capturer aussi les saves qui finiront en fallback (réseau KO).
-        track('ghost_capture_completed', {
-          category,
-          verdict: verdictResult.verdict,
-          ingredients_count: ingredients.length,
-        }).catch(() => {});
+        (async () => {
+          const saved = await ghostCaptureSave({
+            barcode: ghostBarcode,
+            productName: product.name,
+            category,
+            ocrText: ocrText,
+            verdict: verdictResult,
+            trimester: phase,
+            userId: userId ?? null,
+          }).catch((err) => {
+            logError('ocrReview.ghostCaptureSave', err);
+            return false;
+          });
 
-        // Hēlo Points (task #107) — award fire-and-forget pour chaque étape
-        // accomplie. Pas de await pour ne pas bloquer la navigation verdict.
-        if (userId) {
-          (async () => {
-            try {
-              const productHasName = product.name && product.name !== 'Produit' && product.name.trim().length > 2;
-              // Step 1: scan new barcode (toujours +5)
-              await awardPoints({
-                userId, amount: POINTS.SCAN_NEW_BARCODE,
-                reason: 'scan_new_barcode',
-                metadata: { barcode: ghostBarcode },
-              });
-              // Step 2: photo des ingrédients = LE GROS (+25)
-              await awardPoints({
-                userId, amount: POINTS.PHOTO_INGREDIENTS,
-                reason: 'photo_ingredients',
+          // Analytics : track le résultat réel (saved:true/false) plutôt que
+          // de prétendre que toute contribution a réussi.
+          track('ghost_capture_completed', {
+            category,
+            verdict: verdictResult.verdict,
+            ingredients_count: ingredients.length,
+            saved,
+          }).catch(() => {});
+
+          if (!saved) {
+            // Save fail → pas d'awards pour éviter incohérence user_points vs
+            // community_submissions. Sentry a déjà la trace via logError ci-dessus.
+            logError(
+              'ocrReview.skipPointsAfterSaveFail',
+              new Error('ghost_capture_save_failed'),
+              { barcode: ghostBarcode },
+            );
+            return;
+          }
+
+          // Hēlo Points (task #107 + audit fix) — Awards séquentiels pour
+          // garantir l'ordre vis-à-vis du cap journalier 300 pts. Si on faisait
+          // ces 3 awards en parallèle (Promise.all), un award peut consommer le
+          // quota mid-stream et les suivants seraient cappés à 0. Séquentiel +
+          // check du retour pour analytics fidèles.
+          if (userId && pointsSteps.length > 0) {
+            let totalAwarded = 0;
+            let capped = false;
+            for (const step of pointsSteps) {
+              const res = await awardPoints({
+                userId,
+                amount: step.amount,
+                reason: step.reason,
+                productId: null, // pas de products.id côté ghost — uniq index basé sur (user_id, product_id, reason) ne s'applique pas
                 metadata: { barcode: ghostBarcode, source: 'ocr_review' },
               });
-              // Step 3: name filled (+5 si pas un placeholder)
-              if (productHasName) {
-                await awardPoints({
-                  userId, amount: POINTS.NAME_FILLED,
-                  reason: 'name_filled',
-                  metadata: { barcode: ghostBarcode, name: product.name },
-                });
+              if (!res) {
+                logError('ocrReview.awardPoints.null', new Error(`reason=${step.reason}`));
+                break;
               }
-              track('points_earned', {
-                source: 'ghost_capture',
-                barcode: ghostBarcode,
-                total: POINTS.SCAN_NEW_BARCODE + POINTS.PHOTO_INGREDIENTS + (productHasName ? POINTS.NAME_FILLED : 0),
-              }).catch(() => {});
-            } catch (err) {
-              logError('ocrReview.awardPoints', err);
+              if (res.message === 'awarded_full' || res.message === 'awarded_partial') {
+                totalAwarded += step.amount;
+              }
+              if (res.message === 'daily_cap_reached') {
+                capped = true;
+                break;
+              }
             }
-          })();
-        }
+            track('points_earned', {
+              source: 'ghost_capture',
+              barcode: ghostBarcode,
+              total_awarded: totalAwarded,
+              total_expected: pointsToEarn,
+              capped,
+            }).catch(() => {});
+          }
+        })();
       }
     } catch (err) {
       logError('ocrReview.analyse', err);

@@ -73,7 +73,30 @@ export interface ClaudeCallLog {
  * Ne JAMAIS faire échouer la requête utilisateur si le logging échoue : on
  * catch + log warning. Le coût ne sera juste pas visible dans le dashboard
  * SQL ; Anthropic Console reste source de vérité.
+ *
+ * Audit fix : 1 retry avec backoff 500ms sur erreur transitoire (réseau,
+ * pool saturé). Évite de perdre des lignes sur blip Supabase. Au-delà d'un
+ * retry on abandonne — pas la peine de retry indéfiniment, ça leak du time.
  */
+const RETRY_DELAY_MS = 500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function insertApiUsageRow(call: ClaudeCallLog, cost: number | null) {
+  return supabaseAdmin.from("api_usage").insert({
+    user_id: call.userId ?? "system",
+    endpoint: call.endpoint,
+    model: call.model,
+    input_tokens: call.inputTokens,
+    output_tokens: call.outputTokens,
+    estimated_cost_usd: cost,
+    request_id: call.requestId ?? null,
+    duration_ms: call.durationMs ?? null,
+  });
+}
+
 export async function logClaudeApiCall(call: ClaudeCallLog): Promise<void> {
   try {
     const cost = computeCostUsd(
@@ -81,20 +104,33 @@ export async function logClaudeApiCall(call: ClaudeCallLog): Promise<void> {
       call.inputTokens,
       call.outputTokens,
     );
-    const { error } = await supabaseAdmin.from("api_usage").insert({
-      user_id: call.userId ?? "system",
-      endpoint: call.endpoint,
-      model: call.model,
-      input_tokens: call.inputTokens,
-      output_tokens: call.outputTokens,
-      estimated_cost_usd: cost,
-      request_id: call.requestId ?? null,
-      duration_ms: call.durationMs ?? null,
-    });
-    if (error) {
+
+    const first = await insertApiUsageRow(call, cost);
+    if (!first.error) return;
+
+    // Retry une seule fois après un court délai si l'erreur ressemble à du transitoire
+    // (network / timeout / pool exhaustion). PostgreSQL constraint errors (unique,
+    // FK) n'ont pas besoin de retry — mais le coût d'un retry inutile reste faible.
+    logger.warn(
+      {
+        error: first.error.message,
+        endpoint: call.endpoint,
+        model: call.model,
+        attempt: 1,
+      },
+      "apiCostTracker: insert failed, retrying once",
+    );
+    await sleep(RETRY_DELAY_MS);
+    const retry = await insertApiUsageRow(call, cost);
+    if (retry.error) {
       logger.warn(
-        { error: error.message, endpoint: call.endpoint, model: call.model },
-        "apiCostTracker: failed to insert (non-fatal)",
+        {
+          error: retry.error.message,
+          endpoint: call.endpoint,
+          model: call.model,
+          attempt: 2,
+        },
+        "apiCostTracker: insert failed after retry (giving up — non-fatal)",
       );
     }
   } catch (err) {

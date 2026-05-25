@@ -54,14 +54,23 @@ export function useAccountActions(userId: string | null) {
                   style: 'destructive',
                   onPress: async () => {
                     try {
-                      await AsyncStorage.clear();
+                      // Audit fix : supprime DB d'abord (avant AsyncStorage.clear
+                      // pour éviter d'avoir un user disconnect avec rows orphelins
+                      // si AsyncStorage clear OK mais Supabase delete fail).
+                      // Ordre : tables dependent → profile → signOut → clear local.
                       if (isSupabaseConfigured && userId) {
+                        // Lot Hēlo Points : clean les transactions/redemptions/points aussi
+                        await supabase.from('point_redemptions').delete().eq('user_id', userId);
+                        await supabase.from('point_transactions').delete().eq('user_id', userId);
+                        await supabase.from('user_points').delete().eq('user_id', userId);
                         await supabase.from('scan_history').delete().eq('user_id', userId);
                         await supabase.from('community_submissions').delete().eq('user_id', userId);
                         await supabase.from('partner_links').delete().eq('pregnant_user_id', userId);
                         await supabase.from('partner_links').delete().eq('partner_user_id', userId);
                         await supabase.from('profiles').delete().eq('id', userId);
+                        await supabase.auth.signOut().catch(() => {});
                       }
+                      await AsyncStorage.clear();
                       router.replace('/onboarding');
                     } catch {
                       Alert.alert('Erreur', 'Impossible de supprimer le compte. Réessayez.');
@@ -87,6 +96,14 @@ export function useAccountActions(userId: string | null) {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Audit fix : signOut Supabase AVANT clear AsyncStorage
+              // Sinon le JWT persiste dans 'supabase.auth.token' et la session
+              // peut leaker au prochain ensureAnonymousSession (cross-user risk).
+              if (isSupabaseConfigured) {
+                await supabase.auth.signOut().catch(() => {
+                  // signOut peut fail si pas de session active — non-fatal
+                });
+              }
               await AsyncStorage.clear();
               router.replace('/onboarding');
             } catch {

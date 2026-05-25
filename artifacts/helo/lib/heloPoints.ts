@@ -217,20 +217,43 @@ export async function redeemReward(params: {
 }
 
 // ─── Helper : check if first contributor for a barcode ───────────────────────
-// Utilisé pour appliquer le multiplicateur ×2 côté backend Ghost Capture.
+// Utilisé pour appliquer le multiplicateur ×2 côté Ghost Capture.
+//
+// Sémantique : "ce user est-il le premier à contribuer via community submission
+// pour ce barcode ?". On NE regarde PAS products.source (un produit en DB via
+// OFF/OBF backfill doit quand même octroyer le bonus à la première contributrice
+// communautaire qui ajoute la photo INCI manquante).
+//
+// Appel typique : APRÈS ghostCaptureSave réussi, mais le check filtre `neq` sur
+// userId actuel pour rester correct si appelé avant.
 
-export async function isFirstContributor(barcode: string): Promise<boolean> {
+export async function isFirstContributor(
+  barcode: string,
+  userId?: string,
+): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
 
-  const { data, error } = await supabase
-    .from('products')
-    .select('id, source')
-    .eq('barcode', barcode)
-    .maybeSingle();
+  try {
+    let query = supabase
+      .from('community_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('barcode', barcode);
 
-  if (error || !data) return true; // produit pas en DB du tout → premier contributeur
-  // Si déjà en DB via OFF/OBF/curated → pas premier. Si community → check si quelqu'un a déjà contribué
-  return false;
+    if (userId) {
+      query = query.neq('user_id', userId);
+    }
+
+    const { count, error } = await query;
+
+    if (error) {
+      if (__DEV__) console.warn('[heloPoints] isFirstContributor query error:', error.message);
+      return false; // safe default : pas de bonus si on ne sait pas (don't reward erroneously)
+    }
+    return (count ?? 0) === 0;
+  } catch (err) {
+    if (__DEV__) console.warn('[heloPoints] isFirstContributor exception:', err);
+    return false;
+  }
 }
 
 // ─── Phase 1.5 : flags fulfillment (badge founder, premium offert) ───────────

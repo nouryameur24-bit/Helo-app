@@ -92,13 +92,17 @@ export default function VerdictScreen() {
   const pointsEarned = (() => {
     if (!pointsEarnedParam) return 0;
     const n = parseInt(pointsEarnedParam, 10);
-    return Number.isFinite(n) && n > 0 ? n : 0;
+    // Audit fix : MAX 500 pour empêcher un attaquant URL d'afficher "+999999 ⭐".
+    // 500 = bien au-dessus du max théorique (160 avec multiplier ×2) mais finit.
+    const MAX_POINTS_DISPLAY = 500;
+    return Number.isFinite(n) && n > 0 && n <= MAX_POINTS_DISPLAY ? n : 0;
   })();
   const ghostBarcode = ghostBarcodeParam ? decodeURIComponent(ghostBarcodeParam) : '';
   const ghostContribCount = (() => {
     if (!ghostContribCountParam) return 0;
     const n = parseInt(ghostContribCountParam, 10);
-    return Number.isFinite(n) && n > 0 ? n : 0;
+    // Audit fix : MAX 10 000 contributions affichables (sinon trompeur)
+    return Number.isFinite(n) && n > 0 && n <= 10000 ? n : 0;
   })();
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();

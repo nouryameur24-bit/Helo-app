@@ -7,8 +7,6 @@
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "ingredients-pipeline": "tsx ./src/ingredients-pipeline/run.ts",
-    "scrape:doctipharma": "tsx ./scrapers/pharmacy/doctipharma.ts",
-    "scrape:newpharma": "tsx ./scrapers/pharmacy/newpharma.ts",
     "scrape:pharma-gdd": "tsx ./scrapers/pharmacy/pharma_gdd.ts",
     "scrape:brands": "tsx ./scrapers/brands/run_all.ts",
     "import:bdpm": "tsx ./src/bdpm-import/run.ts",

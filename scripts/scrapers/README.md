@@ -19,14 +19,29 @@ scrapers/
 │   ├── supabase_writer.ts    ← batched insert avec dedup EAN
 │   └── scraper_base.ts       ← classe abstraite (discover → fetch → extract → insert)
 ├── pharmacy/
-│   ├── doctipharma.ts        ← ~80k SKUs FR
-│   ├── newpharma.ts          ← ~50k SKUs FR/BE
-│   └── pharma_gdd.ts         ← ~30k SKUs FR
+│   └── pharma_gdd.ts         ← 14 672 produits FR (recon validé 25/05/2026)
 ├── brands/
 │   ├── _factory.ts           ← BrandScraper + BRAND_CONFIGS (12 marques)
 │   └── run_all.ts            ← runner séquentiel
 └── README.md
 ```
+
+## Recon viabilité scraping (25/05/2026)
+
+Pas tous les sites scrapables. Recon réel HTTP :
+
+| Site | Status |
+|---|---|
+| **Pharma GDD** | ✅ `sitemap-product.xml` direct, 14 672 URLs produit |
+| **Doctipharma.fr** | ❌ fusion en cours avec docmorris.fr, sitemap renvoie HTML |
+| **1001pharmacies.com** | ❌ robots.txt disallow ClaudeBot explicitement |
+| **Newpharma.fr** | ❌ Cloudflare challenge JS (besoin Playwright) |
+| **Easyparapharmacie.com** | ❌ PerimeterX captcha |
+| **Avène / Mustela / LRP / Bioderma / Weleda** | ✅ probable, robots.txt sans bloc AI |
+
+→ Stratégie viable aujourd'hui : **Pharma GDD + 5-12 brands** = ~15-16k produits.
+
+Pour étendre : Phase 2 = Playwright headless pour bypass Cloudflare/PerimeterX (effort ~1j).
 
 ## Approche Claude-assisted
 

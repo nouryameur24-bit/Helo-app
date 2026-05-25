@@ -16,16 +16,12 @@ class PharmaGddScraper extends BaseScraper {
   readonly defaultCategory = 'cosmetic' as const;
 
   async discoverProductUrls(): Promise<string[]> {
-    const sitemap = 'https://www.pharma-gdd.com/sitemap.xml';
-    const subs = await this.http.fetchSitemap(sitemap);
-    const productSubs = subs.filter((u) => /product|produit/i.test(u));
-    if (productSubs.length === 0) return subs;
-    const all: string[] = [];
-    for (const sub of productSubs) {
-      const urls = await this.http.fetchSitemap(sub);
-      all.push(...urls);
-    }
-    return all;
+    // Recon validée 2026-05-25 : https://www.pharma-gdd.com/sitemap-product.xml
+    // retourne 14 672 URLs produit direct (pas de sitemap index intermédiaire).
+    const productSitemap = 'https://www.pharma-gdd.com/sitemap-product.xml';
+    const urls = await this.http.fetchSitemap(productSitemap);
+    console.log(`[${this.name}] Sitemap returned ${urls.length} product URLs`);
+    return urls;
   }
 }
 

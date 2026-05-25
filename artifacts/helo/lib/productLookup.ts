@@ -95,7 +95,7 @@ async function checkLocalProducts(barcode: string): Promise<ProductData | null> 
   try {
     const { data: product, error } = await supabase
       .from('products')
-      .select('barcode, name, brand, ingredients_raw, image_url')
+      .select('barcode, name, brand, ingredients_raw, image_url, source, pregnancy_risks')
       .eq('barcode', barcode)
       .maybeSingle();
 
@@ -121,13 +121,23 @@ async function checkLocalProducts(barcode: string): Promise<ProductData | null> 
     }
 
     if (__DEV__) console.warn(`[Hēlo cascade] LOCAL → ✓ found "${product.name}" (${ingredientsList.length} ingredients)`);
+    // Lot 19-D1 — On expose les pregnancy_risks pré-calculés Supabase
+    // (listeria, toxo, mercure, alcool, caféine, etc.). Permet warnings
+    // contextuels instantanés au verdict screen.
+    const rawRisks = product.pregnancy_risks as Record<string, unknown> | null | undefined;
+    const pregnancyRisks = rawRisks && Object.keys(rawRisks).length > 0
+      ? (rawRisks as ProductData['pregnancyRisks'])
+      : undefined;
     return {
       name: product.name ?? 'Produit',
       brand: product.brand ?? '',
       imageUrl: product.image_url ?? null,
       ingredientsRaw,
       ingredientsList,
-      source: 'helo' as ProductData['source'],
+      source: (product.source === 'helo_restaurant'
+        ? 'helo_restaurant'
+        : 'helo') as ProductData['source'],
+      pregnancyRisks,
     };
   } catch (err) {
     logError('productLookup.checkLocalProducts', err, { barcode });

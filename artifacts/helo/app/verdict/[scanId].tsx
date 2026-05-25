@@ -41,6 +41,7 @@ import { OverrideBanner, AcceptOverrideButton } from '@/components/verdict/Accep
 import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
 import { OnboardingCompleteModal } from '@/components/onboarding/OnboardingCompleteModal';
 import { AllergyWarningBanner } from '@/components/verdict/AllergyWarningBanner';
+import { PregnancyRisksBanner } from '@/components/verdict/PregnancyRisksBanner';
 import { UnknownCompositionBanner } from '@/components/verdict/UnknownCompositionBanner';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import { BlurView } from 'expo-blur';
@@ -851,6 +852,12 @@ export default function VerdictScreen() {
             Affichée AVANT le recall, car c'est l'alerte la + critique :
             risque vital pour l'utilisatrice qui a déclaré une allergie. */}
         <AllergyWarningBanner allergyWarnings={verdict.allergyWarnings} />
+
+        {/* ── Lot 19-D1 — Bannière risques pregnancy-specific ──
+            Affiche les tags pré-calculés Supabase (listeria, toxo,
+            mercure, alcool, caféine, etc.). Verdicts précis et
+            contextuels pour les aliments. */}
+        <PregnancyRisksBanner risks={product?.pregnancyRisks} />
 
         {/* ── RECALL ALERT BANNER ── */}
         {recallMatch && <RecallAlertBanner recallMatch={recallMatch} />}

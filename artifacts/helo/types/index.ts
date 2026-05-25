@@ -69,13 +69,37 @@ export interface ProductData {
   categories?: string[];
   nutriscore?: string | null;
   ecoscore?: string | null;
-  source?: 'openfoodfacts' | 'openbeautyfacts' | 'manual' | 'community' | 'helo';
+  source?: 'openfoodfacts' | 'openbeautyfacts' | 'manual' | 'community' | 'helo' | 'helo_restaurant';
   isPhotoIdentified?: boolean;
   /** Lot 18-06 — Nombre de contributions communautaires sur ce produit
    *  (scan_count metadata). Affiché en badge "X mamas ont contribué"
    *  sur le verdict screen. Présent UNIQUEMENT pour les produits issus
    *  d'un ghost capture (source='community'). */
   communityContributionCount?: number;
+  /** Lot 19-D1 — Tags risques pregnancy-specific pré-calculés Supabase.
+   *  Permet warnings instantanés au verdict screen (listeria, toxo, etc.). */
+  pregnancyRisks?: PregnancyRisks;
+}
+
+export interface PregnancyRisks {
+  listeria_risk?: boolean;
+  toxo_risk?: boolean;
+  /** "high" pour gros poissons prédateurs (espadon, requin), "medium" pour thon ordinaire. */
+  mercury_risk?: 'high' | 'medium';
+  alcohol_risk?: boolean;
+  /** Estimation caféine en mg par portion typique. */
+  caffeine_mg_estimate?: number;
+  /** "high" pour produits très sucrés (soda, bonbons). */
+  diabetes_concern?: 'low' | 'medium' | 'high';
+  /** Œufs partiellement ou totalement crus. */
+  eggs_raw?: boolean;
+  eggs_partial?: boolean;
+  /** Lait cru non pasteurisé. */
+  raw_milk?: boolean;
+  raw_fish?: boolean;
+  raw_seafood?: boolean;
+  /** Excès vitamine A (foie animal). */
+  vitamin_a_excess?: boolean;
 }
 
 export interface MatchResult {

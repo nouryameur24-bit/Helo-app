@@ -171,6 +171,16 @@ Helo-app/                                # repo root
 - **17-08** Table alias 150 E-numbers (E951 → Aspartame)
 - **17-09** RappelConso recall pour TOUS les users (gate premium retiré)
 
+### 🚧 Platform Leader (Lot 19) — EN COURS (~240h, 34 tâches)
+**Phase 1 enrichissement DB livrée via accès Supabase MCP direct :**
+- **19-A1** Pack ingrédients critiques (+161 entrées) : 60 huiles essentielles CRAT (Tea Tree danger, Lavande safe T2-T3...) + 68 food (phytoestrogènes, théobromine, tyramine, mercures par espèce, fromages lait cru, etc.) + 30 trendy cosmétiques 2024-2025 (Centella, Mugwort danger, Snail mucin, peptides, Bakuchiol...)
+- **19-B3** Top 106 plats restaurants FR (tartares, sushi, fromages lait cru, vins, plats classiques) avec barcodes `dish_*` et source `helo_restaurant`
+- **19-D1** Tags pregnancy-specific sur 92 057 aliments (listeria 7589, toxo 3196, mercure 5429, alcool 21974, caféine 2088, sucre 45239) — colonne `products.pregnancy_risks JSONB`
+- **19-J3** Schema profiles backend sync : colonnes allergies, dietary_restrictions, cosmetic_sensitivities, medical_conditions + trigger preferences_updated_at
+- **19-L** 8 analytics views (v_ingredients_health, v_products_health, v_user_activity, v_top_scanned_products, v_waitlist_growth, v_community_health, v_top_unknown_products, v_pregnancy_tags_stats)
+
+**À suivre (encore ~28 tâches)** : pre-compute overall_risk 626k, alternatives système, OBF import, brands pharmacie, BDPM, pgvector fuzzy, photos pictogrammes, AI visual shelf, affiliate links, sage-femme workflow, etc.
+
 ### ✅ Ghost Capture & Le Moat Claude Vision (Lot 18) — DIFFÉRENCIATEUR vs YUKA
 - **18-01** Bug fix : corrections OCR user préservées (ocr-review envoie `ocrText` brut, pas `cleaned`)
 - **18-02** Threshold auto-verify community 3 → 5 scans (safety)
@@ -236,6 +246,7 @@ Helo-app/                                # repo root
 | `categorizeIngredient` (lib) | `components/verdict/categorizeIngredient.ts` | Catégoriser ingrédient (allergène/additif/colorant/…) |
 | `analyzeIngredientsWithClaudeVision` (lib) | `lib/api.ts` | Lot 18-10 — Appel à `/api/analyze-ingredients-image` (Claude Vision direct) |
 | Route `analyze-ingredients-image` (backend) | `artifacts/api-server/src/routes/analyze-ingredients-image.ts` | Claude Haiku Vision + prompt JSON structuré |
+| `PregnancyRisksBanner` | `components/verdict/PregnancyRisksBanner.tsx` | Lot 19-D1 — Bannière chips contextuels (listeria, toxo, mercure, alcool, caféine...) |
 | `useSafeBack` | `hooks/useSafeBack.ts` | Back centralisé avec fallback |
 | `useChatUnread` | `hooks/useChatUnread.ts` | Compteur unread chat (singleton) |
 
@@ -407,5 +418,5 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated : Lot 18 phase 1 + 2 livré (61 tâches, dont LE MOAT Claude Vision direct, 0 erreur TS, 206/207 tests). Reste 3 tâches lourdes : autocomplete, multi-photo, offline OCR.*
+*Last updated : Lot 19 phase 1 enrichissement DB (5 tâches sur 34) — +161 ingrédients, +106 plats restos, 92 057 aliments tagged pregnancy, schema profiles sync allergies, 8 analytics views. Accès Supabase MCP direct configuré. Reste ~28 tâches Lot 19.*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

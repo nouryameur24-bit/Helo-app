@@ -20,19 +20,23 @@ import { useProfile } from '@/hooks/useProfile';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import {
   getUserPoints,
+  getUserRewardFlags,
   tierEmoji,
   tierLabel,
   type UserPointsBalance,
+  type UserRewardFlags,
 } from '@/lib/heloPoints';
 
 export function HeloPointsSection() {
   const profile = useProfile();
   const userId = profile?.userId;
   const [balance, setBalance] = useState<UserPointsBalance | null>(null);
+  const [flags, setFlags] = useState<UserRewardFlags | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     getUserPoints(userId).then(setBalance).catch(() => {});
+    getUserRewardFlags(userId).then(setFlags).catch(() => {});
   }, [userId]);
 
   const onPress = () => {
@@ -84,6 +88,24 @@ export function HeloPointsSection() {
         <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 6 }}>
           {balance.contributions_count} contributions · {balance.lifetime_earned} ⭐ gagnés au total
         </ThemedText>
+
+        {/* Badge Mama Founder unlocked */}
+        {flags?.isFounder && (
+          <View style={styles.founderBadgeRow}>
+            <ThemedText style={styles.founderBadgeText}>
+              ✨ Mama Founder
+            </ThemedText>
+          </View>
+        )}
+
+        {/* Premium offert actif */}
+        {flags?.bonusPremiumUntil && (
+          <View style={styles.premiumActiveRow}>
+            <ThemedText style={styles.premiumActiveText}>
+              👑 Premium actif jusqu'au {flags.bonusPremiumUntil.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+            </ThemedText>
+          </View>
+        )}
       </Card>
     </TouchableOpacity>
   );
@@ -142,5 +164,32 @@ const styles = StyleSheet.create({
   },
   tierEmoji: {
     fontSize: 28,
+  },
+  founderBadgeRow: {
+    marginTop: Spacing.sm,
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    backgroundColor: '#FFE0B2',
+    alignSelf: 'flex-start',
+  },
+  founderBadgeText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#E65100',
+    letterSpacing: 0.3,
+  },
+  premiumActiveRow: {
+    marginTop: 6,
+    paddingVertical: 4,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.full,
+    backgroundColor: '#FFF3E0',
+    alignSelf: 'flex-start',
+  },
+  premiumActiveText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#E65100',
   },
 });

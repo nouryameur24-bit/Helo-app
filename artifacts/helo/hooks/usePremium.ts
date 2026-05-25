@@ -17,6 +17,7 @@ import {
   type PlanId,
 } from '@/lib/purchases';
 import { consumeScanQuota, getDailyScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 interface UsePremiumReturn {
   isPremium: boolean;
@@ -24,6 +25,8 @@ interface UsePremiumReturn {
   scanCount: number;
   scansRemaining: number;
   canScan: boolean;
+  /** Hēlo Points Phase 1.5 — Si Premium est offert via redemption, expire à cette date. Null sinon. */
+  bonusPremiumUntil: Date | null;
   /** Navigate to paywall if not premium. Returns true if navigation happened. */
   requirePremium: (trigger?: string) => boolean;
   /** Check scan limit for free users. Returns true if they can scan, false → paywall shown. */
@@ -33,20 +36,48 @@ interface UsePremiumReturn {
   refresh: () => Promise<void>;
 }
 
+/**
+ * Hēlo Points Phase 1.5 — Fetch bonus_premium_until depuis profiles.
+ * Si > NOW(), l'user a Premium offert via redemption Hēlo Points.
+ */
+async function fetchBonusPremiumUntil(): Promise<Date | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return null;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('bonus_premium_until')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (error || !data?.bonus_premium_until) return null;
+    const until = new Date(data.bonus_premium_until);
+    return until > new Date() ? until : null;
+  } catch {
+    return null;
+  }
+}
+
 export function usePremium(): UsePremiumReturn {
-  const [isPremium, setIsPremium] = useState(false);
+  const [isPremiumRC, setIsPremiumRC] = useState(false);
+  const [bonusPremiumUntil, setBonusPremiumUntil] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [scanCount, setScanCount] = useState(0);
+
+  // Premium réel = soit RevenueCat actif, soit bonus Hēlo Points encore valide
+  const isPremium = isPremiumRC || (bonusPremiumUntil !== null && bonusPremiumUntil > new Date());
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [premium, count] = await Promise.all([
+      const [premium, count, bonus] = await Promise.all([
         fetchIsPremium(),
         getDailyScanCount(),
+        fetchBonusPremiumUntil(),
       ]);
-      setIsPremium(premium);
+      setIsPremiumRC(premium);
       setScanCount(count);
+      setBonusPremiumUntil(bonus);
     } finally {
       setIsLoading(false);
     }
@@ -55,24 +86,24 @@ export function usePremium(): UsePremiumReturn {
   useEffect(() => {
     // Fast path: read local cache immediately for instant UI
     AsyncStorage.getItem(PREMIUM_KEY).then((v) => {
-      setIsPremium(v === 'true');
+      setIsPremiumRC(v === 'true');
       setIsLoading(false);
     });
     getDailyScanCount().then(setScanCount);
-    // Then reconcile with RC in background
+    // Then reconcile with RC + Supabase bonus in background
     refresh();
   }, []);
 
-  // Re-read cache every time the screen gains focus so the DEV toggle in
-  // profile (or any other instance that flips PREMIUM_KEY) propagates to all
-  // mounted hook instances. Without this each screen kept its initial state
-  // until next mount, so scan/paywall would still see the stale value.
+  // Re-read cache every time the screen gains focus
   useFocusEffect(
     useCallback(() => {
       AsyncStorage.getItem(PREMIUM_KEY).then((v) => {
-        setIsPremium(v === 'true');
+        setIsPremiumRC(v === 'true');
       });
       getDailyScanCount().then(setScanCount);
+      // Refresh bonus premium aussi : si user vient de redeem une récompense,
+      // le profile.bonus_premium_until a changé.
+      fetchBonusPremiumUntil().then(setBonusPremiumUntil);
     }, []),
   );
 
@@ -103,7 +134,7 @@ export function usePremium(): UsePremiumReturn {
     async (planId: PlanId): Promise<boolean> => {
       const success = await purchasePlan(planId);
       if (success) {
-        setIsPremium(true);
+        setIsPremiumRC(true);
         await AsyncStorage.setItem(PREMIUM_KEY, 'true');
       }
       return success;
@@ -114,7 +145,7 @@ export function usePremium(): UsePremiumReturn {
   const restore = useCallback(async (): Promise<boolean> => {
     const success = await restorePurchases();
     if (success) {
-      setIsPremium(true);
+      setIsPremiumRC(true);
       await AsyncStorage.setItem(PREMIUM_KEY, 'true');
     }
     return success;
@@ -129,6 +160,7 @@ export function usePremium(): UsePremiumReturn {
     scanCount,
     scansRemaining,
     canScan,
+    bonusPremiumUntil,
     requirePremium,
     checkScanLimit,
     purchase,

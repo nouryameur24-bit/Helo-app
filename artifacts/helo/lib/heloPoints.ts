@@ -233,6 +233,33 @@ export async function isFirstContributor(barcode: string): Promise<boolean> {
   return false;
 }
 
+// ─── Phase 1.5 : flags fulfillment (badge founder, premium offert) ───────────
+
+export interface UserRewardFlags {
+  isFounder: boolean;
+  founderUnlockedAt: Date | null;
+  bonusPremiumUntil: Date | null;
+}
+
+export async function getUserRewardFlags(userId: string): Promise<UserRewardFlags> {
+  const empty: UserRewardFlags = { isFounder: false, founderUnlockedAt: null, bonusPremiumUntil: null };
+  if (!isSupabaseConfigured) return empty;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_founder, founder_unlocked_at, bonus_premium_until')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error || !data) return empty;
+
+  const bonusUntil = data.bonus_premium_until ? new Date(data.bonus_premium_until) : null;
+  return {
+    isFounder: Boolean(data.is_founder),
+    founderUnlockedAt: data.founder_unlocked_at ? new Date(data.founder_unlocked_at) : null,
+    bonusPremiumUntil: bonusUntil && bonusUntil > new Date() ? bonusUntil : null,
+  };
+}
+
 // ─── Helper : tier display ───────────────────────────────────────────────────
 
 export function tierLabel(tier: UserPointsBalance['tier']): string {

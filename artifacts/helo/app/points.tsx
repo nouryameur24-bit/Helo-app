@@ -27,6 +27,7 @@ import { Divider } from '@/components/ui/Divider';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { usePremium } from '@/hooks/usePremium';
 import { useProfile } from '@/hooks/useProfile';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import {
@@ -48,6 +49,7 @@ export default function PointsScreen() {
   const insets = useSafeAreaInsets();
   const onBack = useSafeBack('/(tabs)/profile');
   const profile = useProfile();
+  const { bonusPremiumUntil } = usePremium();
   const userId = profile?.userId;
 
   const [balance, setBalance] = useState<UserPointsBalance | null>(null);
@@ -205,6 +207,26 @@ export default function PointsScreen() {
           <Feather name="chevron-right" size={20} color="#fff" />
         </TouchableOpacity>
 
+        {/* Premium offert actif (Phase 1.5 fulfillment) */}
+        {bonusPremiumUntil && (
+          <View style={styles.premiumActiveBanner}>
+            <Feather name="award" size={18} color="#E65100" />
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <ThemedText variant="labelLarge" style={{ color: '#E65100', fontWeight: '800' }}>
+                👑 Premium actif jusqu'au{' '}
+                {bonusPremiumUntil.toLocaleDateString('fr-FR', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                })}
+              </ThemedText>
+              <ThemedText variant="bodySmall" style={{ color: '#BF360C' }}>
+                Récompense Hēlo Points active. Toutes les features Premium débloquées.
+              </ThemedText>
+            </View>
+          </View>
+        )}
+
         {/* CATALOGUE */}
         <ThemedText variant="headlineMedium" style={styles.sectionTitle}>
           🎁 Récompenses
@@ -354,6 +376,17 @@ const styles = StyleSheet.create({
     ...Shadows.soft,
   },
   contributeCtaText: { color: '#fff', fontWeight: '700', flex: 1, fontSize: 15 },
+  premiumActiveBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFE0B2',
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#FFB74D',
+  },
   sectionTitle: {
     marginHorizontal: Spacing.lg,
     marginTop: Spacing.xl,

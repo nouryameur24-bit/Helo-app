@@ -177,7 +177,8 @@ Helo-app/                                # repo root
 - **19-B3** Top 106 plats restaurants FR (source `helo_restaurant`, barcodes `dish_*`)
 - **19-C1** Pre-compute `overall_risk` pour **626 019 produits** : ~31k danger + ~50k caution + ~14k safe + ~531k unknown. Distribution réaliste : 87% unknown pour la longue traîne OFF (composition partielle), 13% qualifiables.
 - **19-D1** Tags pregnancy-specific sur ~92 100 aliments — colonne `products.pregnancy_risks JSONB`
-- **19-E1** Système alternatives : 1 505 produits risqués (984 cosmetic + 521 food) avec 3 safe alternatives chacun = **4 512 entrées product_alternatives**. Ranking pharmacy brands first (Mustela, Avène, La Roche-Posay...). ⚠️ Schema sans `intended_use` ni `quality_score` → cohérence sous-usage non vérifiée (cf. 19-E1b).
+- **19-E1** Système alternatives v1 : 4 512 paires générées mais avec un BUG MAJEUR (cf. 19-E1b ci-dessous).
+- **19-E1b** ✅ 25/05/2026 — Fix cohérence alternatives via `intended_use`. Audit révèle que les 4 512 paires étaient à 97% incohérentes : l'algo recyclait 6 produits "safe" universels (Bioderma SPF, Mustela Spray, Weleda Skin Food, Häagen-Dazs Salted Caramel, Weleda Tisane, Doritos paprika) en alternatives pour TOUT produit risqué, peu importe le type. Solution : (1) ADD COLUMN `intended_use` + `quality_score` sur products + product_alternatives, (2) Classification regex multi-langue de 1 520 produits impliqués, (3) DELETE des 4 377 paires incohérentes. État final : **135 paires valides** (98 sunscreen→sunscreen + 37 body_lotion→body_lotion) couvrant **86 produits risqués sur 1 505**. Les 1 419 restants affichent "pas d'alternative" — honnête plutôt que faux. 19-E1c à venir pour curer plus d'alternatives par intended_use (mascara, shampoo, déodorant, etc.).
 - **19-J3** Schema profiles backend sync : colonnes allergies, dietary_restrictions, cosmetic_sensitivities, medical_conditions + trigger preferences_updated_at
 - **19-L** 8 analytics views (v_ingredients_health, v_products_health, v_user_activity, v_top_scanned_products, v_waitlist_growth, v_community_health, v_top_unknown_products, v_pregnancy_tags_stats)
 
@@ -447,5 +448,5 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated 25/05/2026 : MCPs setup complet (Supabase + GitHub + Sentry + PostHog via REST), Sentry projet helo-54/react-native wiré (REACT-NATIVE-1 vérifié). DB audit: 626 019 produits, 100% sourcés (fix backfill 609k OFF dump), 5 313 ingredients réels (pas 5152). PRIOs 0+1 DB hygiene complétées. À faire: 19-A2 (1260 descriptions, ~$3-5) puis 19-E1b (alternatives intended_use, ~$5).*
+*Last updated 25/05/2026 : MCPs setup complet (Supabase + GitHub + Sentry + PostHog via REST), Sentry projet helo-54/react-native wiré. DB audit complet : 626 019 produits 100% sourcés, 5 313 ingredients (descriptions adéquates, 19-A2 fermé sans Claude API), 135 alternatives cohérentes (vs 4 512 dont 97% bullshit type Doritos→mascara). 19-E1b livré, 19-E1c créé pour combler gaps. Reste ~26 tâches Lot 19.*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

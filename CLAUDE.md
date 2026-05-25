@@ -171,15 +171,17 @@ Helo-app/                                # repo root
 - **17-08** Table alias 150 E-numbers (E951 → Aspartame)
 - **17-09** RappelConso recall pour TOUS les users (gate premium retiré)
 
-### 🚧 Platform Leader (Lot 19) — EN COURS (~240h, 34 tâches)
-**Phase 1 enrichissement DB livrée via accès Supabase MCP direct :**
+### 🚧 Platform Leader (Lot 19) — EN COURS (7/34 tâches livrées)
+**Enrichissement DB livré via accès Supabase MCP direct :**
 - **19-A1** Pack ingrédients critiques (+161 entrées) : 60 huiles essentielles CRAT (Tea Tree danger, Lavande safe T2-T3...) + 68 food (phytoestrogènes, théobromine, tyramine, mercures par espèce, fromages lait cru, etc.) + 30 trendy cosmétiques 2024-2025 (Centella, Mugwort danger, Snail mucin, peptides, Bakuchiol...)
 - **19-B3** Top 106 plats restaurants FR (tartares, sushi, fromages lait cru, vins, plats classiques) avec barcodes `dish_*` et source `helo_restaurant`
+- **19-C1** Pre-compute `overall_risk` pour 97 421 produits : 32 645 danger + 51 898 caution + 12 815 safe (basé sur pregnancy_risks + patterns cosmetic). Restent 528k unknown à raffiner via Claude Mass Enrichment.
 - **19-D1** Tags pregnancy-specific sur 92 057 aliments (listeria 7589, toxo 3196, mercure 5429, alcool 21974, caféine 2088, sucre 45239) — colonne `products.pregnancy_risks JSONB`
+- **19-E1** Système alternatives : 1 505 produits risqués (984 cosmetic + 521 food) avec 3 safe alternatives chacun = **4 512 entrées product_alternatives**. Ranking pharmacy brands first (Mustela, Avène, La Roche-Posay...) puis source curated puis image dispo.
 - **19-J3** Schema profiles backend sync : colonnes allergies, dietary_restrictions, cosmetic_sensitivities, medical_conditions + trigger preferences_updated_at
 - **19-L** 8 analytics views (v_ingredients_health, v_products_health, v_user_activity, v_top_scanned_products, v_waitlist_growth, v_community_health, v_top_unknown_products, v_pregnancy_tags_stats)
 
-**À suivre (encore ~28 tâches)** : pre-compute overall_risk 626k, alternatives système, OBF import, brands pharmacie, BDPM, pgvector fuzzy, photos pictogrammes, AI visual shelf, affiliate links, sage-femme workflow, etc.
+**À suivre (encore ~27 tâches)** : Claude Mass Enrichment des 5313 ingredients, OBF import, brands pharmacie, BDPM, pgvector fuzzy, photos pictogrammes, AI visual shelf, affiliate links, sage-femme workflow, etc.
 
 ### ✅ Ghost Capture & Le Moat Claude Vision (Lot 18) — DIFFÉRENCIATEUR vs YUKA
 - **18-01** Bug fix : corrections OCR user préservées (ocr-review envoie `ocrText` brut, pas `cleaned`)
@@ -418,5 +420,5 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated : Lot 19 phase 1 enrichissement DB (5 tâches sur 34) — +161 ingrédients, +106 plats restos, 92 057 aliments tagged pregnancy, schema profiles sync allergies, 8 analytics views. Accès Supabase MCP direct configuré. Reste ~28 tâches Lot 19.*
+*Last updated : Lot 19 phase 2 (7/34 tâches) — +161 ingrédients, +106 plats restos, 92 057 food tagged pregnancy, 97 421 produits avec overall_risk pré-calculé (12 815 safe), 4 512 alternatives stockées (système opérationnel), schema profiles sync, 8 analytics views. Reste ~27 tâches Lot 19.*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

@@ -181,7 +181,26 @@ Helo-app/                                # repo root
 - **19-J3** Schema profiles backend sync : colonnes allergies, dietary_restrictions, cosmetic_sensitivities, medical_conditions + trigger preferences_updated_at
 - **19-L** 8 analytics views (v_ingredients_health, v_products_health, v_user_activity, v_top_scanned_products, v_waitlist_growth, v_community_health, v_top_unknown_products, v_pregnancy_tags_stats)
 
-**À suivre (encore ~27 tâches)** : Claude Mass Enrichment des 5313 ingredients, OBF import, brands pharmacie, BDPM, pgvector fuzzy, photos pictogrammes, AI visual shelf, affiliate links, sage-femme workflow, etc.
+**À suivre (encore ~28 tâches)** : Claude Mass Enrichment des 5313 ingredients, OBF import, brands pharmacie, BDPM, pgvector fuzzy, photos pictogrammes, AI visual shelf, affiliate links, sage-femme workflow, etc.
+
+**⚠️ Tâche 19-E1b à faire en priorité** : Cohérence alternatives via intended_use. L'algo phase 1 (SQL pur) propose des alternatives INCOHÉRENTES par sous-usage (déodorant → gel lavant). Solution : Claude classifie chaque produit dans une taxonomie fermée (40 cosmétiques + 30 food). Coût ~$25 pour 25k curated. Avant wiring mobile des alternatives.
+
+### 💰 Budget Claude API estimé pour finir Lot 19
+- **One-shot data layer setup** :
+  - 19-A2 Mass Enrichment 5313 ingrédients : ~$10
+  - 19-E1b Intended_use 25k curated : ~$25
+  - (Optionnel) Étendre 100k populaires : +$100
+  - (Optionnel) Refiner 528k unknown : +$300-500
+  - **Minimum viable beta : ~$35**
+  - **Coverage solide : ~$135**
+- **Coûts récurrents par user** (post-setup) :
+  - Scan barcode : $0 (cache local)
+  - Scan AI fallback : ~$0.001
+  - Ghost Capture (Claude Vision) : ~$0.005-0.01
+  - Chat IA : ~$0.001 par message
+  - 100 users beta = ~$3/mois Claude API
+  - 1000 users = ~$25/mois
+  - 10 000 users = ~$250/mois (largement couvert par revenue Premium)
 
 ### ✅ Ghost Capture & Le Moat Claude Vision (Lot 18) — DIFFÉRENCIATEUR vs YUKA
 - **18-01** Bug fix : corrections OCR user préservées (ocr-review envoie `ocrText` brut, pas `cleaned`)

@@ -369,6 +369,10 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 16. **`ProductData.communityContributionCount`** (Lot 18-06) est exposé UNIQUEMENT pour `source === 'community'`. Lu depuis `metadata.scan_count`. Sert au badge "X mamas ont contribué" sur verdict screen.
 
+17. **MCPs Claude Code configurés (4)** : `~/.claude.json` scope `/Users/nouryameur/Documents/Helo-app` contient `supabase`, `github`, `sentry`. PostHog non-MCP (OAuth flow PostHog bugué) — utiliser REST API directe avec `EXPO_PUBLIC_POSTHOG_KEY=phc_qbr2WamQwtNPCZfrzgZUyJaa6Dy5BP5WNFubDAszdP6U` côté Helo. Tokens dans `.claude.json` (à régénérer si fuite). Sentry token a scopes limités (peut faire whoami/orgs/teams mais pas project:read ni event:read) — pour analytics Sentry full il faut générer un token avec scopes `project:read event:read member:read` sur https://helo-54.sentry.io/settings/account/api/auth-tokens/.
+
+18. **Sentry DSN production** est dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Verifier via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`).
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -431,13 +435,13 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 - Repo GitHub : (à compléter par l'user)
 - Replit deployment : api-server live sur Autoscale
-- Supabase project : (à compléter)
-- PostHog project : (à compléter)
-- Sentry project : (à compléter)
+- Supabase project : `loshefmumtkunvddrnpy` (EU, accessed via MCP)
+- PostHog project : `186387` (Default project, EU `eu.i.posthog.com`)
+- Sentry project : `helo-54/react-native` (EU `de.sentry.io`)
 - Apple Developer enrollment : pending ($99/an)
 - App Store Connect ASC App ID : `FILL_AFTER_CREATING_APP` (eas.json)
 
 ---
 
-*Last updated : Lot 19 phase 2 (7/34 tâches) — +161 ingrédients, +106 plats restos, 92 057 food tagged pregnancy, 97 421 produits avec overall_risk pré-calculé (12 815 safe), 4 512 alternatives stockées (système opérationnel), schema profiles sync, 8 analytics views. Reste ~27 tâches Lot 19.*
+*Last updated : MCPs setup (Supabase + GitHub + Sentry + PostHog via REST) + Sentry DSN explicite dans .env. Org helo-54, project react-native (EU). 3 MCPs natifs Claude Code + PostHog REST fallback. Lot 19 phase 2 toujours 7/34.*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

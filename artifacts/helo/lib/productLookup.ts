@@ -202,7 +202,7 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
 // ─── Ghost Capture save — atomic via RPC, fallback to manual upsert ──────────
 //
 // Uses the `ghost_capture_upsert` Postgres function (see
-// supabase/migration-ghost-capture.sql) for an ATOMIC scan_count increment +
+// supabase/migrations/20260515182430_ghost_capture.sql) for an ATOMIC scan_count increment +
 // auto-promotion to community_verified at >= 3 scans.
 //
 // If the RPC is missing (older DB without the migration applied), falls back
@@ -258,7 +258,7 @@ export async function ghostCaptureSave(params: {
       const prevCount = typeof meta.scan_count === 'number' ? meta.scan_count : 1;
       const scanCount = prevCount + 1;
       // Lot 18-02 — Threshold 3 → 5 scans pour auto-verify. Cohérent avec
-      // la nouvelle version du RPC (cf. migration-lot18-ghost-capture-safety.sql).
+      // la nouvelle version du RPC (cf. migrations/20260525005813_lot18_ghost_capture_safety.sql).
       const newStatus = scanCount >= 5 ? 'community_verified' : 'auto_captured';
       const { error: updateError } = await supabase
         .from('community_submissions')

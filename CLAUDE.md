@@ -364,7 +364,7 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 8. **Verdict screen header sticky** (Lot 15B2) utilise `BlurView` avec `intensity={Platform.OS === 'ios' ? 60 : 80}`. Le padding-top du hero doit compenser : `(insets.top) + 64`.
 
-9. **SQL migration Lot 17 à appliquer** : `artifacts/helo/supabase/migration-lot17-dose-and-herbs.sql`. **Sans exécuter ça sur Supabase**, les champs `max_dose_mg_per_day` + les 50 plantes médicinales ne sont pas dans la DB. La migration est idempotente (ON CONFLICT DO NOTHING + ADD COLUMN IF NOT EXISTS). À exécuter dans Supabase Dashboard → SQL Editor.
+9. **SQL migrations Lot 17/18** : ranges `artifacts/helo/supabase/migrations/20260525001611_lot17_dose_and_herbs.sql` + `20260525005813_lot18_ghost_capture_safety.sql`. Idempotentes (ON CONFLICT DO NOTHING + ADD COLUMN IF NOT EXISTS). Déjà appliquées en prod. Cleanup task #111 : tout est dans `supabase/migrations/YYYYMMDDHHMMSS_*.sql` désormais (plus de `migration-*.sql` legacy).
 
 10. **Le `getVerdict` (Lot 17-01) renvoie 3 nouveaux champs** : `totalCount`, `allIngredientsUnknown`, `unknownRatio`. Tout consommateur de `VerdictResult` doit les fournir (cf. `hooks/useScan.ts` ligne 113 pour le pattern). Si tu crées une nouvelle source de verdict (backend), n'oublie pas ces champs.
 
@@ -372,7 +372,7 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 12. **E-number fallback dans `findMatchingRow`** (Lot 17-08) : si match direct échoue ET l'ingrédient est un E-number, lookup via `resolveENumber()` puis re-match. Si tu changes le matcher, conserve ce fallback sinon les additifs notés "E951" perdront leur risk_level.
 
-13. **SQL migration Lot 18 à appliquer** : `artifacts/helo/supabase/migration-lot18-ghost-capture-safety.sql`. **DROP FUNCTION + CREATE FUNCTION** (signature change). Idempotent. Sans ça, le RPC `ghost_capture_upsert` garde l'ancien comportement (threshold 3, pas de rate limit per-user).
+13. **Migration Lot 18 (DROP+CREATE pattern)** : `supabase/migrations/20260525005813_lot18_ghost_capture_safety.sql` utilise `DROP FUNCTION + CREATE FUNCTION` (signature change). Pattern à reproduire si jamais tu changes la signature d'un RPC existant — PostgreSQL refuse `ALTER FUNCTION` pour les RETURNS TABLE.
 
 14. **Claude Vision (Lot 18-10) nécessite `ANTHROPIC_API_KEY`** côté api-server Replit. Si l'OCR cleanup actuel marche, Vision marche aussi (même clé). Vision rame 2-5s, fallback automatique OCR si timeout/error. Pas de Premium gate pour le moment — c'est la valeur de l'app, libre pour tous.
 
@@ -427,6 +427,42 @@ curl https://<replit-url>/api/healthz  # → "ok"
 24. **Trigger `ensure_profile_for_user`** (commit `d9751a6`) : Sur `auth.users INSERT`, crée automatiquement un row dans `profiles` (ON CONFLICT DO NOTHING). Empêche le drift entre auth users et profiles que j'avais découvert (38/49 users orphelins). Backfill aussi appliqué pour les 38 users historiques. Si tu fais un nouveau test signup, le profile apparaît immédiatement.
 
 18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
+
+27. **Réorg dossier Supabase (task #111, 25/05/2026 nuit)** :
+
+   **Avant** : 9 fichiers SQL en vrac dans `artifacts/helo/supabase/` avec 3 conventions différentes (`migration-*.sql`, `migration-lot17-*.sql`, `seed-*.sql`). 13 migrations MCP-appliquées non committées en local → drift code/DB possible.
+
+   **Après** : structure standard Supabase :
+   ```
+   artifacts/helo/supabase/
+   ├── README.md              (workflow + index 23 migrations + tables/RPCs/views)
+   ├── migrations/            (23 fichiers YYYYMMDDHHMMSS_*.sql versionnés)
+   ├── seeds/                 (4 fichiers numérotés 01_/02_/03_ + _legacy_)
+   ├── functions/             (3 Edge Functions inchangées)
+   └── .temp/                 (CLI state inchangé)
+   ```
+
+   **Mapping legacy → nouveau** (git mv préserve l'historique) :
+   - `schema.sql` → `migrations/20260312030434_initial_schema.sql`
+   - `migration-alternatives.sql` → `migrations/20260312230533_alternatives.sql`
+   - `migration-community-submissions.sql` → `migrations/20260320002617_community_submissions.sql`
+   - `migration-baby-mode.sql` → `migrations/20260330160221_baby_mode.sql`
+   - `migration-circle.sql` → `migrations/20260331224007_circle.sql`
+   - `rls-policies.sql` → `migrations/20260331234522_rls_policies.sql`
+   - `migration-ghost-capture.sql` → `migrations/20260515182430_ghost_capture.sql`
+   - `migration-api-usage.sql` → `migrations/20260516125621_api_usage.sql`
+   - `migration-lot17-*.sql` → `migrations/20260525001611_lot17_dose_and_herbs.sql`
+   - `migration-lot18-*.sql` → `migrations/20260525005813_lot18_ghost_capture_safety.sql`
+   - `seed-ingredients.sql` → `seeds/01_ingredients.sql`
+   - `seed-ingredients-baby.sql` → `seeds/02_ingredients_baby.sql`
+   - `seed-products.sql` → `seeds/03_products.sql`
+   - `seed-ALL.sql` → `seeds/_legacy_bootstrap_all.sql`
+
+   **+13 nouvelles migrations dumped depuis MCP** (via `SELECT array_to_string(statements...) FROM supabase_migrations.schema_migrations`) — toutes les Lot 19 + Hēlo Points + audit fixes maintenant committées en local : `20260525022454_lot19_a1_essential_oils_60.sql` ... `20260525180124_point_transactions_anti_double_award_unique.sql`.
+
+   **Refs mises à jour** : `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, `lib/productLookup.ts`, et ce CLAUDE.md (gotchas #9 + #13).
+
+   **Workflow nouveau** : voir `supabase/README.md`. Pour appliquer une migration : `mcp__supabase__apply_migration({ name, query })` → dump le SQL dans `migrations/YYYYMMDDHHMMSS_<name>.sql` → commit.
 
 26. **partial_metadata mobile handler + isFirstContributor multiplier ×2 (task #110, 25/05/2026 nuit fin)** :
 

@@ -105,13 +105,14 @@ pnpm typecheck      # TypeScript strict check
 
 ## Pipeline d'ingrédients
 
-Le fichier `supabase/seed-ingredients.sql` contient la base initiale.
+Le fichier `supabase/seeds/01_ingredients.sql` contient la base initiale (la DB live a aujourd'hui ~5 313 ingrédients enrichis via migrations Lot 19-A1).
 Pour enrichir la base :
 
-1. Ajouter les ingrédients dans `supabase/seed-ingredients.sql`
-2. Pousser via : `supabase db push` ou `psql -f supabase/seed-ingredients.sql`
-3. Les champs `risk_level_t1`, `risk_level_t2`, `risk_level_t3` définissent le risque par trimestre
-4. Les valeurs possibles : `'safe' | 'caution' | 'danger' | 'no_signal'`
+1. Soit créer une **migration** dans `supabase/migrations/YYYYMMDDHHMMSS_add_ingredients_*.sql` (recommandé pour batch >10 entrées)
+2. Soit éditer `supabase/seeds/01_ingredients.sql` (pour les seeds dev/demo locaux)
+3. Pousser via Supabase MCP (`mcp__supabase__apply_migration`) ou `supabase db push`
+4. Les champs `risk_level_t1`, `risk_level_t2`, `risk_level_t3` définissent le risque par trimestre
+5. Les valeurs possibles : `'safe' | 'caution' | 'danger' | 'no_signal'`
 
 ## Structure des dossiers principaux
 

@@ -47,7 +47,7 @@ Les sources des Edge Functions sont dans `supabase/functions/`.
 ## 2. Row Level Security (RLS)
 
 Toutes les tables Supabase ont RLS activé. Les politiques sont définies dans
-`supabase/rls-policies.sql`.
+`supabase/migrations/20260331234522_rls_policies.sql` (et complétées par des `CREATE POLICY` dans les migrations Hēlo Points + analytics).
 
 ### Résumé des politiques
 
@@ -66,8 +66,11 @@ Toutes les tables Supabase ont RLS activé. Les politiques sont définies dans
 ### Appliquer les politiques
 
 ```bash
-psql -h <SUPABASE_HOST> -U postgres -f supabase/rls-policies.sql
-# ou
+# Via Supabase MCP (recommandé)
+mcp__supabase__apply_migration({ name: 'rls_update', query: '...' })
+
+# Ou via Supabase CLI
+psql -h <SUPABASE_HOST> -U postgres -f supabase/migrations/20260331234522_rls_policies.sql
 supabase db push
 ```
 

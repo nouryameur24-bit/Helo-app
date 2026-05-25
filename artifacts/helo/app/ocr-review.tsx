@@ -23,8 +23,9 @@ import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { incrementContributionCount } from '@/lib/contributions';
+import { useProfile } from '@/hooks/useProfile';
 import { matchIngredients, getVerdict, ghostCaptureSave } from '@/lib/productLookup';
-import { cleanOcrTextRemote } from '@/lib/api';
+import { cleanOcrTextRemote, analyzeIngredientsWithClaudeVision } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
@@ -103,6 +104,9 @@ const warnStyles = StyleSheet.create({
 export default function OcrReviewScreen() {
   const { imageUri, base64, ghostBarcode } = useLocalSearchParams<{ imageUri: string; base64?: string; ghostBarcode?: string }>();
   const insets = useSafeAreaInsets();
+  // Lot 18-03 — userId passé au RPC ghost_capture_upsert pour rate limit
+  // per-user (empêche le spam d'un même user sur le même produit).
+  const { userId } = useProfile();
 
   const [ocrText, setOcrText] = useState('');
   const [category, setCategory] = useState<Category>('Cosmétique');
@@ -123,6 +127,50 @@ export default function OcrReviewScreen() {
     setOcrWarning(null);
     try {
       if (!b64) throw new Error('NO_TEXT_DETECTED');
+
+      // ── Lot 18-10 — Claude Vision direct (PRIMARY) ──────────────────────
+      // On essaye Claude Vision EN PREMIER. Si succès avec confidence !== low
+      // et au moins 1 ingrédient → on prend ce résultat (10× meilleur que OCR
+      // classique, comprend le contexte malgré flou ou mauvaise photo).
+      // Sinon → fallback vers Google Vision OCR + AI cleanup classique.
+      try {
+        const visionAnalysis = await analyzeIngredientsWithClaudeVision(b64, {
+          locale: 'fr',
+          // Note : phase intentionnellement non envoyée ici car runOCR
+          // s'exécute avant qu'on lise le profil — c'est fait dans
+          // handleAnalyse() au moment du matching avec la vraie phase.
+          hintCategory: 'auto',
+          imageMediaType: 'image/jpeg',
+        });
+
+        if (
+          visionAnalysis &&
+          visionAnalysis.confidence !== 'low' &&
+          visionAnalysis.ingredients.length > 0
+        ) {
+          // Claude Vision a réussi → on utilise ses ingrédients
+          const visionText = visionAnalysis.ingredients.join(', ');
+          setOcrText(visionText);
+          setParsedCount(visionAnalysis.ingredients.length);
+          if (visionAnalysis.confidence === 'medium') {
+            setOcrWarning(
+              `Lecture avec confiance moyenne · vérifie les ingrédients ci-dessus.`,
+            );
+          }
+          track('ghost_capture_vision_success', {
+            ingredients_count: visionAnalysis.ingredients.length,
+            confidence: visionAnalysis.confidence,
+            category: visionAnalysis.category,
+          }).catch(() => {});
+          return;
+        }
+        // Claude Vision a renvoyé null/low confidence → fallback OCR
+      } catch (visionErr) {
+        // Erreur backend Vision → on bascule sur OCR classique sans bruit
+        if (__DEV__) console.warn('[ocr-review] Claude Vision failed, falling back to OCR:', visionErr);
+      }
+
+      // ── Fallback : Google Vision OCR + AI cleanup classique ──────────────
       const raw = await processOCRImage(b64);
       const locallyCleaned = cleanOCRText(raw);
 
@@ -253,13 +301,19 @@ export default function OcrReviewScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch((err) => {
           logError('ocrReview.haptics', err);
         });
+        // Lot 18-01 — Bug data integrity : avant on envoyait `cleaned`
+        // (= cleanOCRText(ocrText)) qui strip % concentrations et lots codes
+        // même quand l'user les tape volontairement. On envoie maintenant
+        // le texte BRUT que l'user a édité (state `ocrText`) pour préserver
+        // toutes ses corrections + ajouts contextuels.
         ghostCaptureSave({
           barcode: ghostBarcode,
           productName: product.name,
           category,
-          ocrText: cleaned,
+          ocrText: ocrText,
           verdict: verdictResult,
           trimester: phase,
+          userId: userId ?? null,
         }).catch((err) => {
           logError('ocrReview.ghostCaptureSave', err);
         });

@@ -202,6 +202,10 @@ export async function ghostCaptureSave(params: {
   ocrText: string;
   verdict: VerdictResult;
   trimester: Phase;
+  /** Lot 18-03 — Optional user_id pour le rate limit per-user dans le
+   *  RPC (1 contribution / user / barcode / 24h). Si absent, rate limit
+   *  désactivé (l'anon "tous les users" sera trackée). */
+  userId?: string | null;
 }): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
 
@@ -213,6 +217,8 @@ export async function ghostCaptureSave(params: {
       p_ocr_text:     params.ocrText,
       p_ai_verdict:   params.verdict as unknown as Record<string, unknown>,
       p_trimester:    String(params.trimester),
+      // Lot 18-03 — passé via le RPC pour rate limit
+      p_user_id:      params.userId ?? null,
     });
 
     if (!rpcError) return true;
@@ -238,7 +244,9 @@ export async function ghostCaptureSave(params: {
       const meta = (existing.metadata ?? {}) as Record<string, unknown>;
       const prevCount = typeof meta.scan_count === 'number' ? meta.scan_count : 1;
       const scanCount = prevCount + 1;
-      const newStatus = scanCount >= 3 ? 'community_verified' : 'auto_captured';
+      // Lot 18-02 — Threshold 3 → 5 scans pour auto-verify. Cohérent avec
+      // la nouvelle version du RPC (cf. migration-lot18-ghost-capture-safety.sql).
+      const newStatus = scanCount >= 5 ? 'community_verified' : 'auto_captured';
       const { error: updateError } = await supabase
         .from('community_submissions')
         .update({

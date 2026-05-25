@@ -387,3 +387,99 @@ export async function cleanOcrTextRemote(
     clearTimeout(timeout);
   }
 }
+
+// ─── Lot 18-10 — Claude Vision direct sur image (LE MOAT) ──────────────────
+
+/**
+ * Résultat structuré d'une analyse Claude Vision sur une photo de produit.
+ * Schéma garanti par le prompt système côté backend (cf. routes/analyze-ingredients-image.ts).
+ */
+export interface ClaudeVisionAnalysis {
+  product_name: string | null;
+  brand: string | null;
+  category: 'cosmetic' | 'food' | 'medication' | 'unknown';
+  ingredients: string[];
+  confidence: 'high' | 'medium' | 'low';
+  warnings: string[];
+  notes: string | null;
+}
+
+const VISION_TIMEOUT_MS = 20_000; // 20s (Vision est plus lent que pure-text)
+
+/**
+ * Envoie une image (base64) à Claude Vision pour analyse structurée.
+ * Retourne un objet ClaudeVisionAnalysis OU null si le backend n'est pas
+ * configuré / l'appel échoue. L'appelant doit gérer le fallback vers
+ * Google Vision OCR + matcher classique.
+ *
+ * Pas de throw — pattern défensif identique à `cleanOcrTextRemote`.
+ *
+ * Coût estimé : ~$0.005-0.01 par appel (Claude Haiku Vision).
+ * Latence : 2-5s (vision = plus lent que text-only).
+ *
+ * Usage :
+ * ```ts
+ * const analysis = await analyzeIngredientsWithClaudeVision(base64, {
+ *   locale: 'fr',
+ *   phase: 2,
+ *   hintCategory: 'cosmetic',
+ * });
+ * if (analysis && analysis.confidence !== 'low' && analysis.ingredients.length > 0) {
+ *   // Utilise l'analyse Claude
+ * } else {
+ *   // Fallback : Google Vision OCR + matching classique
+ * }
+ * ```
+ */
+export async function analyzeIngredientsWithClaudeVision(
+  imageBase64: string,
+  opts: {
+    locale?: 'fr' | 'en' | 'auto';
+    phase?: 1 | 2 | 3 | 'breastfeeding';
+    hintCategory?: 'cosmetic' | 'food' | 'medication' | 'auto';
+    imageMediaType?: 'image/jpeg' | 'image/png' | 'image/webp';
+  } = {},
+): Promise<ClaudeVisionAnalysis | null> {
+  if (!isBackendConfigured || !imageBase64) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${API_BASE}/api/analyze-ingredients-image`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-helo-app-secret': APP_SECRET,
+      },
+      body: JSON.stringify({
+        imageBase64,
+        imageMediaType: opts.imageMediaType ?? 'image/jpeg',
+        locale: opts.locale ?? 'auto',
+        phase: opts.phase,
+        hintCategory: opts.hintCategory ?? 'auto',
+      }),
+      signal: controller.signal,
+    });
+
+    if (response.status !== 200) {
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      analysis?: ClaudeVisionAnalysis;
+      source?: string;
+    };
+
+    if (!data.analysis || !Array.isArray(data.analysis.ingredients)) {
+      return null;
+    }
+
+    return data.analysis;
+  } catch {
+    // Timeout, network error, parse error → fallback silencieux
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}

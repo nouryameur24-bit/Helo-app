@@ -36,6 +36,8 @@ export type MetricEvent =
   | "alternatives_belt_rejection"
   | "alternatives_premium_blocked"
   | "alternatives_budget_exceeded"
+  // Lot 18-10 — Claude Vision direct sur image (le moat vs Yuka)
+  | "claude_vision_call"
   | "live_filet_fetch"
   | "safety_trap_triggered";
 

@@ -171,6 +171,19 @@ Helo-app/                                # repo root
 - **17-08** Table alias 150 E-numbers (E951 → Aspartame)
 - **17-09** RappelConso recall pour TOUS les users (gate premium retiré)
 
+### ✅ Ghost Capture & Le Moat Claude Vision (Lot 18) — DIFFÉRENCIATEUR vs YUKA
+- **18-01** Bug fix : corrections OCR user préservées (ocr-review envoie `ocrText` brut, pas `cleaned`)
+- **18-02** Threshold auto-verify community 3 → 5 scans (safety)
+- **18-03** Rate limit per-user 1/barcode/24h via `p_user_id` argument RPC
+- **18-04** Blur detection heuristique base64 (< 50KB → Alert "photo floue")
+- **18-05** OCR confidence Google Vision affichée (badge si <85%)
+- **18-06** Badge 💛 "X mamas ont contribué" sur verdict community (lit `metadata.scan_count`)
+- **18-07** Empty state explicite quand 0 ingrédient détecté (CTA reprendre/saisir)
+- **18-09** Tooltip explicatif sur category picker
+- **18-10** **Claude Vision direct (LE MOAT)** : nouvelle route `/api/analyze-ingredients-image` côté api-server + `analyzeIngredientsWithClaudeVision()` côté mobile. Essai Claude Vision en 1er, fallback Google Vision OCR si timeout. Différenciation tech vs Yuka.
+
+⏳ Pas livrés Lot 18 (effort > 1 jour) : 18-08 Autocomplete ingrédients, 18-11 Multi-photo capture, 18-12 Offline OCR fallback Tesseract.js
+
 ---
 
 ## 🎨 Conventions à respecter (NE PAS DÉVIER)
@@ -221,6 +234,8 @@ Helo-app/                                # repo root
 | `AllergyWarningBanner` | `components/verdict/AllergyWarningBanner.tsx` | Bannière ROUGE allergène détecté (haptic Error) |
 | `eNumberAliases` (lib) | `lib/eNumberAliases.ts` | Map E-number → nom ingrédient (150 entrées) |
 | `categorizeIngredient` (lib) | `components/verdict/categorizeIngredient.ts` | Catégoriser ingrédient (allergène/additif/colorant/…) |
+| `analyzeIngredientsWithClaudeVision` (lib) | `lib/api.ts` | Lot 18-10 — Appel à `/api/analyze-ingredients-image` (Claude Vision direct) |
+| Route `analyze-ingredients-image` (backend) | `artifacts/api-server/src/routes/analyze-ingredients-image.ts` | Claude Haiku Vision + prompt JSON structuré |
 | `useSafeBack` | `hooks/useSafeBack.ts` | Back centralisé avec fallback |
 | `useChatUnread` | `hooks/useChatUnread.ts` | Compteur unread chat (singleton) |
 
@@ -314,6 +329,14 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 12. **E-number fallback dans `findMatchingRow`** (Lot 17-08) : si match direct échoue ET l'ingrédient est un E-number, lookup via `resolveENumber()` puis re-match. Si tu changes le matcher, conserve ce fallback sinon les additifs notés "E951" perdront leur risk_level.
 
+13. **SQL migration Lot 18 à appliquer** : `artifacts/helo/supabase/migration-lot18-ghost-capture-safety.sql`. **DROP FUNCTION + CREATE FUNCTION** (signature change). Idempotent. Sans ça, le RPC `ghost_capture_upsert` garde l'ancien comportement (threshold 3, pas de rate limit per-user).
+
+14. **Claude Vision (Lot 18-10) nécessite `ANTHROPIC_API_KEY`** côté api-server Replit. Si l'OCR cleanup actuel marche, Vision marche aussi (même clé). Vision rame 2-5s, fallback automatique OCR si timeout/error. Pas de Premium gate pour le moment — c'est la valeur de l'app, libre pour tous.
+
+15. **`processOCRImage` retourne maintenant `{ text, confidence }`** (Lot 18-05) au lieu de `string`. Si tu ajoutes un consommateur, destructure. Confidence est `undefined` si Google Vision ne la fournit pas pour cette image.
+
+16. **`ProductData.communityContributionCount`** (Lot 18-06) est exposé UNIQUEMENT pour `source === 'community'`. Lu depuis `metadata.scan_count`. Sert au badge "X mamas ont contribué" sur verdict screen.
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -328,6 +351,8 @@ curl https://<replit-url>/api/healthz  # → "ok"
 - **Lot 17 — "Better uncertain than wrong falsely safe"** : principe gravé dans le pipeline scan. Avant Lot 17, un verdict "safe" pouvait masquer une vraie incertitude (0 ingrédient matché → safe par défaut). Pour une app grossesse, c'est inacceptable. La bannière "composition (partiellement) inconnue" garantit qu'on n'affiche plus de faux ✅.
 - **Lot 17 — Allergies = priorité TOP** : bannière rouge avant TOUT le reste (avant même le recall). Risque vital > risque conformité.
 - **Lot 17 — Recall gratuit pour tous** : les rappels RappelConso (DGCCRF) sont safety-critical, jamais Premium-only. Apple Review aurait pu reject sur ce point.
+- **Lot 18 — Claude Vision = LE MOAT vs Yuka** : Yuka utilise Google Vision OCR classique (transcrit pixels → texte). Hēlo utilise Claude Vision (LLM multimodal qui RAISONNE sur l'image). Yuka ne peut pas suivre car économiquement non-viable à 40M users (~$2M/mois coûts AI). Hēlo peut car niche premium grossesse (25% conversion, 60€/an). Fenêtre stratégique 18-36 mois avant que Yuka rattrape. *cf. conversation conversation strategy session — innovator's dilemma classique.*
+- **Lot 18 — "Better uncertain than wrong" appliqué à Ghost Capture** : threshold 5 scans (vs 3), rate limit per-user, badge confidence Google Vision affiché, "X mamas contribué" pour transparence. Le verdict community devient un signal social, pas une boîte noire.
 
 ---
 
@@ -382,5 +407,5 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated : Lot 17 livré (52 tâches, 22+ composants/libs, 0 erreur TS, 206/207 tests).*
+*Last updated : Lot 18 phase 1 + 2 livré (61 tâches, dont LE MOAT Claude Vision direct, 0 erreur TS, 206/207 tests). Reste 3 tâches lourdes : autocomplete, multi-photo, offline OCR.*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

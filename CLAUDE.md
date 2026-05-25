@@ -276,6 +276,11 @@ Helo-app/                                # repo root
 | `PregnancyRisksBanner` | `components/verdict/PregnancyRisksBanner.tsx` | Lot 19-D1 — Bannière chips contextuels (listeria, toxo, mercure, alcool, caféine...) |
 | `useSafeBack` | `hooks/useSafeBack.ts` | Back centralisé avec fallback |
 | `useChatUnread` | `hooks/useChatUnread.ts` | Compteur unread chat (singleton) |
+| `heloPoints` (lib) | `lib/heloPoints.ts` | Hēlo Points wrapper TS : awardPoints, getUserPoints, getRewardsCatalog, redeemReward, getUserRewardFlags + tier helpers |
+| `PointsToast` | `components/points/PointsToast.tsx` | Animation "+N ⭐" avec queue imperative (forwardRef + handle.show) |
+| `HeloPointsSection` | `components/profile/HeloPointsSection.tsx` | Carte balance + tier + badge Founder + Premium actif sur Profile |
+| `PointsScreen` | `app/points.tsx` | Écran complet : hero balance + catalogue récompenses + historique transactions |
+| `apiCostTracker` (lib, api-server) | `artifacts/api-server/src/lib/apiCostTracker.ts` | logClaudeApiCall() FinOps tracking + pricing constants Anthropic |
 
 ---
 
@@ -385,7 +390,41 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 22. **Backend partial_metadata fallback** (commit `6ecfff5`) : Quand `product_not_found`, le scan endpoint retourne désormais le nom/marque/photo OBF si dispo + `suggestion:"scan_ingredients_photo"`. Permet UI mobile d'afficher "On a trouvé ton produit mais sa composition est incomplète — prends une photo" au lieu d'un dead-end. Côté mobile, à wirer dans `productLookup.ts` pour basculer auto vers Ghost Capture quand cette response arrive.
 
-23. **Hēlo Points Phase 1 MVP** (commit `f68c4ec`, task #107) : Système de récompenses gamifié pour incentiver Ghost Capture et combler gap couverture vs Yuka. Schema : `user_points` (balance/tier/streak), `point_transactions` (ledger RLS self-read), `rewards_catalog`, `point_redemptions`. RPCs atomiques `award_points` (cap 300/jour, 1 barcode = 1 award/reason) + `redeem_reward` (FOR UPDATE lock). Pricing earn : Photo INCI=25 (le gros), barcode=5, nom=5, face=8 (futur), marque=7 (futur), bonus complétude=+30 all-or-nothing. **Catalogue rééquilibré 25/05/2026** (économie saine, themes/chat/sticker droppés) : Badge Mama Founder (500 pts), Premium 1 sem (1500)/1 mois (5000)/6 mois (15000)/1 an (30000 pts). ~17/50/167/500/1000 contribs requises respectivement. Mobile : `lib/heloPoints.ts`, `components/points/PointsToast.tsx`, `components/profile/HeloPointsSection.tsx`, `app/points.tsx`. Wiring ocr-review: award fire-and-forget après `ghostCaptureSave` → +30-35 pts/contribution. **À finir Phase 1.5** : (a) PointsToast wiré dans ocr-review (toast visible), (b) fulfillment RPC redeem_reward côté api-server (Premium unlock = colonne `profiles.bonus_premium_until` + check dans usePremium hook), (c) détection 1st-contributor + multiplier ×2, (d) Badge Mama Founder affiché sur ProfileHeader si unlocked. Phase 2 post-revenue : gift cards Amazon Incentives API.
+23. **Hēlo Points Phase 1 MVP + Phase 1.5 fulfillment** (commits `f68c4ec` → `d9751a6`, tasks #107 + #108) : Système de récompenses gamifié pour incentiver Ghost Capture et combler gap couverture vs Yuka.
+
+   **Schema DB** :
+   - `user_points` (balance/lifetime/tier/streak/contributions_count)
+   - `point_transactions` (ledger RLS self-read)
+   - `rewards_catalog` (5 récompenses actives)
+   - `point_redemptions` (historique avec status pending/fulfilled)
+   - `profiles` enrichi avec `bonus_premium_until`, `is_founder`, `founder_unlocked_at`
+   - RPCs atomiques SECURITY DEFINER (bypass RLS, contrôlés par auth.uid()) :
+     * `award_points` (cap 300/jour, 1 barcode = 1 award/reason)
+     * `redeem_reward` (FOR UPDATE lock + fulfillment auto-applied pour `auto_premium` et `unlock_feature/badge_founder`)
+   - Trigger `on_auth_user_created_ensure_profile` sur `auth.users` → INSERT profile auto à signup (anti-drift)
+
+   **Pricing earn** : Photo INCI=25 (le gros), barcode=5, nom=5, face=8 (futur), marque=7 (futur), bonus complétude=+30 all-or-nothing.
+
+   **Catalogue rééquilibré** (économie saine, themes/chat/sticker virtuels droppés) :
+   - 500 pts → Badge Mama Founder (vanity, ~17 contribs)
+   - 1 500 pts → 1 semaine Premium offerte (~50 contribs)
+   - 5 000 pts → 1 mois Premium offert (~167 contribs)
+   - 15 000 pts → 6 mois Premium offerts (~500 contribs, valeur 30€)
+   - 30 000 pts → 1 an Premium offert (~1000 contribs, valeur 60€)
+
+   **Mobile code** : `lib/heloPoints.ts`, `components/points/PointsToast.tsx`, `components/profile/HeloPointsSection.tsx`, `app/points.tsx`. `hooks/usePremium.ts` updaté : `isPremium = isPremiumRC OR bonusPremiumUntil > NOW()` (fusion RevenueCat + bonus Hēlo Points).
+
+   **Wiring Ghost Capture** : Award fire-and-forget après `ghostCaptureSave` (+30-35 pts/contribution). URL params `pointsEarned=N` passé d'ocr-review → verdict screen → toast `+35 ⭐ ✨ Merci !` pendant 4s.
+
+   **Bugs critiques fixés post-MVP** (commit `d9751a6`, task #108) :
+   - 🔴 `profiles.id` (PAS `user_id`) — corrigé dans 3 endroits (redeem_reward RPC, `getUserRewardFlags`, `fetchBonusPremiumUntil`). Avant : UPDATE silencieusement échoué.
+   - 🔴 Drift 38/49 auth.users sans profile — trigger + backfill → 49/49 maintenant.
+
+   **Smoke test 100% validé** : award_points(+30) ✓, redeem Badge Founder (500 → is_founder=TRUE) ✓, redeem Premium 1 sem (1500 → bonus_premium_until=NOW+7days) ✓.
+
+   **À faire futur** : (a) détection 1st-contributor + multiplier ×2, (b) Badge Mama Founder affiché sur ProfileHeader (actuellement seulement dans HeloPointsSection), (c) partial_metadata mobile handler (refactor productLookup pour basculer auto vers Ghost Capture quand backend retourne `product_metadata_only`). Phase 2 post-revenue : gift cards Amazon Incentives API.
+
+24. **Trigger `ensure_profile_for_user`** (commit `d9751a6`) : Sur `auth.users INSERT`, crée automatiquement un row dans `profiles` (ON CONFLICT DO NOTHING). Empêche le drift entre auth users et profiles que j'avais découvert (38/49 users orphelins). Backfill aussi appliqué pour les 38 users historiques. Si tu fais un nouveau test signup, le profile apparaît immédiatement.
 
 18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
 
@@ -459,5 +498,27 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated 25/05/2026 (nuit, suite) : Session marathon avec **Hēlo Points MVP livré** (commit f68c4ec, +1047 lignes). Schema DB + RPCs + UI + wiring ocr-review. Gain auto 30-35 pts par Ghost Capture (fire-and-forget). 8 récompenses Phase 1 à 0€ coût (themes + Premium offerts 1 sem/1 mois/6 mois/1 an). **Stratégie anti-Yuka : transformer chaque user en contributeur rémunéré.** Prochaine étape : (a) republish Replit pour partial_metadata fallback, (b) wirer PointsToast dans ocr-review pour feedback visuel, (c) tester end-to-end depuis iPhone.*
+*Last updated 26/05/2026 (nuit, fin) : **15 commits dans la journée**. Session marathon avec Hēlo Points complet end-to-end + audit qualité + fix bugs critiques.
+
+🎯 Réalisations clés :
+- MCPs (Supabase + GitHub + Sentry + PostHog REST) fully wired
+- Sentry helo-54/react-native projet créé + verified (REACT-NATIVE-1)
+- Backend prod Replit Autoscale 24/7 → asset-manager-leilaameurpro.replit.app
+- Mobile .env complet (7 vars : POSTHOG×2, SENTRY, HELO_API×2, SUPABASE×2)
+- partial_metadata fallback côté backend (commit 6ecfff5)
+- FinOps tracking apiCostTracker (commit e29dfec) → à activer après republish Replit
+- DB : 626 986 produits dont 13 472 cosmétiques (+940 OBF), 5 313 ingredients, 957 alternatives cohérentes (vs 4 512 bullshit avant)
+- 49/49 auth.users → profiles (trigger anti-drift)
+- Hēlo Points : 4 tables + 2 RPCs SECURITY DEFINER + 5 récompenses + fulfillment auto Premium + Badge Founder + UI complète + smoke test 100% OK
+
+🔴 Bugs critiques fixés ce soir (commit d9751a6) :
+- profiles.id vs user_id mismatch (RPC + 2 hooks) → silently failing avant
+- 38/49 auth.users sans profile → trigger + backfill
+
+🛏 Prochaine session :
+- (toi 1 clic) Republish Replit pour activer partial_metadata + apiCostTracker
+- (moi 30 min) partial_metadata mobile handler (refactor productLookup)
+- (moi 30 min) 1st-contributor multiplier ×2 dans award flow
+- Test end-to-end depuis iPhone après tout ça
+- TestFlight prep (Apple Dev $99 + EAS build prod + App Store assets)*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

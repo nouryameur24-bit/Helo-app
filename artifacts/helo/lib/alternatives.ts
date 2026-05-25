@@ -223,6 +223,69 @@ export async function getAlternativesByBarcode(
   const productKeywords = extractProductKeywords(current.name);
   let accumulated: AlternativeProduct[] = [];
 
+  // ── LAYER 0 (Lot 19-E1c) : pre-computed product_alternatives table.
+  //    If we have curated entries for this product (matching intended_use),
+  //    use them as primary — they're $0, instant, and 100% intended_use
+  //    coherent (audit Lot 19-E1b removed all bullshit pairs).
+  //    Returns immediately if found ≥ limit.
+  const { data: precomputed } = await supabase
+    .from('product_alternatives')
+    .select('alternative_id, price_range, popularity_count, quality_score')
+    .eq('product_id', current.id)
+    .order('quality_score', { ascending: false })
+    .limit(10);
+
+  if (precomputed && precomputed.length > 0) {
+    const altIds = precomputed.map(
+      (r: { alternative_id: string }) => r.alternative_id,
+    );
+    const { data: altProducts } = await supabase
+      .from('products')
+      .select('id, name, brand, category, barcode, image_url, ingredients_raw, description_fr, intended_use')
+      .in('id', altIds)
+      .eq('overall_risk', 'safe');
+
+    if (altProducts && altProducts.length > 0) {
+      const productMap = new Map(
+        (altProducts as Array<{
+          id: string; name: string; brand: string; category: Category;
+          barcode: string | null; image_url: string | null;
+          ingredients_raw: string | null; description_fr: string | null;
+        }>).map((p) => [p.id, p]),
+      );
+      const curatedResults: AlternativeProduct[] = [];
+      for (const row of precomputed) {
+        const p = productMap.get(row.alternative_id);
+        if (!p) continue;
+        const brand = (p.brand ?? '').toLowerCase();
+        let originBadge: OriginBadge = null;
+        if (PHARMACY_BRANDS.some((b) => brand.includes(b))) originBadge = 'pharmacy';
+        else if (FRENCH_BRANDS.some((b) => brand.includes(b))) originBadge = 'french';
+        else if (detectBio(p.name, (p.ingredients_raw ?? '').toLowerCase())) originBadge = 'bio';
+
+        curatedResults.push({
+          id: p.id,
+          name: p.name,
+          brand: p.brand,
+          category: p.category,
+          barcode: p.barcode,
+          image_url: p.image_url,
+          description_fr: p.description_fr,
+          reason: null,
+          overall_risk: 'safe',
+          price_range: row.price_range,
+          popularity_count: row.popularity_count,
+          origin_badge: originBadge,
+        });
+      }
+      // On a des alternatives curées — c'est notre source la plus fiable,
+      // on n'a pas besoin du fuzzy fallback derrière.
+      if (curatedResults.length >= limit) return curatedResults.slice(0, limit);
+      // Sinon on continue avec les layers fuzzy pour compléter.
+      accumulated = curatedResults;
+    }
+  }
+
   // ── LAYER 1: keyword match in name within same category
   if (productKeywords.length > 0) {
     const orFilter = productKeywords.map((kw) => `name.ilike.%${kw}%`).join(',');

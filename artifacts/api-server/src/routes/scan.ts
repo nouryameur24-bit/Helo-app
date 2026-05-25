@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 
 import { supabaseAdmin, isSupabaseConfigured } from "../lib/supabaseAdmin";
-import { fetchFromOpenFacts } from "../lib/openFoodFacts";
+import { fetchFromOpenFacts, fetchPartialMetadata } from "../lib/openFoodFacts";
 import { parseIngredients } from "../lib/parseIngredients";
 import {
   matchDeterministic,
@@ -168,7 +168,34 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
     if (!product || !ingredientsRaw || !ingredientsRaw.trim()) {
       const off = await fetchFromOpenFacts(barcode);
       if (!off) {
-        res.status(404).json({ error: "product_not_found" });
+        // Lot 19-E1c hot-fix — Avant de renvoyer 404, on cherche les métadonnées
+        // partielles (nom/marque/photo) sans exiger d'ingrédients. Permet à
+        // l'app mobile d'afficher "On a trouvé ton produit mais il manque sa
+        // composition — prends une photo des ingrédients" avec un CTA Ghost
+        // Capture, plutôt qu'un sec "Produit inconnu".
+        const partial = await fetchPartialMetadata(barcode);
+        if (partial) {
+          res.status(404).json({
+            error: "product_metadata_only",
+            partial_metadata: {
+              barcode,
+              name: partial.name,
+              brand: partial.brand,
+              image_url: partial.imageUrl,
+              source: partial.source,
+            },
+            suggestion: "scan_ingredients_photo",
+            message:
+              "Produit trouvé mais sa composition est incomplète. Prends une photo des ingrédients pour qu'on l'analyse.",
+          });
+          return;
+        }
+        res.status(404).json({
+          error: "product_not_found",
+          suggestion: "scan_ingredients_photo",
+          message:
+            "Produit pas encore connu. Tu peux prendre une photo des ingrédients pour l'analyser.",
+        });
         return;
       }
       productName = off.name;

@@ -75,3 +75,63 @@ export async function fetchFromOpenFacts(
   if (food) return food;
   return fetchOne(OBF_API_BASE, barcode, "openbeautyfacts");
 }
+
+/**
+ * Lot 19-E1c hot-fix — Métadonnées partielles (nom/marque/photo) même si la
+ * fiche OBF/OFF n'a pas d'ingrédients.
+ *
+ * Utilisation : quand `fetchFromOpenFacts` renvoie null, on tente cette
+ * version "soft" pour proposer au mobile "On a trouvé ton produit mais sans
+ * sa composition. Prends une photo des ingrédients pour qu'on l'analyse."
+ * → meilleure UX que "Produit inconnu" sec.
+ *
+ * Cascade : OBF d'abord (le user vient de scanner depuis sa salle de bain
+ * vraisemblablement, donc cosmétique > food). Fallback OFF si rien.
+ */
+export interface PartialMetadata {
+  name: string;
+  brand: string | null;
+  imageUrl: string | null;
+  source: "openfoodfacts" | "openbeautyfacts";
+}
+
+async function fetchMetadataOnly(
+  base: string,
+  barcode: string,
+  source: PartialMetadata["source"],
+): Promise<PartialMetadata | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const url = `${base}/${encodeURIComponent(barcode)}.json?fields=${FIELDS}`;
+    const res = await fetch(url, { signal: controller.signal });
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const data = (await res.json()) as OffApiResponse;
+    if (data.status === 0 || !data.product) return null;
+    const p = data.product;
+    const name = (p.product_name_fr ?? p.product_name ?? "").trim();
+    const brand = (p.brands ?? "").trim();
+    // Considéré "trouvé" si on a au moins un nom OU une marque utile.
+    if (!name && !brand) return null;
+    return {
+      name: name || "Produit",
+      brand: brand || null,
+      imageUrl: p.image_front_url ?? p.image_url ?? null,
+      source,
+    };
+  } catch (err) {
+    logger.warn({ err, base, barcode }, "OFF metadata fetch error");
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export async function fetchPartialMetadata(
+  barcode: string,
+): Promise<PartialMetadata | null> {
+  const obf = await fetchMetadataOnly(OBF_API_BASE, barcode, "openbeautyfacts");
+  if (obf) return obf;
+  return fetchMetadataOnly(OFF_API_BASE, barcode, "openfoodfacts");
+}

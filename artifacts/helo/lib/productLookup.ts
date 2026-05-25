@@ -332,8 +332,21 @@ export async function fetchProductByBarcode(barcode: string): Promise<ProductDat
   const community = await checkCommunitySubmissions(barcode);
   if (community) return community;
 
-  // 3rd attempt: Open Food Facts (food products)
-  const offData = await fetchFromAPI(OFF_API_BASE, barcode);
+  // 3rd attempt — OFF (food) + OBF (cosmetics) en PARALLÈLE.
+  // Lot 17-03 : avant, OFF puis OBF séquentiels = jusqu'à 16s worst case
+  // si OFF timeout (8s) puis OBF timeout (8s). Maintenant les 2 fetch sont
+  // lancés en même temps via Promise.all — on prend le premier non-null
+  // qui a des ingrédients. Latence worst case ÷ 2 (8s max au lieu de 16s).
+  // Best case identique (1.5s).
+  //
+  // Note : on ne `Promise.any()` pas pour pouvoir préférer OFF (food) en
+  // priorité quand les deux répondent — la quasi-totalité des scans sont
+  // alimentaires, OBF est un fallback.
+  const [offData, obfData] = await Promise.all([
+    fetchFromAPI(OFF_API_BASE, barcode),
+    fetchFromAPI(OBF_API_BASE, barcode),
+  ]);
+
   if (offData) {
     const product = parseOFFResponse(offData, 'openfoodfacts');
     if (product && product.ingredientsList.length > 0) {
@@ -343,8 +356,6 @@ export async function fetchProductByBarcode(barcode: string): Promise<ProductDat
     if (__DEV__) console.warn(`[Hēlo cascade] OFF → response received but parseOFFResponse returned ${product ? 'empty ingredients' : 'null'}`);
   }
 
-  // 4th attempt: Open Beauty Facts (cosmetics)
-  const obfData = await fetchFromAPI(OBF_API_BASE, barcode);
   if (obfData) {
     const product = parseOFFResponse(obfData, 'openbeautyfacts');
     if (product && product.ingredientsList.length > 0) {
@@ -529,6 +540,41 @@ export function getVerdict(matches: MatchResult[]): VerdictResult {
   const verdict = hasDanger ? 'danger' : hasCaution ? 'caution' : 'safe';
   const noSignalCount = matches.filter((m) => m.riskLevel === 'no_signal').length;
   const safeCount = matches.filter((m) => m.riskLevel === 'safe').length;
+  const totalCount = matches.length;
 
-  return { verdict, flaggedIngredients, noSignalCount, safeCount };
+  // ── Lot 17-01 : transparence sur l'incertitude ─────────────────────────
+  // Cas critiques pour une app grossesse :
+  //   1. TOUS les ingrédients sont inconnus (0 match déterministe + 0 match AI)
+  //      → on ne SAIT pas, on n'a juste pas trouvé de risque. C'est dangereux
+  //      d'afficher "safe" comme si on était certains.
+  //   2. La majorité sont inconnus (>50%) → fiabilité compromise.
+  // L'UI lit ces deux champs pour afficher une bannière jaune appropriée.
+  const allIngredientsUnknown = totalCount > 0 && noSignalCount === totalCount;
+  const unknownRatio = totalCount > 0 ? noSignalCount / totalCount : 0;
+
+  // ── Lot 17-02 : cross-check allergies déclarées ─────────────────────────
+  // Si un ingrédient a été tagué par applyPersonalPreferences avec une
+  // allergie ("Arachide", "Lait", etc.), on dédoublonne les labels uniques
+  // et on les remonte au VerdictResult. L'UI affichera alors une bannière
+  // ROUGE bloquante pour empêcher l'achat involontaire d'un allergène.
+  const allergySet = new Set<string>();
+  for (const m of matches) {
+    if (m.matchedAllergies) {
+      for (const allergy of m.matchedAllergies) {
+        allergySet.add(allergy);
+      }
+    }
+  }
+  const allergyWarnings = allergySet.size > 0 ? Array.from(allergySet) : undefined;
+
+  return {
+    verdict,
+    flaggedIngredients,
+    noSignalCount,
+    safeCount,
+    totalCount,
+    allIngredientsUnknown,
+    unknownRatio,
+    ...(allergyWarnings ? { allergyWarnings } : {}),
+  };
 }

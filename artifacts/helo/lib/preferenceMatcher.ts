@@ -122,6 +122,9 @@ export async function applyPersonalPreferences(
   const updated = matches.map((m, i) => {
     let newRisk: RiskLevel = m.riskLevel;
     const tags: PreferenceTag[] = [];
+    // Lot 17-02 : on collecte aussi les LABELS d'allergies pour les
+    // attacher au match (utilisé par getVerdict pour bannière rouge).
+    const matchedAllergyLabels: string[] = [];
 
     // Allergies → danger
     for (const allergy of allergies) {
@@ -130,6 +133,7 @@ export async function applyPersonalPreferences(
       if (ingredientMatchesKeywords(m, keywords)) {
         newRisk = strictest(newRisk, 'danger');
         tags.push({ type: 'allergy', reason: `Allergie déclarée : ${allergy}` });
+        matchedAllergyLabels.push(allergy);
       }
     }
 
@@ -157,9 +161,16 @@ export async function applyPersonalPreferences(
       tagsByIndex.set(i, tags);
     }
 
-    return newRisk !== m.riskLevel
-      ? ({ ...m, matched: true, riskLevel: newRisk } as MatchResult)
-      : m;
+    const riskChanged = newRisk !== m.riskLevel;
+    const hasAllergies = matchedAllergyLabels.length > 0;
+    if (!riskChanged && !hasAllergies) return m;
+
+    return {
+      ...m,
+      matched: true,
+      riskLevel: newRisk,
+      ...(hasAllergies ? { matchedAllergies: matchedAllergyLabels } : {}),
+    } as MatchResult;
   });
 
   return { matches: updated, tagsByIndex };

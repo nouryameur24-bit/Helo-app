@@ -50,6 +50,13 @@ export interface IngredientData {
   description_fr: string;
   source: string;
   source_url: string | null;
+  // ── Lot 17-04 : dosage recommandé pendant grossesse ────────────────────
+  /** Dose journalière max recommandée (CRAT/ANSM). Null si non applicable. */
+  max_dose_mg_per_day?: number | null;
+  /** Unité affichée à l'utilisatrice. Ex: "mg", "g", "ml", "tasses". */
+  dose_unit?: string | null;
+  /** Note 1 phrase sur la posologie. */
+  dose_note?: string | null;
 }
 
 export interface ProductData {
@@ -71,6 +78,12 @@ export interface MatchResult {
   matched: boolean;
   ingredient?: IngredientData;
   riskLevel: RiskLevel;
+  /** Lot 17-02 — Si cet ingrédient déclenche une allergie déclarée par
+   *  l'utilisateur (ex: "Lait", "Arachide"), le label de l'allergie est
+   *  attaché ici. Vide sinon. Utilisé par `getVerdict` pour produire
+   *  `allergyWarnings` côté VerdictResult, et par l'UI pour expliquer
+   *  pourquoi un ingrédient est passé en "danger". */
+  matchedAllergies?: string[];
 }
 
 export interface VerdictResult {
@@ -78,6 +91,23 @@ export interface VerdictResult {
   flaggedIngredients: MatchResult[];
   noSignalCount: number;
   safeCount: number;
+  // ── Lot 17-01 : Transparence sur l'incertitude ─────────────────────────
+  /** Total d'ingrédients analysés (= matches.length). Pour ratio. */
+  totalCount: number;
+  /** True si AUCUN ingrédient n'a été reconnu (matched=false partout).
+   *  Le verdict "safe" est alors trompeur — on ne SAIT pas, on n'a juste
+   *  pas trouvé de signal négatif. UI doit poser un disclaimer fort. */
+  allIngredientsUnknown: boolean;
+  /** Ratio d'ingrédients non reconnus (0..1). Si >0.5, la fiabilité du
+   *  verdict est compromise — UI affiche bannière "Composition partiellement
+   *  reconnue" pour éviter le faux ✅ "tout va bien". */
+  unknownRatio: number;
+  // ── Lot 17-02 : Allergies user croisées ────────────────────────────────
+  /** Ingrédients matchés qui correspondent à une allergie déclarée par
+   *  l'utilisateur dans les préférences. Affiché en bannière rouge bloquante
+   *  sur le verdict screen. Le champ est vide si aucune allergie déclarée
+   *  ou aucun match. */
+  allergyWarnings?: string[];
   // ── Champs optionnels fournis par le backend hybride ───────────────────
   // Présents quand le scan a transité par POST /api/scan (mode en ligne).
   // Absents en mode offline (matching local pur).

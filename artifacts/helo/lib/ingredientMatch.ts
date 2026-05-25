@@ -98,7 +98,7 @@ export function findMatchingRow<T extends MatchableRow>(
   ingredientName: string,
   rows: T[],
 ): T | undefined {
-  return rows.find((ing) => {
+  const direct = rows.find((ing) => {
     const ingName = ing.name;
     const ingInci = ing.name_inci ?? '';
     if (ingName && wordMatches(ingredientName, ingName)) return true;
@@ -109,6 +109,28 @@ export function findMatchingRow<T extends MatchableRow>(
     if (ingredientName.length >= 4) {
       if (ingName && wordMatches(ingName, ingredientName)) return true;
       if (ingInci && wordMatches(ingInci, ingredientName)) return true;
+    }
+    return false;
+  });
+  if (direct) return direct;
+
+  // ── Lot 17-08 — fallback E-number alias ─────────────────────────────────
+  // Le matcher direct a échoué. Si l'ingrédient ressemble à un E-number
+  // (ex: "E951"), on tente le matching avec son alias français
+  // ("aspartame"). Ça permet d'attraper les milliers de produits qui
+  // listent leurs additifs sous forme E\d{3,4} dans la composition.
+  // Import inline pour ne pas faire boucler le cycle de dépendances.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { resolveENumber } = require('@/lib/eNumberAliases') as typeof import('@/lib/eNumberAliases');
+  const alias = resolveENumber(ingredientName);
+  if (!alias) return undefined;
+  return rows.find((ing) => {
+    const ingName = ing.name;
+    const ingInci = ing.name_inci ?? '';
+    if (ingName && wordMatches(alias, ingName)) return true;
+    if (ingInci && wordMatches(alias, ingInci)) return true;
+    if (ing.synonyms?.some((syn) => syn && wordMatches(alias, syn))) {
+      return true;
     }
     return false;
   });

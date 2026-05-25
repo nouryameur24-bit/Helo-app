@@ -40,6 +40,8 @@ import { VerdictBottomBar } from '@/components/verdict/VerdictBottomBar';
 import { OverrideBanner, AcceptOverrideButton } from '@/components/verdict/AcceptOverrideSheet';
 import { VerdictErrorScreen } from '@/components/verdict/VerdictErrorScreen';
 import { OnboardingCompleteModal } from '@/components/onboarding/OnboardingCompleteModal';
+import { AllergyWarningBanner } from '@/components/verdict/AllergyWarningBanner';
+import { UnknownCompositionBanner } from '@/components/verdict/UnknownCompositionBanner';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import { BlurView } from 'expo-blur';
 import {
@@ -117,6 +119,11 @@ export default function VerdictScreen() {
   // le verdict du tout premier scan (entrée via onboarding/first-scan).
   const [onboardingCelebrationVisible, setOnboardingCelebrationVisible] = useState(false);
   const onboardingCelebrationShownRef = useRef(false);
+  // Lot 17-06 — Timeout safeguard. Si verdict + product restent null pendant
+  // 10s (matcher gelé, Anthropic down, Supabase lag), on bascule en error
+  // au lieu de laisser le spinner tourner indéfiniment. Pour une app
+  // grossesse, "j'ai abandonné après 30s" = retour utilisateur très négatif.
+  const [scanTimedOut, setScanTimedOut] = useState(false);
 
   // ── Ghost Capture "merci" celebration ───────────────────────────────────────
   // Triggered when the user arrives from the OCR review flow with ghostThanks=1.
@@ -253,11 +260,16 @@ export default function VerdictScreen() {
   }, [isBabyMode, product]);
 
   useEffect(() => {
-    if (!barcode || barcode.startsWith('ocr_') || barcode === 'photo-scan' || !isPremium) return;
+    // Lot 17-09 — Recall RappelConso pour TOUS les users (free + premium).
+    // Les rappels conso sont safety-critical (produits potentiellement
+    // dangereux retirés du marché). Premium gardera plus tard l'accès à
+    // l'historique étendu + push notifications, mais le check du produit
+    // scanné en cours est gratuit pour tous.
+    if (!barcode || barcode.startsWith('ocr_') || barcode === 'photo-scan') return;
     fetchRecallForBarcode(barcode)
       .then((r) => setRecallMatch(r))
       .catch(swallow);
-  }, [barcode, isPremium]);
+  }, [barcode]);
 
   useEffect(() => {
     if (!verdict) return;
@@ -277,6 +289,20 @@ export default function VerdictScreen() {
       glow_score: verdict.glowScoreRemote ?? null,
     }).catch(() => {});
   }, [verdict]);
+
+  // ── Lot 17-06 — Timeout safeguard 10s ─────────────────────────────────────
+  // Démarre un timer à chaque nouveau barcode. Si on n'a toujours pas de
+  // verdict+product à T+10s, on bascule en mode timeout et affiche un
+  // VerdictErrorScreen "Le scan est trop lent". Cleanup à chaque ré-arm.
+  useEffect(() => {
+    if (verdict && product) {
+      setScanTimedOut(false);
+      return;
+    }
+    if (error || notFound) return; // déjà géré par les écrans d'erreur
+    const t = setTimeout(() => setScanTimedOut(true), 10_000);
+    return () => clearTimeout(t);
+  }, [verdict, product, error, notFound, barcode]);
 
   // ── Lot 15A1 — célébration "Setup terminé" après le 1er scan ───────────────
   // Déclenchée UNE SEULE FOIS : à l'arrivée sur le verdict du tout premier
@@ -435,6 +461,18 @@ export default function VerdictScreen() {
   const flagged = sorted.filter((m) => m.riskLevel !== 'no_signal');
   const noSignal = sorted.filter((m) => m.riskLevel === 'no_signal');
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+
+  // Lot 17-06 — Timeout > 10s : on n'attend plus, on affiche une erreur
+  // claire pour permettre à l'utilisatrice de retry ou de revenir au scan.
+  if (scanTimedOut && (!verdict || !product) && !notFound) {
+    return (
+      <VerdictErrorScreen
+        error="Le scan prend trop de temps. Vérifie ta connexion et réessaie."
+        barcode={barcode}
+        topInset={Platform.OS === 'web' ? 67 : insets.top}
+      />
+    );
+  }
 
   if (loading) return <LoadingScreen />;
 
@@ -786,8 +824,25 @@ export default function VerdictScreen() {
           </View>
         )}
 
+        {/* ── Lot 17-02 — Bannière ROUGE allergène déclaré (TOP PRIORITY) ──
+            Affichée AVANT le recall, car c'est l'alerte la + critique :
+            risque vital pour l'utilisatrice qui a déclaré une allergie. */}
+        <AllergyWarningBanner allergyWarnings={verdict.allergyWarnings} />
+
         {/* ── RECALL ALERT BANNER ── */}
         {recallMatch && <RecallAlertBanner recallMatch={recallMatch} />}
+
+        {/* ── Lot 17-01 — Bannière "composition (partiellement) inconnue" ──
+            Affichée si tous OU >50% des ingrédients ne sont pas dans notre
+            DB. Évite l'illusion de "tout va bien" trompeuse pour les
+            produits rares (tisanes, herbes, marques niche). */}
+        {verdict && (verdict.allIngredientsUnknown || (verdict.unknownRatio !== undefined && verdict.unknownRatio > 0.5)) && (
+          <UnknownCompositionBanner
+            totalCount={verdict.totalCount ?? 0}
+            noSignalCount={verdict.noSignalCount}
+            allUnknown={verdict.allIngredientsUnknown ?? false}
+          />
+        )}
 
         {/* ── INGREDIENT DETAILS ── */}
         <IngredientsSection

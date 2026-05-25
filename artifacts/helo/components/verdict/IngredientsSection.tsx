@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import type { MatchResult, Phase, RiskLevel } from '@/types';
 import { IngredientCard } from './IngredientCard';
+import { groupIngredientsByCategory } from './categorizeIngredient';
 import {
   getRiskColor,
   getRiskVariant,
@@ -106,21 +107,36 @@ export function IngredientsSection({
             ))}
       </View>
 
+      {/* Lot 17-07 — Groupement no_signal par catégorie (allergènes /
+          conservateurs / additifs / etc.). Avant : liste plate de 50+
+          ingrédients en vrac → mur de texte. Maintenant : sections avec
+          emoji + compteur. Catégorisation pattern-based (pas DB), suffisant
+          pour donner du sens visuel. */}
       {isPremium && noSignal.length > 0 && (
         <View style={styles.section}>
           <ThemedText variant="labelSmall" color="textTertiary" style={styles.noSignalTitle}>
             AUCUN SIGNALEMENT CONNU ({noSignal.length})
           </ThemedText>
-          <Card style={styles.noSignalCard} padding={Spacing.lg}>
-            {noSignal.map((m, i) => (
-              <View key={m.ingredientName}>
-                <ThemedText variant="bodySmall" color="textSecondary" style={styles.noSignalItem}>
-                  {m.ingredientName}
+          {groupIngredientsByCategory(noSignal).map(({ category, items }) => (
+            <View key={category.key} style={{ marginBottom: Spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <ThemedText style={{ fontSize: 14 }}>{category.emoji}</ThemedText>
+                <ThemedText variant="labelSmall" color="textSecondary" style={{ letterSpacing: 0.6 }}>
+                  {category.label.toUpperCase()} ({items.length})
                 </ThemedText>
-                {i < noSignal.length - 1 && <Divider style={styles.noSignalDivider} />}
               </View>
-            ))}
-          </Card>
+              <Card style={styles.noSignalCard} padding={Spacing.lg}>
+                {items.map((m, i) => (
+                  <View key={m.ingredientName}>
+                    <ThemedText variant="bodySmall" color="textSecondary" style={styles.noSignalItem}>
+                      {m.ingredientName}
+                    </ThemedText>
+                    {i < items.length - 1 && <Divider style={styles.noSignalDivider} />}
+                  </View>
+                ))}
+              </Card>
+            </View>
+          ))}
         </View>
       )}
 

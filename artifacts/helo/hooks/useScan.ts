@@ -107,11 +107,20 @@ function adaptBackendResponse(
   const flaggedIngredients = matches.filter(
     (m) => m.riskLevel === 'danger' || m.riskLevel === 'caution',
   );
+  const noSignalCount = matches.filter((m) => m.riskLevel === 'no_signal').length;
+  const safeCount = matches.filter((m) => m.riskLevel === 'safe').length;
+  const totalCount = matches.length;
+  // Lot 17-01 : transparence "composition inconnue" même via backend hybride.
+  const allIngredientsUnknown = totalCount > 0 && noSignalCount === totalCount;
+  const unknownRatio = totalCount > 0 ? noSignalCount / totalCount : 0;
   const verdict: VerdictResult = {
     verdict: dto.verdict,
     flaggedIngredients,
-    noSignalCount: matches.filter((m) => m.riskLevel === 'no_signal').length,
-    safeCount: matches.filter((m) => m.riskLevel === 'safe').length,
+    noSignalCount,
+    safeCount,
+    totalCount,
+    allIngredientsUnknown,
+    unknownRatio,
     aiExplanation: dto.explanation,
     aiSource: dto.source,
     glowScoreRemote: dto.glow_score,

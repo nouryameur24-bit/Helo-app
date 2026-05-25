@@ -17,7 +17,6 @@
 
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import * as StoreReview from 'expo-store-review';
 import React from 'react';
 import { Alert, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -114,19 +113,13 @@ export function FeedbackSection() {
   const handleRate = async () => {
     Haptics.selectionAsync().catch(() => {});
     track('feedback_rate_tapped').catch(() => {});
-    try {
-      const isAvailable = await StoreReview.isAvailableAsync();
-      if (isAvailable) {
-        await StoreReview.requestReview();
-      } else {
-        Alert.alert(
-          'Bientôt disponible',
-          "Hēlo n'est pas encore sur l'App Store. Tu pourras laisser un avis dès la sortie publique.",
-        );
-      }
-    } catch {
-      // Silent fail — review API peut throw selon les quotas
-    }
+    // En beta : pas encore d'App Store ID. On affiche un message d'attente.
+    // Post-launch : remplacer par Linking vers l'App Store URL
+    // (`itms-apps://itunes.apple.com/app/idXXXXXX?action=write-review`).
+    Alert.alert(
+      'Merci 💛',
+      "Hēlo n'est pas encore sur l'App Store. Tu pourras laisser un avis dès la sortie publique. En attendant, envoie-nous tes retours par mail !",
+    );
   };
 
   return (
@@ -146,7 +139,7 @@ export function FeedbackSection() {
         />
         <View style={styles.separator} />
         <FeedbackRow
-          icon="lightbulb"
+          icon="zap"
           iconBg={Colors.cautionLight}
           iconColor={Colors.caution}
           label="Suggérer une amélioration"

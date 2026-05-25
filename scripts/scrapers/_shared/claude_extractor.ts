@@ -54,15 +54,44 @@ export interface ExtractResult {
 
 const HAIKU_PRICING = { input: 1.0, output: 5.0 }; // $ per MTok
 
+/**
+ * Smart trim : si l'INCI/composition est déjà dans les premiers 80k chars,
+ * on garde tel quel. Sinon, on prepend une fenêtre 8k autour du keyword.
+ *
+ * Logique conservative : on ne casse pas le head/title/JSON-LD du début.
+ */
+function smartTrim(html: string, maxChars: number): string {
+  const head = html.slice(0, maxChars);
+  const kw = /(composition|ingr[ée]dients?|\bINCI\b)/i;
+  // Si le keyword est déjà dans les premiers maxChars, OK
+  if (kw.test(head)) {
+    return head;
+  }
+  // Sinon on cherche dans le reste et on injecte une fenêtre dans l'output
+  const rest = html.slice(maxChars);
+  const match = rest.match(kw);
+  if (!match || match.index === undefined) {
+    return head; // pas de composition trouvée du tout → tel quel
+  }
+  const absIdx = maxChars + match.index;
+  const windowStart = Math.max(maxChars, absIdx - 1_000);
+  const windowEnd = Math.min(html.length, absIdx + 8_000);
+  const window = html.slice(windowStart, windowEnd);
+  // On garde les premiers (maxChars - window.length) chars du head + window
+  const reservedForWindow = window.length + 100; // 100 chars pour le séparateur
+  const truncatedHead = head.slice(0, maxChars - reservedForWindow);
+  return truncatedHead + '\n<!-- COMPOSITION SECTION (injected from later in page) -->\n' + window;
+}
+
 export async function extractWithClaude({
   html,
   pageUrl,
   hintCategory,
   client,
 }: ExtractInput): Promise<ExtractResult> {
-  // Trim HTML to keep cost under control. Most product pages have the data
-  // in the first ~30k chars (head + main content + ingredients accordion).
-  const trimmedHtml = html.slice(0, 60_000);
+  // Smart trim ciblé sur les sections pertinentes (head + composition sections)
+  // pour rester sous ~80k chars d'input tout en capturant l'INCI où qu'elle soit.
+  const trimmedHtml = smartTrim(html, 80_000);
 
   const userMessage = `URL: ${pageUrl}
 ${hintCategory ? `Hint catégorie: ${hintCategory}\n` : ''}

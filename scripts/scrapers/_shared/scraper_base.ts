@@ -153,9 +153,20 @@ export abstract class BaseScraper {
 
     // Final flush
     if (productsBuffer.length > 0 && !this.ctx.dryRun) {
+      console.log(`[${this.name}] Final flush: ${productsBuffer.length} products`);
       const result = await this.writer.insertBatch(productsBuffer);
       stats.products_inserted += result.inserted;
       stats.products_skipped_dedup += result.skipped;
+      if (result.errors.length > 0) {
+        stats.errors += result.errors.length;
+        console.error(`[${this.name}] Final flush errors:`, result.errors);
+      }
+      console.log(`[${this.name}] Final flush done: +${result.inserted} inserted, +${result.skipped} skipped, ${result.errors.length} errors`);
+    }
+    if (productsBuffer.length > 0 && this.ctx.dryRun) {
+      // Affiche le 1er produit en dry-run pour validation visuelle
+      console.log(`[${this.name}] DRY-RUN sample (1st of ${productsBuffer.length}):`);
+      console.log(JSON.stringify(productsBuffer[0], null, 2));
     }
 
     stats.duration_ms = Date.now() - t0;

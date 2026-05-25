@@ -248,7 +248,7 @@ export async function getUserRewardFlags(userId: string): Promise<UserRewardFlag
   const { data, error } = await supabase
     .from('profiles')
     .select('is_founder, founder_unlocked_at, bonus_premium_until')
-    .eq('user_id', userId)
+    .eq('id', userId)  // profiles.id = auth.users.id
     .maybeSingle();
   if (error || !data) return empty;
 

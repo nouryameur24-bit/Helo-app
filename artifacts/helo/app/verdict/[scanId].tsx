@@ -81,12 +81,19 @@ export default function VerdictScreen() {
     ghostThanks,
     ghostBarcode: ghostBarcodeParam,
     ghostContribCount: ghostContribCountParam,
+    pointsEarned: pointsEarnedParam,
   } = useLocalSearchParams<{
     scanId: string;
     ghostThanks?: string;
     ghostBarcode?: string;
     ghostContribCount?: string;
+    pointsEarned?: string;
   }>();
+  const pointsEarned = (() => {
+    if (!pointsEarnedParam) return 0;
+    const n = parseInt(pointsEarnedParam, 10);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  })();
   const ghostBarcode = ghostBarcodeParam ? decodeURIComponent(ghostBarcodeParam) : '';
   const ghostContribCount = (() => {
     if (!ghostContribCountParam) return 0;
@@ -142,12 +149,14 @@ export default function VerdictScreen() {
     if (ghostContribCount > 0) {
       setRewardToastVisible(true);
     } else {
-      setToastMessage("✨ Merci ! Vous venez d'aider la communauté Hēlo");
+      // Hēlo Points task #107/108 — inclut +N ⭐ si points awardés via OCR review.
+      const baseMsg = "✨ Merci ! Tu viens d'aider la communauté Hēlo";
+      setToastMessage(pointsEarned > 0 ? `+${pointsEarned} ⭐ ${baseMsg}` : baseMsg);
       setToastVisible(true);
-      const t = setTimeout(() => setToastVisible(false), 3000);
+      const t = setTimeout(() => setToastVisible(false), 4000);
       return () => clearTimeout(t);
     }
-  }, [ghostThanks, ghostContribCount, loading]);
+  }, [ghostThanks, ghostContribCount, pointsEarned, loading]);
   const [phase, setPhase] = useState<Phase>(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
   const [isPhotoMode, setIsPhotoMode] = useState(false);

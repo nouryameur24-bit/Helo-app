@@ -48,7 +48,7 @@ async function fetchBonusPremiumUntil(): Promise<Date | null> {
     const { data, error } = await supabase
       .from('profiles')
       .select('bonus_premium_until')
-      .eq('user_id', session.user.id)
+      .eq('id', session.user.id)  // profiles.id = auth.users.id (pas .user_id)
       .maybeSingle();
     if (error || !data?.bonus_premium_until) return null;
     const until = new Date(data.bonus_premium_until);

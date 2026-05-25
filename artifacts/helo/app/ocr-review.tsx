@@ -293,6 +293,13 @@ export default function OcrReviewScreen() {
         }
       }
 
+      // Hēlo Points (task #107) — calcul des pts en amont pour pouvoir
+      // les passer en URL params au verdict screen (affichage toast).
+      const productHasName = product.name && product.name !== 'Produit' && product.name.trim().length > 2;
+      const pointsToEarn = ghostBarcode && userId
+        ? POINTS.SCAN_NEW_BARCODE + POINTS.PHOTO_INGREDIENTS + (productHasName ? POINTS.NAME_FILLED : 0)
+        : 0;
+
       // Navigate to verdict with ocr_ prefix; pass ghostThanks=1 + the original
       // ghostBarcode so the verdict screen can render the "merci" toast and
       // (after 1s) the contribution card that updates the same DB row.
@@ -301,8 +308,9 @@ export default function OcrReviewScreen() {
         const contribParam = newContribCount !== null
           ? `&ghostContribCount=${newContribCount}`
           : '';
+        const pointsParam = pointsToEarn > 0 ? `&pointsEarned=${pointsToEarn}` : '';
         router.replace(
-          `${verdictPath}?ghostThanks=1&ghostBarcode=${encodeURIComponent(ghostBarcode)}${contribParam}`,
+          `${verdictPath}?ghostThanks=1&ghostBarcode=${encodeURIComponent(ghostBarcode)}${contribParam}${pointsParam}`,
         );
       } else {
         router.replace(verdictPath);

@@ -6,9 +6,16 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "ingredients-pipeline": "tsx ./src/ingredients-pipeline/run.ts"
+    "ingredients-pipeline": "tsx ./src/ingredients-pipeline/run.ts",
+    "scrape:doctipharma": "tsx ./scrapers/pharmacy/doctipharma.ts",
+    "scrape:newpharma": "tsx ./scrapers/pharmacy/newpharma.ts",
+    "scrape:pharma-gdd": "tsx ./scrapers/pharmacy/pharma_gdd.ts",
+    "scrape:brands": "tsx ./scrapers/brands/run_all.ts",
+    "import:bdpm": "tsx ./src/bdpm-import/run.ts",
+    "embeddings:populate": "tsx ./src/embeddings/populate.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0",
     "@supabase/supabase-js": "^2.99.1",
     "csv-parse": "^5.6.0"
   },

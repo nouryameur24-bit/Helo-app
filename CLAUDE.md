@@ -428,6 +428,68 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
 
+28. **Big push "fait tout" (tasks #112-118, 25/05/2026 nuit late)** :
+
+   **DB foundations** (6 migrations MCP appliquées + dumpées local) :
+   - `enable_pgvector_and_trgm` : extensions pgvector + pg_trgm
+   - `ingredient_embeddings_table` : table + index HNSW + RPC `match_ingredient_fuzzy` (Lot 19-D2)
+   - `partner_shelf_events_realtime` : vraie table + publication Realtime (remplace proxy community_submissions)
+   - `drug_interactions_table` : table + RPC `find_drug_interactions` + `profiles.current_medications` (Tier A safety)
+   - `product_recalls_push_subscriptions` : tables product_recalls + push_subscriptions + RPC `find_users_to_notify_recall` (Lot 19-I1)
+   - `alternatives_affiliate_url_column` : `products.purchase_links` JSONB + `affiliate_clicks` + view `v_affiliate_revenue` (Lot 19-G1)
+
+   **Scraping framework Claude-assisted** (`scripts/scrapers/`) :
+   - `_shared/` : types, http_runner (rate limit 1.5 req/s + User-Agent identifiable), claude_extractor (Haiku 4.5 extrait depuis HTML, ~$0.0005/page), supabase_writer (batched upsert avec dedup EAN), scraper_base (boucle discover→fetch→extract→insert)
+   - `pharmacy/` : doctipharma.ts (~80k SKUs) + newpharma.ts (~50k SKUs) + pharma_gdd.ts (~30k SKUs)
+   - `brands/_factory.ts` : 12 configs (Avène, Mustela, La Roche-Posay, Bioderma, Weleda, Nuxe, Caudalie, Lierac, Vichy, SVR, A-Derma, Ducray) + BrandScraper class + `run_all.ts`
+   - README complet avec quality_score scale (100 helo > 90 brand > 80 pharmacy > 70 drive > 60 OBF > 50 OFF), garde-fous éthiques, budget ~$80 pour ~160k cosmétiques FR
+   - Dep ajoutée : `@anthropic-ai/sdk ^0.65.0`
+
+   **BDPM import** (`scripts/src/bdpm-import/run.ts`, Lot 19-B4) :
+   - Parse 3 fichiers TXT pipe-separated (CIS + CIP + COMPO) en latin1
+   - Build products avec barcode=CIP13(EAN13), source='bdpm', quality_score=95
+   - ~18k médicaments officiels FR, $0 (source gov gratuite)
+   - User doit télécharger manuellement le ZIP depuis data.gouv.fr et le placer dans `.bdpm-cache/` (gated derrière formulaire)
+
+   **pgvector embeddings populate** (`scripts/src/embeddings/populate.ts`, Lot 19-D2) :
+   - OpenAI text-embedding-3-small (1536d)
+   - Batch 100 ingredients par appel
+   - Skip déjà embeddés (sauf --force)
+   - Coût ~$0.005 pour 5 313 ingrédients one-shot
+
+   **Affiliate links mobile** (`artifacts/helo/lib/affiliateLinks.ts`, Lot 19-G1) :
+   - Wrapper `openMerchantLink` ouvre WebBrowser (in-app SafariViewController / Chrome Custom Tab)
+   - Track click via Supabase `affiliate_clicks` + analytics PostHog
+   - Order préférentiel : Monoprix Drive > Bébé9 > Pharma Express > Amazon
+   - Backend complète query string affiliate (`?tag=helo-fr-21` etc.)
+
+   **Push recall RappelConso** (`artifacts/api-server/src/routes/recalls-poll.ts`, Lot 19-I1) :
+   - Cron endpoint `POST /api/recalls/poll` protégé par `x-helo-cron-secret`
+   - Fetch RappelConso data.gouv.fr (100 derniers)
+   - Filter nouveaux (rappel_id unique), insert product_recalls
+   - Extract EAN8/13 depuis identification_des_produits via regex
+   - Call RPC `find_users_to_notify_recall` → batch Expo Push (chunks de 100)
+   - Severity auto-classified (critical/high/medium/low) via keywords risque
+
+   **Setup env requis pour les scripts** :
+   - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (jamais commit)
+   - `ANTHROPIC_API_KEY` (scrapers)
+   - `OPENAI_API_KEY` (embeddings)
+   - `HELO_CRON_SECRET` (recalls-poll endpoint)
+
+   **À faire pour activer en prod** :
+   - Republish Replit Autoscale (recalls-poll endpoint)
+   - Inscrire les programmes affiliés (Amazon Associates FR, Monoprix, Bébé9)
+   - Setup cron externe pointant `POST /api/recalls/poll` (GitHub Actions hourly ou Replit Scheduled Jobs)
+   - User : télécharger ZIP BDPM + lancer `pnpm import:bdpm`
+   - Lancer `pnpm embeddings:populate` (one-shot ~5min)
+   - Lancer scrapers progressivement (`pnpm scrape:doctipharma --max=1000` pour test)
+   - Mobile : composant `<AffiliateButton>` à ajouter dans alternatives card (Phase suivante)
+   - Mobile : composant `<DrugInteractionBanner>` au scan (Phase suivante)
+   - Mobile : enregistrer Expo push token au signup → table push_subscriptions
+
+   **Validation** : tsc --noEmit mobile + api-server + scripts ✓, aucune régression.
+
 27. **Réorg dossier Supabase (task #111, 25/05/2026 nuit)** :
 
    **Avant** : 9 fichiers SQL en vrac dans `artifacts/helo/supabase/` avec 3 conventions différentes (`migration-*.sql`, `migration-lot17-*.sql`, `seed-*.sql`). 13 migrations MCP-appliquées non committées en local → drift code/DB possible.

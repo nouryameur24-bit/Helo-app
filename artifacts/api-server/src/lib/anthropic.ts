@@ -3,6 +3,7 @@ import type { Logger } from "pino";
 import { logger } from "./logger";
 import { emitMetric, mark } from "./metrics";
 import { alertAiError } from "./webhookAlerter";
+import { logClaudeApiCall } from "./apiCostTracker";
 
 // v4 SECURITY — Le fallback sur EXPO_PUBLIC_ANTHROPIC_API_KEY a été supprimé :
 // toute variable EXPO_PUBLIC_* est embarquée en clair dans le bundle mobile
@@ -112,6 +113,8 @@ export async function analyzeWithClaude(params: {
   trimester: 1 | 2 | 3 | "breastfeeding" | "baby";
   /** Logger requête pour émettre les métriques FinOps. */
   log?: Logger;
+  /** User id pour tracking coût Claude API par user (table api_usage). */
+  userId?: string | null;
 }): Promise<AiVerdict> {
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
@@ -156,11 +159,22 @@ export async function analyzeWithClaude(params: {
     throw err;
   }
 
+  const durationMs = t();
   emitMetric(log, "scan_ai_call", {
-    ms: t(),
+    ms: durationMs,
     model: MODEL,
     input_tokens: response.usage.input_tokens,
     output_tokens: response.usage.output_tokens,
+  });
+  // Persistance coût Claude API dans Supabase (non-fatal si échec)
+  void logClaudeApiCall({
+    userId: params.userId,
+    endpoint: "scan_ai_call",
+    model: MODEL,
+    inputTokens: response.usage.input_tokens,
+    outputTokens: response.usage.output_tokens,
+    requestId: response.id,
+    durationMs,
   });
 
   const textBlock = response.content.find((b) => b.type === "text");
@@ -299,6 +313,8 @@ export async function selectSafeAlternativesWithClaude(params: {
   isCosmetic: boolean;
   /** Logger requête pour émettre les métriques FinOps. */
   log?: Logger;
+  /** User id pour tracking coût Claude API par user (table api_usage). */
+  userId?: string | null;
 }): Promise<SniperResult> {
   const log = params.log ?? logger;
 
@@ -377,15 +393,27 @@ export async function selectSafeAlternativesWithClaude(params: {
   }
 
   // Helper to emit the ai_call metric in every exit path below.
-  const emitCall = (picked: number) =>
+  const emitCall = (picked: number) => {
+    const durationMs = t();
     emitMetric(log, "alternatives_ai_call", {
-      ms: t(),
+      ms: durationMs,
       model: MODEL,
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,
       candidates: params.candidates.length,
       picked,
     });
+    // Persistance coût Claude API dans Supabase (non-fatal si échec)
+    void logClaudeApiCall({
+      userId: params.userId,
+      endpoint: "alternatives_ai_call",
+      model: MODEL,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      requestId: response.id,
+      durationMs,
+    });
+  };
 
   const textBlock = response.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {

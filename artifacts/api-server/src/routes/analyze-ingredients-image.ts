@@ -29,6 +29,7 @@ import { z } from "zod/v4";
 import Anthropic from "@anthropic-ai/sdk";
 import { logger } from "../lib/logger";
 import { emitMetric, mark } from "../lib/metrics";
+import { logClaudeApiCall } from "../lib/apiCostTracker";
 import { requireAppSecret } from "../middlewares/appSecret";
 import { scanRateLimit } from "../middlewares/scanRateLimit";
 
@@ -196,11 +197,22 @@ router.post("/analyze-ingredients-image", scanRateLimit, requireAppSecret, async
     const textBlock = response.content.find((b) => b.type === "text");
     const rawOutput = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
 
+    const durationMs = t();
     emitMetric(req.log, "claude_vision_call", {
-      ms: t(),
+      ms: durationMs,
       model: MODEL,
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,
+    });
+    // Persistance coût Claude API dans Supabase (non-fatal)
+    void logClaudeApiCall({
+      userId: (req as { user?: { id?: string } }).user?.id ?? null,
+      endpoint: "claude_vision_call",
+      model: MODEL,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      requestId: response.id,
+      durationMs,
     });
 
     if (!rawOutput) {

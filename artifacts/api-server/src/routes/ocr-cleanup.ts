@@ -27,6 +27,7 @@ import { z } from "zod/v4";
 import Anthropic from "@anthropic-ai/sdk";
 import { logger } from "../lib/logger";
 import { emitMetric, mark } from "../lib/metrics";
+import { logClaudeApiCall } from "../lib/apiCostTracker";
 import { requireAppSecret } from "../middlewares/appSecret";
 import { scanRateLimit } from "../middlewares/scanRateLimit";
 
@@ -107,11 +108,22 @@ router.post("/ocr-cleanup", scanRateLimit, requireAppSecret, async (req, res) =>
     const textBlock = response.content.find((b) => b.type === "text");
     const cleaned = textBlock && textBlock.type === "text" ? textBlock.text.trim() : "";
 
+    const durationMs = t();
     emitMetric(req.log, "scan_ai_call", {
-      ms: t(),
+      ms: durationMs,
       model: MODEL,
       input_tokens: response.usage.input_tokens,
       output_tokens: response.usage.output_tokens,
+    });
+    // Persistance coût Claude API dans Supabase (non-fatal)
+    void logClaudeApiCall({
+      userId: (req as { user?: { id?: string } }).user?.id ?? null,
+      endpoint: "ocr_cleanup",
+      model: MODEL,
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      requestId: response.id,
+      durationMs,
     });
 
     if (!cleaned) {

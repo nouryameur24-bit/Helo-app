@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import {
+  Image,
   Modal,
   StyleSheet,
   TouchableOpacity,
@@ -23,6 +24,17 @@ interface GhostCaptureModalProps {
   barcode: string;
   onPhotograph: () => void;
   onDismiss: () => void;
+  /**
+   * Task #110 — Si le backend connaît le produit (OBF/OFF) mais pas sa
+   * composition, on affiche le nom/marque/photo + un message dédié au lieu du
+   * generic "produit inconnu". L'utilisatrice voit qu'on a fait notre part et
+   * sait précisément ce qui manque (les ingrédients).
+   */
+  partialInfo?: {
+    name: string | null;
+    brand: string | null;
+    imageUrl: string | null;
+  } | null;
 }
 
 export function GhostCaptureModal({
@@ -30,7 +42,9 @@ export function GhostCaptureModal({
   barcode: _barcode,
   onPhotograph,
   onDismiss,
+  partialInfo,
 }: GhostCaptureModalProps) {
+  const hasPartial = Boolean(partialInfo && (partialInfo.name || partialInfo.brand));
   const translateY = useSharedValue(400);
   const opacity = useSharedValue(0);
 
@@ -63,25 +77,47 @@ export function GhostCaptureModal({
         {/* Handle */}
         <View style={styles.handle} />
 
-        {/* Icon */}
+        {/* Icon ou Image produit */}
         <View style={styles.iconWrap}>
-          <View style={styles.iconCircle}>
-            <ThemedText style={styles.iconEmoji}>📸</ThemedText>
-          </View>
+          {hasPartial && partialInfo?.imageUrl ? (
+            <Image
+              source={{ uri: partialInfo.imageUrl }}
+              style={styles.productImage}
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <View style={styles.iconCircle}>
+              <ThemedText style={styles.iconEmoji}>📸</ThemedText>
+            </View>
+          )}
         </View>
 
         {/* Title */}
         <ThemedText variant="headlineMedium" style={styles.title}>
-          Aidez-nous à vérifier ce produit
+          {hasPartial ? 'Composition manquante' : 'Aidez-nous à vérifier ce produit'}
         </ThemedText>
 
         {/* Subtitle */}
-        <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
-          Ce produit n'est pas encore dans notre base.{'\n'}
-          Photographiez la composition et nous l'analyserons pour vous{' '}
-          <ThemedText variant="bodyMedium" style={styles.accentText}>et toute la communauté</ThemedText>
-          {' '}✨
-        </ThemedText>
+        {hasPartial ? (
+          <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
+            On a trouvé{' '}
+            <ThemedText variant="bodyMedium" style={styles.accentText}>
+              {partialInfo?.name ?? 'ton produit'}
+              {partialInfo?.brand ? ` (${partialInfo.brand})` : ''}
+            </ThemedText>
+            {'\n'}mais sa composition n'est pas encore connue.{'\n\n'}
+            Photographie les ingrédients et on l'analyse pour toi{' '}
+            <ThemedText variant="bodyMedium" style={styles.accentText}>et toute la communauté</ThemedText>
+            {' '}✨
+          </ThemedText>
+        ) : (
+          <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
+            Ce produit n'est pas encore dans notre base.{'\n'}
+            Photographiez la composition et nous l'analyserons pour vous{' '}
+            <ThemedText variant="bodyMedium" style={styles.accentText}>et toute la communauté</ThemedText>
+            {' '}✨
+          </ThemedText>
+        )}
 
         {/* Info row */}
         <View style={styles.infoRow}>
@@ -153,6 +189,12 @@ const styles = StyleSheet.create({
   },
   iconEmoji: {
     fontSize: 32,
+  },
+  productImage: {
+    width: 96,
+    height: 96,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.accentLight,
   },
   title: {
     textAlign: 'center',

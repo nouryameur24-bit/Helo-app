@@ -82,12 +82,14 @@ export default function VerdictScreen() {
     ghostBarcode: ghostBarcodeParam,
     ghostContribCount: ghostContribCountParam,
     pointsEarned: pointsEarnedParam,
+    firstContributor: firstContributorParam,
   } = useLocalSearchParams<{
     scanId: string;
     ghostThanks?: string;
     ghostBarcode?: string;
     ghostContribCount?: string;
     pointsEarned?: string;
+    firstContributor?: string;
   }>();
   const pointsEarned = (() => {
     if (!pointsEarnedParam) return 0;
@@ -104,9 +106,12 @@ export default function VerdictScreen() {
     // Audit fix : MAX 10 000 contributions affichables (sinon trompeur)
     return Number.isFinite(n) && n > 0 && n <= 10000 ? n : 0;
   })();
+  // Task #110 — Flag "1ère contributrice" pour badge ✨ dans le toast.
+  // Boolean strict — pas de valeur arbitraire pour empêcher manipulation URL.
+  const isFirstContrib = firstContributorParam === '1';
   const barcode = decodeURIComponent(scanId ?? '');
   const insets = useSafeAreaInsets();
-  const { loading, product, matches, verdict, error, notFound, scanBarcode, setDirectResult } = useScan();
+  const { loading, product, matches, verdict, error, notFound, partialMetadata, scanBarcode, setDirectResult } = useScan();
   const { isPremium, requirePremium } = usePremium();
   const { isOffline } = useOffline();
   // Lot 15B2 — back centralisé : si pas d'historique (deep-link, cold start),
@@ -153,14 +158,17 @@ export default function VerdictScreen() {
     if (ghostContribCount > 0) {
       setRewardToastVisible(true);
     } else {
-      // Hēlo Points task #107/108 — inclut +N ⭐ si points awardés via OCR review.
-      const baseMsg = "✨ Merci ! Tu viens d'aider la communauté Hēlo";
+      // Hēlo Points task #107/108 + #110 — inclut +N ⭐ si points awardés.
+      // Si 1ère contributrice → badge "👑 Première contributrice ! +N×2".
+      const baseMsg = isFirstContrib
+        ? "👑 Première contributrice ! Tu viens de découvrir ce produit pour toute la communauté Hēlo"
+        : "✨ Merci ! Tu viens d'aider la communauté Hēlo";
       setToastMessage(pointsEarned > 0 ? `+${pointsEarned} ⭐ ${baseMsg}` : baseMsg);
       setToastVisible(true);
       const t = setTimeout(() => setToastVisible(false), 4000);
       return () => clearTimeout(t);
     }
-  }, [ghostThanks, ghostContribCount, pointsEarned, loading]);
+  }, [ghostThanks, ghostContribCount, pointsEarned, isFirstContrib, loading]);
   const [phase, setPhase] = useState<Phase>(2);
   const [isOCRMode, setIsOCRMode] = useState(false);
   const [isPhotoMode, setIsPhotoMode] = useState(false);
@@ -478,7 +486,7 @@ export default function VerdictScreen() {
 
   // Lot 17-06 — Timeout > 10s : on n'attend plus, on affiche une erreur
   // claire pour permettre à l'utilisatrice de retry ou de revenir au scan.
-  if (scanTimedOut && (!verdict || !product) && !notFound) {
+  if (scanTimedOut && (!verdict || !product) && !notFound && !partialMetadata) {
     return (
       <VerdictErrorScreen
         error="Le scan prend trop de temps. Vérifie ta connexion et réessaie."
@@ -489,6 +497,47 @@ export default function VerdictScreen() {
   }
 
   if (loading) return <LoadingScreen />;
+
+  // Task #110 — Métadonnées partielles : produit connu mais sans INCI.
+  // Render GhostCaptureModal avec pre-fill (nom + marque + photo OBF/OFF).
+  // L'utilisatrice voit qu'on a fait notre part et que le manque est précis :
+  // on connaît son shampoo, il manque juste sa composition.
+  if (partialMetadata) {
+    return (
+      <View style={styles.root}>
+        <GhostCaptureModal
+          visible
+          barcode={partialMetadata.barcode}
+          partialInfo={{
+            name: partialMetadata.name,
+            brand: partialMetadata.brand,
+            imageUrl: partialMetadata.imageUrl,
+          }}
+          onPhotograph={() => {
+            track('partial_metadata_ghost_capture_started', {
+              source: partialMetadata.source,
+              has_name: Boolean(partialMetadata.name),
+            }).catch(() => {});
+            lastFailedBarcode.current = partialMetadata.barcode;
+            router.replace({
+              pathname: '/(tabs)/scan',
+              params: {
+                ghostBarcode: partialMetadata.barcode,
+                ghostMode: '1',
+                // Pre-fill du nom + marque côté ocr-review pour éviter une
+                // ressaisie manuelle (futur : à wirer dans ocr-review.tsx).
+                ghostName: partialMetadata.name ?? '',
+                ghostBrand: partialMetadata.brand ?? '',
+              },
+            });
+          }}
+          onDismiss={() => {
+            router.back();
+          }}
+        />
+      </View>
+    );
+  }
 
   if (error) {
     if (notFound) {

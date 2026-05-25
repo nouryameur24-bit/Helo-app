@@ -66,8 +66,24 @@ export interface ScanResponseDto {
   matches: ScanMatchDto[];
 }
 
+/**
+ * Task #110 — Metadata partielle remontée par le backend quand un product existe
+ * sur OBF/OFF mais sans liste INCI exploitable (composition manquante).
+ *
+ * Le mobile bascule alors sur le flow Ghost Capture en pré-remplissant le nom +
+ * la marque + la photo connus. Bien meilleur UX que "Produit non trouvé" sec.
+ */
+export interface PartialProductMetadata {
+  barcode: string;
+  name: string | null;
+  brand: string | null;
+  image_url: string | null;
+  source: string; // 'openfoodfacts' | 'openbeautyfacts' | ...
+}
+
 export type ScanError =
   | { kind: 'not_found' }
+  | { kind: 'metadata_only'; metadata: PartialProductMetadata; message?: string }
   | { kind: 'no_ingredients' }
   | { kind: 'rate_limited' }
   | { kind: 'unauthorized' }
@@ -136,7 +152,36 @@ export async function scanProductRemote(
       const data = (await response.json()) as ScanResponseDto;
       return { ok: true, data };
     }
-    if (response.status === 404) return { ok: false, error: { kind: 'not_found' } };
+    if (response.status === 404) {
+      // Task #110 — Distingue `product_not_found` (rien du tout) de
+      // `product_metadata_only` (nom/marque/photo connus mais pas d'INCI).
+      // Le second cas est précieux : on peut afficher "On a trouvé Nutella mais
+      // pas sa composition — prends une photo" plutôt qu'un dead-end.
+      try {
+        const body = (await response.json()) as {
+          error?: string;
+          partial_metadata?: PartialProductMetadata;
+          message?: string;
+        };
+        if (
+          body.error === 'product_metadata_only' &&
+          body.partial_metadata &&
+          typeof body.partial_metadata.barcode === 'string'
+        ) {
+          return {
+            ok: false,
+            error: {
+              kind: 'metadata_only',
+              metadata: body.partial_metadata,
+              message: body.message,
+            },
+          };
+        }
+      } catch {
+        /* parse fail → fallback below */
+      }
+      return { ok: false, error: { kind: 'not_found' } };
+    }
     if (response.status === 422) return { ok: false, error: { kind: 'no_ingredients' } };
     if (response.status === 401) return { ok: false, error: { kind: 'unauthorized' } };
     if (response.status === 429) return { ok: false, error: { kind: 'rate_limited' } };

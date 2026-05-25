@@ -27,7 +27,7 @@ import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme'
 import { incrementContributionCount } from '@/lib/contributions';
 import { useProfile } from '@/hooks/useProfile';
 import { matchIngredients, getVerdict, ghostCaptureSave } from '@/lib/productLookup';
-import { awardPoints, POINTS } from '@/lib/heloPoints';
+import { awardPoints, isFirstContributor, POINTS } from '@/lib/heloPoints';
 import { cleanOcrTextRemote, analyzeIngredientsWithClaudeVision } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
@@ -299,15 +299,43 @@ export default function OcrReviewScreen() {
       const productHasName = Boolean(
         product.name && product.name !== 'Produit' && product.name.trim().length > 2,
       );
-      const pointsSteps = ghostBarcode && userId
-        ? [
-            { amount: POINTS.SCAN_NEW_BARCODE, reason: 'scan_new_barcode' as const },
-            { amount: POINTS.PHOTO_INGREDIENTS, reason: 'photo_ingredients' as const },
-            ...(productHasName
-              ? [{ amount: POINTS.NAME_FILLED, reason: 'name_filled' as const }]
-              : []),
-          ]
-        : [];
+      const basePointsSteps: { amount: number; reason: 'scan_new_barcode' | 'photo_ingredients' | 'name_filled' }[] =
+        ghostBarcode && userId
+          ? [
+              { amount: POINTS.SCAN_NEW_BARCODE, reason: 'scan_new_barcode' as const },
+              { amount: POINTS.PHOTO_INGREDIENTS, reason: 'photo_ingredients' as const },
+              ...(productHasName
+                ? [{ amount: POINTS.NAME_FILLED, reason: 'name_filled' as const }]
+                : []),
+            ]
+          : [];
+      const baseTotal = basePointsSteps.reduce((acc, s) => acc + s.amount, 0);
+
+      // Task #110 — Détection 1ère contributrice + bonus ×2.
+      // On AWAIT le check AVANT la navigation (~50-200ms DB roundtrip) pour
+      // afficher le bon `pointsEarned` dans le toast verdict. La latence est
+      // négligeable pour l'utilisatrice (déjà 800ms d'OCR + matching avant ça)
+      // et l'expérience "+70 ⭐ ✨ Première contributrice !" vaut largement
+      // les 100ms supplémentaires. Si le check fail → safe default (pas bonus).
+      let firstContributor = false;
+      if (ghostBarcode && userId && baseTotal > 0) {
+        firstContributor = await isFirstContributor(ghostBarcode, userId).catch(
+          (err) => {
+            logError('ocrReview.isFirstContributor', err);
+            return false;
+          },
+        );
+      }
+
+      // Multiplier ×2 implémenté via un award additionnel `first_contributor_bonus`
+      // d'un montant égal au total de base. Permet de tracker séparément le bonus
+      // dans point_transactions (ledger lisible) + facilite analytics.
+      const pointsSteps: {
+        amount: number;
+        reason: 'scan_new_barcode' | 'photo_ingredients' | 'name_filled' | 'first_contributor_bonus';
+      }[] = firstContributor
+        ? [...basePointsSteps, { amount: baseTotal, reason: 'first_contributor_bonus' as const }]
+        : basePointsSteps;
       const pointsToEarn = pointsSteps.reduce((acc, s) => acc + s.amount, 0);
 
       // Navigate to verdict with ocr_ prefix; pass ghostThanks=1 + the original
@@ -319,8 +347,9 @@ export default function OcrReviewScreen() {
           ? `&ghostContribCount=${newContribCount}`
           : '';
         const pointsParam = pointsToEarn > 0 ? `&pointsEarned=${pointsToEarn}` : '';
+        const firstParam = firstContributor ? '&firstContributor=1' : '';
         router.replace(
-          `${verdictPath}?ghostThanks=1&ghostBarcode=${encodeURIComponent(ghostBarcode)}${contribParam}${pointsParam}`,
+          `${verdictPath}?ghostThanks=1&ghostBarcode=${encodeURIComponent(ghostBarcode)}${contribParam}${pointsParam}${firstParam}`,
         );
       } else {
         router.replace(verdictPath);

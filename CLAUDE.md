@@ -428,6 +428,26 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
 18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
 
+26. **partial_metadata mobile handler + isFirstContributor multiplier ×2 (task #110, 25/05/2026 nuit fin)** :
+
+   **isFirstContributor wiring** (`app/ocr-review.tsx`) :
+   - Pre-navigation `await isFirstContributor(barcode, userId)` (~50-200ms DB roundtrip — négligeable vs ~800ms OCR + matching avant ça)
+   - Si TRUE → ajoute un award `first_contributor_bonus` de montant `baseTotal` (= multiplier ×2 effectif)
+   - URL param `firstContributor=1` passé à verdict screen → toast affiche `+70 ⭐ 👑 Première contributrice ! Tu viens de découvrir ce produit pour toute la communauté Hēlo`
+   - Le bonus est tracké comme transaction séparée dans `point_transactions` (ledger lisible)
+   - Safe default `false` si check fail (pas de bonus erroné)
+
+   **partial_metadata mobile handler** :
+   - `lib/api.ts` : nouveau type `PartialProductMetadata` + variant `metadata_only` dans `ScanError`. Parse 404 body cherchant `error: "product_metadata_only"` (backend retourne ça quand OBF/OFF a le produit mais pas d'INCI exploitable).
+   - `hooks/useScan.ts` : nouveau champ `partialMetadata: PartialProductInfo | null` dans `ScanState`. Quand backend retourne `metadata_only`, state se remplit avec barcode + name + brand + imageUrl + source.
+   - `components/verdict/GhostCaptureModal.tsx` : nouvelle prop `partialInfo?: { name; brand; imageUrl }`. Si fourni, affiche la photo du produit OBF + titre "Composition manquante" + sous-titre "On a trouvé Nutella mais sa composition n'est pas encore connue".
+   - `app/verdict/[scanId].tsx` : nouveau render path AVANT le check error — quand `partialMetadata` est set, render `<GhostCaptureModal partialInfo={...} />` avec routing vers scan tab pre-fillé (`ghostBarcode/ghostName/ghostBrand` URL params).
+   - Analytics : 2 nouveaux events typés `scan_partial_metadata` + `partial_metadata_ghost_capture_started`.
+
+   **À wirer plus tard** : `scan.tsx` + `ocr-review.tsx` lecture des `ghostName/ghostBrand` URL params pour pre-fill input. Aujourd'hui le user retape le nom dans OCR review (mineur, ~3s).
+
+   **Validation** : `tsc --noEmit` mobile + api-server ✓, 206/207 tests pass (baseline).
+
 25. **Audit complet codebase 25/05/2026 (task #109)** : Pass de qualité full-stack post-Hēlo Points. 4 agents parallèles → 7 critiques + 5 importants identifiés. Tous patchés (mobile + DB + api-server) :
 
    **Mobile fixes** :
@@ -543,10 +563,15 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 - Trade-off documenté : verdict phase race intentionnel (guard double-fetch)
 - Tests 206/207 ✓, typecheck mobile + api-server ✓
 
+🎁 Magic moment Ghost Capture livré (task #110) :
+- isFirstContributor multiplier ×2 wiré dans ocr-review.tsx (await pre-navigation)
+- Toast verdict affiche "+70 ⭐ 👑 Première contributrice !" quand applicable
+- partial_metadata handler mobile : verdict screen render `GhostCaptureModal` enrichi avec nom/marque/photo OBF/OFF quand backend retourne metadata_only
+- Plus de dead-end "produit non trouvé" pour les 100k+ produits OBF sans INCI
+
 🛏 Prochaine session :
-- (toi 1 clic) Republish Replit pour activer partial_metadata + apiCostTracker
-- (moi 30 min) partial_metadata mobile handler (refactor productLookup)
-- (moi 30 min) Wirer isFirstContributor multiplier ×2 dans ocr-review.tsx
+- (toi 1 clic) Republish Replit pour activer partial_metadata backend + apiCostTracker
+- (moi 30 min) Wire ghostName/ghostBrand URL params dans scan.tsx → ocr-review.tsx pour pre-fill input name (nice-to-have UX)
 - Test end-to-end depuis iPhone après tout ça
 - TestFlight prep (Apple Dev $99 + EAS build prod + App Store assets)*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

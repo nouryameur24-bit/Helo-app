@@ -45,6 +45,21 @@ import { scanCacheKey, STORAGE_KEYS } from '@/lib/storageKeys';
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+/**
+ * Task #110 — État "metadata_only" : le backend connaît le produit (nom/marque
+ * via OFF/OBF) mais n'a pas sa liste INCI. Le mobile peut alors afficher un
+ * empty state "On a trouvé X mais pas sa composition — prends une photo" avec
+ * CTA Ghost Capture pré-rempli.
+ */
+export interface PartialProductInfo {
+  barcode: string;
+  name: string | null;
+  brand: string | null;
+  imageUrl: string | null;
+  source: string;
+  message?: string;
+}
+
 interface ScanState {
   loading: boolean;
   product: ProductData | null;
@@ -53,6 +68,8 @@ interface ScanState {
   error: string | null;
   notFound: boolean;
   fromCache: boolean;
+  /** Task #110 — Set quand backend retourne `metadata_only` (404 + partial info). */
+  partialMetadata: PartialProductInfo | null;
 }
 
 interface UseScanReturn extends ScanState {
@@ -176,10 +193,11 @@ export function useScan(): UseScanReturn {
     error: null,
     notFound: false,
     fromCache: false,
+    partialMetadata: null,
   });
 
   const scanBarcode = useCallback(async (barcode: string, phase: Phase = 2, isOffline = false) => {
-    setState((s) => ({ ...s, loading: true, error: null, fromCache: false }));
+    setState((s) => ({ ...s, loading: true, error: null, fromCache: false, partialMetadata: null }));
     // Note v4 Lot 11 → wizard PostHog : on émet `scan_started` UNIQUEMENT côté
     // UI (app/(tabs)/scan.tsx) qui a les meilleures metadata (barcode +
     // is_premium + is_offline). Émettre ici causait du double-count.
@@ -225,6 +243,7 @@ export function useScan(): UseScanReturn {
             error: null,
             notFound: false,
             fromCache: true,
+            partialMetadata: null,
           });
           track('scan_completed', {
             source: 'offline_cache',
@@ -264,6 +283,7 @@ export function useScan(): UseScanReturn {
             error: null,
             notFound: false,
             fromCache: true,
+            partialMetadata: null,
           });
           track('scan_completed', {
             source: 'offline_lru',
@@ -296,6 +316,7 @@ export function useScan(): UseScanReturn {
           error: null,
           notFound: false,
           fromCache: true,
+          partialMetadata: null,
         });
         track('scan_completed', {
           source: 'cache',
@@ -325,6 +346,7 @@ export function useScan(): UseScanReturn {
             error: null,
             notFound: false,
             fromCache: false,
+            partialMetadata: null,
           });
           track('scan_completed', {
             source: 'backend',
@@ -343,7 +365,37 @@ export function useScan(): UseScanReturn {
             loading: false,
             notFound: true,
             error: 'Produit non trouvé. Vous pouvez le soumettre à la communauté.',
+            partialMetadata: null,
           }));
+          return;
+        }
+        // Task #110 — Métadonnées partielles connues (nom/marque/photo) mais
+        // pas d'INCI. Mode "Ghost Capture pré-rempli" : on affiche le produit
+        // tel quel + CTA "Prends une photo des ingrédients".
+        if (remote.error.kind === 'metadata_only') {
+          // Capture les champs AVANT le callback setState — TypeScript perd
+          // le narrowing du discriminated union dans la closure du setState.
+          const meta = remote.error.metadata;
+          const partialMessage = remote.error.message;
+          setState((s) => ({
+            ...s,
+            loading: false,
+            notFound: false, // pas "introuvable" — on a juste pas la composition
+            error: null,
+            partialMetadata: {
+              barcode: meta.barcode,
+              name: meta.name,
+              brand: meta.brand,
+              imageUrl: meta.image_url,
+              source: meta.source,
+              message: partialMessage,
+            },
+          }));
+          track('scan_partial_metadata', {
+            source: meta.source,
+            has_name: Boolean(meta.name),
+            has_brand: Boolean(meta.brand),
+          }).catch(() => {});
           return;
         }
         if (remote.error.kind === 'rate_limited') {
@@ -380,6 +432,7 @@ export function useScan(): UseScanReturn {
           loading: false,
           notFound: true,
           error: 'Produit non trouvé. Vous pouvez le soumettre à la communauté.',
+          partialMetadata: null,
         }));
         return;
       }
@@ -395,6 +448,7 @@ export function useScan(): UseScanReturn {
         error: null,
         notFound: false,
         fromCache: false,
+        partialMetadata: null,
       });
       track('scan_completed', {
         source: 'legacy_local',
@@ -420,6 +474,7 @@ export function useScan(): UseScanReturn {
       error: null,
       notFound: false,
       fromCache: false,
+      partialMetadata: null,
     });
   }, []);
 
@@ -433,6 +488,7 @@ export function useScan(): UseScanReturn {
         error: null,
         notFound: false,
         fromCache: false,
+        partialMetadata: null,
       });
     },
     [],

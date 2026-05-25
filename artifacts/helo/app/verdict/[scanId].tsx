@@ -812,6 +812,29 @@ export default function VerdictScreen() {
           </View>
         )}
 
+        {/* ── Lot 18-06 — Badge "X mamas ont contribué" ──
+            Affiché UNIQUEMENT pour les produits issus du ghost capture
+            communautaire. Construit la confiance dans le verdict en
+            montrant que d'autres utilisatrices ont déjà scanné ce produit. */}
+        {product?.source === 'community' && product.communityContributionCount && product.communityContributionCount > 0 && (
+          <View style={communityBadgeStyles.wrap}>
+            <View style={communityBadgeStyles.iconWrap}>
+              <ThemedText style={{ fontSize: 14 }}>💛</ThemedText>
+            </View>
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="labelLarge" color="textPrimary">
+                {product.communityContributionCount === 1
+                  ? '1 maman a contribué'
+                  : `${product.communityContributionCount} mamans ont contribué`}
+              </ThemedText>
+              <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
+                Verdict construit grâce à la communauté Hēlo
+                {product.communityContributionCount >= 5 ? ' · validé' : ' · en cours de validation'}
+              </ThemedText>
+            </View>
+          </View>
+        )}
+
         {/* ── PHOTO IDENTIFICATION BANNER ── */}
         {product?.isPhotoIdentified && (
           <View style={styles.photoBanner}>
@@ -954,6 +977,31 @@ export default function VerdictScreen() {
     </View>
   );
 }
+
+// Lot 18-06 — Badge "X mamas ont contribué" pour les produits community.
+const communityBadgeStyles = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.accentLight,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.accent + '33',
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 // Lot 15B2 — Styles du header sticky du verdict screen.
 // Positionné absolute + zIndex haut pour rester au-dessus de tous les

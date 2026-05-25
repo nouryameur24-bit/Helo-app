@@ -71,6 +71,11 @@ export interface ProductData {
   ecoscore?: string | null;
   source?: 'openfoodfacts' | 'openbeautyfacts' | 'manual' | 'community' | 'helo';
   isPhotoIdentified?: boolean;
+  /** Lot 18-06 — Nombre de contributions communautaires sur ce produit
+   *  (scan_count metadata). Affiché en badge "X mamas ont contribué"
+   *  sur le verdict screen. Présent UNIQUEMENT pour les produits issus
+   *  d'un ghost capture (source='community'). */
+  communityContributionCount?: number;
 }
 
 export interface MatchResult {

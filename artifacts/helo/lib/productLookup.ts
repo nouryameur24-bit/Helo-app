@@ -172,6 +172,8 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
     }
 
     if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → ✓ found "${data.name}" (${ingredientsList.length} ingredients)`);
+    // Lot 18-06 — Expose scan_count pour le badge "X mamas contribué"
+    const scanCount = typeof meta.scan_count === 'number' ? meta.scan_count : undefined;
     return {
       name: data.name ?? 'Produit communautaire',
       brand: undefined,
@@ -179,6 +181,7 @@ async function checkCommunitySubmissions(barcode: string): Promise<ProductData |
       ingredientsList,
       ingredientsRaw: meta.ingredients_raw,
       source: 'community' as ProductData['source'],
+      communityContributionCount: scanCount,
     };
   } catch (e) {
     if (__DEV__) console.warn(`[Hēlo cascade] COMMUNITY → exception: ${e instanceof Error ? e.message : String(e)}`);

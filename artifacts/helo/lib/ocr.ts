@@ -14,8 +14,15 @@ import { RateLimitError, extractFunctionStatus } from '@/lib/errors';
 /**
  * Sends a base64-encoded image to the OCR edge function and returns raw text.
  * @param base64 — raw base64 string (no data: prefix)
+ *
+ * Lot 18-05 : on retourne aussi la confidence Google Vision (moyenne sur les
+ * pages) pour permettre à l'UI d'afficher un badge "OCR partiellement fiable"
+ * quand confidence < 0.85. Schéma backward-compatible : la fonction renvoie
+ * encore le `text` comme avant, mais propose `confidence` en bonus.
  */
-export async function processOCRImage(base64: string): Promise<string> {
+export async function processOCRImage(
+  base64: string,
+): Promise<{ text: string; confidence?: number }> {
   if (!isSupabaseConfigured) {
     throw new Error(
       'NO_SERVICE: La fonction OCR nécessite une connexion Supabase configurée.',
@@ -35,16 +42,35 @@ export async function processOCRImage(base64: string): Promise<string> {
     throw new Error(`OCR edge function error: ${error.message}`);
   }
 
+  type VisionPage = { confidence?: number };
   type VisionData = {
-    responses?: Array<{ fullTextAnnotation?: { text?: string } }>;
+    responses?: Array<{
+      fullTextAnnotation?: {
+        text?: string;
+        pages?: VisionPage[];
+      };
+    }>;
   };
-  const fullText = (data as VisionData)?.responses?.[0]?.fullTextAnnotation?.text ?? '';
+  const response = (data as VisionData)?.responses?.[0];
+  const fullText = response?.fullTextAnnotation?.text ?? '';
 
   if (!fullText.trim()) {
     throw new Error('NO_TEXT_DETECTED');
   }
 
-  return fullText;
+  // ── Lot 18-05 : extract confidence moyenne ────────────────────────────────
+  // Google Vision retourne une confidence par page (souvent une seule page).
+  // On moyenne pour une heuristique simple. Null si Google ne fournit pas
+  // (selon versions API), l'UI tolère l'absence.
+  const pages = response?.fullTextAnnotation?.pages ?? [];
+  const confidences = pages
+    .map((p) => p.confidence)
+    .filter((c): c is number => typeof c === 'number');
+  const avgConfidence = confidences.length > 0
+    ? confidences.reduce((a, b) => a + b, 0) / confidences.length
+    : undefined;
+
+  return { text: fullText, confidence: avgConfidence };
 }
 
 // ─── Text cleanup ─────────────────────────────────────────────────────────────

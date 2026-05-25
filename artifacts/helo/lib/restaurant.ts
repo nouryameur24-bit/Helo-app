@@ -299,7 +299,7 @@ export async function analyzeMenu(imageUris: string[]): Promise<MenuAnalysis> {
       base64 = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
-      const text = await processOCRImage(base64);
+      const { text } = await processOCRImage(base64);
       allTexts.push(text);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

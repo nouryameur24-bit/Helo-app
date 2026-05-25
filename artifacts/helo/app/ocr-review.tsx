@@ -5,8 +5,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -171,7 +173,7 @@ export default function OcrReviewScreen() {
       }
 
       // ── Fallback : Google Vision OCR + AI cleanup classique ──────────────
-      const raw = await processOCRImage(b64);
+      const { text: raw, confidence } = await processOCRImage(b64);
       const locallyCleaned = cleanOCRText(raw);
 
       // v4 Lot 10 — AI cleanup : Claude relit le texte OCR pour corriger
@@ -183,7 +185,16 @@ export default function OcrReviewScreen() {
       const ingredients = parseINCI(aiCleaned);
       setOcrText(aiCleaned);
       setParsedCount(ingredients.length);
-      if (ingredients.length < 3) {
+
+      // ── Lot 18-05 : badge confidence si OCR pas fiable ─────────────────
+      // Si Google Vision retourne une confiance < 85%, on prévient l'user
+      // de vérifier le texte. Évite que des typos passent inaperçus.
+      if (confidence !== undefined && confidence < 0.85 && ingredients.length >= 3) {
+        const pct = Math.round(confidence * 100);
+        setOcrWarning(
+          `Confiance de lecture ${pct}% · vérifie les ingrédients ci-dessus avant d'analyser.`,
+        );
+      } else if (ingredients.length < 3) {
         setOcrWarning(
           `Seuls ${ingredients.length} ingrédient${ingredients.length > 1 ? 's' : ''} détecté${ingredients.length > 1 ? 's' : ''}. Vous pouvez corriger le texte ci-dessus.`,
         );
@@ -374,7 +385,57 @@ export default function OcrReviewScreen() {
           </View>
         )}
 
-        {!ocrLoading && ocrWarning && (
+        {/* Lot 18-07 — Empty state explicite quand 0 ingrédient détecté.
+            Avant : juste un WarningCard discret + textarea vide → user stranded
+            sans savoir quoi faire. Maintenant : carte prominente avec 2 CTA
+            clairs (reprendre photo / saisir à la main). */}
+        {!ocrLoading && parsedCount === 0 && (
+          <View style={emptyOcrStyles.card}>
+            <ThemedText style={emptyOcrStyles.emoji}>📷</ThemedText>
+            <ThemedText variant="headlineMedium" color="textPrimary" style={emptyOcrStyles.title}>
+              Aucun ingrédient détecté
+            </ThemedText>
+            <ThemedText variant="bodyMedium" color="textSecondary" style={emptyOcrStyles.subtitle}>
+              La photo est peut-être floue ou trop sombre. Tu peux reprendre une photo plus claire ou saisir la liste à la main.
+            </ThemedText>
+            <View style={emptyOcrStyles.actions}>
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  router.back();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Reprendre la photo"
+                style={({ pressed }) => [
+                  emptyOcrStyles.primaryBtn,
+                  { opacity: pressed ? 0.88 : 1 },
+                ]}
+              >
+                <Feather name="camera" size={16} color="#FFFFFF" />
+                <ThemedText style={emptyOcrStyles.primaryBtnText}>Reprendre une photo</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  // Le user peut juste cliquer sur le textarea ci-dessous et taper.
+                  // On scroll au textarea + clear le warning pour ne pas distraire.
+                  Haptics.selectionAsync().catch(() => {});
+                  setOcrWarning(null);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Saisir manuellement"
+                style={({ pressed }) => [
+                  emptyOcrStyles.secondaryBtn,
+                  { opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <Feather name="edit-3" size={16} color={Colors.accentDark} />
+                <ThemedText style={emptyOcrStyles.secondaryBtnText}>Saisir à la main</ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {!ocrLoading && parsedCount !== 0 && ocrWarning && (
           <WarningCard message={ocrWarning} onRetry={runOCR} />
         )}
 
@@ -405,9 +466,27 @@ export default function OcrReviewScreen() {
           </ThemedText>
         </View>
 
-        {/* Category */}
+        {/* Category — Lot 18-09 : label avec tooltip explicatif (i) */}
         <View style={styles.fieldGroup}>
-          <ThemedText variant="labelLarge" style={styles.fieldLabel}>Catégorie</ThemedText>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <ThemedText variant="labelLarge" style={styles.fieldLabel}>Catégorie</ThemedText>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                Alert.alert(
+                  'Pourquoi choisir une catégorie ?',
+                  "Le verdict peut différer selon l'usage. Exemple : le parabène est toléré dans une crème cosmétique appliquée localement, mais déconseillé dans un soin oral ou alimentaire.\n\nChoisis la catégorie correspondante pour que l'analyse Hēlo soit pertinente.",
+                  [{ text: 'J\'ai compris', style: 'default' }],
+                );
+              }}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Pourquoi choisir une catégorie ?"
+              style={{ padding: 2 }}
+            >
+              <Feather name="info" size={14} color={Colors.textTertiary} />
+            </Pressable>
+          </View>
           <CategoryPicker selected={category} onChange={setCategory} />
         </View>
 
@@ -516,5 +595,69 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.borderLight,
     ...Shadows.medium,
+  },
+});
+
+// Lot 18-07 — Empty state OCR fail (0 ingrédient détecté).
+const emptyOcrStyles = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.cautionLight ?? '#FFF4E5',
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: '#F5D9A3',
+  },
+  emoji: {
+    fontSize: 36,
+    lineHeight: 42,
+  },
+  title: {
+    textAlign: 'center',
+  },
+  subtitle: {
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 320,
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  primaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.accentDark,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radius.full,
+  },
+  primaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  secondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'transparent',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.accentDark,
+  },
+  secondaryBtnText: {
+    color: Colors.accentDark,
+    fontSize: 13,
+    fontWeight: '700',
   },
 });

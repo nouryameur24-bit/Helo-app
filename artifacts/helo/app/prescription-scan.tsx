@@ -91,7 +91,7 @@ export default function PrescriptionScanScreen() {
       const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.85 });
       if (!photo?.base64) throw new Error('NO_PHOTO');
 
-      const ocrText = await processOCRImage(photo.base64);
+      const { text: ocrText } = await processOCRImage(photo.base64);
       const medications = extractMedications(ocrText);
 
       const isBF = await getBreastfeedingMode();

@@ -168,22 +168,26 @@ Helo-app/                                # repo root
 - **17-05** Seed 50 plantes médicinales CRAT (curcuma, gingembre, réglisse, sauge…)
 - **17-06** Timeout safeguard 10s sur verdict screen — plus de spinner infini
 - **17-07** Groupement ingrédients par catégorie (allergènes/additifs/colorants…)
-- **17-08** Table alias 150 E-numbers (E951 → Aspartame)
+- **17-08** Map client-side alias 150 E-numbers (E951 → Aspartame) dans `lib/eNumberAliases.ts` — **pas de table DB**, lookup en mémoire via `resolveENumber()`
 - **17-09** RappelConso recall pour TOUS les users (gate premium retiré)
 
-### 🚧 Platform Leader (Lot 19) — EN COURS (7/34 tâches livrées)
+### 🚧 Platform Leader (Lot 19) — EN COURS (7/34 livrés + 2 PRIO terminés 25/05/2026)
 **Enrichissement DB livré via accès Supabase MCP direct :**
 - **19-A1** Pack ingrédients critiques (+161 entrées) : 60 huiles essentielles CRAT (Tea Tree danger, Lavande safe T2-T3...) + 68 food (phytoestrogènes, théobromine, tyramine, mercures par espèce, fromages lait cru, etc.) + 30 trendy cosmétiques 2024-2025 (Centella, Mugwort danger, Snail mucin, peptides, Bakuchiol...)
-- **19-B3** Top 106 plats restaurants FR (tartares, sushi, fromages lait cru, vins, plats classiques) avec barcodes `dish_*` et source `helo_restaurant`
-- **19-C1** Pre-compute `overall_risk` pour 97 421 produits : 32 645 danger + 51 898 caution + 12 815 safe (basé sur pregnancy_risks + patterns cosmetic). Restent 528k unknown à raffiner via Claude Mass Enrichment.
-- **19-D1** Tags pregnancy-specific sur 92 057 aliments (listeria 7589, toxo 3196, mercure 5429, alcool 21974, caféine 2088, sucre 45239) — colonne `products.pregnancy_risks JSONB`
-- **19-E1** Système alternatives : 1 505 produits risqués (984 cosmetic + 521 food) avec 3 safe alternatives chacun = **4 512 entrées product_alternatives**. Ranking pharmacy brands first (Mustela, Avène, La Roche-Posay...) puis source curated puis image dispo.
+- **19-B3** Top 106 plats restaurants FR (source `helo_restaurant`, barcodes `dish_*`)
+- **19-C1** Pre-compute `overall_risk` pour **626 019 produits** : ~31k danger + ~50k caution + ~14k safe + ~531k unknown. Distribution réaliste : 87% unknown pour la longue traîne OFF (composition partielle), 13% qualifiables.
+- **19-D1** Tags pregnancy-specific sur ~92 100 aliments — colonne `products.pregnancy_risks JSONB`
+- **19-E1** Système alternatives : 1 505 produits risqués (984 cosmetic + 521 food) avec 3 safe alternatives chacun = **4 512 entrées product_alternatives**. Ranking pharmacy brands first (Mustela, Avène, La Roche-Posay...). ⚠️ Schema sans `intended_use` ni `quality_score` → cohérence sous-usage non vérifiée (cf. 19-E1b).
 - **19-J3** Schema profiles backend sync : colonnes allergies, dietary_restrictions, cosmetic_sensitivities, medical_conditions + trigger preferences_updated_at
 - **19-L** 8 analytics views (v_ingredients_health, v_products_health, v_user_activity, v_top_scanned_products, v_waitlist_growth, v_community_health, v_top_unknown_products, v_pregnancy_tags_stats)
 
-**À suivre (encore ~28 tâches)** : Claude Mass Enrichment des 5313 ingredients, OBF import, brands pharmacie, BDPM, pgvector fuzzy, photos pictogrammes, AI visual shelf, affiliate links, sage-femme workflow, etc.
+**✅ Fix data hygiene PRIO 0+1 (25/05/2026)** :
+- Audit 609k produits `source=NULL` → identifiés comme bulk dump OFF des 22-23 mai (timing confirmé). Backfill `source='openfoodfacts'` pour 615 695 produits + 20 produits curated démo tagués `source='helo'`. **100% des produits ont maintenant une source attribuée.**
+- Distribution finale sources : openfoodfacts 615 695, helo_v6 6 348, helo_v5_god_mode 1 616, helo_v4_ultimate 1 316, openbeautyfacts 918, helo_restaurant 106, helo 20.
 
-**⚠️ Tâche 19-E1b à faire en priorité** : Cohérence alternatives via intended_use. L'algo phase 1 (SQL pur) propose des alternatives INCOHÉRENTES par sous-usage (déodorant → gel lavant). Solution : Claude classifie chaque produit dans une taxonomie fermée (40 cosmétiques + 30 food). Coût ~$25 pour 25k curated. Avant wiring mobile des alternatives.
+**Ingredients DB réelle (vérifié MCP)** : 5 313 entrées (medication 1900 / cosmetic 1888 / food 1525). 100% ont source + risk_levels. **1 260 (24%) sans description_fr complète** → cible 19-A2 re-scopé (~$3-5 Claude).
+
+**À suivre (encore ~28 tâches)** : 19-A2 enrichment ciblé 1260 descriptions, 19-E1b schema + intended_use classifier (~$5), OBF import élargi, brands pharmacie, BDPM, pgvector fuzzy, photos pictogrammes, AI visual shelf, affiliate links, sage-femme workflow, etc.
 
 ### 💰 Budget Claude API estimé pour finir Lot 19
 - **One-shot data layer setup** :
@@ -443,5 +447,5 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated : MCPs setup (Supabase + GitHub + Sentry + PostHog via REST) + Sentry DSN explicite dans .env. Org helo-54, project react-native (EU). 3 MCPs natifs Claude Code + PostHog REST fallback. Lot 19 phase 2 toujours 7/34.*
+*Last updated 25/05/2026 : MCPs setup complet (Supabase + GitHub + Sentry + PostHog via REST), Sentry projet helo-54/react-native wiré (REACT-NATIVE-1 vérifié). DB audit: 626 019 produits, 100% sourcés (fix backfill 609k OFF dump), 5 313 ingredients réels (pas 5152). PRIOs 0+1 DB hygiene complétées. À faire: 19-A2 (1260 descriptions, ~$3-5) puis 19-E1b (alternatives intended_use, ~$5).*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

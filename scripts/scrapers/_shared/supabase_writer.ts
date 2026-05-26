@@ -59,7 +59,10 @@ export class SupabaseWriter {
       source: p.source,
       intended_use: p.intended_use,
       quality_score: p.quality_score,
-      metadata: { ...p.metadata, source_url: p.source_url },
+      // Task #121 anti-traceability : on N'inclut PAS source_url dans metadata
+      // pour ne pas exposer l'origine. Si besoin re-scrape, on a quand même
+      // les sitemap URLs en mémoire des scrapers.
+      metadata: p.metadata,
     }));
 
     const errors: string[] = [];

@@ -1,54 +1,58 @@
 /**
  * scrapers/_shared/scraper_base.ts
  *
- * Classe abstraite parente de tous les scrapers. Implémente la boucle
- * standard (discover URLs → dedup → fetch → extract → insert) et laisse
- * chaque scraper sous-classe implémenter `discoverProductUrls` et
- * éventuellement personnaliser `extractProduct`.
+ * Classe abstraite parente. Refactor Firecrawl :
+ *   - Firecrawl pour fetch + markdown conversion + anti-bot bypass
+ *   - Claude pour extraction structured depuis markdown (5x moins cher qu'HTML)
+ *   - Supabase pour insert avec dedup EAN
+ *
+ * Le sitemap discovery reste en HTTP simple via http_runner (sitemaps sont
+ * publics et pas anti-bot).
  */
 import Anthropic from '@anthropic-ai/sdk';
 
 import { extractWithClaude } from './claude_extractor.js';
+import { FirecrawlClient } from './firecrawl_client.js';
 import { HttpRunner } from './http_runner.js';
 import { SupabaseWriter } from './supabase_writer.js';
 import type { ScrapedProduct, ScraperRunStats, ScrapeContext } from './types.js';
 
 export abstract class BaseScraper {
   abstract readonly name: string;
-  abstract readonly sourceKey: string; // ex: 'scraped_doctipharma'
-  abstract readonly qualityScore: number; // 70-90
+  /**
+   * Source key DB. CONVENTION CHANGED (task #121) :
+   * - 'helo_cosmetic_db_v1' pour cosmétiques (au lieu de 'scraped_pharma_gdd')
+   * - 'helo_food_db_v1' pour food drives
+   * - 'helo_medication_db_v1' pour pharmacie médicaments
+   * Masque l'origine du scraping côté DB (anti-traceability).
+   */
+  abstract readonly sourceKey: string;
+  abstract readonly qualityScore: number;
   abstract readonly defaultCategory: 'cosmetic' | 'food' | 'medication';
 
-  protected http: HttpRunner;
+  protected http: HttpRunner; // pour sitemap discovery uniquement
+  protected firecrawl: FirecrawlClient; // pour fetch pages produit
   protected writer: SupabaseWriter;
   protected claude: Anthropic;
   protected ctx: ScrapeContext;
 
   constructor(ctx: ScrapeContext) {
     this.ctx = ctx;
-    this.http = new HttpRunner({ rateLimitPerSec: ctx.rateLimitPerSec ?? 1.5 });
+    this.http = new HttpRunner({ rateLimitPerSec: 1.5 });
+    this.firecrawl = new FirecrawlClient({
+      apiKey: ctx.firecrawlKey,
+      stealthProxy: ctx.firecrawlStealth ?? false,
+    });
     this.writer = new SupabaseWriter(ctx.supabaseUrl, ctx.supabaseServiceRoleKey);
     this.claude = new Anthropic({ apiKey: ctx.anthropicKey });
   }
 
-  /**
-   * Découvre la liste d'URLs produit à scraper. Implémenté par chaque
-   * site (souvent via sitemap.xml ou crawler de catégories).
-   */
   abstract discoverProductUrls(): Promise<string[]>;
 
-  /**
-   * Extrait éventuellement le barcode d'une URL avant de fetch la page,
-   * pour pouvoir filtrer les EAN déjà connus → économise des appels Claude.
-   * Retourner null si on ne peut pas, le scraper fetchra la page complète.
-   */
   protected extractBarcodeFromUrl(_url: string): string | null {
     return null;
   }
 
-  /**
-   * Main loop. Renvoie les stats du run.
-   */
   async run(): Promise<ScraperRunStats> {
     const t0 = Date.now();
     const stats: ScraperRunStats = {
@@ -62,7 +66,7 @@ export abstract class BaseScraper {
       estimated_cost_usd: 0,
     };
 
-    console.log(`[${this.name}] Starting...`);
+    console.log(`[${this.name}] Starting (Firecrawl-powered)...`);
 
     let urls = await this.discoverProductUrls();
     console.log(`[${this.name}] Discovered ${urls.length} product URLs`);
@@ -78,27 +82,30 @@ export abstract class BaseScraper {
     for (const url of urls) {
       stats.pages_visited++;
 
-      // Quick pre-check : si on peut extraire le barcode depuis l'URL et qu'il
-      // est déjà en DB → skip (économise un appel Claude)
+      // Pre-check : si on peut extraire le barcode de l'URL et il est déjà en DB → skip
       const earlyBarcode = this.extractBarcodeFromUrl(url);
       if (earlyBarcode && (await this.writer.barcodeExists(earlyBarcode))) {
         stats.products_skipped_dedup++;
         continue;
       }
 
-      // Fetch HTML
-      const fetched = await this.http.fetch(url);
-      if (!fetched.ok) {
+      // 1. Fetch via Firecrawl → markdown clean
+      const fetched = await this.firecrawl.scrape(url);
+      if (!fetched.ok || !fetched.markdown) {
         stats.errors++;
-        console.error(`[${this.name}] Fetch failed ${url}: ${fetched.error ?? fetched.status}`);
+        if (stats.errors <= 5) {
+          console.error(`[${this.name}] Firecrawl failed ${url}: ${fetched.error}`);
+        }
         continue;
       }
 
-      // Extract via Claude
+      // 2. Extract via Claude (markdown = ~3k tokens vs 25k HTML brut)
       const extracted = await extractWithClaude({
-        html: fetched.html,
-        pageUrl: fetched.finalUrl,
+        markdown: fetched.markdown,
+        pageUrl: fetched.metadata.sourceURL ?? url,
         hintCategory: this.defaultCategory,
+        pageTitle: fetched.metadata.title,
+        pageDescription: fetched.metadata.description,
         client: this.claude,
       });
 
@@ -120,11 +127,12 @@ export abstract class BaseScraper {
         brand: extracted.product.brand ?? '',
         category: (extracted.product.category as ScrapedProduct['category']) ?? this.defaultCategory,
         ingredients_raw: extracted.product.ingredients_raw ?? '',
-        image_url: extracted.product.image_url ?? null,
+        image_url: extracted.product.image_url ?? fetched.metadata.ogImage ?? null,
         description_fr: extracted.product.description_fr ?? null,
         intended_use: extracted.product.intended_use ?? null,
         source: this.sourceKey,
-        source_url: fetched.finalUrl,
+        // ⚠️ source_url volontairement NON inclus dans metadata (anti-traceability)
+        source_url: '', // garde le champ pour compat type, mais writer ne le push pas
         quality_score: this.qualityScore,
         metadata: {
           scraped_at: new Date().toISOString(),
@@ -133,7 +141,6 @@ export abstract class BaseScraper {
       };
       productsBuffer.push(product);
 
-      // Flush batch
       if (productsBuffer.length >= BATCH_INSERT) {
         if (!this.ctx.dryRun) {
           const result = await this.writer.insertBatch(productsBuffer);
@@ -161,10 +168,11 @@ export abstract class BaseScraper {
         stats.errors += result.errors.length;
         console.error(`[${this.name}] Final flush errors:`, result.errors);
       }
-      console.log(`[${this.name}] Final flush done: +${result.inserted} inserted, +${result.skipped} skipped, ${result.errors.length} errors`);
+      console.log(
+        `[${this.name}] Final flush done: +${result.inserted} inserted, +${result.skipped} skipped, ${result.errors.length} errors`,
+      );
     }
     if (productsBuffer.length > 0 && this.ctx.dryRun) {
-      // Affiche le 1er produit en dry-run pour validation visuelle
       console.log(`[${this.name}] DRY-RUN sample (1st of ${productsBuffer.length}):`);
       console.log(JSON.stringify(productsBuffer[0], null, 2));
     }
@@ -172,7 +180,7 @@ export abstract class BaseScraper {
     stats.duration_ms = Date.now() - t0;
 
     console.log(`[${this.name}] DONE in ${(stats.duration_ms / 1000).toFixed(1)}s`);
-    console.log(`[${this.name}] ${stats.products_inserted} inserted, ${stats.products_skipped_dedup} skipped, ${stats.errors} errors, $${stats.estimated_cost_usd.toFixed(2)}`);
+    console.log(`[${this.name}] ${stats.products_inserted} inserted, ${stats.products_skipped_dedup} skipped, ${stats.errors} errors, $${stats.estimated_cost_usd.toFixed(2)} Claude`);
 
     return stats;
   }

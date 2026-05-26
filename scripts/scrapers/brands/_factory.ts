@@ -11,7 +11,7 @@ import type { ScrapeContext } from '../_shared/types.js';
 export interface BrandConfig {
   /** Nom commercial (Avène, Mustela, La Roche-Posay, ...). */
   name: string;
-  /** Identifiant source pour DB. Convention : 'scraped_brand_<slug>'. */
+  /** Identifiant source pour DB. Convention task #121 : 'helo_cosmetic_db_v1' (neutral). */
   sourceKey: string;
   /** Sitemap principal (souvent /sitemap.xml). */
   sitemapUrl: string;
@@ -79,84 +79,84 @@ export class BrandScraper extends BaseScraper {
 export const BRAND_CONFIGS: BrandConfig[] = [
   {
     name: 'Avène',
-    sourceKey: 'scraped_brand_avene',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.eau-thermale-avene.fr/sitemap.xml',
     productUrlPatterns: [/\/p\//i, /\/produit\//i, /\/products\//i],
     excludePatterns: [/\/blog\//i, /\/conseil\//i],
   },
   {
     name: 'Mustela',
-    sourceKey: 'scraped_brand_mustela',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.mustela.fr/sitemap.xml',
     productUrlPatterns: [/\/products?\//i, /\/produit\//i],
     excludePatterns: [/\/blog\//i],
   },
   {
     name: 'La Roche-Posay',
-    sourceKey: 'scraped_brand_la_roche_posay',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.laroche-posay.fr/sitemap.xml',
     productUrlPatterns: [/\/products?\//i, /\/produit\//i],
     excludePatterns: [/\/blog\//i, /\/conseil\//i, /\/expert\//i],
   },
   {
     name: 'Bioderma',
-    sourceKey: 'scraped_brand_bioderma',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.bioderma.fr/sitemap.xml',
     productUrlPatterns: [/\/produit\//i, /\/products?\//i],
     excludePatterns: [/\/conseil\//i],
   },
   {
     name: 'Weleda',
-    sourceKey: 'scraped_brand_weleda',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.weleda.fr/sitemap.xml',
     productUrlPatterns: [/\/produit\//i, /\/products?\//i],
     excludePatterns: [/\/magazine\//i],
   },
   {
     name: 'Nuxe',
-    sourceKey: 'scraped_brand_nuxe',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.nuxe.com/sitemap.xml',
     productUrlPatterns: [/\/products?\//i, /\/produit\//i],
     excludePatterns: [/\/journal\//i, /\/blog\//i],
   },
   {
     name: 'Caudalie',
-    sourceKey: 'scraped_brand_caudalie',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.caudalie.com/sitemap.xml',
     productUrlPatterns: [/\/products?\//i, /\/produit\//i],
     excludePatterns: [/\/blog\//i, /\/magazine\//i],
   },
   {
     name: 'Lierac',
-    sourceKey: 'scraped_brand_lierac',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.lierac.fr/sitemap.xml',
     productUrlPatterns: [/\/produit\//i, /\/products?\//i, /\/p\//i],
     excludePatterns: [/\/conseil\//i],
   },
   {
     name: 'Vichy',
-    sourceKey: 'scraped_brand_vichy',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.vichy.fr/sitemap.xml',
     productUrlPatterns: [/\/products?\//i, /\/produit\//i],
     excludePatterns: [/\/conseil\//i, /\/diag\//i],
   },
   {
     name: 'SVR',
-    sourceKey: 'scraped_brand_svr',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.labo-svr.com/sitemap.xml',
     productUrlPatterns: [/\/produit\//i, /\/products?\//i],
     excludePatterns: [/\/conseil\//i],
   },
   {
     name: 'A-Derma',
-    sourceKey: 'scraped_brand_a_derma',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.aderma.fr/sitemap.xml',
     productUrlPatterns: [/\/produit\//i, /\/products?\//i],
     excludePatterns: [/\/conseil\//i],
   },
   {
     name: 'Ducray',
-    sourceKey: 'scraped_brand_ducray',
+    sourceKey: 'helo_cosmetic_db_v1',
     sitemapUrl: 'https://www.ducray.com/sitemap.xml',
     productUrlPatterns: [/\/products?\//i, /\/produit\//i],
     excludePatterns: [/\/blog\//i, /\/conseil\//i],

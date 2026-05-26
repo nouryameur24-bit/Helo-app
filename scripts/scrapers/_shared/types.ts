@@ -71,8 +71,10 @@ export interface ScrapeContext {
   supabaseUrl: string;
   /** Anthropic API key pour Claude-assisted extraction. */
   anthropicKey: string;
-  /** Rate limit (req/sec) global. Défaut 1.5. */
-  rateLimitPerSec?: number;
+  /** Firecrawl API key — fetch + markdown conversion + anti-bot bypass. */
+  firecrawlKey: string;
+  /** Active stealth mode Firecrawl (bypass Cloudflare). Coût +1 credit. */
+  firecrawlStealth?: boolean;
   /** Mode dry-run : extrait + log mais n'insère pas. */
   dryRun?: boolean;
   /** Limite max de produits par run (pour tests). */

@@ -10,8 +10,9 @@ import { BaseScraper } from '../_shared/scraper_base.js';
 import type { ScrapeContext } from '../_shared/types.js';
 
 class PharmaGddScraper extends BaseScraper {
-  readonly name = 'PharmaGDD';
-  readonly sourceKey = 'scraped_pharma_gdd';
+  readonly name = 'PharmacyDB';
+  // Task #121 anti-traceability : neutral source key.
+  readonly sourceKey = 'helo_cosmetic_db_v1';
   readonly qualityScore = 80;
   readonly defaultCategory = 'cosmetic' as const;
 
@@ -31,11 +32,17 @@ async function main() {
   const maxArg = args.find((a) => a.startsWith('--max='));
   const maxProducts = maxArg ? Number(maxArg.split('=')[1]) : undefined;
 
+  if (!process.env.FIRECRAWL_API_KEY) {
+    console.error('Missing env: FIRECRAWL_API_KEY (https://firecrawl.dev/app/api-keys)');
+    process.exit(1);
+  }
+
   const scraper = new PharmaGddScraper({
     supabaseUrl: process.env.SUPABASE_URL ?? '',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
     anthropicKey: process.env.ANTHROPIC_API_KEY ?? '',
-    rateLimitPerSec: 1.5,
+    firecrawlKey: process.env.FIRECRAWL_API_KEY,
+    firecrawlStealth: process.env.FIRECRAWL_STEALTH === '1',
     dryRun,
     maxProducts,
   });

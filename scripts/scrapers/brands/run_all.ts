@@ -22,13 +22,14 @@ async function main() {
     supabaseUrl: process.env.SUPABASE_URL ?? '',
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
     anthropicKey: process.env.ANTHROPIC_API_KEY ?? '',
-    rateLimitPerSec: 1.5,
+    firecrawlKey: process.env.FIRECRAWL_API_KEY ?? '',
+    firecrawlStealth: process.env.FIRECRAWL_STEALTH === '1',
     dryRun,
     maxProducts,
   };
 
-  if (!ctx.supabaseUrl || !ctx.supabaseServiceRoleKey || !ctx.anthropicKey) {
-    console.error('Missing env: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / ANTHROPIC_API_KEY');
+  if (!ctx.supabaseUrl || !ctx.supabaseServiceRoleKey || !ctx.anthropicKey || !ctx.firecrawlKey) {
+    console.error('Missing env: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / ANTHROPIC_API_KEY / FIRECRAWL_API_KEY');
     process.exit(1);
   }
 

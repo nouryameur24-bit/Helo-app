@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AffiliateButton } from '@/components/alternatives/AffiliateButton';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -25,6 +26,7 @@ import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
+import { useProfile } from '@/hooks/useProfile';
 import {
   AlternativeProduct,
   IngredientExplanation,
@@ -110,6 +112,8 @@ function AlternativeCard({
   isPremium,
   ingredientReasons,
   trimester,
+  userId,
+  sourceBarcode,
   onViewDetail,
   onAddToList,
 }: {
@@ -117,6 +121,8 @@ function AlternativeCard({
   isPremium: boolean;
   ingredientReasons: IngredientExplanation[];
   trimester: Trimester;
+  userId?: string | null;
+  sourceBarcode?: string | null;
   onViewDetail: () => void;
   onAddToList: () => void;
 }) {
@@ -199,9 +205,29 @@ function AlternativeCard({
 
           <Divider style={{ marginVertical: Spacing.md }} />
 
-          {/* v4 Lot 11 — Liens d'achat (affiliate-ready) */}
+          {/* Lot 19-G1 — Liens d'achat affiliate avec tracking + analytics + in-app browser */}
           {alt.purchase_links && (alt.purchase_links.amazon || alt.purchase_links.drive || alt.purchase_links.brand) ? (
             <View style={styles.purchaseLinksRow}>
+              {alt.purchase_links.drive ? (
+                <AffiliateButton
+                  merchant="monoprix"
+                  url={alt.purchase_links.drive}
+                  productId={alt.id}
+                  sourceProductId={sourceBarcode ?? null}
+                  userId={userId ?? null}
+                  context="alternative_card"
+                />
+              ) : null}
+              {alt.purchase_links.amazon ? (
+                <AffiliateButton
+                  merchant="amazon"
+                  url={alt.purchase_links.amazon}
+                  productId={alt.id}
+                  sourceProductId={sourceBarcode ?? null}
+                  userId={userId ?? null}
+                  context="alternative_card"
+                />
+              ) : null}
               {alt.purchase_links.brand ? (
                 <TouchableOpacity
                   style={styles.purchaseLinkBtn}
@@ -210,26 +236,6 @@ function AlternativeCard({
                 >
                   <Feather name="external-link" size={12} color={Colors.accent} />
                   <ThemedText variant="bodySmall" style={{ marginLeft: 4, color: Colors.accent }}>Marque</ThemedText>
-                </TouchableOpacity>
-              ) : null}
-              {alt.purchase_links.drive ? (
-                <TouchableOpacity
-                  style={styles.purchaseLinkBtn}
-                  onPress={() => Linking.openURL(alt.purchase_links!.drive!).catch(() => undefined)}
-                  activeOpacity={0.75}
-                >
-                  <Feather name="shopping-cart" size={12} color={Colors.accent} />
-                  <ThemedText variant="bodySmall" style={{ marginLeft: 4, color: Colors.accent }}>Drive</ThemedText>
-                </TouchableOpacity>
-              ) : null}
-              {alt.purchase_links.amazon ? (
-                <TouchableOpacity
-                  style={styles.purchaseLinkBtn}
-                  onPress={() => Linking.openURL(alt.purchase_links!.amazon!).catch(() => undefined)}
-                  activeOpacity={0.75}
-                >
-                  <Feather name="package" size={12} color={Colors.accent} />
-                  <ThemedText variant="bodySmall" style={{ marginLeft: 4, color: Colors.accent }}>Amazon</ThemedText>
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -536,6 +542,7 @@ export default function AlternativesScreen() {
   }, [params.trimester]);
 
   const { isPremium } = usePremium();
+  const { userId } = useProfile();
   const insets = useSafeAreaInsets();
   const [alternatives, setAlternatives] = useState<AlternativeProduct[]>([]);
   const [explanations, setExplanations] = useState<{
@@ -758,6 +765,8 @@ export default function AlternativesScreen() {
                   isPremium={isPremium}
                   ingredientReasons={ingredientReasons}
                   trimester={trimester}
+                  userId={userId}
+                  sourceBarcode={barcode}
                   onViewDetail={() => handleViewDetail(alt.barcode)}
                   onAddToList={handleAddToList}
                 />

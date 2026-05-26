@@ -50,14 +50,18 @@ export class BrandScraper extends BaseScraper {
 
   /**
    * Suit récursivement les sub-sitemaps. Limit depth=3 pour éviter loops.
+   *
+   * Note : on accepte les URLs contenant `sitemap*.xml` même avec query string
+   * (Shopify utilise `sitemap_products_1.xml?from=...&to=...`).
    */
   private async expandSitemap(sitemapUrl: string, depth = 0): Promise<string[]> {
     if (depth > 3) return [];
     const urls = await this.http.fetchSitemap(sitemapUrl);
+    console.log(`[${this.name}] Expanded sitemap ${sitemapUrl} → ${urls.length} URLs`);
     const expanded: string[] = [];
     for (const u of urls) {
-      if (/sitemap.*\.xml(\.gz)?$/i.test(u)) {
-        // sub-sitemap
+      // Match sitemap URLs même avec query string (Shopify pattern)
+      if (/sitemap[^/]*\.xml(\.gz)?(\?|$)/i.test(u)) {
         const subs = await this.expandSitemap(u, depth + 1);
         expanded.push(...subs);
       } else {

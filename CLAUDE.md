@@ -298,19 +298,35 @@ shelfLongPressHintSeen: '@helo_shelf_long_press_hint_seen'  // Lot 16-13
 
 ## 🔜 Pending (P3 long terme)
 
+### 🔴 Bloquants beta launch
 | Tâche | Effort | Bloqueur |
 |---|---|---|
-| Task #15 PostHog test local + setup EAS secrets | 1h | API key EAS |
 | **TestFlight upload** premier build | 2h | EAS secrets + Apple Developer ($99/an) |
 | App Store assets (6 screenshots, description FR, keywords, privacy URL) | 4h | Maman designer ? |
+| Task #15 PostHog test local + setup EAS secrets | 1h | API key EAS |
+| Republish Replit Autoscale pour activer recalls-poll + partial_metadata + apiCostTracker | 1 clic | Toi |
+
+### 🟡 Activation infra (codée, à lancer)
+| Tâche | État code | Pour activer |
+|---|---|---|
+| **Scraping Pharma GDD** (~14 672 produits) | ✅ codé + 3 validés live | Upgrade Anthropic Tier 2 (carte) OU pre-extract Composition regex (~30min code) |
+| **Scraping 12 brands** (Avène, Mustela, LRP…) | ✅ codé + sitemap regex fixé | Idem rate limit Anthropic |
+| **BDPM 18k médicaments FR** | ✅ script prêt | Toi : télécharger ZIP data.gouv.fr → `.bdpm-cache/` → `pnpm import:bdpm` |
+| **pgvector embeddings ingrédients** | ✅ script prêt | Toi : `OPENAI_API_KEY` env → `pnpm embeddings:populate` (~5min, $0.005) |
+| **Push recall RappelConso cron** | ✅ endpoint prêt `/api/recalls/poll` | Toi : env `HELO_CRON_SECRET` + cron externe (GitHub Actions hourly) |
+| **Affiliate links** | ✅ AffiliateButton wiré + DB tracking | Toi : inscription Amazon Associates FR, Monoprix, Bébé9 + filler `purchase_links` JSONB |
+| **DrugInteractionBanner** | ✅ composant prêt | À wirer dans verdict screen + seed `drug_interactions` table (BDPM/Theriaque) |
+| **Expo push registration** | ✅ hook prêt | À appeler depuis onboarding step "Activer alertes rappel" |
+
+### 🟢 Polish post-launch
+| Tâche | Effort | Bloqueur |
+|---|---|---|
 | Dark mode complet | ~10h | Audit screen-by-screen sur device |
 | Audit accessibilité VoiceOver | ~6h | iPhone physique + lecture humaine |
 | iPad layout | ~8h | iPad physique |
 | i18n EN/ES | ~20h+ | Traducteur humain (≈3000 strings) |
 | Animations Lottie | variable | Designer pour .json files |
-| Table Supabase `partner_shelf_events` (dédiée vs fallback `community_submissions`) | 2h | TODO `hooks/usePartnerRealtime.ts:108-120` |
-| BDPM CSV import (~18k médicaments FR) | ~6h | Aucun |
-| Affiliate IDs (Monoprix, Amazon, Bébé9) | variable | Inscription programmes affiliés |
+| Migration `hooks/usePartnerRealtime.ts` proxy `community_submissions` → table `partner_shelf_events` (déjà créée) | 2h | Aucun |
 
 ---
 
@@ -427,6 +443,50 @@ curl https://<replit-url>/api/healthz  # → "ok"
 24. **Trigger `ensure_profile_for_user`** (commit `d9751a6`) : Sur `auth.users INSERT`, crée automatiquement un row dans `profiles` (ON CONFLICT DO NOTHING). Empêche le drift entre auth users et profiles que j'avais découvert (38/49 users orphelins). Backfill aussi appliqué pour les 38 users historiques. Si tu fais un nouveau test signup, le profile apparaît immédiatement.
 
 18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
+
+29. **Live scraping pilot + rate limit Anthropic (tasks #119-120, 26/05/2026)** :
+
+   **Recon HTTP réel des sites cibles** :
+   - ✅ **Pharma GDD** : `sitemap-product.xml` direct, 14 672 URLs produit
+   - ❌ 1001pharmacies : robots.txt disallow ClaudeBot
+   - ❌ Newpharma : Cloudflare challenge JS
+   - ❌ Easyparapharmacie : PerimeterX captcha
+   - ❌ Doctipharma.fr : fusion docmorris en cours, sitemap HTML
+   - Scrapers Doctipharma + Newpharma supprimés du code (non-viables aujourd'hui)
+   - Pharma GDD reste seule cible pharmacy. Phase 2 future = Playwright headless pour bypass.
+
+   **3 bugs scraper fixés (commit 31d2030)** :
+   - `products.metadata` column ajoutée via migration MCP (existait pas)
+   - Final flush block ne loggait pas les errors → corrigé + sample dry-run print
+   - Smart-trim HTML : si keyword composition/INCI absent des premiers 80k chars, on injecte une fenêtre 8k autour du keyword (était critique : Pharma GDD met la div Composition à 64k chars en moyenne)
+
+   **Validation live (3 produits Nuxe insérés)** :
+   - Nuxe Rêve de Miel baume lèvres (EAN 3264680015809) → intended_use=lip_balm, INCI 485 chars
+   - Nuxe Rêve de Miel gel nettoyant (EAN 3264680004070) → face_cleanser, 585 chars
+   - Nuxe Eclat Prodigieux poudre bronzante (EAN 3264680001239) → bronzer, 540 chars
+
+   **🔴 Rate limit Anthropic découvert au scaling** :
+   - Tier 1 (free / dev) = 50 000 input tokens / minute
+   - 1 page Pharma GDD = ~25k tokens input → max **2 pages/min** sur Tier 1
+   - Mass scraping 14k produits = ~120h (5 jours) sur Tier 1 → pas viable
+   - **Solutions** :
+     - Tier 2 (≥$5 spent) = 450k tokens/min → 18 pages/min → 14k en ~13h
+     - Tier 3 (≥$40 spent) = 1M tokens/min → 14k en ~6h
+     - OU pre-extract Composition div via regex avant Claude (token usage ÷10, tier 1 devient viable)
+   - Background scrapers killed avant atteinte. À relancer quand tier upgrade ou pre-extract codé.
+
+   **Brand sitemap regex fixé** :
+   - `_factory.ts` : Shopify utilise `sitemap_products_1.xml?from=...&to=...` (query string)
+   - Ancienne regex `/sitemap.*\.xml$/i` requérait fin de string → loupait Mustela
+   - Nouvelle regex `/sitemap[^/]*\.xml(\.gz)?(\?|$)/i` accepte query string
+   - Validé : Mustela sitemap retourne 88 product URLs (sans le rate limit ça aurait scrapé OK)
+
+   **Composants mobile prêts (non-committés en attente déploiement scraping)** :
+   - `components/alternatives/AffiliateButton.tsx` — bouton merchant avec tracking via openMerchantLink
+   - `app/alternatives.tsx` refactorisé : 3 boutons purchase_links remplacés par `<AffiliateButton>` + thread userId/sourceBarcode
+   - `components/verdict/DrugInteractionBanner.tsx` — bannière interactions avec 4 niveaux sévérité (contraindicated/major/moderate/minor), expand on tap, query RPC `find_drug_interactions`
+   - `hooks/useExpoPushRegistration.ts` — register Expo push token + upsert push_subscriptions (skip si web/permission denied)
+   - tsc mobile ✓, à wirer dans verdict screen + onboarding ultérieurement
 
 28. **Big push "fait tout" (tasks #112-118, 25/05/2026 nuit late)** :
 
@@ -637,39 +697,60 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 
 ---
 
-*Last updated 26/05/2026 (nuit, fin pass qualité) : Session marathon Hēlo Points + audit codebase complet.
+*Last updated 26/05/2026 (nuit) : Big push infra + scraping pilot live + mobile components.
 
-🎯 Réalisations clés (Hēlo Points + infra) :
-- MCPs (Supabase + GitHub + Sentry + PostHog REST) fully wired
-- Sentry helo-54/react-native projet créé + verified (REACT-NATIVE-1)
-- Backend prod Replit Autoscale 24/7 → asset-manager-leilaameurpro.replit.app
-- Mobile .env complet (7 vars : POSTHOG×2, SENTRY, HELO_API×2, SUPABASE×2)
-- partial_metadata fallback côté backend (commit 6ecfff5)
-- FinOps tracking apiCostTracker (commit e29dfec) → à activer après republish Replit
-- DB : 626 986 produits dont 13 472 cosmétiques (+940 OBF), 5 313 ingredients, 957 alternatives cohérentes (vs 4 512 bullshit avant)
-- 49/49 auth.users → profiles (trigger anti-drift)
-- Hēlo Points : 4 tables + 2 RPCs SECURITY DEFINER + 5 récompenses + fulfillment auto Premium + Badge Founder + UI complète + smoke test 100% OK
+🎯 Réalisations de la session "fait tout" (tasks #112-120) :
 
-🔴 Bugs critiques fixés ce soir (commit d9751a6) :
-- profiles.id vs user_id mismatch (RPC + 2 hooks) → silently failing avant
-- 38/49 auth.users sans profile → trigger + backfill
+DB foundations (6 migrations MCP + dumpées local) :
+- pgvector + pg_trgm extensions
+- ingredient_embeddings table + HNSW + RPC match_ingredient_fuzzy
+- partner_shelf_events vraie table + Realtime publication
+- drug_interactions + RPC find_drug_interactions + profiles.current_medications
+- product_recalls + push_subscriptions + RPC find_users_to_notify_recall
+- products.purchase_links + affiliate_clicks + v_affiliate_revenue
+- products.metadata column (pour scraping provenance)
 
-🔬 Audit pass complet (task #109) :
-- Mobile : Logout signOut-before-clear, Delete account ordre fix, awards Ghost Capture séquentiels, URL params bornés (pointsEarned max 500), ghostCaptureSave awaited avant awards, isFirstContributor proper query (community_submissions neq user_id)
-- api-server : logClaudeApiCall avec 1 retry backoff 500ms
-- DB : unique index partial `(user_id, product_id, reason) WHERE product_id IS NOT NULL` sur point_transactions
-- Trade-off documenté : verdict phase race intentionnel (guard double-fetch)
-- Tests 206/207 ✓, typecheck mobile + api-server ✓
+Code livré (commit 7e4cb08 + 31d2030) :
+- Framework scraping Claude-assisted (scripts/scrapers/_shared/)
+- Scraper Pharma GDD (14 672 URLs validées)
+- 12 brand scrapers via factory (Avène/Mustela/LRP/Bioderma/Weleda/Nuxe/Caudalie/Lierac/Vichy/SVR/A-Derma/Ducray)
+- BDPM import script (18k médicaments FR)
+- pgvector embeddings populate script
+- Mobile lib/affiliateLinks.ts + composant AffiliateButton (wiré dans alternatives.tsx)
+- Mobile DrugInteractionBanner.tsx + useExpoPushRegistration.ts hook
+- Backend /api/recalls/poll endpoint cron protégé
 
-🎁 Magic moment Ghost Capture livré (task #110) :
-- isFirstContributor multiplier ×2 wiré dans ocr-review.tsx (await pre-navigation)
-- Toast verdict affiche "+70 ⭐ 👑 Première contributrice !" quand applicable
-- partial_metadata handler mobile : verdict screen render `GhostCaptureModal` enrichi avec nom/marque/photo OBF/OFF quand backend retourne metadata_only
-- Plus de dead-end "produit non trouvé" pour les 100k+ produits OBF sans INCI
+🟢 Validation live scraping :
+- 3 produits Nuxe insérés depuis Pharma GDD avec INCI complète (485-585 chars) + intended_use bien classifié
 
-🛏 Prochaine session :
-- (toi 1 clic) Republish Replit pour activer partial_metadata backend + apiCostTracker
-- (moi 30 min) Wire ghostName/ghostBrand URL params dans scan.tsx → ocr-review.tsx pour pre-fill input name (nice-to-have UX)
-- Test end-to-end depuis iPhone après tout ça
-- TestFlight prep (Apple Dev $99 + EAS build prod + App Store assets)*
+🔴 Bottleneck découvert :
+- Rate limit Anthropic Tier 1 = 50k tokens/min
+- 1 page = ~25k tokens → max 2 pages/min
+- Mass scraping bloqué tant que pas upgrade Tier 2 OU pre-extract Composition regex (token usage ÷10)
+
+🛏 Prochaine session — par ordre de priorité :
+
+(toi, choix stratégique nécessaire)
+1. Upgrade Anthropic billing Tier 2 (carte sur console.anthropic.com) → débloque scraping mass
+   OU me demander de coder le pre-extract Composition regex (~30min) pour rester Tier 1
+
+(toi, 1 clic)
+2. Republish Replit Autoscale → active partial_metadata + apiCostTracker + recalls-poll
+
+(toi, ~30min total)
+3. Download BDPM ZIP data.gouv.fr → .bdpm-cache/ → pnpm import:bdpm
+4. Get OPENAI_API_KEY → pnpm embeddings:populate (~5min, $0.005)
+5. Inscrire programmes affiliés (Amazon FR, Monoprix, Bébé9)
+
+(moi, ~3h post-décision)
+6. Si tier upgrade : lancer scraping mass Pharma GDD + 12 brands en background
+7. Wire DrugInteractionBanner dans verdict screen
+8. Wire registerExpoPushToken dans onboarding step "Activer alertes rappel"
+9. Seed drug_interactions table (parse BDPM + sources publiques CRAT)
+
+🛑 Bloque encore le launch beta :
+- TestFlight upload (Apple Developer $99/an + EAS secrets)
+- App Store assets (6 screenshots, description FR, privacy URL)
+- PostHog EAS secrets setup
+*
 *Maintenu par : Claude — mets à jour ce fichier à la fin de chaque Lot majeur.*

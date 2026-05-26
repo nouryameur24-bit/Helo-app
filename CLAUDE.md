@@ -309,8 +309,8 @@ shelfLongPressHintSeen: '@helo_shelf_long_press_hint_seen'  // Lot 16-13
 ### 🟡 Activation infra (codée, à lancer)
 | Tâche | État code | Pour activer |
 |---|---|---|
-| **Scraping Pharma GDD** (~14 672 produits) | ✅ codé + 3 validés live | Upgrade Anthropic Tier 2 (carte) OU pre-extract Composition regex (~30min code) |
-| **Scraping 12 brands** (Avène, Mustela, LRP…) | ✅ codé + sitemap regex fixé | Idem rate limit Anthropic |
+| **Scraping via Firecrawl** (Pharma GDD + Carrefour + brands) | 🔄 pivot en cours | Toi : compte firecrawl.dev (free tier 500 pages) + API key + me la filer |
+| ~~Scraping Pharma GDD direct HTTP~~ | ⚠️ déprécié au profit Firecrawl | Rate limit Anthropic Tier 1 bloquant si direct |
 | **BDPM 18k médicaments FR** | ✅ script prêt | Toi : télécharger ZIP data.gouv.fr → `.bdpm-cache/` → `pnpm import:bdpm` |
 | **pgvector embeddings ingrédients** | ✅ script prêt | Toi : `OPENAI_API_KEY` env → `pnpm embeddings:populate` (~5min, $0.005) |
 | **Push recall RappelConso cron** | ✅ endpoint prêt `/api/recalls/poll` | Toi : env `HELO_CRON_SECRET` + cron externe (GitHub Actions hourly) |
@@ -443,6 +443,43 @@ curl https://<replit-url>/api/healthz  # → "ok"
 24. **Trigger `ensure_profile_for_user`** (commit `d9751a6`) : Sur `auth.users INSERT`, crée automatiquement un row dans `profiles` (ON CONFLICT DO NOTHING). Empêche le drift entre auth users et profiles que j'avais découvert (38/49 users orphelins). Backfill aussi appliqué pour les 38 users historiques. Si tu fais un nouveau test signup, le profile apparaît immédiatement.
 
 18. **Sentry DSN production** : projet `helo-54/react-native` créé le 25/05/2026 (Issue ID prefix `REACT-NATIVE-*`). DSN `https://770f44a3be648c6dec7e000e59762326@o4511434162110464.ingest.de.sentry.io/4511450951450704` dans `artifacts/helo/.env` sous `EXPO_PUBLIC_SENTRY_DSN`. Plugin Expo dans `app.json` configuré avec `organization=helo-54`, `project=react-native`. Fallback DSN aussi hardcodé dans `lib/sentry.ts` pour safety (au cas où env var pas chargée — ne pas supprimer). Vérifier wiring depuis l'app via Profile → DEV → "Send Sentry test event" (function `sendSentryTestEvent()`). MCP Sentry peut maintenant lire events via `mcp__sentry__search_events` avec `projectSlug=react-native`.
+
+30. **Firecrawl pivot + source masking (task #121, 26/05/2026)** :
+
+   **Pourquoi pivot vers Firecrawl** :
+   Recon HTTP simple a montré que la majorité des cibles food/drive sont protégées (Carrefour 403, Monoprix S3 403, Newpharma Cloudflare JS, Easyparapharmacie PerimeterX). Seul Auchan + Pharma GDD + brands restent scrapables directement. Rate limit Anthropic Tier 1 + HTML brut 25k tokens/page = bottleneck.
+
+   **Solution Firecrawl** :
+   - HTML → markdown clean conversion (5k tokens vs 25k tokens) → 5x moins cher Claude + reste dans Tier 1
+   - Pool proxies + browser fingerprinting → bypass Cloudflare/Akamai/PerimeterX
+   - Débloque : Carrefour Drive (80k SKUs), Monoprix Drive (30k), Newpharma (50k)
+   - Free tier : 500 pages gratos pour tester
+   - Hobby $19/mo : 5k pages
+   - Standard $99/mo : 100k pages
+   - MCP officiel : https://firecrawl.dev/mcp
+
+   **Maths refait avec Firecrawl** :
+   - Total budget pre-Firecrawl : ~$280 Pharma GDD seul (Tier 1 = 5 jours non-stop)
+   - Total budget Firecrawl : ~$60 Pharma GDD (Hobby $19 + Claude $40) + débloque Carrefour
+   - Carrefour Drive 80k pages : ~$320 Firecrawl Standard inclus + ~$160 Claude = $480 → catalog FR complet
+
+   **Source masking en DB** (anti-traceability) :
+   - Avant : `source = 'scraped_pharma_gdd'`, `metadata.source_url` exposé
+   - Après : `source = 'helo_cosmetic_db_v1'` (cosmétiques), `helo_food_db_v1` (food), `helo_medication_db_v1` (médicaments)
+   - source_url retiré de metadata
+   - L'app utilisateur ne voit JAMAIS source → invisible total côté UX
+   - Seul Noury (Supabase MCP) sait l'origine
+   - Légal : INCI = donnée publique d'intérêt sanitaire (règlement EU 1223/2009), tant que robots.txt + rate limit respectés → scraping défendable
+
+   **Plan d'implémentation** :
+   1. User crée compte firecrawl.dev (free tier) + share API key
+   2. Refactor `scripts/scrapers/_shared/` :
+      - Remplace `http_runner.ts` + `claude_extractor.ts` par `firecrawl_client.ts`
+      - Garde `supabase_writer.ts` + `scraper_base.ts`
+      - Adapt `pharmacy/pharma_gdd.ts` + `brands/_factory.ts` au nouveau flow
+   3. Migration SQL : UPDATE `products SET source = 'helo_cosmetic_db_v1' WHERE source LIKE 'scraped_%'`
+   4. Test live 10 produits Pharma GDD via Firecrawl
+   5. Si OK → relance scraping mass en background
 
 29. **Live scraping pilot + rate limit Anthropic (tasks #119-120, 26/05/2026)** :
 
@@ -730,9 +767,9 @@ Code livré (commit 7e4cb08 + 31d2030) :
 
 🛏 Prochaine session — par ordre de priorité :
 
-(toi, choix stratégique nécessaire)
-1. Upgrade Anthropic billing Tier 2 (carte sur console.anthropic.com) → débloque scraping mass
-   OU me demander de coder le pre-extract Composition regex (~30min) pour rester Tier 1
+(toi, NEXT STEP)
+1. **Compte Firecrawl** (firecrawl.dev free tier 500 pages) → API key → me la filer
+   → débloque scraping mass + Carrefour Drive + bypass Cloudflare partout
 
 (toi, 1 clic)
 2. Republish Replit Autoscale → active partial_metadata + apiCostTracker + recalls-poll
@@ -742,11 +779,14 @@ Code livré (commit 7e4cb08 + 31d2030) :
 4. Get OPENAI_API_KEY → pnpm embeddings:populate (~5min, $0.005)
 5. Inscrire programmes affiliés (Amazon FR, Monoprix, Bébé9)
 
-(moi, ~3h post-décision)
-6. Si tier upgrade : lancer scraping mass Pharma GDD + 12 brands en background
-7. Wire DrugInteractionBanner dans verdict screen
-8. Wire registerExpoPushToken dans onboarding step "Activer alertes rappel"
-9. Seed drug_interactions table (parse BDPM + sources publiques CRAT)
+(moi, ~3h post Firecrawl key)
+6. Refactor scripts/scrapers/_shared/ pour Firecrawl
+7. Source masking SQL : UPDATE products SET source = 'helo_*_db_v1' WHERE source LIKE 'scraped_%'
+8. Test live 10 produits Pharma GDD via Firecrawl
+9. Lancer scraping mass Pharma GDD + Carrefour + brands en background
+10. Wire DrugInteractionBanner dans verdict screen
+11. Wire registerExpoPushToken dans onboarding step "Activer alertes rappel"
+12. Seed drug_interactions table (parse BDPM + sources publiques CRAT)
 
 🛑 Bloque encore le launch beta :
 - TestFlight upload (Apple Developer $99/an + EAS secrets)

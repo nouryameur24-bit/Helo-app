@@ -875,10 +875,40 @@ export default function VerdictScreen() {
           </View>
         )}
 
-        {/* ── Lot 18-06 — Badge "X mamas ont contribué" ──
-            Affiché UNIQUEMENT pour les produits issus du ghost capture
-            communautaire. Construit la confiance dans le verdict en
-            montrant que d'autres utilisatrices ont déjà scanné ce produit. */}
+        {/* ── HIÉRARCHIE DES ALERTES (audit #2, refactor design) ──────────────
+            Avant : les signaux SECONDAIRES (badge communauté, photo) étaient
+            rendus ICI, AVANT les alertes vitales → sur un produit dangereux,
+            la maman voyait "💛 3 mamans ont contribué" avant la bannière rouge
+            allergène. Inversion de priorité corrigée.
+
+            Nouvel ordre (du + critique au contextuel) :
+              1. Allergène déclaré (🔴 risque vital)
+              2. Rappel produit RappelConso (🔴 safety)
+              3. Risques grossesse (listeria, mercure…)
+              4. Composition (partiellement) inconnue (honnêteté)
+              5. [+ bas] Signaux de confiance secondaires (communauté, photo)
+            ──────────────────────────────────────────────────────────────── */}
+
+        {/* 1. Lot 17-02 — Bannière ROUGE allergène déclaré (TOP PRIORITY absolue) */}
+        <AllergyWarningBanner allergyWarnings={verdict.allergyWarnings} />
+
+        {/* 2. RECALL — rappel produit actif RappelConso (retrait acute > risque diététique) */}
+        {recallMatch && <RecallAlertBanner recallMatch={recallMatch} />}
+
+        {/* 3. Lot 19-D1 — Risques pregnancy-specific (listeria, toxo, mercure, alcool, caféine) */}
+        <PregnancyRisksBanner risks={product?.pregnancyRisks} />
+
+        {/* 4. Lot 17-01 — Composition (partiellement) inconnue (honnêteté, anti faux-safe) */}
+        {verdict && (verdict.allIngredientsUnknown || (verdict.unknownRatio !== undefined && verdict.unknownRatio > 0.5)) && (
+          <UnknownCompositionBanner
+            totalCount={verdict.totalCount ?? 0}
+            noSignalCount={verdict.noSignalCount}
+            allUnknown={verdict.allIngredientsUnknown ?? false}
+          />
+        )}
+
+        {/* 5. SIGNAUX DE CONFIANCE SECONDAIRES (audit #2) — rendus APRÈS les
+            alertes vitales pour ne pas noyer l'info critique. Contexte, pas alerte. */}
         {product?.source === 'community' && product.communityContributionCount && product.communityContributionCount > 0 && (
           <View style={communityBadgeStyles.wrap}>
             <View style={communityBadgeStyles.iconWrap}>
@@ -898,7 +928,6 @@ export default function VerdictScreen() {
           </View>
         )}
 
-        {/* ── PHOTO IDENTIFICATION BANNER ── */}
         {product?.isPhotoIdentified && (
           <View style={styles.photoBanner}>
             <View style={styles.photoBannerIcon}>
@@ -908,32 +937,6 @@ export default function VerdictScreen() {
               Ce produit a été identifié visuellement. Pour un résultat plus précis, scannez le code-barres ou la liste d'ingrédients.
             </ThemedText>
           </View>
-        )}
-
-        {/* ── Lot 17-02 — Bannière ROUGE allergène déclaré (TOP PRIORITY) ──
-            Affichée AVANT le recall, car c'est l'alerte la + critique :
-            risque vital pour l'utilisatrice qui a déclaré une allergie. */}
-        <AllergyWarningBanner allergyWarnings={verdict.allergyWarnings} />
-
-        {/* ── Lot 19-D1 — Bannière risques pregnancy-specific ──
-            Affiche les tags pré-calculés Supabase (listeria, toxo,
-            mercure, alcool, caféine, etc.). Verdicts précis et
-            contextuels pour les aliments. */}
-        <PregnancyRisksBanner risks={product?.pregnancyRisks} />
-
-        {/* ── RECALL ALERT BANNER ── */}
-        {recallMatch && <RecallAlertBanner recallMatch={recallMatch} />}
-
-        {/* ── Lot 17-01 — Bannière "composition (partiellement) inconnue" ──
-            Affichée si tous OU >50% des ingrédients ne sont pas dans notre
-            DB. Évite l'illusion de "tout va bien" trompeuse pour les
-            produits rares (tisanes, herbes, marques niche). */}
-        {verdict && (verdict.allIngredientsUnknown || (verdict.unknownRatio !== undefined && verdict.unknownRatio > 0.5)) && (
-          <UnknownCompositionBanner
-            totalCount={verdict.totalCount ?? 0}
-            noSignalCount={verdict.noSignalCount}
-            allUnknown={verdict.allIngredientsUnknown ?? false}
-          />
         )}
 
         {/* ── INGREDIENT DETAILS ── */}

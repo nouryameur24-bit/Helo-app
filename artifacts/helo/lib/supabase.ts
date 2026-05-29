@@ -6,17 +6,26 @@ import { Config } from '@/lib/config';
 const supabaseUrl = Config.supabaseUrl;
 const supabaseAnonKey = Config.supabaseAnonKey;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
-
 export const isSupabaseConfigured =
   supabaseUrl.length > 0 && supabaseAnonKey.length > 0;
+
+// Audit fix #5 : `createClient` throw sur une URL vide/invalide AU MOMENT DE
+// L'IMPORT. En env de test / preview (pas d'env vars), ça faisait planter
+// 3 suites entières à l'import (cf. ancien Gotcha #1). On passe un placeholder
+// au format valide quand non configuré — tous les vrais appels restent gatés
+// par `isSupabaseConfigured`, donc aucun risque de requête vers le placeholder.
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : 'https://placeholder.supabase.co',
+  isSupabaseConfigured ? supabaseAnonKey : 'placeholder-anon-key',
+  {
+    auth: {
+      storage: AsyncStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  },
+);
 
 /**
  * Garantit qu'une session Supabase (anonyme) existe et renvoie l'user.id.

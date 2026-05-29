@@ -169,11 +169,15 @@ export const E_NUMBER_ALIASES: Record<string, string> = {
  */
 export function resolveENumber(raw: string): string | null {
   if (!raw) return null;
-  const trimmed = raw.trim().toUpperCase();
-  // Pattern : E + 3-4 digits + lettre optionnelle (E150a, E160b, etc.)
-  if (!/^E\d{3,4}[A-Z]?$/.test(trimmed)) return null;
-  // Lookup case-insensitive (les clés sont en majuscules dans le record)
-  return E_NUMBER_ALIASES[trimmed] ?? null;
+  // Audit fix #11 (CONFIRMÉ) : les clés du record ont un suffixe lettre en
+  // MINUSCULE (E150d, E160b, E472e...). L'ancien `.toUpperCase()` cherchait
+  // "E150D" → jamais trouvé → E150d (caramel Coca, critique gotcha #2), E160b,
+  // E472* ne résolvaient JAMAIS. On normalise vers la forme canonique du
+  // record : E majuscule + digits + suffixe lettre minuscule.
+  const m = /^[eE](\d{3,4})([a-zA-Z]?)$/.exec(raw.trim());
+  if (!m) return null;
+  const canonical = `E${m[1]}${m[2].toLowerCase()}`;
+  return E_NUMBER_ALIASES[canonical] ?? null;
 }
 
 /**

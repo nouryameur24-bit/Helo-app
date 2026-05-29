@@ -31,12 +31,21 @@ describe('parseIngredients', () => {
     expect(result).toHaveLength(3);
   });
 
-  test('strips parenthetical sub-ingredients', () => {
+  test('préserve les sous-ingrédients entre parenthèses (safety allergènes)', () => {
+    // Audit fix : l'ancienne assertion exigeait de STRIPPER "(water)". C'est
+    // DANGEREUX pour une app grossesse : "Arôme (lait)" → "Arôme" perdrait
+    // l'allergène lait. On préserve donc le contenu parenthétique comme
+    // ingrédient à part entière pour qu'il soit screené par le matcher allergies.
     const result = parseIngredients('aqua (water), sodium lauryl sulfate');
     expect(result).toContain('Aqua');
     expect(result).toContain('Sodium lauryl sulfate');
-    expect(result).not.toContain('water');
-    expect(result).not.toContain('Water');
+    expect(result).toContain('Water'); // sous-ingrédient préservé, pas droppé
+  });
+
+  test('un allergène entre parenthèses n\'est JAMAIS perdu', () => {
+    const result = parseIngredients('arôme naturel (lait), sucre');
+    // "lait" doit survivre au parsing pour que le cross-check allergies le voie.
+    expect(result.join(' | ').toLowerCase()).toContain('lait');
   });
 
   test('empty string → empty array', () => {

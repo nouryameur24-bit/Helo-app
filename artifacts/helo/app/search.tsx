@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Keyboard, Pressable, ScrollView, View } from 'react-native';
@@ -9,6 +8,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
+import { usePremium } from '@/hooks/usePremium';
 
 import SearchBar from '@/components/search/SearchBar';
 import CategoryGrid from '@/components/search/CategoryGrid';
@@ -16,9 +16,7 @@ import ProductCard from '@/components/search/ProductCard';
 import TopSafeCarousel from '@/components/search/TopSafeCarousel';
 import PremiumOverlay from '@/components/search/PremiumOverlay';
 import { scr, empty, CATEGORIES, type Product } from '@/components/search/searchStyles';
-import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const PREMIUM_KEY = STORAGE_KEYS.isPremium;
 const SEARCH_MIN_CHARS = 3;
 const DEBOUNCE_MS = 300;
 
@@ -38,6 +36,9 @@ function EmptyResults({ query }: { query: string }) {
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const { userId } = useProfile();
+  // Audit fix #7 : source unique de vérité Premium (RevenueCat + bonus Hēlo Points),
+  // au lieu d'une lecture AsyncStorage brute qui ignorait le Premium offert via points.
+  const { isPremium, requirePremium } = usePremium();
 
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -47,10 +48,7 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [shelfIds, setShelfIds] = useState<Set<string>>(new Set());
-  const [isPremium, setIsPremium] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => { AsyncStorage.getItem(PREMIUM_KEY).then((v) => setIsPremium(v === 'true')); }, []);
 
   useEffect(() => {
     if (!userId || !isSupabaseConfigured) return;
@@ -87,7 +85,9 @@ export default function SearchScreen() {
   }, [selectedCategoryId]);
 
   const handleClear = useCallback(() => { setQuery(''); setDebouncedQuery(''); setResults([]); Keyboard.dismiss(); }, []);
-  const handleUnlockPremium = useCallback(async () => { await AsyncStorage.setItem(PREMIUM_KEY, 'true'); setIsPremium(true); }, []);
+  // Audit fix #2 (CRITIQUE) : avant, ce handler écrivait PREMIUM_KEY='true'
+  // → Premium gratuit app-wide en 1 tap. Maintenant on route vers le vrai paywall.
+  const handleUnlockPremium = useCallback(() => { requirePremium('search'); }, [requirePremium]);
 
   const showSearchResults = isPremium && debouncedQuery.length >= SEARCH_MIN_CHARS;
   const showCategoryResults = !!selectedCategory && !showSearchResults;

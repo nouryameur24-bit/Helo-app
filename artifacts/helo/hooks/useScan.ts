@@ -17,6 +17,7 @@ import {
   getVerdict,
   matchIngredients,
 } from '@/lib/productLookup';
+import { applyPersonalPreferences } from '@/lib/preferenceMatcher';
 import {
   dtoToMatchResult,
   isBackendConfigured,
@@ -39,6 +40,7 @@ import type {
   Phase,
   ProductData,
   ScanCache,
+  Verdict,
   VerdictResult,
 } from '@/types';
 import { scanCacheKey, STORAGE_KEYS } from '@/lib/storageKeys';
@@ -145,6 +147,61 @@ function adaptBackendResponse(
   };
 
   return { product, matches, verdict };
+}
+
+/**
+ * Lot 17-02 FIX (audit #1, SAFETY-CRITICAL) — Cross-check allergies sur le
+ * chemin backend.
+ *
+ * Le backend Hēlo ne connaît PAS les allergies de l'utilisatrice (elles sont
+ * stockées local-only sur l'appareil). `adaptBackendResponse` construisait donc
+ * un verdict SANS `allergyWarnings` → la bannière rouge anaphylaxie (Lot 17-02)
+ * ne s'affichait JAMAIS en ligne (= en prod). Elle ne marchait que sur le
+ * fallback local hors-réseau. Faux-safe inacceptable pour une app grossesse.
+ *
+ * Fix : on ré-applique ici les préférences personnelles aux matches backend
+ * (bump allergie→danger, régime/cosmétique→caution, tag `matchedAllergies`),
+ * on recalcule le verdict via `getVerdict` (qui agrège `allergyWarnings`), et
+ * on MERGE en préservant l'autorité backend (glow score, explication IA) tout
+ * en escaladant la sévérité si une préférence l'exige.
+ *
+ * Jamais bloquant : si `applyPersonalPreferences` échoue, on renvoie le verdict
+ * backend inchangé (mieux vaut un scan sans bump perso qu'un scan KO).
+ */
+const VERDICT_SEVERITY: Record<Verdict, number> = { safe: 0, caution: 1, danger: 2 };
+
+async function applyAllergiesToBackendResult(
+  matches: MatchResult[],
+  backendVerdict: VerdictResult,
+): Promise<{ matches: MatchResult[]; verdict: VerdictResult }> {
+  try {
+    const { matches: prefMatches } = await applyPersonalPreferences(matches);
+    const prefVerdict = getVerdict(prefMatches);
+    // Si aucune préférence n'a tagué/bumpé → rien ne change, on garde le backend tel quel.
+    const noChange =
+      !prefVerdict.allergyWarnings &&
+      VERDICT_SEVERITY[prefVerdict.verdict] <= VERDICT_SEVERITY[backendVerdict.verdict];
+    if (noChange) return { matches, verdict: backendVerdict };
+
+    const finalLabel: Verdict =
+      VERDICT_SEVERITY[prefVerdict.verdict] > VERDICT_SEVERITY[backendVerdict.verdict]
+        ? prefVerdict.verdict
+        : backendVerdict.verdict;
+
+    return {
+      matches: prefMatches,
+      verdict: {
+        ...backendVerdict, // autorité backend : glowScoreRemote, aiExplanation, aiSource, searchKeyword, *Count
+        verdict: finalLabel,
+        flaggedIngredients: prefVerdict.flaggedIngredients,
+        ...(prefVerdict.allergyWarnings
+          ? { allergyWarnings: prefVerdict.allergyWarnings }
+          : {}),
+      },
+    };
+  } catch {
+    return { matches, verdict: backendVerdict };
+  }
 }
 
 /**
@@ -306,8 +363,12 @@ export function useScan(): UseScanReturn {
       // ── Online path ───────────────────────────────────────────────────────────
 
       // 1. Check 7-day local cache first (instant, no network)
+      // Audit fix #4 : un cache legacy avec matches:[] (écrit avant le garde-fou
+      // de writeCache) afficherait un faux "safe" SANS bannière d'incertitude
+      // (totalCount=0 → allIngredientsUnknown=false). On le traite comme un miss
+      // → re-fetch backend qui produira un verdict honnête.
       const cached = await readCache(barcode, phase);
-      if (cached) {
+      if (cached && cached.matches.length > 0) {
         setState({
           loading: false,
           product: cached.product,
@@ -332,9 +393,13 @@ export function useScan(): UseScanReturn {
       if (isBackendConfigured) {
         const remote = await scanProductRemote(barcode, phase);
         if (remote.ok) {
-          const { product, matches, verdict } = adaptBackendResponse(
-            barcode,
-            remote.data,
+          const adapted = adaptBackendResponse(barcode, remote.data);
+          const { product } = adapted;
+          // Lot 17-02 FIX (audit #1) : ré-applique les allergies déclarées
+          // (le backend ne les connaît pas) → bannière rouge + bump sévérité.
+          const { matches, verdict } = await applyAllergiesToBackendResult(
+            adapted.matches,
+            adapted.verdict,
           );
           await writeCache(barcode, phase, { product, matches, verdict });
           await cacheProduct(barcode, product, verdict);

@@ -1,5 +1,4 @@
 // ─── Scanner d'ordonnance — Hēlo ─────────────────────────────────────────────
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ROUTES } from '@/types/routes';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
@@ -21,7 +20,7 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
 import { processOCRImage } from '@/lib/ocr';
 import { extractMedications, checkMedications } from '@/lib/prescription';
-import { PREMIUM_KEY } from '@/lib/purchases';
+import { usePremium } from '@/hooks/usePremium';
 import { useTrimester } from '@/hooks/useTrimester';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
@@ -74,6 +73,9 @@ export default function PrescriptionScanScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { trimester } = useTrimester();
+  // Audit fix #7 : source unique Premium (RevenueCat + bonus Hēlo Points),
+  // au lieu de la lecture AsyncStorage brute qui refusait le Premium offert via points.
+  const { isPremium, requirePremium } = usePremium();
 
   const handleCapture = useCallback(async () => {
     if (!cameraRef.current || isProcessing) return;
@@ -81,10 +83,8 @@ export default function PrescriptionScanScreen() {
     setIsProcessing(true);
 
     try {
-      const premiumRaw = await AsyncStorage.getItem(PREMIUM_KEY);
-      const isPremium = premiumRaw === 'true';
       if (!isPremium) {
-        router.replace(ROUTES.paywall);
+        requirePremium('prescription');
         return;
       }
 
@@ -115,7 +115,7 @@ export default function PrescriptionScanScreen() {
     } finally {
       setIsProcessing(false);
     }
-  }, [isProcessing, trimester]);
+  }, [isProcessing, trimester, isPremium, requirePremium]);
 
   if (!permission) return <View style={styles.root} />;
 

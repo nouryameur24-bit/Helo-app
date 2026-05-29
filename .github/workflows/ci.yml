@@ -56,3 +56,10 @@ jobs:
       - name: TypeScript — mobile Hēlo app
         working-directory: artifacts/helo
         run: npx tsc --noEmit
+
+      # Audit fix #5 : les tests mobile (248 cas dont le moteur allergies
+      # SAFETY-CRITICAL preferenceMatcher) ne tournaient PAS en CI → une
+      # régression safety pouvait merger sans alerte. Maintenant bloquant.
+      - name: Tests — mobile Hēlo app (248 cases, incl. allergies safety)
+        working-directory: artifacts/helo
+        run: npx jest --ci

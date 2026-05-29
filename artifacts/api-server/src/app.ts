@@ -53,8 +53,11 @@ app.use(
     maxAge: 86400,
   }),
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Audit fix #8 : limite 12mb. Le défaut Express (100kb) REJETAIT les photos
+// base64 ~8mb de /analyze-ingredients-image (Claude Vision = LE MOAT) → 413
+// silencieux en prod. Vision + ocr-cleanup ont besoin d'un body large.
+app.use(express.json({ limit: '12mb' }));
+app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 
 app.use("/api", router);
 

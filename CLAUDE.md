@@ -679,6 +679,20 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
    **Validation** : tsc mobile + api-server ✓, 248/248 tests ✓.
 
+32. **Check-up final 10 agents — chaque ligne A→Z (30/05/2026)** : passe exhaustive (10 agents parallèles) après le Bloc 1. Bugs trouvés ET corrigés (commit `48aa6af`) :
+   - **🔴 SAFETY — allergène le plus mortel invisible** : `preferenceMatcher` n'avait PAS la racine `'cacahu'` → **« cacahuète » (arachide, anaphylaxie) jamais détectée** sous son nom courant FR. Idem `'caséin'`/`'caseinat'` (Lait — « caséinate » manquée). Fix : `ALLERGY_KEYWORDS` étendu (+ cacahu, caséin, caseinat, avoine, malt, tofu, anchois, gambas) + nouvelles entrées **Moutarde** et **Céleri**. Couvert par `__tests__/preferenceMatcher.test.ts` (régression cacahuète/caséinate).
+   - **🔴 Parsing préfixe langue cassé (backend + mobile)** : l'ancienne regex `/^(en|fr|…)\s*:?\s+/i` EXIGEAIT un espace après le préfixe → la forme OFF la + courante `en:e145` (deux-points SANS espace) leakait `En:e145` dans l'UI ET cassait le matching de l'additif. Fix : `/^(en|fr|de|es|it|nl|pt)(?::\s*|\s+)/i` dans **`lib/productLookup.ts` ET `api-server/src/lib/parseIngredients.ts`** — ⚠️ **DOIVENT rester synchros** (port l'un de l'autre).
+   - **🔴 api-server CI crashait à l'import** : `supabaseAdmin.ts` appelait `createClient` avec URL vide → throw au load → suite entière morte (phantom 0 test). Fix : URL placeholder `https://placeholder.supabase.co` quand `isSupabaseConfigured` false (même pattern que mobile `lib/supabase.ts`). Débloque **117 tests api-server**.
+   - **`recalls-poll` extractEans trop laxe** : ne capturait pas les GTIN-14 ni les EAN collés au texte. Fix : capture 8–14 chiffres + normalisation GTIN-14 → EAN-13. Insert passé en `upsert(onConflict:'rappel_id', ignoreDuplicates:true)` (anti-doublon si cron rejoue).
+   - **`HomeRecentScans` cartes inertes** : les cartes « Récents » de la home n'avaient AUCUN `onPress` → impossible de rouvrir un verdict. Fix : `router.push('/verdict/${id}')` (même pattern que MonPlacardView).
+   - **`VerdictBottomBar` catégorie hardcodée** : `category='cosmetic'` en dur → un **aliment** dangereux proposait des **alternatives cosmétiques**. Fix : dérivée de `product.source` (OFF/resto→food, OBF→cosmetic, sinon heuristique `categories[]`, fallback cosmetic = zéro régression).
+   - **`scraper supabase_writer.barcodeExists`** lisait `data` au lieu de `count` (avec `head:true`, `data` est null → existence toujours fausse → doublons). Fix : lecture de `count`.
+   - **3 tests api-server périmés corrigés** (assertions trop strictes/irréalistes, PAS de vrais bugs) : Yaourt « Lait » → `.includes('lait')`, préfixe langue, parenthèses single-char « X » → tokens réalistes. **Confirmé : `parseIngredients` PRÉSERVE les tokens complets (« Lait entier ») — c'est voulu (safety).**
+
+   **État final vérifié** : **mobile 250/250 (20 suites)**, **api-server 117/0** (avant : crash/phantom), `tsc --noEmit` clean sur les 3 packages (mobile + api-server + scripts).
+
+   **Dettes différées (documentées, non faites — volontaire)** : (a) durcissement prompt-injection sur l'INCI envoyée à Claude (`anthropic.ts`) ; (b) bypass header `requirePremium` (impossible à retirer tant que RevenueCat pas wiré) ; (c) cleanup 4 composants morts ; (d) copy « vous→tu » résiduel ; (e) `MaListeView` vide.
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -748,6 +762,10 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 - App Store Connect ASC App ID : `FILL_AFTER_CREATING_APP` (eas.json)
 
 ---
+
+*Last updated 30/05/2026 : Check-up final 10 agents (gotcha #32) — cacahuète/caséinate (allergène mortel invisible), regex préfixe langue `en:` (backend+mobile), supabaseAdmin CI crash, recalls extractEans, HomeRecentScans inert, VerdictBottomBar catégorie. Mobile 250/250, api-server 117/0, tsc clean ×3. (commit 48aa6af code + ce commit doc).
+
+--- archives sessions précédentes ci-dessous ---
 
 *Last updated 26/05/2026 (nuit) : Big push infra + scraping pilot live + mobile components.
 

@@ -30,12 +30,15 @@ function ScanCard({ item, index }: { item: ShelfProduct; index: number }) {
   return (
     <Animated.View entering={FadeInDown.delay(index * 80).duration(400)}>
       <Pressable
+        // Audit final fix : la carte était inerte (aucun onPress) → impossible
+        // de rouvrir un verdict depuis "Récents". Même pattern que MonPlacardView.
+        onPress={() => router.push(`/verdict/${encodeURIComponent(item.id)}`)}
         style={({ pressed }) => [
           styles.scanCard,
           { backgroundColor: Colors.surface, opacity: pressed ? 0.9 : 1 },
         ]}
         accessibilityRole="button"
-        accessibilityLabel={`${item.name}, ${item.verdictLabel}`}
+        accessibilityLabel={`Rouvrir ${item.name}, ${item.verdictLabel}`}
       >
         <View style={[styles.scanCardIcon, { backgroundColor: bg }]}>
           <Feather name={icon} size={20} color={accent} />

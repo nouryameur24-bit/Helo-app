@@ -56,6 +56,24 @@ describe('applyPersonalPreferences — allergies (safety-critical)', () => {
     }
   });
 
+  it('AUDIT FINAL — "cacahuète" (mot FR courant) déclenche l\'allergie Arachide', async () => {
+    // Régression du trou safety le + grave : l'allergène le + mortel, son mot
+    // FR le + courant, n'était PAS dans les keywords → bannière rouge ratée.
+    mockedGetPrefs.mockResolvedValue({ ...NO_PREFS, allergies: ['Arachide'] });
+    for (const name of ['Cacahuètes grillées', 'Beurre de cacahuète', 'cacahuete']) {
+      const { matches } = await applyPersonalPreferences([m(name, 'safe')]);
+      expect(matches[0].riskLevel).toBe('danger');
+      expect(matches[0].matchedAllergies).toContain('Arachide');
+    }
+  });
+
+  it('AUDIT FINAL — "caséinate" (dérivé lait) déclenche l\'allergie Lait', async () => {
+    mockedGetPrefs.mockResolvedValue({ ...NO_PREFS, allergies: ['Lait'] });
+    const { matches } = await applyPersonalPreferences([m('Caséinate de sodium', 'safe')]);
+    expect(matches[0].riskLevel).toBe('danger');
+    expect(matches[0].matchedAllergies).toContain('Lait');
+  });
+
   it('NE touche PAS un ingrédient non concerné par l\'allergie', async () => {
     mockedGetPrefs.mockResolvedValue({ ...NO_PREFS, allergies: ['Arachide'] });
     const { matches } = await applyPersonalPreferences([m('Eau / Aqua', 'safe')]);

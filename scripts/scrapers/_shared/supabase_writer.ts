@@ -99,12 +99,16 @@ export class SupabaseWriter {
    * de payer Claude pour rien).
    */
   async barcodeExists(barcode: string): Promise<boolean> {
-    const { data, error } = await this.client
+    // Audit final fix : avec `head: true`, PostgREST renvoie data=null et met le
+    // résultat dans `count`. L'ancien `(data?.length ?? 0) > 0` valait TOUJOURS
+    // false → le pré-check dedup ne déclenchait jamais → on re-payait Firecrawl +
+    // Claude pour des barcodes déjà en DB (~$70 gaspillés sur un run de 14k).
+    const { count, error } = await this.client
       .from('products')
       .select('id', { head: true, count: 'exact' })
       .eq('barcode', barcode);
     if (error) return false;
-    return (data?.length ?? 0) > 0;
+    return (count ?? 0) > 0;
   }
 
   /**

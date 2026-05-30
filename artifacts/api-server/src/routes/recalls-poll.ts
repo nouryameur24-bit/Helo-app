@@ -73,9 +73,22 @@ interface ExpoPushMessage {
 
 function extractEans(rec: RappelConsoRecord): string[] {
   const identif = rec.identification_des_produits ?? '';
-  // EAN13 = 13 digits, EAN8 = 8. Cherche tous les blocs de 8 ou 13 chiffres consécutifs.
-  const matches = identif.match(/\b\d{8,13}\b/g) ?? [];
-  return matches.filter((m) => m.length === 8 || m.length === 12 || m.length === 13);
+  // Audit final fix : l'ancien filtre `length===8||12||13` DROPPAIT les codes à
+  // 9/10/11 chiffres ET ratait les GTIN-14 (EAN13 à zéro de tête) + les codes
+  // collés à des lettres (`lot4006381333931`). Pour une feature safety (rappel
+  // sanitaire), un faux négatif = produit rappelé jamais notifié à la maman.
+  // On capture désormais toute séquence de 8 à 14 chiffres (frontières non-digit
+  // au lieu de \b, pour attraper "lot:3017620422003"), puis on normalise.
+  const raw = identif.match(/(?<!\d)\d{8,14}(?!\d)/g) ?? [];
+  const eans = new Set<string>();
+  for (const code of raw) {
+    eans.add(code);
+    // GTIN-14 → EAN13 (retire le zéro de tête) pour matcher products.barcode.
+    if (code.length === 14 && code.startsWith('0')) eans.add(code.slice(1));
+    // EAN13 à zéro de tête → UPC-12 (et inversement) pour maximiser le matching.
+    if (code.length === 13 && code.startsWith('0')) eans.add(code.slice(1));
+  }
+  return [...eans];
 }
 
 function severityFromRisque(risque: string): 'low' | 'medium' | 'high' | 'critical' {
@@ -178,9 +191,12 @@ async function recallsPollHandler(_req: Request, res: Response) {
       };
     });
 
+    // Audit final fix : upsert avec onConflict au lieu d'insert sec. Deux crons
+    // concurrents (ou un retry) sur le même rappel_id levaient une violation
+    // unique → throw → batch entier perdu, 0 push. ignoreDuplicates = idempotent.
     const { error: insertError, data: inserted } = await supabaseAdmin
       .from('product_recalls')
-      .insert(rows)
+      .upsert(rows, { onConflict: 'rappel_id', ignoreDuplicates: true })
       .select('id, rappel_id, product_name, brand, ean_codes, risk_severity, action_required');
 
     if (insertError) {

@@ -23,16 +23,25 @@ import { getUserPreferences } from '@/lib/userPreferences';
 
 // ─── Mappings préférence → keywords ingrédients ─────────────────────────────
 
+// ⚠️ SAFETY-CRITICAL (audit final) : ces keywords pilotent la bannière rouge
+// anaphylaxie. On utilise des STEMS (radicaux) pour matcher les dérivés via
+// substring `.includes()` :
+//   - 'caséin' matche "caséine" ET "caséinate" (l'ancien 'caséine' ratait "caséinate")
+//   - 'cacahu' matche "cacahuète"/"cacahuètes"/"cacahuete" (était TOTALEMENT absent !)
+// Principe : pour une allergie, sur-alerter > sous-alerter — on préfère un faux
+// positif rare à un allergène manqué (risque vital).
 const ALLERGY_KEYWORDS: Record<string, string[]> = {
-  Lait: ['lait', 'milk', 'lactose', 'whey', 'casein', 'caséine', 'lactosérum'],
-  'Oeuf': ['oeuf', 'œuf', 'egg', 'albumen', 'ovalbumin', 'ovalbumine'],
-  Gluten: ['gluten', 'wheat', 'blé', 'froment', 'épeautre', 'seigle', 'orge'],
-  Soja: ['soja', 'soy', 'soya', 'soybean'],
-  Arachide: ['arachide', 'peanut', 'arachis'],
-  'Fruits à coque': ['noisette', 'amande', 'noix', 'cajou', 'pistache', 'hazelnut', 'almond', 'walnut', 'cashew', 'pecan'],
-  Sésame: ['sésame', 'sesame', 'sesamum', 'tahin', 'tahini'],
-  Poisson: ['poisson', 'fish', 'thon', 'saumon', 'cabillaud', 'morue', 'maquereau'],
-  Crustacés: ['crustacé', 'shrimp', 'crab', 'crevette', 'homard', 'langoustine'],
+  Lait: ['lait', 'milk', 'lactose', 'lactos', 'whey', 'casein', 'caséin', 'caseinat', 'lactosérum', 'petit-lait', 'milk solids'],
+  'Oeuf': ['oeuf', 'œuf', 'egg', 'albumen', 'albumin', 'ovalbumin', 'ovalbumine', 'lysozyme', 'ovomucoïde'],
+  Gluten: ['gluten', 'wheat', 'blé', 'froment', 'épeautre', 'epeautre', 'seigle', 'orge', 'avoine', 'malt', 'kamut', 'triticale'],
+  Soja: ['soja', 'soy', 'soya', 'soybean', 'tofu', 'edamame', 'tempeh'],
+  Arachide: ['arachide', 'arachis', 'peanut', 'cacahu', 'cacahouèt'],
+  'Fruits à coque': ['noisette', 'amande', 'noix', 'cajou', 'pistache', 'macadamia', 'pécan', 'pecan', 'hazelnut', 'almond', 'walnut', 'cashew', 'pistachio'],
+  Sésame: ['sésame', 'sesame', 'sesamum', 'tahin', 'tahini', 'gomasio'],
+  Poisson: ['poisson', 'fish', 'thon', 'saumon', 'cabillaud', 'morue', 'maquereau', 'anchois', 'sardine', 'hareng', 'colin', 'merlu'],
+  Crustacés: ['crustacé', 'shrimp', 'crab', 'crabe', 'crevette', 'homard', 'langoustine', 'écrevisse', 'langouste', 'gambas'],
+  Moutarde: ['moutarde', 'mustard', 'sénevé'],
+  Céleri: ['céleri', 'celeri', 'celery'],
 };
 
 const DIETARY_KEYWORDS: Record<string, string[]> = {

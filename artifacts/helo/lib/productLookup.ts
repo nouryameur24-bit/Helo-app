@@ -446,7 +446,10 @@ export function parseIngredients(ingredientsText: string): string[] {
     // v4 — Retire les préfixes de langue OFF type "en:", "fr:", "en " (cas
     // où OFF renvoie des tags i18n mal stripés dans ingredients_text_fr).
     // DOIT rester aligné avec artifacts/api-server/src/lib/parseIngredients.ts.
-    .map((s) => s.replace(/^(en|fr|de|es|it|nl|pt)\s*:?\s+/i, '').trim())
+    // Audit final fix : `(?::\s*|\s+)` au lieu de `\s*:?\s+` — l'ancien exigeait
+    // un espace après le préfixe, ratant la forme OFF courante "en:e145" (colon
+    // sans espace) → "En:e145" leakait dans l'UI + cassait le matching.
+    .map((s) => s.replace(/^(en|fr|de|es|it|nl|pt)(?::\s*|\s+)/i, '').trim())
     .map((s) => s.replace(/[\s\-–—:.]+$/, '').trim())
     .map(normalizeAllergenCaps) // SOJA → soja, LAIT → lait
     .filter((s) => s.length >= 2)

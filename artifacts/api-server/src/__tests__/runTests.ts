@@ -148,19 +148,23 @@ group("parseIngredients — parens and sub-items", () => {
   });
 
   test("multiple parens groups extracted", () => {
-    const out = parseIngredients("X (a, b), Y (c, d)");
-    assert.ok(out.includes("X"));
-    assert.ok(out.includes("Y"));
-    assert.ok(out.some((s) => s.toLowerCase().includes("a")));
-    assert.ok(out.some((s) => s.toLowerCase().includes("c")));
+    // Audit final fix : l'ancien test utilisait des tokens 1 lettre ("X","a")
+    // que le filtre `length >= 2` (anti-junk, légitime) supprime → faux échec.
+    // Tokens réalistes : on vérifie que CHAQUE groupe de parens est extrait.
+    const out = parseIngredients("Huile (palme, colza), Cire (abeille, candelilla)");
+    assert.ok(out.includes("Huile"));
+    assert.ok(out.includes("Cire"));
+    assert.ok(out.some((s) => s.toLowerCase().includes("palme")));
+    assert.ok(out.some((s) => s.toLowerCase().includes("abeille")));
   });
 
   test("nested-like parens (single level only — OFF reality)", () => {
-    // OFF doesn't nest deeply; we test the regex handles flat parens
-    const out = parseIngredients("X (sous-item 1), Y");
-    assert.ok(out.includes("X"));
-    assert.ok(out.includes("Sous-item 1"));
-    assert.ok(out.includes("Y"));
+    // OFF doesn't nest deeply; we test the regex handles flat parens.
+    // Tokens réalistes (≥2 chars) — cf. fix ci-dessus.
+    const out = parseIngredients("Huile végétale (tournesol), Sucre");
+    assert.ok(out.includes("Huile végétale"));
+    assert.ok(out.some((s) => s.toLowerCase().includes("tournesol")));
+    assert.ok(out.includes("Sucre"));
   });
 
   test("empty parens don't break", () => {
@@ -594,9 +598,13 @@ group("Real-world — parsing snapshots", () => {
   test("Yaourt nature (food, lots of allergen caps from OFF)", () => {
     const raw = "LAIT entier, ferments lactiques.";
     const out = parseIngredients(raw);
-    // LAIT (caps) must be normalized to "Lait"
-    assert.ok(out.some((s) => s === "Lait"));
+    // Audit final fix : l'ancienne assertion `s === "Lait"` était trop stricte —
+    // parseIngredients préserve l'ingrédient COMPLET ("Lait entier"), correct ET
+    // safe (le matcher allergies trouve "lait" par substring). On teste donc la
+    // propriété qui compte : l'allergène reste trouvable + caps normalisées.
+    assert.ok(out.some((s) => s.toLowerCase().includes("lait")));
     assert.ok(out.some((s) => s.toLowerCase().includes("ferments")));
+    assert.ok(out.includes("Lait entier"));
   });
 
   test("Nutella (food, palm oil red flag)", () => {

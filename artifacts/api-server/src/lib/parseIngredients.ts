@@ -83,7 +83,11 @@ export function parseIngredients(ingredientsText: string): string[] {
     // Couvre : "en:e145" → "e145", "en natural flavouring" → "natural
     // flavouring", "fr arôme naturel" → "arôme naturel".
     // DOIT rester aligné avec artifacts/helo/lib/productLookup.ts (parseIngredients).
-    .map((s) => s.replace(/^(en|fr|de|es|it|nl|pt)\s*:?\s+/i, "").trim())
+    // Audit final fix : l'ancien `\s*:?\s+` EXIGEAIT un espace après le préfixe →
+    // la forme OFF la + courante "en:e145" (deux-points SANS espace) n'était PAS
+    // strippée → "En:e145" leakait dans l'UI + cassait le matching. `(?::\s*|\s+)`
+    // accepte soit deux-points(+espaces optionnels) soit espace(s).
+    .map((s) => s.replace(/^(en|fr|de|es|it|nl|pt)(?::\s*|\s+)/i, "").trim())
     .map((s) => s.replace(/[\s\-–—:.]+$/, "").trim())
     .map(normalizeAllergenCaps) // SOJA → soja, LAIT → lait
     .filter((s) => s.length >= 2)

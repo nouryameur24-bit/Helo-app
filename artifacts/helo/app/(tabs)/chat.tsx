@@ -118,6 +118,10 @@ export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const { isPremium, requirePremium } = usePremium();
   const scrollRef = useRef<ScrollView>(null);
+  // Jeton d'envoi : incrémenté à chaque envoi ET à chaque "stop". Permet
+  // d'ignorer le résultat d'une requête que l'utilisatrice a interrompue
+  // (sa réponse tardive ne doit ni s'afficher ni ré-armer le spinner).
+  const sendTokenRef = useRef(0);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -181,6 +185,9 @@ export default function ChatScreen() {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setIsTyping(true);
+    // Capture le jeton de CETTE requête. Si l'utilisatrice interrompt (stop)
+    // ou relance, sendTokenRef.current change → on ignore ce résultat au retour.
+    const token = ++sendTokenRef.current;
 
     // Analytics : envoi côté utilisateur. On émet ici (avant la réponse
     // assistant) pour ne pas perdre l'event si Claude timeout. `length` est
@@ -200,17 +207,23 @@ export default function ChatScreen() {
     try {
       reply = await sendMessage(messages, question);
     } catch (err) {
+      // Interrompue pendant l'attente → on ne touche à rien (le stop a déjà
+      // restauré l'UI). Sinon on affiche l'erreur.
+      if (sendTokenRef.current !== token) return;
       setIsTyping(false);
       if (isRateLimitError(err)) {
         Alert.alert(
           'Limite quotidienne atteinte',
-          'Vous avez atteint votre limite quotidienne de chat. Réessayez demain.',
+          'Tu as atteint ta limite quotidienne de chat. Réessaie demain.',
         );
       } else {
-        Alert.alert('Erreur', "Une erreur est survenue. Réessayez dans quelques instants.");
+        Alert.alert('Erreur', "Une erreur est survenue. Réessaie dans quelques instants.");
       }
       return;
     }
+
+    // Réponse arrivée APRÈS un stop/relance → on la jette silencieusement.
+    if (sendTokenRef.current !== token) return;
 
     const aiMsg: ChatMessage = {
       id: `a_${Date.now()}`,
@@ -224,6 +237,15 @@ export default function ChatScreen() {
     setIsTyping(false);
     await saveChatHistory(finalMessages);
   }, [input, isTyping, isPremium, messages]);
+
+  // ── Stop / interruption ─────────────────────────────────────────────────
+  // Rend la main immédiatement : on invalide la requête en cours (son résultat
+  // sera ignoré au retour) et on retire le spinner. L'input n'est jamais gelé
+  // → l'utilisatrice reprend le contrôle sans attendre le réseau.
+  const handleStop = useCallback(() => {
+    sendTokenRef.current++;
+    setIsTyping(false);
+  }, []);
 
   // ── Clear history ─────────────────────────────────────────────────────────
   const handleClear = useCallback(() => {
@@ -400,26 +422,43 @@ export default function ChatScreen() {
               style={styles.input}
               value={input}
               onChangeText={setInput}
-              placeholder="Posez votre question…"
+              placeholder="Pose ta question…"
               placeholderTextColor={Colors.textTertiary}
               multiline
               maxLength={500}
               returnKeyType="send"
               onSubmitEditing={() => handleSend()}
               blurOnSubmit={false}
-              editable={!isTyping}
+              // L'input n'est JAMAIS gelé : même pendant une réponse, on peut
+              // rédiger la suivante. Le double-envoi est empêché par le guard
+              // `isTyping` dans handleSend, pas par un verrou d'UI.
             />
-            <Pressable
-              style={({ pressed }) => [
-                styles.sendBtn,
-                (!input.trim() || isTyping) && styles.sendBtnDisabled,
-                pressed && styles.sendBtnPressed,
-              ]}
-              onPress={() => handleSend()}
-              disabled={!input.trim() || isTyping}
-            >
-              <Feather name="send" size={18} color={Colors.surface} />
-            </Pressable>
+            {isTyping ? (
+              /* Pendant la génération : bouton STOP (le garde-fou de chargement
+                 ne doit jamais empêcher l'interruption). */
+              <Pressable
+                style={({ pressed }) => [styles.sendBtn, pressed && styles.sendBtnPressed]}
+                onPress={handleStop}
+                accessibilityRole="button"
+                accessibilityLabel="Arrêter la réponse"
+              >
+                <Feather name="square" size={16} color={Colors.surface} />
+              </Pressable>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.sendBtn,
+                  !input.trim() && styles.sendBtnDisabled,
+                  pressed && styles.sendBtnPressed,
+                ]}
+                onPress={() => handleSend()}
+                disabled={!input.trim()}
+                accessibilityRole="button"
+                accessibilityLabel="Envoyer"
+              >
+                <Feather name="send" size={18} color={Colors.surface} />
+              </Pressable>
+            )}
           </View>
         )}
       </View>

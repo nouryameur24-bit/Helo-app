@@ -279,6 +279,15 @@ async function logBlockedQuery(query: string, med: string): Promise<void> {
 
 // ─── Edge function call ───────────────────────────────────────────────────────
 
+/**
+ * Timeout dur de l'appel chat. Sans ça, `supabase.functions.invoke` peut
+ * pendre indéfiniment sur un réseau lent → l'UI reste bloquée sur le spinner,
+ * input gelé, sans échappatoire (le garde-fou de chargement bloque
+ * l'interruption). 30s couvre le pire cas Claude Haiku, au-delà on rend la
+ * main à l'utilisatrice avec un message clair.
+ */
+const CHAT_TIMEOUT_MS = 30_000;
+
 export async function sendMessage(
   history: ChatMessage[],
   userMessage: string,
@@ -308,9 +317,24 @@ export async function sendMessage(
   ];
 
   try {
-    const { data, error } = await supabase.functions.invoke('chat', {
-      body: { messages, system: systemPrompt },
+    // Course entre l'appel réseau et un timeout dur : le premier qui répond
+    // gagne. Sur timeout, on throw → cat ci-dessous → message d'orientation.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('chat_timeout')), CHAT_TIMEOUT_MS);
     });
+    let data: unknown;
+    let error: unknown;
+    try {
+      ({ data, error } = (await Promise.race([
+        supabase.functions.invoke('chat', {
+          body: { messages, system: systemPrompt },
+        }),
+        timeoutPromise,
+      ])) as { data: unknown; error: unknown });
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
 
     if (error) {
       const status = await extractFunctionStatus(error);
@@ -331,6 +355,10 @@ export async function sendMessage(
     return text;
   } catch (e) {
     if (e instanceof RateLimitError) throw e;
+    if (e instanceof Error && e.message === 'chat_timeout') {
+      logError('anthropic.sendMessage.timeout', e);
+      return "La réponse met trop de temps à arriver. Vérifie ta connexion et réessaie.";
+    }
     logError('anthropic.sendMessage.network', e);
     return "Impossible de joindre l'assistant. Vérifiez votre connexion internet.";
   }

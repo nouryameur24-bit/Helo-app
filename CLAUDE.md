@@ -707,6 +707,15 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
    **Validation** : tsc mobile + api-server ✓, mobile 250/250 (20 suites), api-server 117/0.
 
+34. **🔴 FAILLE RLS CRITIQUE trouvée + colmatée en prod (02/07/2026)** : découverte en re-authentifiant le MCP Supabase (ancien token `sbp_4106…` révoqué → nouveau généré). Avec accès DB live, preuve d'une fuite invisible dans les migrations.
+   - **La faille** : des policies fourre-tout héritées `USING (true)` en `cmd=ALL`/`public` coexistaient avec les policies `*_owner` correctes. En RLS PostgreSQL les policies **permissives se combinent en OR** → `(user_id = auth.uid()) OR true = true` → les policies owner étaient **totalement neutralisées**. Invisible en lisant les migrations (qui ne montraient que les `*_owner`), visible SEULEMENT en base live.
+   - **Exploit prouvé** (clé anon publique du bundle, non authentifié) : lecture de **49 profiles** (allergies, trimestre, due date, `medical_conditions` = données de santé RGPD) + **scan_history** ; **écriture publique** sur `ingredients` → empoisonnement possible des verdicts safety (danger→safe pour toutes).
+   - **Le fix** (`supabase/migrations/20260702140000_rls_harden_drop_permissive.sql`, appliqué live via Management API) : DROP des policies `*_all`/`qual=true` sur profiles, scan_history, shopping_list, partner_links, pacts, pact_witnesses, community_submissions, product_alternatives + DROP écriture publique sur ingredients. Filets de remplacement créés là où il manquait : `profiles_delete_owner` (GDPR), `partner_links_update_participant`, `product_alternatives_select_public`, `community_submissions_update_authenticated` (fallback ghostCapture), owner-CRUD pacts/pact_witnesses. **`products`/`ingredients` gardent leur SELECT public** (catalogue, pas de PII). + `search_path` pinné sur les 7 SECURITY DEFINER (advisor).
+   - **Preuve post-fix** (même test anon) : profiles/scan_history/partner_links/shopping_list → **0 ligne** en anon, INSERT ingredients anon → **HTTP 401**, catalogue toujours lisible. **Aucune casse** : mobile a une session `signInAnonymously` (auth.uid() défini → owner policies OK), backend en service_role (bypass RLS), features touchées flag-off.
+   - ⚠️ **Le MCP `mcp__supabase__*` de CETTE session tourne encore sur l'ancien token** → ne remarchera qu'à la **prochaine session** (le serveur MCP ne recharge pas `~/.claude.json` à chaud). En attendant : requêtes via l'API Management (`curl` + `SUPABASE_ACCESS_TOKEN` du `.claude.json`). Nouveau token **jamais commité** (`.claude.json` hors repo).
+
+   **Validation** : migration idempotente (DROP IF EXISTS + CREATE), appliquée + vérifiée live. tsc + tests inchangés (fix DB pur, aucun code mobile/backend touché).
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -776,6 +785,8 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 - App Store Connect ASC App ID : `FILL_AFTER_CREATING_APP` (eas.json)
 
 ---
+
+*Last updated 02/07/2026 (soir) : 🔴 FAILLE RLS critique colmatée en prod (gotcha #34) — policies fourre-tout `qual=true` neutralisaient les owner (profiles/scan_history lisibles en anon = fuite données santé RGPD + écriture ingredients publique = empoisonnement verdict). Migration RLS appliquée + prouvée (anon → 0). Token Supabase rotationné. ⚠️ MCP supabase remarche à la prochaine session. ⚠️ Republier Replit Autoscale (audit #3).
 
 *Last updated 02/07/2026 : Audit #3 + fixes cross-couches (gotcha #33) — partner shelf RLS silencieux, cache backend matches:[], category backend→mobile (VerdictBottomBar prod), insert scan source/category, premium bonus offline, + 5 durcissements (timing-safe, RPC cache alternatives, sanitizer Vision, FinOps userId, bannières bébé). Mobile 250/250, api-server 117/0. ⚠️ Republier Replit Autoscale.
 

@@ -693,6 +693,20 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
    **Dettes différées (documentées, non faites — volontaire)** : (a) durcissement prompt-injection sur l'INCI envoyée à Claude (`anthropic.ts`) ; (b) bypass header `requirePremium` (impossible à retirer tant que RevenueCat pas wiré) ; (c) cleanup 4 composants morts ; (d) copy « vous→tu » résiduel ; (e) `MaListeView` vide.
 
+33. **Audit #3 inline + fixes cross-couches (02/07/2026)** : 3e passe complète, faite inline (fan-out agents KO sur session limit). Spécificité : tous les bugs trouvés étaient des **interactions entre couches** (mobile ↔ backend ↔ RLS), zone aveugle des audits mono-fichier. 5 bugs 🟠 + 5 mineurs, TOUS corrigés :
+   - **🟠 Partner "Ajouter au placard" échouait silencieusement** : `handleShelfSelect` insérait `scan_history` avec `user_id = effectiveUserId` (= ID de la maman quand le partenaire scanne) → rejeté par la policy RLS `scan_history_insert_owner` (`user_id = auth.uid()`), ET supabase-js retourne `{error}` sans throw → **l'erreur n'était jamais lue, la notification partait quand même**. Fix : insert sous l'ID authentifié (`userId`, le vrai acteur) + check `historyError` + notification seulement si la ligne est écrite.
+   - **🟠 Cache backend legacy `matches:[]`** (miroir serveur du bug #4 audit #2) : `routes/scan.ts` cache-hit servait `matches: cached.matches ?? []` → mobile : `totalCount=0`, pas de bannière incertitude, et `applyAllergiesToBackendResult` n'avait RIEN à bumper → **bannière rouge allergie impossible sur ces produits**. Fix : cache hit exige un breakdown non-vide, sinon MISS → recompute.
+   - **🟠 Fix VerdictBottomBar (48aa6af) inopérant en prod** : `useScan.adaptBackendResponse` écrit `source:'helo'` pour tout scan backend → la dérivation par source ne marchait QUE sur le fallback local. Fix : le backend expose `product.category` (= beltDomain) dans `ScanResponse` (+ persisté dans le cache payload), `useScan` le propage via `ProductData.categories`, VerdictBottomBar teste categories (+ branche `medication`).
+   - **🟠 Insert produit scan sans `source` ni `category`** : (a) régression data-hygiene (produits `source=NULL` de retour après le backfill 25/05) ; (b) **cosmétique découvert via OBF → category NULL → `/alternatives` le traitait en FOOD** (prompt sniper alimentaire, Ceinture food, filet OFF). Fix : `category: beltDomain, source: offSource` à l'insert.
+   - **🟠 Premium Hēlo Points ignoré offline** : `useScan` (gate offline) + `useOffline` (download DB) lisaient `PREMIUM_KEY` brut (cache RC seul). Fix : nouveau `lib/premiumStatus.ts` → `getEffectivePremium()` fusionne RC + `bonusPremiumUntil` depuis AsyncStorage SEUL (zéro réseau — marche hors-ligne). `usePremium.fetchBonusPremiumUntil` fait du write-through vers la nouvelle key `STORAGE_KEYS.bonusPremiumUntil` (`@helo_bonus_premium_until`) sur query réussie uniquement (un blip réseau ne révoque pas un bonus).
+   - **🟡 ×5** : comparaison secrets à temps constant (`secretsEqual` via `timingSafeEqual` dans appSecret + cron gate recalls) ; cache alternatives passé sur la RPC atomique `merge_analysis_cache` (fallback RMW si 42883) ; sortie Claude Vision **sanitizée serveur** (`sanitizeAnalysis` : category/confidence normalisées avec fallbacks safe, items non-string filtrés) + re-filtre mobile ; `userId` (header RC) passé au sniper pour l'attribution FinOps `api_usage` ; bannières verdict lisent `bannerVerdict` (= verdict AFFICHÉ, onglet bébé compris) avec **union des allergies** (jamais moins d'alerte qu'avant).
+
+   **Vérifié sain à l'audit #3 (pas touché)** : aucun chemin faux-safe (danger court-circuite, IA KO → caution non caché), fixes des audits 1-2 tous en place, 9 allergies onboarding 100% couvertes par `ALLERGY_KEYWORDS`, regex `en:` synchrone, secret scan repo propre, toggle premium Profile bien gated `__DEV__`, CI complète et bloquante.
+
+   **⚠️ Republier Replit Autoscale** après ce push (scan.ts/alternatives.ts/appSecret/analyze-ingredients-image modifiés). Le MCP Supabase était non-authentifié cette session → RLS vérifiée statiquement (migrations) ; la RPC `merge_analysis_cache` doit exister en prod (déployée depuis `docs/supabase-rpc.sql` — sinon fallback RMW automatique, pas de casse).
+
+   **Validation** : tsc mobile + api-server ✓, mobile 250/250 (20 suites), api-server 117/0.
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -762,6 +776,10 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 - App Store Connect ASC App ID : `FILL_AFTER_CREATING_APP` (eas.json)
 
 ---
+
+*Last updated 02/07/2026 : Audit #3 + fixes cross-couches (gotcha #33) — partner shelf RLS silencieux, cache backend matches:[], category backend→mobile (VerdictBottomBar prod), insert scan source/category, premium bonus offline, + 5 durcissements (timing-safe, RPC cache alternatives, sanitizer Vision, FinOps userId, bannières bébé). Mobile 250/250, api-server 117/0. ⚠️ Republier Replit Autoscale.
+
+--- archives sessions précédentes ci-dessous ---
 
 *Last updated 30/05/2026 : Check-up final 10 agents (gotcha #32) — cacahuète/caséinate (allergène mortel invisible), regex préfixe langue `en:` (backend+mobile), supabaseAdmin CI crash, recalls extractEans, HomeRecentScans inert, VerdictBottomBar catégorie. Mobile 250/250, api-server 117/0, tsc clean ×3. (commit 48aa6af code + ce commit doc).
 

@@ -52,6 +52,11 @@ export interface ScanProductInfoDto {
   name: string;
   brand: string | null;
   image_url: string | null;
+  /** Audit #3 — domaine produit calculé par le backend (beltDomain).
+   *  Absent sur les entrées cache pré-audit #3. Consommé par useScan pour
+   *  peupler ProductData.categories → VerdictBottomBar route les alternatives
+   *  vers la bonne catégorie (avant : 'cosmetic' pour tout scan backend). */
+  category?: 'food' | 'cosmetic' | 'medication' | null;
 }
 
 export interface ScanResponseDto {
@@ -520,7 +525,15 @@ export async function analyzeIngredientsWithClaudeVision(
       return null;
     }
 
-    return data.analysis;
+    // Audit #3 — défense en profondeur : le backend sanitize déjà, mais on
+    // re-filtre les items non-string ("[object Object]" dans l'UI sinon) au
+    // cas où une vieille version backend tourne encore côté Replit.
+    return {
+      ...data.analysis,
+      ingredients: data.analysis.ingredients.filter(
+        (i): i is string => typeof i === 'string' && i.trim().length > 0,
+      ),
+    };
   } catch {
     // Timeout, network error, parse error → fallback silencieux
     return null;

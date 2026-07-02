@@ -55,14 +55,20 @@ export function VerdictBottomBar({
     // dangereux proposait des alternatives cosmétiques. On dérive depuis la
     // source (signal fiable : OBF=cosmétique, OFF/resto=food). Fallback cosmetic
     // (comportement historique) si source inconnue → zéro régression.
+    // Audit #3 : sur le chemin backend (source='helo'), useScan peuple
+    // désormais categories avec le beltDomain serveur → les tests categories
+    // ci-dessous couvrent aussi la prod (+ branche medication ajoutée).
+    const categories = product.categories ?? [];
     const category =
       product.source === 'openfoodfacts' || product.source === 'helo_restaurant'
         ? 'food'
         : product.source === 'openbeautyfacts'
           ? 'cosmetic'
-          : (product.categories ?? []).some((c) => /aliment|food|boisson|snack|drink/i.test(c))
-            ? 'food'
-            : 'cosmetic';
+          : categories.some((c) => /m[ée]dicament|medication|drug/i.test(c))
+            ? 'medication'
+            : categories.some((c) => /aliment|food|boisson|snack|drink/i.test(c))
+              ? 'food'
+              : 'cosmetic';
     router.push({
       pathname: '/alternatives',
       params: {

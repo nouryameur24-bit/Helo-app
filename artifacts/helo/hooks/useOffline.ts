@@ -16,7 +16,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { downloadIngredientsDB, LAST_SYNC_KEY, syncOfflineScans } from '@/lib/offline';
-import { PREMIUM_KEY } from '@/lib/purchases';
+import { getEffectivePremium } from '@/lib/premiumStatus';
 
 interface UseOfflineReturn {
   isOffline: boolean;
@@ -43,8 +43,10 @@ export function useOffline(): UseOfflineReturn {
       }
     }
 
-    AsyncStorage.getItem(PREMIUM_KEY).then((val) => {
-      if (val === 'true') {
+    // Audit #3 fix : PREMIUM_KEY brut ignorait le Premium bonus Hēlo Points →
+    // la DB ingrédients locale n'était jamais téléchargée pour ces users.
+    getEffectivePremium().then((isPremium) => {
+      if (isPremium) {
         downloadIngredientsDB().catch(swallow);
       }
     }).catch(swallow);

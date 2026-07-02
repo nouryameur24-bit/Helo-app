@@ -1048,6 +1048,10 @@ router.get(
         searchKeyword: searchKeyword ?? fallbackKeywords[0] ?? "",
         isCosmetic, // M1
         log: req.log,
+        // Audit #3 — attribution FinOps : sans ça, tous les coûts sniper
+        // tombaient sur user_id='system' dans api_usage. Le header RC est le
+        // seul identifiant user dispo sur cette route (best-effort).
+        userId: req.header("x-helo-rc-user-id")?.trim() || null,
       });
       const validatedBarcodes = sniperResult.barcodes;
       // M3 : reason indexée par barcode pour propagation au DTO.
@@ -1300,14 +1304,34 @@ async function writeAlternativesCache(
 ): Promise<void> {
   const existingPhase =
     (existingCache[cacheKey] as Record<string, unknown> | undefined) ?? {};
-  const newCache = {
-    ...existingCache,
-    [cacheKey]: {
-      ...existingPhase,
-      alternatives_dtos: dtos,
-      alternatives_computed_at: new Date().toISOString(),
-    },
+  const phasePayload = {
+    ...existingPhase,
+    alternatives_dtos: dtos,
+    alternatives_computed_at: new Date().toISOString(),
   };
+
+  // Audit #3 fix : le read-modify-write de TOUTE la colonne analysis_cache
+  // pouvait écraser une écriture scan concurrente (clé tX_v4) faite entre
+  // notre lecture (étape 1 du handler) et ce write — lost update classique.
+  // On passe par la même RPC atomique que routes/scan.ts : jsonb_set ne
+  // touche QUE notre clé tX_v14, les autres phases/versions sont préservées.
+  const rpcResult = await supabaseAdmin.rpc("merge_analysis_cache", {
+    p_barcode: barcode,
+    p_phase_key: cacheKey,
+    p_payload: phasePayload,
+  });
+  if (!rpcResult.error) return;
+
+  // 42883 = RPC pas déployée → fallback transparent au RMW legacy (race
+  // documentée mais fonctionnel). Autres erreurs : on log puis fallback aussi
+  // pour ne pas perdre l'écriture (même politique que scan.ts).
+  if (rpcResult.error.code !== "42883") {
+    req.log.warn(
+      { err: rpcResult.error, barcode, cacheKey },
+      "merge_analysis_cache RPC failed — falling back to read-modify-write",
+    );
+  }
+  const newCache = { ...existingCache, [cacheKey]: phasePayload };
   const { error } = await supabaseAdmin
     .from("products")
     .update({ analysis_cache: newCache })

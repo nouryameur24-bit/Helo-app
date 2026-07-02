@@ -56,6 +56,10 @@ interface ScanResponse {
     name: string;
     brand: string | null;
     image_url: string | null;
+    /** Audit #3 — domaine produit (food/cosmetic/medication) exposé au mobile
+     *  pour que VerdictBottomBar route les alternatives vers la bonne
+     *  catégorie. Absent sur les entrées cache pré-audit #3 (optionnel). */
+    category?: IngredientDomain;
   };
   matches: ScanMatchDto[];
 }
@@ -131,25 +135,36 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
     >;
 
     // ── 2. CACHE HIT ─────────────────────────────────────────────────────
-    if (product && cache[cacheKey]) {
+    // Audit #3 fix : une entrée legacy SANS matches (écrite avant l'ajout du
+    // champ, même clé v4) renvoyait matches:[] au mobile → totalCount=0 →
+    // pas de bannière "composition inconnue" ET le re-check allergies mobile
+    // (applyAllergiesToBackendResult) n'avait AUCUN ingrédient à bumper →
+    // bannière rouge anaphylaxie impossible sur ces produits. On exige
+    // désormais un breakdown non-vide pour servir le cache ; sinon MISS →
+    // recompute complet, et merge_analysis_cache ré-écrit l'entrée au format
+    // à jour. Symétrique du garde-fou mobile useScan (audit #2 fix #4).
+    const cachedEntry = product ? cache[cacheKey] : undefined;
+    if (
+      product &&
+      cachedEntry &&
+      Array.isArray(cachedEntry.matches) &&
+      cachedEntry.matches.length > 0
+    ) {
       emitMetric(req.log, "scan_cache", { hit: true, barcode, cacheKey });
-      const cached = cache[cacheKey];
       const response: ScanResponse = {
-        status: cached.status,
-        verdict: cached.verdict,
-        glow_score: cached.glow_score,
-        explanation: cached.explanation,
-        source: cached.source,
+        status: cachedEntry.status,
+        verdict: cachedEntry.verdict,
+        glow_score: cachedEntry.glow_score,
+        explanation: cachedEntry.explanation,
+        source: cachedEntry.source,
         cached: true,
-        search_keyword: cached.search_keyword ?? null,
-        product: cached.product ?? {
+        search_keyword: cachedEntry.search_keyword ?? null,
+        product: cachedEntry.product ?? {
           name: productName ?? "",
           brand: productBrand,
           image_url: productImage,
         },
-        // Older cached entries (pre-matches) may lack this; default to []
-        // — UI will simply show an empty breakdown rather than crash.
-        matches: cached.matches ?? [],
+        matches: cachedEntry.matches,
       };
       res.json(response);
       return;
@@ -270,6 +285,20 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
     // Used when our knowledge sources cannot give a confident answer.
     const matchesDto: ScanMatchDto[] = det.matches.map(toMatchDto);
 
+    // Audit #3 — objet produit unique pour toutes les réponses, AVEC la
+    // catégorie (beltDomain). Avant, le mobile recevait un produit sans
+    // domaine → source:'helo' côté useScan → VerdictBottomBar retombait sur
+    // 'cosmetic' pour TOUT produit backend (un aliment dangereux proposait
+    // des alternatives cosmétiques — le bug 48aa6af ne corrigeait que le
+    // chemin local). Persisté dans le cache payload → les hits futurs
+    // porteront aussi la catégorie.
+    const productInfo: ScanResponse["product"] = {
+      name: productName ?? "",
+      brand: productBrand,
+      image_url: productImage,
+      category: beltDomain,
+    };
+
     const indeterminateResponse = (reason: string): ScanResponse => ({
       status: "a_eviter",
       verdict: "caution",
@@ -278,11 +307,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
       source: "deterministic",
       cached: false,
       search_keyword: null,
-      product: {
-        name: productName ?? "",
-        brand: productBrand,
-        image_url: productImage,
-      },
+      product: productInfo,
       matches: matchesDto,
     });
 
@@ -302,11 +327,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
         source: "deterministic",
         cached: false,
         search_keyword: null,
-        product: {
-          name: productName ?? "",
-          brand: productBrand,
-          image_url: productImage,
-        },
+        product: productInfo,
         matches: matchesDto,
       };
     } else if (!det.hasUnknown) {
@@ -323,11 +344,7 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
         source: "deterministic",
         cached: false,
         search_keyword: null,
-        product: {
-          name: productName ?? "",
-          brand: productBrand,
-          image_url: productImage,
-        },
+        product: productInfo,
         matches: matchesDto,
       };
     } else {
@@ -419,10 +436,20 @@ router.post("/scan", scanRateLimit, requireAppSecret, async (req, res) => {
       } else {
         // Cas produit absent : insert simple (pas de concurrent possible sur
         // un row qui n'existe pas encore).
+        // Audit #3 fix : source + category étaient omis. Conséquences :
+        //  (a) régression data-hygiene — les nouveaux produits repartaient à
+        //      source=NULL après le backfill du 25/05 ;
+        //  (b) un cosmétique découvert via OBF avait category NULL → la route
+        //      /alternatives le traitait comme FOOD (prompt sniper alimentaire,
+        //      Ceinture domaine food, live filet OFF au lieu d'OBF).
+        // Dans cette branche (!product), les ingrédients viennent forcément du
+        // fetch OFF/OBF → offSource est non-null.
         const insert = await supabaseAdmin.from("products").insert({
           barcode,
           name: productName,
           brand: productBrand,
+          category: beltDomain,
+          source: offSource,
           ingredients_raw: ingredientsRaw,
           image_url: productImage,
           analysis_cache: { [cacheKey]: payload },

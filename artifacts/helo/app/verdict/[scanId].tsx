@@ -421,7 +421,7 @@ export default function VerdictScreen() {
       // Shelf AsyncStorage update failure — verdict still shown, widget update skipped
     }
 
-    if (isSupabaseConfigured && shelfUserId) {
+    if (isSupabaseConfigured && userId) {
       try {
         const { data: productRow } = await supabase
           .from('products')
@@ -431,8 +431,17 @@ export default function VerdictScreen() {
 
         const productId = productRow?.id ?? null;
 
-        await supabase.from('scan_history').insert({
-          user_id: shelfUserId,
+        // Audit #3 fix (double bug) :
+        //  (a) l'insert utilisait effectiveUserId = l'ID de la MAMAN quand
+        //      c'est le partenaire qui ajoute → rejeté par la policy RLS
+        //      scan_history_insert_owner (WITH CHECK user_id = auth.uid()) ;
+        //  (b) supabase-js ne throw pas — il retourne { error }, qui n'était
+        //      jamais lu → la notification "X a ajouté au placard" partait
+        //      même quand RIEN n'avait été persisté.
+        // On insère sous l'ID authentifié (le vrai acteur du geste, RLS-valide
+        // pour les deux rôles) et on ne notifie que si la ligne a été écrite.
+        const { error: historyError } = await supabase.from('scan_history').insert({
+          user_id: userId,
           product_id: productId,
           trimester: phase === 'breastfeeding' ? null : phase,
           in_shelf: true,
@@ -440,7 +449,9 @@ export default function VerdictScreen() {
           verdict_at_shelf_add: verdict?.verdict ?? null,
         });
 
-        if (recipientUserId) {
+        if (historyError) {
+          if (__DEV__) console.warn('[verdict] scan_history insert rejected:', historyError.message);
+        } else if (recipientUserId) {
           await sendShelfAddNotification({
             firstName: senderFirstName,
             productName,
@@ -462,7 +473,7 @@ export default function VerdictScreen() {
     setToastVisible(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
-  }, [barcode, product, verdict, effectiveUserId, phase, recipientUserId, senderFirstName]);
+  }, [barcode, product, verdict, effectiveUserId, userId, phase, recipientUserId, senderFirstName]);
 
   const handleShare = useCallback(() => {
     if (!product || !verdict) return;
@@ -570,6 +581,16 @@ export default function VerdictScreen() {
   }
 
   if (!verdict || !product) return <LoadingScreen />;
+
+  // Audit #3 — les bannières lisent le verdict AFFICHÉ (onglet bébé compris),
+  // pas systématiquement le verdict grossesse. Pour l'allergie on prend
+  // l'UNION (jamais moins d'alerte qu'avant : si le recompute bébé local
+  // ratait un allergène que le verdict grossesse a détecté, on alerte quand
+  // même — principe sur-alerter > sous-alerter).
+  const bannerVerdict = displayVerdict ?? verdict;
+  const bannerAllergyWarnings = bannerVerdict.allergyWarnings?.length
+    ? bannerVerdict.allergyWarnings
+    : verdict.allergyWarnings;
 
   return (
     <View style={styles.root}>
@@ -890,7 +911,7 @@ export default function VerdictScreen() {
             ──────────────────────────────────────────────────────────────── */}
 
         {/* 1. Lot 17-02 — Bannière ROUGE allergène déclaré (TOP PRIORITY absolue) */}
-        <AllergyWarningBanner allergyWarnings={verdict.allergyWarnings} />
+        <AllergyWarningBanner allergyWarnings={bannerAllergyWarnings} />
 
         {/* 2. RECALL — rappel produit actif RappelConso (retrait acute > risque diététique) */}
         {recallMatch && <RecallAlertBanner recallMatch={recallMatch} />}
@@ -899,11 +920,11 @@ export default function VerdictScreen() {
         <PregnancyRisksBanner risks={product?.pregnancyRisks} />
 
         {/* 4. Lot 17-01 — Composition (partiellement) inconnue (honnêteté, anti faux-safe) */}
-        {verdict && (verdict.allIngredientsUnknown || (verdict.unknownRatio !== undefined && verdict.unknownRatio > 0.5)) && (
+        {(bannerVerdict.allIngredientsUnknown || (bannerVerdict.unknownRatio !== undefined && bannerVerdict.unknownRatio > 0.5)) && (
           <UnknownCompositionBanner
-            totalCount={verdict.totalCount ?? 0}
-            noSignalCount={verdict.noSignalCount}
-            allUnknown={verdict.allIngredientsUnknown ?? false}
+            totalCount={bannerVerdict.totalCount ?? 0}
+            noSignalCount={bannerVerdict.noSignalCount}
+            allUnknown={bannerVerdict.allIngredientsUnknown ?? false}
           />
         )}
 

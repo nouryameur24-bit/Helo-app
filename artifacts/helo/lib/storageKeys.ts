@@ -79,6 +79,11 @@ export const STORAGE_KEYS = {
 
   // ── Premium / usage limits ─────────────────────────────────────────
   isPremium: '@helo_is_premium',
+  /** Audit #3 — cache local de profiles.bonus_premium_until (Premium offert
+   *  via Hēlo Points). Écrit par usePremium à chaque fetch réussi, lu par
+   *  getEffectivePremium() pour les chemins hors-React ET hors-ligne
+   *  (useScan offline gate, useOffline download DB). ISO string ou absent. */
+  bonusPremiumUntil: '@helo_bonus_premium_until',
   scanLimit: '@helo_scan_limit',
   voiceLimit: '@helo_voice_limit',
   chatLimit: '@helo_chat_limit',

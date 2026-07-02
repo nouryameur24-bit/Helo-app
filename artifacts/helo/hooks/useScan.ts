@@ -32,7 +32,7 @@ import {
   getLocalIngredients,
   matchIngredientsLocal,
 } from '@/lib/offline';
-import { PREMIUM_KEY } from '@/lib/purchases';
+import { getEffectivePremium } from '@/lib/premiumStatus';
 import { track } from '@/lib/analytics';
 import { incrementPartnerScanCount } from '@/lib/partnerStats';
 import type {
@@ -114,12 +114,23 @@ function adaptBackendResponse(
   // ingredientsList reconstruit depuis matches → cohérent avec ce que le backend a parsé.
   const ingredientsList = matches.map((m) => m.ingredientName);
 
+  // Audit #3 fix : source:'helo' neutralisait la dérivation de catégorie de
+  // VerdictBottomBar (48aa6af) sur le chemin backend (= la prod) → fallback
+  // 'cosmetic' pour tout, y compris les aliments. Le backend expose désormais
+  // son beltDomain → on le propage via ProductData.categories.
+  const dtoCategory = dto.product.category;
+  const backendCategory =
+    dtoCategory === 'food' || dtoCategory === 'cosmetic' || dtoCategory === 'medication'
+      ? dtoCategory
+      : undefined;
+
   const product: ProductData = {
     barcode,
     name: dto.product.name,
     brand: dto.product.brand ?? '',
     imageUrl: dto.product.image_url,
     ingredientsList,
+    ...(backendCategory ? { categories: [backendCategory] } : {}),
     source: 'helo', // marqueur "passé par le backend Hēlo"
   };
 
@@ -262,8 +273,10 @@ export function useScan(): UseScanReturn {
     try {
       // ── Offline path ──────────────────────────────────────────────────────────
       if (isOffline) {
-        const premiumRaw = await AsyncStorage.getItem(PREMIUM_KEY);
-        const isPremium = premiumRaw === 'true';
+        // Audit #3 fix : PREMIUM_KEY brut = cache RevenueCat seul → le Premium
+        // offert via Hēlo Points (bonus_premium_until) était refusé ici.
+        // getEffectivePremium fusionne les deux sources, sans réseau (offline!).
+        const isPremium = await getEffectivePremium();
 
         if (!isPremium) {
           setState((s) => ({

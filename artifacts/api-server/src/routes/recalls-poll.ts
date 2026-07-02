@@ -17,6 +17,7 @@ import { Router, type IRouter, type Request, type Response, type NextFunction } 
 
 import { supabaseAdmin } from '../lib/supabaseAdmin.js';
 import { logger } from '../lib/logger.js';
+import { secretsEqual } from '../middlewares/appSecret.js';
 
 /**
  * Middleware : protège l'endpoint cron via x-helo-cron-secret header
@@ -30,7 +31,8 @@ function cronSecretGate(req: Request, res: Response, next: NextFunction) {
     res.status(503).json({ error: 'cron_not_configured' });
     return;
   }
-  if (provided !== expected) {
+  // Audit #3 : comparaison à temps constant (même durcissement que appSecret).
+  if (!provided || !secretsEqual(provided, expected)) {
     res.status(401).json({ error: 'unauthorized' });
     return;
   }

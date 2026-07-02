@@ -17,6 +17,7 @@ import {
   type PlanId,
 } from '@/lib/purchases';
 import { consumeScanQuota, getDailyScanCount, FREE_SCAN_LIMIT } from '@/lib/scanLimit';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 interface UsePremiumReturn {
@@ -50,9 +51,22 @@ async function fetchBonusPremiumUntil(): Promise<Date | null> {
       .select('bonus_premium_until')
       .eq('id', session.user.id)  // profiles.id = auth.users.id (pas .user_id)
       .maybeSingle();
-    if (error || !data?.bonus_premium_until) return null;
-    const until = new Date(data.bonus_premium_until);
-    return until > new Date() ? until : null;
+    // Erreur transitoire (réseau, RLS) → on renvoie null SANS toucher le cache
+    // local : un blip réseau ne doit pas révoquer un bonus valide hors-ligne.
+    if (error) return null;
+    const raw = data?.bonus_premium_until ?? null;
+    const until = raw ? new Date(raw) : null;
+    const active = until !== null && until > new Date();
+    // Audit #3 — write-through : getEffectivePremium() (useScan offline gate,
+    // useOffline download DB) lit ce cache pour honorer le Premium offert via
+    // Hēlo Points SANS réseau. Query réussie = source de vérité → on synchronise
+    // le cache dans les deux sens (set si actif, clear si absent/expiré).
+    if (active && until) {
+      await AsyncStorage.setItem(STORAGE_KEYS.bonusPremiumUntil, until.toISOString());
+    } else {
+      await AsyncStorage.removeItem(STORAGE_KEYS.bonusPremiumUntil);
+    }
+    return active ? until : null;
   } catch {
     return null;
   }

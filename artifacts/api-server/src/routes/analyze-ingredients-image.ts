@@ -147,6 +147,45 @@ INPUT (photo illisible/trop sombre) :
 
 JSON UNIQUEMENT. Pas de texte avant ou après le JSON.`;
 
+// ─── Sanitizer sortie Claude (audit #3) ─────────────────────────────────────
+// Le JSON parsé était renvoyé au mobile TEL QUEL (typé `unknown`). Un output
+// hors-schéma (category "Food" capitalisée, ingredients contenant des objets,
+// confidence manquante…) partait directement au client. On normalise chaque
+// champ avec des fallbacks SÛRS : confidence inconnue → "low" (le mobile
+// bascule alors sur l'OCR Google — direction safe), items non-string filtrés.
+function sanitizeAnalysis(raw: unknown): {
+  product_name: string | null;
+  brand: string | null;
+  category: "cosmetic" | "food" | "medication" | "unknown";
+  ingredients: string[];
+  confidence: "high" | "medium" | "low";
+  warnings: string[];
+  notes: string | null;
+} {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const str = (v: unknown): string | null =>
+    typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
+  const strArray = (v: unknown, max: number): string[] =>
+    Array.isArray(v)
+      ? v
+          .filter((i): i is string => typeof i === "string" && i.trim().length > 0)
+          .map((i) => i.trim())
+          .slice(0, max)
+      : [];
+  const cat = typeof r.category === "string" ? r.category.trim().toLowerCase() : "";
+  const conf = typeof r.confidence === "string" ? r.confidence.trim().toLowerCase() : "";
+  return {
+    product_name: str(r.product_name),
+    brand: str(r.brand),
+    category:
+      cat === "cosmetic" || cat === "food" || cat === "medication" ? cat : "unknown",
+    ingredients: strArray(r.ingredients, 200),
+    confidence: conf === "high" || conf === "medium" ? conf : "low",
+    warnings: strArray(r.warnings, 20),
+    notes: str(r.notes),
+  };
+}
+
 // ─── Route ──────────────────────────────────────────────────────────────────
 
 router.post("/analyze-ingredients-image", scanRateLimit, requireAppSecret, async (req, res) => {
@@ -240,7 +279,7 @@ router.post("/analyze-ingredients-image", scanRateLimit, requireAppSecret, async
     }
 
     res.json({
-      analysis,
+      analysis: sanitizeAnalysis(analysis),
       source: "claude_vision",
       latency_ms: t(),
     });

@@ -87,15 +87,15 @@ function generateTips(phaseKey: string, recentScans: ShelfItem[], fills: Record<
   const tips: NutritionTip[] = [];
   const names = recentScans.map((s) => (s.productName ?? '').toLowerCase());
   const caffeineCount = names.filter((n) => CAFFEINE_KEYWORDS.some((kw) => n.includes(kw))).length;
-  if (caffeineCount >= 2) tips.push({ icon: '☕', text: 'Vous avez scanné plusieurs produits contenant de la caféine récemment. Rappel : max 200mg/jour (≈2 espressos) pendant la grossesse.', type: 'warn' });
+  if (caffeineCount >= 2) tips.push({ icon: '☕', text: 'Tu as scanné plusieurs produits contenant de la caféine récemment. Rappel : max 200mg/jour (≈2 espressos) pendant la grossesse.', type: 'warn' });
   const dairyCount = names.filter((n) => ['lait', 'fromage', 'yaourt', 'kéfir'].some((kw) => n.includes(kw))).length;
-  if (dairyCount >= 3) tips.push({ icon: '🥛', text: 'Vous avez scanné beaucoup de produits laitiers cette semaine — excellent pour le calcium et la vitamine D !', type: 'good' });
-  if (phaseKey === '3' && (fills.iron ?? 0) < 40) tips.push({ icon: '🩸', text: 'Pensez à inclure des lentilles, du boudin noir (bien cuit) ou de la viande rouge 2-3x par semaine pour atteindre vos besoins en fer au T3.', type: 'info' });
+  if (dairyCount >= 3) tips.push({ icon: '🥛', text: 'Tu as scanné beaucoup de produits laitiers cette semaine — excellent pour le calcium et la vitamine D !', type: 'good' });
+  if (phaseKey === '3' && (fills.iron ?? 0) < 40) tips.push({ icon: '🩸', text: 'Pense à inclure des lentilles, du boudin noir (bien cuit) ou de la viande rouge 2-3x par semaine pour atteindre tes besoins en fer au T3.', type: 'info' });
   if (phaseKey === '1' && (fills.folate ?? 0) < 40) tips.push({ icon: '🥦', text: "L'acide folique est crucial au 1er trimestre. Misez sur les lentilles, l'avocat et les légumes verts feuillus chaque jour.", type: 'info' });
   const fishCount = names.filter((n) => ['saumon', 'sardine', 'maquereau', 'hareng'].some((kw) => n.includes(kw))).length;
-  if (fishCount >= 2) tips.push({ icon: '🐟', text: 'Bravo ! Votre consommation de poisson gras couvre bien vos besoins en oméga-3. Continuez à en manger 2x/semaine.', type: 'good' });
-  if (phaseKey === 'breastfeeding') tips.push({ icon: '💧', text: "N'oubliez pas de bien vous hydrater (1,5 à 2L d'eau/jour) — la production de lait augmente vos besoins hydriques.", type: 'info' });
-  if (recentScans.length === 0) tips.push({ icon: '📲', text: 'Scannez vos produits alimentaires et ajoutez-les à votre cuisine pour obtenir des conseils nutritionnels personnalisés !', type: 'info' });
+  if (fishCount >= 2) tips.push({ icon: '🐟', text: 'Bravo ! Ta consommation de poisson gras couvre bien tes besoins en oméga-3. Continue à en manger 2x/semaine.', type: 'good' });
+  if (phaseKey === 'breastfeeding') tips.push({ icon: '💧', text: "N'oublie pas de bien t'hydrater (1,5 à 2L d'eau/jour) — la production de lait augmente tes besoins hydriques.", type: 'info' });
+  if (recentScans.length === 0) tips.push({ icon: '📲', text: 'Scanne tes produits alimentaires et ajoute-les à ta cuisine pour obtenir des conseils nutritionnels personnalisés !', type: 'info' });
   return tips.slice(0, 3);
 }
 
@@ -132,7 +132,7 @@ export default function NutritionScreen() {
           <Animated.View entering={FadeInDown.delay(0).duration(400)} style={{ alignItems: 'center', paddingVertical: 60 }}>
             <ThemedText style={{ fontSize: 48 }}>👶</ThemedText>
             <ThemedText variant="displayMedium" color="textPrimary" style={{ marginTop: Spacing.lg, textAlign: 'center' }}>Mode Bébé actif</ThemedText>
-            <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: Spacing.sm, textAlign: 'center', lineHeight: 22 }}>Les conseils nutritionnels sont optimisés pour votre grossesse. Désactivez le Mode Bébé pour afficher vos besoins.</ThemedText>
+            <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: Spacing.sm, textAlign: 'center', lineHeight: 22 }}>Les conseils nutritionnels sont optimisés pour ta grossesse. Désactive le Mode Bébé pour afficher tes besoins.</ThemedText>
           </Animated.View>
         </ScrollView>
       </View>
@@ -153,7 +153,7 @@ export default function NutritionScreen() {
         </Pressable>
 
         <Animated.View entering={FadeInDown.delay(0).duration(400)} style={s.header}>
-          <ThemedText variant="displayMedium" color="textPrimary">Votre nutrition</ThemedText>
+          <ThemedText variant="displayMedium" color="textPrimary">Ta nutrition</ThemedText>
           <View style={s.phaseBadge}>
             <ThemedText style={{ fontSize: 14 }}>{phaseEmoji(phaseKey)}</ThemedText>
             <ThemedText variant="labelLarge" style={{ color: Colors.accent }}>
@@ -161,14 +161,14 @@ export default function NutritionScreen() {
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: 4 }}>
-            Apports estimés depuis votre cuisine — basé sur vos {recentScans.length} produit{recentScans.length !== 1 ? 's' : ''} scanné{recentScans.length !== 1 ? 's' : ''}
+            Apports estimés depuis ta cuisine — basé sur tes {recentScans.length} produit{recentScans.length !== 1 ? 's' : ''} scanné{recentScans.length !== 1 ? 's' : ''}
           </ThemedText>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(80).duration(400)}>
           <View style={s.sectionHeader}>
             <Feather name="activity" size={15} color={Colors.accent} />
-            <ThemedText variant="labelLarge" color="textSecondary">Besoins de votre phase</ThemedText>
+            <ThemedText variant="labelLarge" color="textSecondary">Besoins de ta phase</ThemedText>
           </View>
           <View style={s.card}>
             {phaseNeeds.length === 0 ? (
@@ -227,7 +227,7 @@ export default function NutritionScreen() {
           <View style={s.disclaimer}>
             <Feather name="info" size={13} color={Colors.textTertiary} />
             <ThemedText variant="bodySmall" color="textTertiary" style={{ flex: 1, lineHeight: 17 }}>
-              Ces informations sont des suggestions générales et ne remplacent pas les conseils d'un médecin ou d'une sage-femme. Consultez votre professionnel de santé pour des recommandations personnalisées.
+              Ces informations sont des suggestions générales et ne remplacent pas les conseils d'un médecin ou d'une sage-femme. Consulte ton professionnel de santé pour des recommandations personnalisées.
             </ThemedText>
           </View>
         </Animated.View>

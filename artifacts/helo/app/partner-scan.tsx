@@ -92,7 +92,7 @@ export default function PartnerScanScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       Alert.alert(
         'QR invalide',
-        "Ce QR ne contient pas de code partenaire Hēlo. Demandez à votre partenaire d'afficher son QR depuis l'app.",
+        "Ce QR ne contient pas de code partenaire Hēlo. Demande à ton partenaire d'afficher son QR depuis l'app.",
         [
           {
             text: 'OK',
@@ -170,7 +170,7 @@ export default function PartnerScanScreen() {
           <Feather name="x" size={22} color="#FFFFFF" />
         </Pressable>
         <ThemedText variant="labelLarge" color="surface" style={styles.topTitle}>
-          Scannez le QR de votre partenaire
+          Scanne le QR de ton partenaire
         </ThemedText>
         <View style={styles.closeBtnSpacer} />
       </View>
@@ -184,7 +184,7 @@ export default function PartnerScanScreen() {
         <View style={styles.hintPill}>
           <Feather name="maximize" size={14} color="#FFFFFF" />
           <ThemedText variant="bodySmall" color="surface" style={styles.hintText}>
-            Cadrez le QR code de votre partenaire
+            Cadre le QR code de ton partenaire
           </ThemedText>
         </View>
       </Animated.View>

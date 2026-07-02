@@ -202,7 +202,7 @@ export default function HistoryScreen() {
   }, [loadHistory]);
 
   const headerTitle = isPartner
-    ? `Historique de ${linkedFirstName ?? 'votre proche'}`
+    ? `Historique de ${linkedFirstName ?? 'ton proche'}`
     : 'Historique';
 
   return (
@@ -234,7 +234,7 @@ export default function HistoryScreen() {
                 Aucun scan pour l'instant
               </ThemedText>
               <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
-                Vos scans apparaîtront ici après votre première analyse.
+                Tes scans apparaîtront ici après ta première analyse.
               </ThemedText>
             </View>
           ) : null

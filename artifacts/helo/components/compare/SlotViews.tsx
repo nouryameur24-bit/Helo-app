@@ -30,7 +30,7 @@ export function EmptySlot({ label, onScan }: EmptySlotProps) {
         <Feather name="package" size={32} color={Colors.textTertiary} />
       </View>
       <ThemedText variant="bodyMedium" color="textTertiary" style={slot.hint}>
-        Scannez un produit
+        Scanne un produit
       </ThemedText>
       <TouchableOpacity style={slot.scanBtn} onPress={onScan} activeOpacity={0.8}>
         <Feather name="camera" size={18} color="#fff" style={{ marginRight: 6 }} />

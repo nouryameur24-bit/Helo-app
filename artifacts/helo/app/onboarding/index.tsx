@@ -353,7 +353,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
       >
         <Animated.View entering={FadeIn.delay(1200).duration(400)}>
           <ThemedText variant="bodySmall" color="textTertiary">
-            Appuyez pour continuer
+            Appuie pour continuer
           </ThemedText>
         </Animated.View>
       </Pressable>

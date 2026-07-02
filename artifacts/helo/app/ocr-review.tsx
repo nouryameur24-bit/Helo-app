@@ -197,7 +197,7 @@ export default function OcrReviewScreen() {
         );
       } else if (ingredients.length < 3) {
         setOcrWarning(
-          `Seuls ${ingredients.length} ingrédient${ingredients.length > 1 ? 's' : ''} détecté${ingredients.length > 1 ? 's' : ''}. Vous pouvez corriger le texte ci-dessus.`,
+          `Seuls ${ingredients.length} ingrédient${ingredients.length > 1 ? 's' : ''} détecté${ingredients.length > 1 ? 's' : ''}. Tu peux corriger le texte ci-dessus.`,
         );
       }
     } catch (err: unknown) {
@@ -205,11 +205,11 @@ export default function OcrReviewScreen() {
       if (msg.includes('NO_TEXT_DETECTED') || msg.includes('NO_API_KEY')) {
         setOcrWarning(
           msg.includes('NO_API_KEY')
-            ? 'Clé Google Vision manquante. Saisissez la liste manuellement.'
-            : 'Nous n\'avons pas pu lire le texte. Essayez avec plus de lumière ou un angle différent.',
+            ? 'Clé Google Vision manquante. Saisis la liste manuellement.'
+            : 'Nous n\'avons pas pu lire le texte. Essaie avec plus de lumière ou un angle différent.',
         );
       } else {
-        setOcrWarning('Erreur lors de l\'analyse OCR. Saisissez la liste manuellement.');
+        setOcrWarning('Erreur lors de l\'analyse OCR. Saisis la liste manuellement.');
       }
     } finally {
       setOcrLoading(false);
@@ -560,7 +560,7 @@ export default function OcrReviewScreen() {
             value={ocrText}
             onChangeText={setOcrText}
             multiline
-            placeholder="La liste d'ingrédients apparaîtra ici. Vous pouvez la corriger."
+            placeholder="La liste d'ingrédients apparaîtra ici. Tu peux la corriger."
             placeholderTextColor={Colors.textTertiary}
             textAlignVertical="top"
             scrollEnabled={false}
@@ -598,7 +598,7 @@ export default function OcrReviewScreen() {
         <View style={styles.infoBadge}>
           <Feather name="info" size={14} color={Colors.accent} />
           <ThemedText variant="bodySmall" color="textSecondary" style={{ marginLeft: 6, flex: 1 }}>
-            L'analyse sera adaptée à votre trimestre actuel et évaluera chaque ingrédient détecté.
+            L'analyse sera adaptée à ton trimestre actuel et évaluera chaque ingrédient détecté.
           </ThemedText>
         </View>
       </ScrollView>

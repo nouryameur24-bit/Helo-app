@@ -69,7 +69,7 @@ export default function MediumWidgetPreview({ score, week, trimester }: Props) {
               </ThemedText>
             </>
           ) : (
-            <ThemedText style={styles.trimesterMedium}>Configurez votre profil</ThemedText>
+            <ThemedText style={styles.trimesterMedium}>Configure ton profil</ThemedText>
           )}
         </View>
       </View>

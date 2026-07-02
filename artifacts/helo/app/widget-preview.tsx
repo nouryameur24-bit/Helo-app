@@ -89,7 +89,7 @@ export default function WidgetPreviewScreen() {
 
           <Animated.View entering={FadeInDown.delay(100).duration(400)}>
             <ThemedText variant="bodySmall" color="textTertiary" style={styles.previewLabel}>
-              Aperçu — vos vraies données
+              Aperçu — tes vraies données
             </ThemedText>
 
             <View style={styles.previewRow}>
@@ -129,21 +129,21 @@ export default function WidgetPreviewScreen() {
           </ThemedText>
 
           <View style={styles.stepsCard}>
-            <StepRow n={1} text="Sur votre iPhone, maintenez appuyé l'écran d'accueil jusqu'au mode édition." />
+            <StepRow n={1} text="Sur ton iPhone, maintiens appuyé l'écran d'accueil jusqu'au mode édition." />
             <View style={styles.stepDivider} />
-            <StepRow n={2} text='Appuyez sur le bouton "+" en haut à gauche pour ajouter un widget.' />
+            <StepRow n={2} text='Appuie sur le bouton "+" en haut à gauche pour ajouter un widget.' />
             <View style={styles.stepDivider} />
             <StepRow n={3} text='Recherchez "Hēlo" dans la liste des widgets disponibles.' />
             <View style={styles.stepDivider} />
-            <StepRow n={4} text='Choisissez la taille souhaitée (Petit ou Moyen) et appuyez sur "Ajouter le widget".' />
+            <StepRow n={4} text='Choisis la taille souhaitée (Petit ou Moyen) et appuie sur "Ajouter le widget".' />
             <View style={styles.stepDivider} />
-            <StepRow n={5} text='Le widget affiche votre Glow Score en temps réel. Il se met à jour à chaque scan !' />
+            <StepRow n={5} text='Le widget affiche ton Glow Score en temps réel. Il se met à jour à chaque scan !' />
           </View>
 
           <View style={styles.infoCard}>
             <Feather name="info" size={15} color={Colors.accent} />
             <ThemedText variant="bodySmall" color="textSecondary" style={styles.infoText}>
-              Le widget est disponible dans la version native de Hēlo (App Store). Il utilise les App Groups iOS pour partager votre Glow Score en temps réel avec l'écran d'accueil.
+              Le widget est disponible dans la version native de Hēlo (App Store). Il utilise les App Groups iOS pour partager ton Glow Score en temps réel avec l'écran d'accueil.
             </ThemedText>
           </View>
         </Animated.View>
@@ -157,7 +157,7 @@ export default function WidgetPreviewScreen() {
           <View style={styles.dataCard}>
             {[
               { icon: 'zap', label: 'Glow Score', desc: 'Mis à jour à chaque scan produit', color: Colors.accent },
-              { icon: 'calendar', label: 'Semaine de grossesse', desc: 'Calculée depuis votre DPA', color: '#7CB69F' },
+              { icon: 'calendar', label: 'Semaine de grossesse', desc: 'Calculée depuis ton DPA', color: '#7CB69F' },
               { icon: 'layers', label: 'Trimestre actuel', desc: 'T1 → T2 → T3 automatiquement', color: Colors.caution },
             ].map((item, i) => (
               <React.Fragment key={item.label}>
@@ -199,17 +199,17 @@ export default function WidgetPreviewScreen() {
               {
                 icon: '⌚',
                 title: 'Complication cadran',
-                desc: 'Glow Score + cercle coloré visible directement sur le cadran de votre montre.',
+                desc: 'Glow Score + cercle coloré visible directement sur le cadran de ta montre.',
               },
               {
                 icon: '📸',
                 title: 'Quick Scan depuis la montre',
-                desc: "Démarrez un scan de produit depuis votre poignet, le scanner s'ouvre sur l'iPhone.",
+                desc: "Démarre un scan de produit depuis ton poignet, le scanner s'ouvre sur l'iPhone.",
               },
               {
                 icon: '📳',
                 title: 'Haptiques & alertes',
-                desc: "Vibration douce quand un produit de votre placard fait l'objet d'un rappel, ou lors d'un changement de trimestre.",
+                desc: "Vibration douce quand un produit de ton placard fait l'objet d'un rappel, ou lors d'un changement de trimestre.",
               },
             ].map((feature, i) => (
               <React.Fragment key={feature.title}>
@@ -242,7 +242,7 @@ export default function WidgetPreviewScreen() {
               Un problème avec le widget ?
             </ThemedText>
             <ThemedText variant="bodySmall" color="textTertiary" style={styles.ctaSub}>
-              Notre équipe est là pour vous aider.
+              Notre équipe est là pour toi.
             </ThemedText>
             <Pressable
               onPress={() => Linking.openURL('mailto:support@helo-app.fr?subject=Widget iOS')}

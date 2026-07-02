@@ -43,14 +43,14 @@ const ROLES: RoleCard[] = [
     role: "pregnant",
     Illustration: IllustrationTrimester,
     title: "Je suis enceinte",
-    description: "Analysez vos produits au quotidien et suivez votre grossesse semaine par semaine.",
+    description: "Analyse tes produits au quotidien et suis ta grossesse semaine par semaine.",
     gradient: [Colors.accentLight, "#FFF0D0"],
   },
   {
     role: "partner",
     Illustration: IllustrationCommunity,
     title: "J'accompagne",
-    description: "Scannez des produits pour votre proche et accédez à son placard.",
+    description: "Scanne des produits pour ton proche et accédez à son placard.",
     gradient: ["#EAF3FF", "#D5E8FF"],
   },
 ];
@@ -184,7 +184,7 @@ export default function RoleSelectionScreen() {
           Bienvenue sur Hēlo
         </ThemedText>
         <ThemedText variant="bodyLarge" color="textSecondary" style={styles.subtitle}>
-          Comment souhaitez-vous utiliser l'application ?
+          Comment souhaites-tu utiliser l'application ?
         </ThemedText>
       </Animated.View>
 
@@ -211,7 +211,7 @@ export default function RoleSelectionScreen() {
       >
         <Feather name="shield" size={14} color={Colors.textTertiary} />
         <ThemedText variant="bodySmall" color="textTertiary" style={{ marginLeft: 6 }}>
-          Vos données restent sur votre appareil
+          Tes données restent sur ton appareil
         </ThemedText>
       </Animated.View>
     </View>

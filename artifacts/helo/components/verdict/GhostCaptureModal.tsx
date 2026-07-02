@@ -113,7 +113,7 @@ export function GhostCaptureModal({
         ) : (
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
             Ce produit n'est pas encore dans notre base.{'\n'}
-            Photographiez la composition et nous l'analyserons pour vous{' '}
+            Photographie la composition et nous l'analysera pour toi{' '}
             <ThemedText variant="bodyMedium" style={styles.accentText}>et toute la communauté</ThemedText>
             {' '}✨
           </ThemedText>

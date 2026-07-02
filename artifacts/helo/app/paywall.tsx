@@ -170,7 +170,7 @@ export default function PaywallScreen() {
   }, [trigger]);
 
   const triggerMessages: Record<string, string> = {
-    scan_limit:   'Vous avez atteint vos 5 scans gratuits du jour.',
+    scan_limit:   'Tu as atteint tes 5 scans gratuits du jour.',
     feature:      'Fonctionnalité réservée aux abonnées Premium.',
     shelf_limit:  'Le placard gratuit est limité à 20 produits.',
     search:       'La recherche par nom est réservée aux abonnées Premium.',
@@ -196,7 +196,7 @@ export default function PaywallScreen() {
     } catch {
       Alert.alert(
         'Achat impossible',
-        'Impossible de traiter votre achat. Vérifiez votre connexion et réessayez.',
+        'Impossible de traiter ton achat. Vérifie ta connexion et réessaie.',
       );
     } finally {
       setPurchasing(false);
@@ -209,13 +209,13 @@ export default function PaywallScreen() {
     try {
       const success = await restore();
       if (success) {
-        Alert.alert('Achats restaurés', 'Votre abonnement Premium a été rétabli.');
+        Alert.alert('Achats restaurés', 'Ton abonnement Premium a été rétabli.');
         safeBack();
       } else {
         Alert.alert('Aucun achat trouvé', 'Aucun abonnement Premium actif trouvé sur ce compte.');
       }
     } catch {
-      Alert.alert('Erreur', 'Impossible de restaurer vos achats. Réessayez plus tard.');
+      Alert.alert('Erreur', 'Impossible de restaurer tes achats. Réessaie plus tard.');
     } finally {
       setRestoring(false);
     }
@@ -254,7 +254,7 @@ export default function PaywallScreen() {
             Hēlo Premium
           </ThemedText>
           <ThemedText variant="bodyMedium" style={s.heroSub}>
-            Protégez votre grossesse sans compromis
+            Protégez ta grossesse sans compromis
           </ThemedText>
           {triggerMsg && (
             <View style={s.triggerBanner}>
@@ -284,7 +284,7 @@ export default function PaywallScreen() {
         {/* Plans */}
         <View style={s.section}>
           <ThemedText variant="labelLarge" color="textPrimary" style={s.sectionTitle}>
-            Choisissez votre formule
+            Choisis ta formule
           </ThemedText>
           <View style={s.plans}>
             {PLANS.map((plan) => (
@@ -346,8 +346,8 @@ export default function PaywallScreen() {
           {/* Legal */}
           <ThemedText variant="bodySmall" color="textTertiary" style={s.legal}>
             {Platform.OS === 'ios'
-              ? 'Paiement débité sur votre compte Apple ID à confirmation d\'achat. Renouvelable automatiquement. Gérez vos abonnements dans les Réglages.'
-              : 'Paiement via Google Play. Abonnement renouvelable. Gérez-le dans les paramètres Google Play.'}
+              ? 'Paiement débité sur ton compte Apple ID à confirmation d\'achat. Renouvelable automatiquement. Gère tes abonnements dans les Réglages.'
+              : 'Paiement via Google Play. Abonnement renouvelable. Gère-le dans les paramètres Google Play.'}
             {'\n'}
             Annulable à tout moment · CGU · Confidentialité
           </ThemedText>

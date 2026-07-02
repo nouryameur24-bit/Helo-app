@@ -23,7 +23,7 @@ export const HomeHeroCTA = React.memo(function HomeHeroCTA() {
             Scanner un produit
           </ThemedText>
           <ThemedText variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)', marginBottom: Spacing.xl }}>
-            Analysez la sécurité des ingrédients en quelques secondes
+            Analyse la sécurité des ingrédients en quelques secondes
           </ThemedText>
           <Pressable
             style={({ pressed }) => [

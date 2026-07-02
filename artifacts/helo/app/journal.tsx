@@ -193,7 +193,7 @@ export default function JournalScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.emptyState}>
             <ThemedText variant="headlineMedium" style={styles.emptyEmoji}>📖</ThemedText>
             <ThemedText variant="bodyLarge" color="textSecondary" style={styles.emptyText}>
-              Votre journal est vide. Commencez à écrire votre première entrée !
+              Ton journal est vide. Commence à écrire ta première entrée !
             </ThemedText>
           </Animated.View>
         }

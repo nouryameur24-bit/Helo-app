@@ -92,7 +92,7 @@ export default function PartnerCodeScreen() {
     try {
       const result = await lookupPartnerCode(codeToSubmit);
       if (!result) {
-        setError("Code invalide. Vérifiez le code et réessayez.");
+        setError("Code invalide. Vérifie le code et réessaie.");
         triggerShake();
         setLoading(false);
         return;
@@ -101,7 +101,7 @@ export default function PartnerCodeScreen() {
       const partnerUserId = await getOrCreateUserId();
 
       if (result.userId === partnerUserId) {
-        setError("Vous ne pouvez pas vous lier à votre propre compte.");
+        setError("Tu ne peux pas te lier à ton propre compte.");
         triggerShake();
         setLoading(false);
         return;
@@ -112,9 +112,9 @@ export default function PartnerCodeScreen() {
       } catch (linkErr) {
         const msg = linkErr instanceof Error ? linkErr.message : '';
         if (msg.includes('unique') || msg.includes('duplicate')) {
-          setError("Ce code est déjà lié à un autre partenaire. Demandez-lui de régénérer son code.");
+          setError("Ce code est déjà lié à un autre partenaire. Demande-lui de régénérer son code.");
         } else {
-          setError("Impossible de créer le lien. Réessayez.");
+          setError("Impossible de créer le lien. Réessaie.");
         }
         triggerShake();
         setLoading(false);
@@ -131,7 +131,7 @@ export default function PartnerCodeScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/onboarding/partner-welcome");
     } catch (err) {
-      setError("Une erreur est survenue. Réessayez.");
+      setError("Une erreur est survenue. Réessaie.");
       triggerShake();
     } finally {
       setLoading(false);
@@ -185,10 +185,10 @@ export default function PartnerCodeScreen() {
         <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.header}>
           <ThemedText style={styles.emoji}>💙</ThemedText>
           <ThemedText variant="displayMedium" color="textPrimary" style={styles.title}>
-            Entrez le code
+            Entre le code
           </ThemedText>
           <ThemedText variant="bodyLarge" color="textSecondary" style={styles.subtitle}>
-            Demandez à votre proche de partager son code à 6 caractères depuis l'application.
+            Demande à ton proche de partager son code à 6 caractères depuis l'application.
           </ThemedText>
         </Animated.View>
 
@@ -236,7 +236,7 @@ export default function PartnerCodeScreen() {
 
         <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.nameField}>
           <ThemedText variant="labelSmall" color="textSecondary" style={styles.nameLabel}>
-            Votre prénom
+            Ton prénom
           </ThemedText>
           <TextInput
             style={styles.nameInput}

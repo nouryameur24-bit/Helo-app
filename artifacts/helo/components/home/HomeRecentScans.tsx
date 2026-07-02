@@ -78,7 +78,7 @@ export const HomeRecentScans = React.memo(function HomeRecentScans({ shelf }: Pr
       <View style={styles.scanList}>
         {shelf.length === 0 ? (
           // Lot 16-01 — Empty state polish : avant un simple Pressable
-          // "Scannez votre premier produit", maintenant une vraie carte
+          // "Scanne ton premier produit", maintenant une vraie carte
           // avec icone, baseline rassurante et CTA explicite.
           <Pressable
             onPress={() => router.push('/(tabs)/scan')}

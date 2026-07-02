@@ -87,7 +87,7 @@ const progressStyles = StyleSheet.create({
   },
 });
 
-// ─── Slide 1 — Votre semaine ──────────────────────────────────────────────────
+// ─── Slide 1 — Ton semaine ──────────────────────────────────────────────────
 
 function SlideVotreSemaine({
   week,
@@ -118,7 +118,7 @@ function SlideVotreSemaine({
           Semaine {week}
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm }}>
-          Voici votre résumé personnalisé
+          Voici ton résumé personnalisé
         </ThemedText>
 
         <View style={slide.divider} />
@@ -238,7 +238,7 @@ function SlideDecouverte({ onAddToList }: { onAddToList: () => void }) {
             <View style={slide.addedRow}>
               <Feather name="check-circle" size={20} color={Colors.safe} />
               <ThemedText variant="labelLarge" style={{ color: Colors.safe, marginLeft: Spacing.sm }}>
-                Ajouté à votre liste !
+                Ajouté à ta liste !
               </ThemedText>
             </View>
           ) : (
@@ -312,7 +312,7 @@ function SlideAlertes({ riskProducts }: { riskProducts: ShelfProduct[] }) {
               Tout est au vert !
             </ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={slide.allGreenBody}>
-              Votre placard ne contient aucun produit à risque pour cette semaine. Bravo !
+              Ton placard ne contient aucun produit à risque pour cette semaine. Bravo !
             </ThemedText>
           </View>
         ) : (
@@ -321,7 +321,7 @@ function SlideAlertes({ riskProducts }: { riskProducts: ShelfProduct[] }) {
               {riskProducts.length} produit{riskProducts.length > 1 ? 's' : ''} à surveiller
             </ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm, marginBottom: Spacing.xl }}>
-              Ces produits de votre placard méritent votre attention.
+              Ces produits de ton placard méritent ton attention.
             </ThemedText>
 
             <View style={slide.alertList}>
@@ -367,7 +367,7 @@ function SlidePartager({ glowScore, week }: { glowScore: number; week: number })
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `Semaine ${week} de grossesse — mon Glow Score Hēlo est de ${glowScore}/100 ! Analysez vos produits en toute sécurité avec Hēlo.`,
+        message: `Semaine ${week} de grossesse — mon Glow Score Hēlo est de ${glowScore}/100 ! Analyse tes produits en toute sécurité avec Hēlo.`,
       });
     } catch (err) {
       // Share not supported in web renderer — no-op for native mobile app
@@ -386,7 +386,7 @@ function SlidePartager({ glowScore, week }: { glowScore: number; week: number })
         </View>
 
         <ThemedText variant="headlineLarge" color="textPrimary" style={{ marginTop: Spacing.xl }}>
-          Partagez votre score
+          Partage ton score
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm }}>
           Inspirez d'autres mamans à prendre soin d'elles pendant la grossesse.

@@ -81,10 +81,10 @@ export default function TermsScreen() {
 
         <Section title="4. Protection des données personnelles">
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Hēlo collecte et traite des données personnelles dans le respect du Règlement Général sur la Protection des Données (RGPD) et de la loi Informatique et Libertés. Pour plus de détails, consultez notre Politique de confidentialité.
+            Hēlo collecte et traite des données personnelles dans le respect du Règlement Général sur la Protection des Données (RGPD) et de la loi Informatique et Libertés. Pour plus de détails, consulte notre Politique de confidentialité.
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Les données collectées sont nécessaires au fonctionnement du service et ne sont jamais vendues à des tiers. Vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données.
+            Les données collectées sont nécessaires au fonctionnement du service et ne sont jamais vendues à des tiers. Tu disposes d'un droit d'accès, de rectification, de suppression et de portabilité de tes données.
           </ThemedText>
         </Section>
 
@@ -102,12 +102,12 @@ export default function TermsScreen() {
             Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation ne s'applique pas aux contenus numériques fournis sur un support immatériel dont l'exécution a commencé avec l'accord du consommateur.
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Pour les abonnements, vous pouvez annuler à tout moment depuis les paramètres de votre store (App Store ou Google Play). L'accès premium reste actif jusqu'à la fin de la période déjà payée.
+            Pour les abonnements, tu peux annuler à tout moment depuis les paramètres de ton store (App Store ou Google Play). L'accès premium reste actif jusqu'à la fin de la période déjà payée.
           </ThemedText>
         </Section>
 
         <ThemedText variant="bodySmall" color="textTertiary" style={styles.footer}>
-          Pour toute question relative aux présentes mentions légales, vous pouvez nous contacter à l'adresse : contact@helo-app.fr
+          Pour toute question relative aux présentes mentions légales, tu peux nous contacter à l'adresse : contact@helo-app.fr
         </ThemedText>
       </ScrollView>
     </View>

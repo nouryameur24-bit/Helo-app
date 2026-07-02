@@ -33,7 +33,7 @@ export const HomeShelfScanCTA = React.memo(function HomeShelfScanCTA({ isPremium
             Scanner une étagère
           </ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
-            Analysez tous vos produits en une photo
+            Analyse tous tes produits en une photo
           </ThemedText>
         </View>
         {!isPremium && (

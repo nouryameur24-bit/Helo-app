@@ -26,11 +26,11 @@ const TRIMESTER_INFO = {
     weeks: 'Semaines 1–13',
     headline: 'Les fondations de la vie',
     description:
-      'Votre bébé développe ses organes vitaux. C\'est une période de grandes transformations pour vous deux. Des soins adaptés sont essentiels dès maintenant.',
+      'Ton bébé développe ses organes vitaux. C\'est une période de grandes transformations pour toi et ton bébé. Des soins adaptés sont essentiels dès maintenant.',
     tips: [
-      'Évitez les rétinoïdes et les perturbateurs endocriniens',
-      'Privilégiez les produits certifiés sans parabènes',
-      'Consultez votre sage-femme pour toute question',
+      'Évite les rétinoïdes et les perturbateurs endocriniens',
+      'Privilégie les produits certifiés sans parabènes',
+      'Consulte ta sage-femme pour toute question',
     ],
   },
   2: {
@@ -38,10 +38,10 @@ const TRIMESTER_INFO = {
     weeks: 'Semaines 14–26',
     headline: 'La belle période',
     description:
-      'Votre bébé grandit et bouge. Les nausées s\'atténuent pour la plupart. Profitez de cette énergie retrouvée tout en continuant à protéger votre grossesse.',
+      'Ton bébé grandit et bouge. Les nausées s\'atténuent pour la plupart. Profite de cette énergie retrouvée tout en continuant à protéger ta grossesse.',
     tips: [
-      'Continuez à éviter les huiles essentielles non validées',
-      'Hydratez votre peau quotidiennement',
+      'Continue à éviter les huiles essentielles non validées',
+      'Hydrate ta peau quotidiennement',
       'Certains ingrédients déconseillés en T1 sont tolérés en T2',
     ],
   },
@@ -50,11 +50,11 @@ const TRIMESTER_INFO = {
     weeks: 'Semaines 27–40',
     headline: 'La dernière ligne droite',
     description:
-      'Votre bébé se prépare à naître. Votre corps travaille dur. Prenez soin de vous avec des produits doux et validés pour cette étape finale.',
+      'Ton bébé se prépare à naître. Ton corps travaille dur. Prends soin de toi avec des produits doux et validés pour cette étape finale.',
     tips: [
-      'Préparez votre peau à l\'accouchement avec des huiles douces',
-      'Vérifiez vos produits de puériculture avec Hēlo',
-      'Évitez tout nouveau produit non scanné',
+      'Prépare ta peau à l\'accouchement avec des huiles douces',
+      'Vérifie tes produits de puériculture avec Hēlo',
+      'Évite tout nouveau produit non scanné',
     ],
   },
 } as const;

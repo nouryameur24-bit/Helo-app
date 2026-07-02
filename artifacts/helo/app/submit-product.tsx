@@ -170,7 +170,7 @@ export default function SubmitProductScreen() {
           `${uid}/${ts}_product.jpg`,
         );
         if (!uploaded) {
-          throw new Error("L'upload de la photo a échoué. Réessayez.");
+          throw new Error("L'upload de la photo a échoué. Réessaie.");
         }
         productPhotoUrl = uploaded;
 
@@ -209,7 +209,7 @@ export default function SubmitProductScreen() {
       }, 2800);
     } catch (e) {
       if (__DEV__) console.warn('[submit] error:', e);
-      setError("Une erreur est survenue. Réessayez.");
+      setError("Une erreur est survenue. Réessaie.");
     } finally {
       setSubmitting(false);
     }

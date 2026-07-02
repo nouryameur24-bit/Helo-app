@@ -241,7 +241,7 @@ export function PartnerChecklist({ showHeader = true, headerPaddingTop = 0 }: Pa
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  const momName = linkedFirstName ?? 'votre partenaire';
+  const momName = linkedFirstName ?? 'ton partenaire';
   const safeProducts = shelf.filter((p) => p.verdict === 'safe').slice(0, 6);
   const cautionProducts = shelf.filter((p) => p.verdict === 'caution' || p.verdict === 'danger');
 

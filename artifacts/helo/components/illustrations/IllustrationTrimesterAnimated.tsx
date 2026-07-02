@@ -18,7 +18,7 @@ import { Colors } from "@/constants/theme";
  * IllustrationTrimesterAnimated — Moment 2 (v1.1 brief, déc. 2025)
  *
  * Variante animée de IllustrationTrimester, utilisée uniquement dans le
- * slide « Adapté à votre trimestre » de l'onboarding.
+ * slide « Adapté à ton trimestre » de l'onboarding.
  *
  * Trois effets cumulés :
  *  1) Apparition séquentielle — chaque cercle entre l'un après l'autre

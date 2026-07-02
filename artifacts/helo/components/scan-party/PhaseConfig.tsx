@@ -72,7 +72,7 @@ function PhaseConfig({ onStart, selectedTheme, onSelectTheme }: PhaseConfigProps
               Scan Party
             </ThemedText>
             <ThemedText variant="bodyMedium" style={{ color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: 4 }}>
-              Scannez tous vos produits d'un coup
+              Scanne tous tes produits d'un coup
             </ThemedText>
           </LinearGradient>
         </View>
@@ -86,7 +86,7 @@ function PhaseConfig({ onStart, selectedTheme, onSelectTheme }: PhaseConfigProps
 
         <View style={cfg.section}>
           <ThemedText variant="labelLarge" color="textPrimary" style={cfg.sectionTitle}>
-            Choisissez un thème
+            Choisis un thème
           </ThemedText>
           <View style={cfg.themeGrid}>
             {THEMES.map((t) => (

@@ -144,7 +144,7 @@ export default function BasketResultsScreen() {
       setAddedToShelf(true);
       Alert.alert(
         'Placard mis à jour',
-        `${newItems.length} produit${newItems.length > 1 ? 's' : ''} ajouté${newItems.length > 1 ? 's' : ''} à votre placard.`,
+        `${newItems.length} produit${newItems.length > 1 ? 's' : ''} ajouté${newItems.length > 1 ? 's' : ''} à ton placard.`,
         [{ text: 'OK' }],
       );
       // Sync widget after bulk shelf add

@@ -141,7 +141,7 @@ export default function PreferencesScreen() {
       router.replace("/onboarding/first-scan");
     } catch (err: unknown) {
       if (__DEV__) console.error("[onboarding/preferences] save failed:", err instanceof Error ? err.message : err);
-      Alert.alert("Erreur", "Impossible de sauvegarder vos préférences. Réessayez.");
+      Alert.alert("Erreur", "Impossible de sauvegarder tes préférences. Réessaie.");
     } finally {
       setLoading(false);
     }

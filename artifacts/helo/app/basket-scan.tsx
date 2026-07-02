@@ -246,7 +246,7 @@ export default function BasketScanScreen() {
       {/* Hint */}
       <View style={styles.hintContainer} pointerEvents="none">
         <ThemedText style={styles.hintText}>
-          Pointez sur un code-barres
+          Pointe sur un code-barres
         </ThemedText>
       </View>
 
@@ -292,7 +292,7 @@ export default function BasketScanScreen() {
           </Animated.View>
         ) : (
           <ThemedText style={styles.startHint}>
-            Scannez votre premier produit pour commencer
+            Scanne ton premier produit pour commencer
           </ThemedText>
         )}
       </View>

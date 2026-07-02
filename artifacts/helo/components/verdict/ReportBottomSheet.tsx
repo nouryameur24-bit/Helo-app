@@ -118,10 +118,10 @@ export function ReportBottomSheet({ visible, onClose, userId, scanId, productNam
             <View style={styles.successWrap}>
               <Feather name="heart" size={36} color={Colors.accent} />
               <ThemedText variant="headlineMedium" style={styles.successTitle}>
-                Merci pour votre vigilance 💛
+                Merci pour ta vigilance 💛
               </ThemedText>
               <ThemedText variant="bodySmall" color="textSecondary" style={styles.successSub}>
-                Votre signalement nous aide à améliorer la base de données.
+                Ton signalement nous aide à améliorer la base de données.
               </ThemedText>
             </View>
           ) : (

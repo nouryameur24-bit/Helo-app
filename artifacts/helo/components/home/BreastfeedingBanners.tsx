@@ -33,7 +33,7 @@ export const BreastfeedingBanners = React.memo(function BreastfeedingBanners({
               Mode allaitement actif
             </ThemedText>
             <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-              Vos analyses sont adaptées à la période d&apos;allaitement
+              Tes analyses sont adaptées à la période d&apos;allaitement
             </ThemedText>
           </View>
         </View>
@@ -49,7 +49,7 @@ export const BreastfeedingBanners = React.memo(function BreastfeedingBanners({
             Mode allaitement disponible
           </ThemedText>
           <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-            Votre DPA est dépassé. Activez le mode allaitement pour des analyses adaptées.
+            Ton DPA est dépassé. Active le mode allaitement pour des analyses adaptées.
           </ThemedText>
         </View>
         <View style={{ gap: Spacing.sm }}>

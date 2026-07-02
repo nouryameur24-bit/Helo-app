@@ -7,7 +7,7 @@
  * 2 composants exportés :
  *
  *   1. <OverrideBanner barcode={...} /> — affiché en haut du verdict quand
- *      un override existe déjà (ex: "Vous avez accepté ce produit le 12
+ *      un override existe déjà (ex: "Tu as accepté ce produit le 12
  *      mai" + bouton "Révoquer").
  *
  *   2. <AcceptOverrideButton barcode={...} verdict={...} /> — affiché
@@ -65,8 +65,8 @@ export function OverrideBanner({ barcode }: { barcode: string }) {
 
   const handleRevoke = () => {
     Alert.alert(
-      'Révoquer votre décision',
-      'Voulez-vous annuler votre choix précédent ? Les futurs scans afficheront le verdict normal.',
+      'Révoquer ta décision',
+      'Veux-tu annuler ton choix précédent ? Les futurs scans afficheront le verdict normal.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -88,7 +88,7 @@ export function OverrideBanner({ barcode }: { barcode: string }) {
         variant="bodySmall"
         style={{ flex: 1, marginLeft: 8, color: Colors.textPrimary }}
       >
-        Vous avez accepté ce produit le {dateStr}.
+        Tu as accepté ce produit le {dateStr}.
       </ThemedText>
       <TouchableOpacity onPress={handleRevoke} style={styles.revokeBtn} activeOpacity={0.7}>
         <ThemedText variant="bodySmall" style={{ color: Colors.accent }}>
@@ -180,11 +180,11 @@ export function AcceptOverrideButton({
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <ThemedText variant="headlineMedium" style={styles.sheetTitle}>
-            Pourquoi acceptez-vous ce produit ?
+            Pourquoi acceptes-tu ce produit ?
           </ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary" style={styles.sheetSubtitle}>
-            Votre choix sera mémorisé pour ne plus vous re-prévenir sur ce produit.
-            Vous pourrez le révoquer à tout moment.
+            Ton choix sera mémorisé pour ne plus te re-prévenir sur ce produit.
+            Tu pourras le révoquer à tout moment.
           </ThemedText>
 
           {REASONS.map((r) => (

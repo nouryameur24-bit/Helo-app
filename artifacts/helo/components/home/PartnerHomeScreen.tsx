@@ -27,7 +27,7 @@ export function PartnerHomeScreen() {
   const bottomPadding = Platform.OS === 'web' ? 34 : 0;
 
   const { linkedUserId, linkedFirstName, dueDate } = useProfile();
-  const momName = linkedFirstName ?? 'Votre proche';
+  const momName = linkedFirstName ?? 'Ton proche';
   const week = dueDate ? calculateTrimester(dueDate).weekOfPregnancy : 20;
 
   const { shelf } = useShelfData(linkedUserId ?? undefined);
@@ -139,7 +139,7 @@ export function PartnerHomeScreen() {
                 Scanner pour {momName}
               </ThemedText>
               <ThemedText variant="bodySmall" style={{ color: 'rgba(255,255,255,0.85)', marginBottom: Spacing.xl }}>
-                Analysez la sécurité d'un produit pour elle
+                Analyse la sécurité d'un produit pour elle
               </ThemedText>
               <Pressable
                 style={({ pressed }) => [

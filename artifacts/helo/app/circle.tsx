@@ -95,7 +95,7 @@ export default function CircleScreen() {
     const isOwner = circle.owner_id === userId;
     Alert.alert(
       isOwner ? 'Supprimer le cercle' : 'Quitter le cercle',
-      isOwner ? 'En tant que créatrice, cela supprimera le cercle pour tout le monde.' : 'Voulez-vous quitter ce cercle ?',
+      isOwner ? 'En tant que créatrice, cela supprimera le cercle pour tout le monde.' : 'Veux-tu quitter ce cercle ?',
       [
         { text: 'Annuler', style: 'cancel' },
         { text: isOwner ? 'Supprimer' : 'Quitter', style: 'destructive', onPress: async () => {
@@ -152,7 +152,7 @@ export default function CircleScreen() {
       {showJoinInput ? (
         <View style={s.joinWrap}>
           <ThemedText variant="headlineMedium" color="textPrimary" style={{ textAlign: 'center' }}>
-            Entrez le code du cercle
+            Entre le code du cercle
           </ThemedText>
           <TextInput
             style={s.codeInput}

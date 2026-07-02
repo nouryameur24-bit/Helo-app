@@ -80,7 +80,7 @@ export function ContributionRewardToast({
             💛 Merci ! Ce produit aidera bientôt d'autres mamans.
           </ThemedText>
           <ThemedText variant="bodySmall" style={styles.sub}>
-            Votre {ordinal} contribution
+            Ta {ordinal} contribution
           </ThemedText>
         </View>
         <Pressable

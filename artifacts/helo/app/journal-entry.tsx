@@ -104,7 +104,7 @@ export default function JournalEntryScreen() {
       router.back();
     } catch (err) {
       logError('journalEntry.save', err);
-      Alert.alert('Erreur', 'Impossible de sauvegarder l\'entrée. Réessayez.');
+      Alert.alert('Erreur', 'Impossible de sauvegarder l\'entrée. Réessaie.');
     } finally {
       setSaving(false);
     }
@@ -214,7 +214,7 @@ export default function JournalEntryScreen() {
           </ThemedText>
           <TextInput
             style={styles.textInput}
-            placeholder="Comment vous sentez-vous aujourd'hui ?"
+            placeholder="Comment tu te sens aujourd'hui ?"
             placeholderTextColor={Colors.textTertiary}
             multiline
             numberOfLines={6}

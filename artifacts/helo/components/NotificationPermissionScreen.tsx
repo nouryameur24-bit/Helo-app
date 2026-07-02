@@ -45,19 +45,19 @@ export function NotificationPermissionScreen({
           </LinearGradient>
 
           <ThemedText variant="headlineLarge" color="textPrimary" style={styles.title}>
-            Restez informée{'\n'}tout au long de votre grossesse
+            Reste informée{'\n'}tout au long de ta grossesse
           </ThemedText>
 
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
-            Autorisez Hēlo à vous envoyer des notifications pour ne manquer aucun moment important.
+            Autorise Hēlo à t'envoyer des notifications pour ne manquer aucun moment important.
           </ThemedText>
 
           <View style={styles.features}>
             {[
-              { icon: 'calendar' as const, text: 'Récapitulatif hebdomadaire de votre grossesse' },
+              { icon: 'calendar' as const, text: 'Récapitulatif hebdomadaire de ta grossesse' },
               { icon: 'star' as const, text: 'Jalons de trimestre et changements importants' },
               { icon: 'package' as const, text: 'Alertes si un produit change de classification' },
-              { icon: 'clock' as const, text: 'Rappels doux pour scanner vos produits' },
+              { icon: 'clock' as const, text: 'Rappels doux pour scanner tes produits' },
             ].map((item, idx) => (
               <View key={idx} style={styles.featureRow}>
                 <View style={styles.featureIcon}>
@@ -71,7 +71,7 @@ export function NotificationPermissionScreen({
           </View>
 
           <ThemedText variant="bodySmall" color="textTertiary" style={styles.note}>
-            Vous pouvez modifier vos préférences à tout moment dans Profil {'>'} Notifications.
+            Tu peux modifier tes préférences à tout moment dans Profil {'>'} Notifications.
           </ThemedText>
 
           <View style={styles.actions}>

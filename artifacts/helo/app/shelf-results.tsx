@@ -373,7 +373,7 @@ export default function ShelfResultsScreen() {
           <View style={styles.disclaimer}>
             <Feather name="alert-circle" size={14} color={Colors.caution} />
             <ThemedText style={styles.disclaimerText}>
-              Résultats approximatifs — scannez individuellement pour plus de précision.
+              Résultats approximatifs — scanne individuellement pour plus de précision.
             </ThemedText>
           </View>
         </Animated.View>
@@ -386,7 +386,7 @@ export default function ShelfResultsScreen() {
           {products.length === 0 && (
             <Card padding={Spacing.xl}>
               <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center' }}>
-                Aucun produit identifié. Réessayez avec une meilleure lumière et une photo plus nette.
+                Aucun produit identifié. Réessaie avec une meilleure lumière et une photo plus nette.
               </ThemedText>
             </Card>
           )}
@@ -459,7 +459,7 @@ export default function ShelfResultsScreen() {
         <View style={styles.disclaimerBottom}>
           <Feather name="info" size={12} color={Colors.textTertiary} />
           <ThemedText style={styles.disclaimerBottomText}>
-            Résultats approximatifs — scannez individuellement pour plus de précision.
+            Résultats approximatifs — scanne individuellement pour plus de précision.
           </ThemedText>
         </View>
       </View>

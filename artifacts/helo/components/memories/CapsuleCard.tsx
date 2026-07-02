@@ -109,7 +109,7 @@ export function CapsuleCard({ capsule, onPress }: CapsuleCardProps) {
             </ThemedText>
           ) : openable ? (
             <ThemedText variant="bodySmall" style={[styles.capsuleOpenCta]}>
-              Ouvrir votre capsule ✨
+              Ouvrir ta capsule ✨
             </ThemedText>
           ) : (
             <ThemedText variant="bodySmall" color="textTertiary">

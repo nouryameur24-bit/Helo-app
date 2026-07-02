@@ -116,7 +116,7 @@ export function CapsuleContentView({ capsule, onBack }: CapsuleContentViewProps)
 
         <View style={styles.contentSection}>
           <ThemedText variant="labelSmall" color="accentDark" style={styles.contentSectionLabel}>
-            Votre grossesse en chiffres
+            Ta grossesse en chiffres
           </ThemedText>
           <View style={styles.contentStatsGrid}>
             <StatTile value={String(capsule.data.scanCount)} label="produits scannés" emoji="🔍" />
@@ -133,7 +133,7 @@ export function CapsuleContentView({ capsule, onBack }: CapsuleContentViewProps)
         {capsule.data.topScans.length > 0 && (
           <View style={styles.contentSection}>
             <ThemedText variant="labelSmall" color="accentDark" style={styles.contentSectionLabel}>
-              Vos scans marquants
+              Tes scans marquants
             </ThemedText>
             <View style={styles.contentCard}>
               {capsule.data.topScans.map((scan, idx) => (
@@ -166,7 +166,7 @@ export function CapsuleContentView({ capsule, onBack }: CapsuleContentViewProps)
         {capsule.data.journalEntries.length > 0 && (
           <View style={styles.contentSection}>
             <ThemedText variant="labelSmall" color="accentDark" style={styles.contentSectionLabel}>
-              Votre journal
+              Ton journal
             </ThemedText>
             {capsule.data.journalEntries.map((entry, idx) => (
               <View key={idx} style={styles.journalEntryCard}>
@@ -189,7 +189,7 @@ export function CapsuleContentView({ capsule, onBack }: CapsuleContentViewProps)
         {capsule.message ? (
           <View style={styles.contentSection}>
             <ThemedText variant="labelSmall" color="accentDark" style={styles.contentSectionLabel}>
-              Votre message
+              Ton message
             </ThemedText>
             <LinearGradient colors={['#FFF9F0', '#FFFAF5']} style={styles.messageCard}>
               <ThemedText style={styles.messageQuote}>"</ThemedText>

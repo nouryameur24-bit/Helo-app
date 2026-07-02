@@ -195,7 +195,7 @@ export default function ProfileSetupScreen() {
 
     } catch (err: unknown) {
       if (__DEV__) console.error('[onboarding] handleSubmit error:', err instanceof Error ? err.message : err);
-      Alert.alert("Erreur", "Impossible de sauvegarder votre profil localement. Réessayez.");
+      Alert.alert("Erreur", "Impossible de sauvegarder ton profil localement. Réessaie.");
     } finally {
       setLoading(false);
     }
@@ -238,10 +238,10 @@ export default function ProfileSetupScreen() {
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(60).duration(350)} style={styles.header}>
           <ThemedText variant="displayMedium" color="textPrimary">
-            Parlons de vous
+            Parlons de toi
           </ThemedText>
           <ThemedText variant="bodyLarge" color="textSecondary" style={{ marginTop: Spacing.sm }}>
-            Quelques informations pour personnaliser votre expérience.
+            Quelques informations pour personnaliser ton expérience.
           </ThemedText>
         </Animated.View>
 
@@ -258,7 +258,7 @@ export default function ProfileSetupScreen() {
           >
             <TextInput
               style={styles.input}
-              placeholder="Votre prénom"
+              placeholder="Ton prénom"
               placeholderTextColor={Colors.textTertiary}
               value={firstName}
               onChangeText={setFirstName}

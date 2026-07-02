@@ -180,10 +180,10 @@ export function BreastfeedingTransition({
               Mode allaitement
             </ThemedText>
             <ThemedText variant="headlineMedium" style={styles.subtitle}>
-              Félicitations pour la naissance de votre bébé !
+              Félicitations pour la naissance de ton bébé !
             </ThemedText>
             <ThemedText variant="bodyMedium" style={styles.body}>
-              Vos produits sont désormais analysés selon les recommandations spécifiques à
+              Tes produits sont désormais analysés selon les recommandations spécifiques à
               l'allaitement. Certains ingrédients ont un statut différent de la grossesse.
             </ThemedText>
 

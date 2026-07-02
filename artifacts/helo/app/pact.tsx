@@ -105,7 +105,7 @@ export default function PactScreen() {
   }, [signing, signed, selectedWitnesses, circleMembers, selectedDuration]);
 
   const handleShare = useCallback(async () => {
-    const msg = `${firstName || 'Je'} vous invite à rejoindre son Pacte Hēlo — 30 jours de scan grossesse ! Téléchargez Hēlo 🤱`;
+    const msg = `${firstName || 'Je'} t'invite à rejoindre son Pacte Hēlo — 30 jours de scan grossesse ! Télécharge Hēlo 🤱`;
     try {
       const available = await Sharing.isAvailableAsync();
       if (available) {
@@ -120,7 +120,7 @@ export default function PactScreen() {
   const handleAbandon = useCallback(() => {
     Alert.alert(
       'Abandonner le pacte ?',
-      'Votre série sera perdue. Vous pourrez en créer un nouveau.',
+      'Ta série sera perdue. Tu pourras en créer un nouveau.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -303,14 +303,14 @@ export default function PactScreen() {
           </View>
           <ThemedText style={styles.heroTitle}>Le Pacte Hēlo</ThemedText>
           <ThemedText style={styles.heroSub}>
-            Engagez-vous à scanner au moins{'\n'}
-            1 produit par jour pour votre bébé.
+            Engage-toi à scanner au moins{'\n'}
+            1 produit par jour pour ton bébé.
           </ThemedText>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(80).duration(500)} style={styles.section}>
           <ThemedText variant="labelLarge" color="textPrimary" style={styles.sectionTitle}>
-            Choisissez votre durée
+            Choisis ta durée
           </ThemedText>
           <View style={styles.durationRow}>
             {DURATIONS.map((d) => (
@@ -347,12 +347,12 @@ export default function PactScreen() {
 
         <Animated.View entering={FadeInDown.delay(130).duration(500)} style={styles.section}>
           <ThemedText variant="labelLarge" color="textPrimary" style={styles.sectionTitle}>
-            Invitez vos témoins
+            Invite tes témoins
             <ThemedText variant="bodySmall" color="textTertiary"> (jusqu'à 3)</ThemedText>
           </ThemedText>
           {circleMembers.length === 0 ? (
             <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: Spacing.sm }}>
-              Votre Cercle est vide — ajoutez des amies pour les inviter comme témoins.
+              Ton Cercle est vide — ajoute des amies pour les inviter comme témoins.
             </ThemedText>
           ) : (
             <View style={styles.witnessGrid}>
@@ -379,7 +379,7 @@ export default function PactScreen() {
 
         <Animated.View entering={FadeInDown.delay(170).duration(500)} style={styles.section}>
           <ThemedText variant="labelLarge" color="textPrimary" style={styles.sectionTitle}>
-            Vos récompenses
+            Tes récompenses
           </ThemedText>
           <View style={styles.rewardsRow}>
             {PACT_BADGES.map((b) => (
@@ -440,7 +440,7 @@ export default function PactScreen() {
           <SignatureUnderline active={signing || signed} />
 
           <ThemedText variant="bodySmall" color="textTertiary" style={styles.signNote}>
-            Un rappel vous sera envoyé chaque soir à 20h si vous n'avez pas scanné.
+            Un rappel te sera envoyé chaque soir à 20h si tu n'as pas scanné.
           </ThemedText>
         </Animated.View>
 

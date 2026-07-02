@@ -104,13 +104,13 @@ export default function PrescriptionScanScreen() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'NO_TEXT_DETECTED') {
-        setError("Aucun texte détecté. Assurez-vous que l'ordonnance est bien éclairée et lisible.");
+        setError("Aucun texte détecté. Assure-toi que l'ordonnance est bien éclairée et lisible.");
       } else if (msg.startsWith('NO_API_KEY')) {
         setError('Clé Google Vision manquante.');
       } else if (msg === 'NO_PHOTO') {
-        setError("Impossible de prendre la photo. Réessayez.");
+        setError("Impossible de prendre la photo. Réessaie.");
       } else {
-        setError("Une erreur est survenue lors de l'analyse. Réessayez.");
+        setError("Une erreur est survenue lors de l'analyse. Réessaie.");
       }
     } finally {
       setIsProcessing(false);
@@ -127,7 +127,7 @@ export default function PrescriptionScanScreen() {
           Accès à la caméra requis
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: Spacing.md, textAlign: 'center', paddingHorizontal: Spacing.xl }}>
-          Hēlo a besoin de votre caméra pour photographier votre ordonnance.
+          Hēlo a besoin de ta caméra pour photographier ton ordonnance.
         </ThemedText>
         <View style={{ marginTop: Spacing.xl }}>
           <Button onPress={() => { requestPermission(); }}>Autoriser la caméra</Button>
@@ -175,7 +175,7 @@ export default function PrescriptionScanScreen() {
       {/* Hint text */}
       <View style={[styles.hintWrapper, { top: VF_Y + VF_H + Spacing.xl }]} pointerEvents="none">
         <View style={styles.hintPill}>
-          <Text style={styles.hintText}>Photographiez votre ordonnance complète</Text>
+          <Text style={styles.hintText}>Photographie ton ordonnance complète</Text>
         </View>
       </View>
 

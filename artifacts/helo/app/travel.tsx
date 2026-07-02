@@ -351,7 +351,7 @@ export default function TravelScreen() {
       } else if (msg === 'PARSE_ERROR') {
         setError('Erreur lors de la génération du briefing. Veuillez réessayer.');
       } else {
-        setError('Impossible de générer le briefing. Vérifiez votre connexion et réessayez.');
+        setError('Impossible de générer le briefing. Vérifie ta connexion et réessaie.');
       }
     } finally {
       setLoading(false);
@@ -376,7 +376,7 @@ export default function TravelScreen() {
             Fonctionnalité Premium
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={s.lockDesc}>
-            Obtenez un briefing santé personnalisé pour chaque destination, adapté à votre trimestre.
+            Obtiens un briefing santé personnalisé pour chaque destination, adapté à ton trimestre.
           </ThemedText>
           <Pressable
             style={({ pressed }) => [s.lockCTA, { opacity: pressed ? 0.88 : 1 }]}
@@ -428,7 +428,7 @@ export default function TravelScreen() {
             <View style={{ flex: 1 }}>
               <ThemedText variant="labelLarge" color="textPrimary">Briefing santé voyage</ThemedText>
               <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
-                Généré par IA, adapté à votre trimestre
+                Généré par IA, adapté à ton trimestre
               </ThemedText>
             </View>
           </LinearGradient>
@@ -436,7 +436,7 @@ export default function TravelScreen() {
 
         <Animated.View entering={FadeInDown.delay(80).duration(400)} style={s.form}>
           <ThemedText variant="labelLarge" color="textPrimary" style={s.formLabel}>
-            Votre destination
+            Ta destination
           </ThemedText>
           <View style={s.searchWrap}>
             <Feather name="search" size={16} color={Colors.textTertiary} style={s.searchIcon} />
@@ -557,7 +557,7 @@ export default function TravelScreen() {
           </Pressable>
 
           <ThemedText variant="bodySmall" color="textTertiary" style={s.disclaimer}>
-            Les informations fournies sont indicatives. Consultez votre médecin avant tout voyage pendant la grossesse.
+            Les informations fournies sont indicatives. Consulte ton médecin avant tout voyage pendant la grossesse.
           </ThemedText>
         </Animated.View>
 

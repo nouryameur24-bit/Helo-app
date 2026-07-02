@@ -8,8 +8,8 @@ interface PhaseLabelProps {
 }
 
 const PHASE_LABELS: Record<VoicePhase, string> = {
-  idle: 'Maintenez pour parler',
-  listening: 'Je vous écoute…',
+  idle: 'Maintiens pour parler',
+  listening: "Je t'écoute…",
   thinking: 'Hēlo réfléchit…',
   speaking: 'Hēlo répond…',
   result: 'Réponse reçue',

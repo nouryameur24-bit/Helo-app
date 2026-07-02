@@ -264,7 +264,7 @@ export default function CompareScreen() {
         <View style={styles.hint}>
           <Feather name="info" size={14} color={Colors.textTertiary} />
           <ThemedText variant="bodySmall" color="textTertiary" style={{ marginLeft: Spacing.xs, flex: 1 }}>
-            Scannez deux produits pour comparer leur sécurité côte à côte
+            Scanne deux produits pour comparer leur sécurité côte à côte
           </ThemedText>
         </View>
       )}

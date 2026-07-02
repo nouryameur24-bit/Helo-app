@@ -53,7 +53,7 @@ function SupabaseUnavailableBanner({ isOffline }: { isOffline: boolean }) {
       <Feather name={isOffline ? 'wifi-off' : 'cloud-off'} size={15} color={Colors.textSecondary} />
       <ThemedText variant="bodySmall" color="textSecondary" style={styles.supabaseBannerText}>
         {isOffline
-          ? 'Vous êtes hors-ligne — les produits vérifiés ne sont pas disponibles.'
+          ? 'Tu es hors-ligne — les produits vérifiés ne sont pas disponibles.'
           : 'Fonctionnalités communautaires désactivées dans cet environnement.'}
       </ThemedText>
     </View>
@@ -157,7 +157,7 @@ function CircleCard() {
             <View style={styles.circleCardBody}>
               <ThemedText style={styles.circleCardTitle}>Mon Cercle</ThemedText>
               <ThemedText style={styles.circleCardSub}>
-                Partagez vos scans avec vos proches en temps réel
+                Partage tes scans avec tes proches en temps réel
               </ThemedText>
             </View>
             <View style={styles.circleArrow}>
@@ -229,7 +229,7 @@ function EmptySubmissions() {
 
       {(
         [
-          { icon: 'camera', step: '1', text: 'Scannez un produit inconnu avec Hēlo' },
+          { icon: 'camera', step: '1', text: 'Scanne un produit inconnu avec Hēlo' },
           { icon: 'send', step: '2', text: 'Soumettez-le via le bouton ci-dessus' },
           { icon: 'check-circle', step: '3', text: "Notre \u00e9quipe v\u00e9rifie et l\u2019ajoute ici" },
         ] as Array<{ icon: ComponentProps<typeof Feather>['name']; step: string; text: string }>

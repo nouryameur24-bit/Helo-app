@@ -251,7 +251,7 @@ export default function ChatScreen() {
   const handleClear = useCallback(() => {
     Alert.alert(
       'Effacer la conversation',
-      'Voulez-vous supprimer tout l\'historique du chat ?',
+      'Veux-tu supprimer tout l\'historique du chat ?',
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -299,7 +299,7 @@ export default function ChatScreen() {
               Hēlo IA
             </ThemedText>
             <ThemedText variant="bodySmall" color="textTertiary">
-              Votre assistante grossesse
+              Ton assistante grossesse
             </ThemedText>
           </View>
         </View>
@@ -330,7 +330,7 @@ export default function ChatScreen() {
               Bonjour
             </ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={styles.emptyBody}>
-              Je suis votre assistante santé Hēlo. Posez-moi toutes vos questions sur votre grossesse — alimentation, cosmétiques, médicaments, bien-être.
+              Je suis ton assistante santé Hēlo. Pose-moi toutes tes questions sur ta grossesse — alimentation, cosmétiques, médicaments, bien-être.
             </ThemedText>
             {!isPremium && (
               <View style={styles.limitBadge}>
@@ -404,7 +404,7 @@ export default function ChatScreen() {
             <View style={styles.premiumBannerLeft}>
               <ThemedText style={styles.premiumBannerTitle}>Limite atteinte</ThemedText>
               <ThemedText style={styles.premiumBannerBody}>
-                Revenez demain ou passez à Premium pour des questions illimitées.
+                Reviens demain ou passe à Premium pour des questions illimitées.
               </ThemedText>
             </View>
             <TouchableOpacity

@@ -288,7 +288,7 @@ export default function MemoriesScreen() {
             Capsules temporelles
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.introSub}>
-            À chaque trimestre, Hēlo compile vos moments forts dans une capsule scellée. Elle s'ouvrira le jour que vous choisissez.
+            À chaque trimestre, Hēlo compile tes moments forts dans une capsule scellée. Elle s'ouvrira le jour que tu choisis.
           </ThemedText>
         </LinearGradient>
 
@@ -301,7 +301,7 @@ export default function MemoriesScreen() {
               Aucune capsule encore
             </ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={[styles.emptySub]}>
-              Créez votre première capsule souvenir pour capturer cette période unique.
+              Crée ta première capsule souvenir pour capturer cette période unique.
             </ThemedText>
           </View>
         ) : (

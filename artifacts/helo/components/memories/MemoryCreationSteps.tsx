@@ -23,7 +23,7 @@ export const OPENING_PRESETS: Array<{
   label: string;
   sub: string;
 }> = [
-  { id: 'birth', emoji: '🤱', label: 'À la naissance', sub: 'Votre date prévue d\'accouchement' },
+  { id: 'birth', emoji: '🤱', label: 'À la naissance', sub: 'Ta date prévue d\'accouchement' },
   { id: '1year', emoji: '🎂', label: '1er anniversaire', sub: 'Un an après la naissance' },
   { id: '5years', emoji: '🌟', label: '5 ans', sub: 'Pour son entrée en maternelle' },
   { id: '18years', emoji: '🎓', label: '18 ans', sub: 'À sa majorité' },
@@ -51,10 +51,10 @@ export function StepOverview({ compiling, data, onNext }: StepOverviewProps) {
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.stepContent} showsVerticalScrollIndicator={false}>
       <ThemedText variant="headlineLarge" color="textPrimary" style={styles.stepTitle}>
-        Votre trimestre en résumé
+        Ton trimestre en résumé
       </ThemedText>
       <ThemedText variant="bodyMedium" color="textSecondary" style={styles.stepSub}>
-        Hēlo a compilé vos données. Voici ce qui sera scellé dans votre capsule.
+        Hēlo a compilé tes données. Voici ce qui sera scellé dans ta capsule.
       </ThemedText>
 
       {compiling || !data ? (
@@ -121,10 +121,10 @@ export function StepPersonal({
       keyboardShouldPersistTaps="handled"
     >
       <ThemedText variant="headlineLarge" color="textPrimary" style={styles.stepTitle}>
-        Votre touche personnelle
+        Ta touche personnelle
       </ThemedText>
       <ThemedText variant="bodyMedium" color="textSecondary" style={styles.stepSub}>
-        Ajoutez ce qui vous tient à cœur. Ces contenus sont réservés aux membres premium.
+        Ajoute ce qui te tient à cœur. Ces contenus sont réservés aux membres premium.
       </ThemedText>
 
       <Pressable
@@ -146,7 +146,7 @@ export function StepPersonal({
               )}
             </View>
             <ThemedText variant="bodyMedium" color="accentDark" style={{ marginTop: Spacing.sm }}>
-              Ajouter une photo de votre ventre
+              Ajouter une photo de ton ventre
             </ThemedText>
             <ThemedText variant="bodySmall" color="textTertiary">Portrait, 3:4 recommandé</ThemedText>
           </>
@@ -155,7 +155,7 @@ export function StepPersonal({
 
       <View style={styles.messageSection}>
         <View style={styles.messageLabelRow}>
-          <ThemedText variant="labelSmall" color="accentDark">Un message pour votre bébé</ThemedText>
+          <ThemedText variant="labelSmall" color="accentDark">Un message pour ton bébé</ThemedText>
           {!isPremium && (
             <View style={styles.premiumBadgePill}>
               <ThemedText style={styles.premiumBadgeText}>Premium</ThemedText>
@@ -213,7 +213,7 @@ export function StepSeal({ selectedPreset, onSelectPreset, dueDate, onSeal }: St
         Quand s'ouvrira-t-elle ?
       </ThemedText>
       <ThemedText variant="bodyMedium" color="textSecondary" style={styles.stepSub}>
-        Choisissez le moment magique où votre capsule sera déscellée.
+        Choisis le moment magique où ta capsule sera déscellée.
       </ThemedText>
 
       <View style={styles.presetList}>

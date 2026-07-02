@@ -266,7 +266,7 @@ export default function VoiceScreen() {
               <ThemedText style={{ fontSize: 32 }}>⭐</ThemedText>
               <ThemedText variant="headlineMedium" color="textPrimary" style={{ textAlign: 'center' }}>Limite atteinte</ThemedText>
               <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center' }}>
-                Vous avez utilisé vos {FREE_VOICE_LIMIT} questions gratuites. Passez Premium pour continuer.
+                Tu as utilisé tes {FREE_VOICE_LIMIT} questions gratuites. Passe Premium pour continuer.
               </ThemedText>
               <Pressable
                 style={styles.premiumBtn}
@@ -281,7 +281,7 @@ export default function VoiceScreen() {
           ) : phase === 'error' ? (
             <View style={styles.errorCard}>
               <Feather name="alert-circle" size={18} color={Colors.danger} />
-              <ThemedText variant="bodySmall" color="textPrimary">Je n'ai pas pu traiter votre demande. Réessayez.</ThemedText>
+              <ThemedText variant="bodySmall" color="textPrimary">Je n'ai pas pu traiter ta demande. Réessaie.</ThemedText>
             </View>
           ) : null}
         </View>
@@ -294,7 +294,7 @@ export default function VoiceScreen() {
             style={styles.textInput}
             value={textInput}
             onChangeText={setTextInput}
-            placeholder="Posez votre question par écrit…"
+            placeholder="Pose ta question par écrit…"
             placeholderTextColor={Colors.textTertiary}
             returnKeyType="send"
             onSubmitEditing={handleTextSubmit}
@@ -318,12 +318,12 @@ export default function VoiceScreen() {
                 onPressOut={stopListening}
                 style={[styles.micButton, { backgroundColor: micBg }]}
                 accessibilityRole="button"
-                accessibilityLabel={micActive ? 'Relâchez pour envoyer' : 'Maintenez pour parler'}
+                accessibilityLabel={micActive ? 'Relâchez pour envoyer' : 'Maintiens pour parler'}
               >
                 <Feather name={micActive ? 'mic' : 'mic'} size={28} color="#fff" />
               </Pressable>
               <ThemedText variant="bodySmall" color="textTertiary">
-                {micActive ? 'Relâchez pour envoyer' : 'Maintenez pour parler'}
+                {micActive ? 'Relâchez pour envoyer' : 'Maintiens pour parler'}
               </ThemedText>
             </View>
           ) : (

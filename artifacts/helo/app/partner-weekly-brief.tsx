@@ -158,7 +158,7 @@ function SlideGlowScore({
   const score = glowScore;
   const encouragement =
     score >= 80
-      ? `${momName} a un excellent placard ! Continuez à l'aider à scanner ses produits.`
+      ? `${momName} a un excellent placard ! Continue à l'aider à scanner ses produits.`
       : score >= 60
       ? `Un bon score global ! Il reste quelques produits à vérifier ensemble.`
       : `Quelques produits méritent attention. Aidez ${momName} à scanner ses produits avec Hēlo.`;
@@ -188,7 +188,7 @@ function SlideGlowScore({
           <View style={slide.encourageHeader}>
             <ThemedText style={{ fontSize: 20 }}>💙</ThemedText>
             <ThemedText variant="labelLarge" color="textPrimary" style={{ flex: 1, marginLeft: Spacing.sm }}>
-              Message pour vous
+              Message pour toi
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.md }}>
@@ -215,7 +215,7 @@ export default function PartnerWeeklyBriefScreen() {
   const { shelf } = useShelfData(linkedUserId ?? undefined);
   const { score: glowScore } = calculateGlowScore(shelf.length > 0 ? shelf : []);
 
-  const momName = linkedFirstName ?? 'votre partenaire';
+  const momName = linkedFirstName ?? 'ton partenaire';
   const week = dueDate ? calculateTrimester(dueDate).weekOfPregnancy : 20;
 
   const { markAsRead: markBriefRead } = useWeeklyBrief(week, PARTNER_BRIEF_KEY);

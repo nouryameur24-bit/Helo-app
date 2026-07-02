@@ -25,9 +25,9 @@ export const HomeStatsRow = React.memo(function HomeStatsRow({ total, countSafe,
               <Feather name="zap" size={20} color={Colors.accentDark} />
             </View>
             <View style={{ flex: 1 }}>
-              <ThemedText variant="labelLarge" color="textPrimary">Scannez votre premier produit</ThemedText>
+              <ThemedText variant="labelLarge" color="textPrimary">Scanne ton premier produit</ThemedText>
               <ThemedText variant="bodySmall" color="textSecondary" style={{ marginTop: 2 }}>
-                Votre Glow Score se construit à chaque analyse
+                Ton Glow Score se construit à chaque analyse
               </ThemedText>
             </View>
             <Feather name="chevron-right" size={18} color={Colors.textTertiary} />

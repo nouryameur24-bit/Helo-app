@@ -25,7 +25,7 @@ interface PartnerQRCardProps {
   /**
    * Optional caption shown above the QR. Defaults to a generic "demande à ton
    * partenaire de scanner" line; callers can override for context-specific
-   * copy (e.g. "Montrez ce QR à votre partenaire").
+   * copy (e.g. "Montre ce QR à ton partenaire").
    */
   caption?: string;
 }
@@ -88,7 +88,7 @@ export function PartnerQRCard({ partnerCode, caption }: PartnerQRCardProps) {
         color="textTertiary"
         style={styles.caption}
       >
-        {caption ?? 'Demande à ton partenaire de scanner ce QR pour vous connecter'}
+        {caption ?? 'Demande à ton partenaire de scanner ce QR pour te connecter'}
       </ThemedText>
 
       <View style={styles.codeRow}>

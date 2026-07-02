@@ -420,7 +420,7 @@ export default function TravelBriefingScreen() {
           <Animated.View entering={FadeInDown.delay(500).duration(350)} style={b.disclaimerCard}>
             <Feather name="info" size={14} color={Colors.caution} />
             <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1, lineHeight: 18 }}>
-              Ces informations sont fournies à titre indicatif et générées par IA. Consultez votre médecin ou sage-femme avant tout voyage pendant la grossesse.
+              Ces informations sont fournies à titre indicatif et générées par IA. Consulte ton médecin ou sage-femme avant tout voyage pendant la grossesse.
             </ThemedText>
           </Animated.View>
         </ScrollView>

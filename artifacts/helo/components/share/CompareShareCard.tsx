@@ -95,7 +95,7 @@ export function CompareShareCard({ slotA, slotB }: CompareShareCardProps) {
             ? `✓ Produit B recommandé pour la grossesse`
             : slotA.verdict === 'safe' && slotB.verdict === 'safe'
             ? `✓ Les deux produits sont compatibles`
-            : `⚠ Consultez votre professionnel de santé`}
+            : `⚠ Consulte ton professionnel de santé`}
         </Text>
       </View>
 

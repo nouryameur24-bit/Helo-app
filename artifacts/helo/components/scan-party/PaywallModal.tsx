@@ -15,7 +15,7 @@ interface PaywallModalProps {
 const FEATURES = [
   '✓ Scan illimité de produits',
   '✓ Export image haute résolution',
-  '✓ Historique de toutes vos parties',
+  '✓ Historique de toutes tes parties',
   '✓ Thèmes exclusifs débloqués',
 ];
 

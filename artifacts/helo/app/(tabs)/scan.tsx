@@ -362,7 +362,7 @@ export default function ScanScreen() {
           pointerEvents="none"
         >
           <View style={styles.ocrGuidancePill}>
-            <Text style={styles.ocrGuidanceText}>📋 Cadrez la liste d'ingrédients</Text>
+            <Text style={styles.ocrGuidanceText}>📋 Cadre la liste d'ingrédients</Text>
           </View>
         </Animated.View>
       )}
@@ -422,14 +422,14 @@ export default function ScanScreen() {
         <View style={styles.hintPill}>
           <Text style={styles.hintText}>
             {isOCRMode
-              ? "Photographiez la liste d'ingrédients"
+              ? "Photographie la liste d'ingrédients"
               : isMenuMode
               ? menuPhotos.length === 0
-                ? 'Photographiez la première page du menu'
-                : `Page ${menuPhotos.length}/${MAX_MENU_PHOTOS} · Ajoutez d'autres pages ou analysez`
+                ? 'Photographie la première page du menu'
+                : `Page ${menuPhotos.length}/${MAX_MENU_PHOTOS} · Ajoute d'autres pages ou analyse`
               : isPhotoMode
-              ? 'Photographiez la face avant du produit'
-              : 'Placez le code-barres dans le cadre'}
+              ? 'Photographie la face avant du produit'
+              : 'Place le code-barres dans le cadre'}
           </Text>
         </View>
       </View>

@@ -128,7 +128,7 @@ export function PreferencesSection() {
             <View style={styles.settingContent}>
               <ThemedText variant="labelLarge" color="textPrimary">Mode allaitement</ThemedText>
               <ThemedText variant="bodySmall" color="textTertiary">
-                {isBreastfeeding ? "Actif — analyses adaptées à l'allaitement" : "Analyse vos produits pour l'allaitement"}
+                {isBreastfeeding ? "Actif — analyses adaptées à l'allaitement" : "Analyse tes produits pour l'allaitement"}
               </ThemedText>
             </View>
             <Switch

@@ -70,7 +70,7 @@ function PulsingLoader() {
         Identification en cours…
       </ThemedText>
       <ThemedText variant="bodyMedium" color="textSecondary" style={styles.loaderSubtitle}>
-        Claude analyse votre photo pour identifier le produit
+        Claude analyse ta photo pour identifier le produit
       </ThemedText>
     </View>
   );
@@ -102,7 +102,7 @@ export default function PhotoResultScreen() {
         const message =
           err instanceof Error
             ? err.message
-            : "Une erreur est survenue lors de l'identification. Réessayez.";
+            : "Une erreur est survenue lors de l'identification. Réessaie.";
         setError(message);
       }
     }

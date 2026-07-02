@@ -56,7 +56,7 @@ export function PartnerSection() {
   const handleRegenerateCode = () => {
     Alert.alert(
       'Régénérer le code',
-      'Cela va créer un nouveau code et déconnecter votre partenaire actuel.',
+      'Cela va créer un nouveau code et déconnecter ton partenaire actuel.',
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -86,8 +86,8 @@ export function PartnerSection() {
     Alert.alert(
       'Déconnecter',
       isPartner
-        ? `Voulez-vous vous déconnecter du compte de ${linkedFirstName ?? 'votre proche'} ?`
-        : `Voulez-vous déconnecter ${linkedFirstName ?? 'votre partenaire'} ?`,
+        ? `Veux-tu te déconnecter du compte de ${linkedFirstName ?? 'ton proche'} ?`
+        : `Veux-tu déconnecter ${linkedFirstName ?? 'ton partenaire'} ?`,
       [
         { text: 'Annuler', style: 'cancel' },
         {
@@ -125,7 +125,7 @@ export function PartnerSection() {
               <ThemedText variant="bodyLarge" color="textPrimary">
                 {linkedFirstName ? `Partenaire de ${linkedFirstName}` : 'Mode Partenaire'}
               </ThemedText>
-              <ThemedText variant="bodySmall" color="textTertiary">Vous voyez le placard partagé</ThemedText>
+              <ThemedText variant="bodySmall" color="textTertiary">Tu vois le placard partagé</ThemedText>
             </View>
           </View>
           <Divider />
@@ -149,7 +149,7 @@ export function PartnerSection() {
               </View>
               <View style={styles.settingContent}>
                 <ThemedText variant="bodyLarge" color="textPrimary">Mon code</ThemedText>
-                <ThemedText variant="bodySmall" color="textTertiary">Partagez ce code avec votre partenaire</ThemedText>
+                <ThemedText variant="bodySmall" color="textTertiary">Partage ce code avec ton partenaire</ThemedText>
               </View>
               <PartnerCodeChip code={displayCode} />
             </View>
@@ -172,7 +172,7 @@ export function PartnerSection() {
             )}
           </>
         ) : (
-          <SettingRow icon="users" title="Inviter un partenaire" subtitle="Générez un code après avoir créé votre profil" />
+          <SettingRow icon="users" title="Inviter un partenaire" subtitle="Génère un code après avoir créé ton profil" />
         )}
       </Card>
     </Animated.View>

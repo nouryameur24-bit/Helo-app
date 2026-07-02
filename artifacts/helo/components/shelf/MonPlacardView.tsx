@@ -297,14 +297,14 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
               <View style={styles.partnerLabel}>
                 <Feather name="heart" size={14} color={Colors.accent} />
                 <ThemedText variant="labelSmall" color="accent">
-                  Placard de {linkedFirstName ?? 'votre proche'}
+                  Placard de {linkedFirstName ?? 'ton proche'}
                 </ThemedText>
               </View>
             )}
             <View style={styles.headerTop}>
               <View style={{ flex: 1 }}>
                 <ThemedText variant="displayMedium" color="textPrimary">
-                  {isPartner ? `Placard de ${linkedFirstName ?? 'votre proche'}` : 'Mon Placard'}
+                  {isPartner ? `Placard de ${linkedFirstName ?? 'ton proche'}` : 'Mon Placard'}
                 </ThemedText>
                 <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: 4 }}>
                   {products.length} produits · {compatiblePercent}% compatibles

@@ -110,7 +110,7 @@ function PhaseScan({ theme, results, onScanResult, onFinish, trimester }: PhaseS
         </ThemedText>
         {permanentlyDenied && (
           <ThemedText variant="bodyMedium" color="textSecondary" style={{ marginTop: Spacing.sm, textAlign: 'center', paddingHorizontal: Spacing.xl }}>
-            Activez l&apos;accès caméra dans les réglages du téléphone pour lancer la Scan Party.
+            Active l&apos;accès caméra dans les réglages du téléphone pour lancer la Scan Party.
           </ThemedText>
         )}
         <View style={{ marginTop: Spacing.xl, width: '80%' }}>
@@ -163,7 +163,7 @@ function PhaseScan({ theme, results, onScanResult, onFinish, trimester }: PhaseS
       )}
       <View style={[scan.bottomBar, { paddingBottom: insets.bottom + Spacing.xl }]}>
         <ThemedText variant="bodySmall" style={{ color: 'rgba(255,255,255,0.7)', marginBottom: Spacing.md }}>
-          Pointez la caméra sur un code-barres
+          Pointe la caméra sur un code-barres
         </ThemedText>
         <Pressable
           onPress={onFinish}

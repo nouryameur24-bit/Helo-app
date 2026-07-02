@@ -86,8 +86,8 @@ export function ProfileHeader() {
             <Pressable
               onPress={() =>
                 Alert.alert(
-                  'Vos contributions',
-                  `Vous avez contribué à ${localContribCount} produit${localContribCount > 1 ? 's' : ''}. Merci !`,
+                  'Tes contributions',
+                  `Tu as contribué à ${localContribCount} produit${localContribCount > 1 ? 's' : ''}. Merci !`,
                 )
               }
               accessibilityRole="button"
@@ -160,7 +160,7 @@ export function ProfileHeader() {
         </Animated.View>
       )}
 
-      {/* Vos contributions */}
+      {/* Tes contributions */}
       {!isPartner && contributionCount > 0 && (
         <Animated.View entering={FadeInDown.delay(170).duration(500)}>
           <ThemedText variant="labelSmall" color="textTertiary" style={styles.sectionLabel}>
@@ -177,7 +177,7 @@ export function ProfileHeader() {
                 </ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
                   {contributionCount >= 5
-                    ? 'Vous êtes Contributrice Hēlo 🏅'
+                    ? 'Tu es Contributrice Hēlo 🏅'
                     : `Encore ${5 - contributionCount} pour devenir Contributrice Hēlo`}
                 </ThemedText>
               </View>

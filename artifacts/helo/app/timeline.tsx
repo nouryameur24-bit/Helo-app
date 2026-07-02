@@ -99,7 +99,7 @@ function WeekColumn({
     >
       {isCurrent && (
         <View style={styles.hereBadge}>
-          <ThemedText style={styles.hereBadgeText}>Vous êtes ici</ThemedText>
+          <ThemedText style={styles.hereBadgeText}>Tu es ici</ThemedText>
         </View>
       )}
 
@@ -408,10 +408,10 @@ export default function TimelineScreen() {
           UTI: 'com.adobe.pdf',
         });
       } else {
-        Alert.alert('Export réussi', 'Le PDF a été généré dans vos fichiers.');
+        Alert.alert('Export réussi', 'Le PDF a été généré dans tes fichiers.');
       }
     } catch {
-      Alert.alert('Erreur', 'Impossible d\'exporter la timeline. Réessayez.');
+      Alert.alert('Erreur', 'Impossible d\'exporter la timeline. Réessaie.');
     } finally {
       setExporting(false);
     }

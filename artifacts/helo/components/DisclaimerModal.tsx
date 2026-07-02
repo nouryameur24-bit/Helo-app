@@ -92,7 +92,7 @@ export function DisclaimerModal() {
             </ThemedText>
 
             <ThemedText variant="bodyMedium" color="textPrimary" style={styles.paragraphBold}>
-              Il ne remplace EN AUCUN CAS l'avis de votre médecin, gynécologue, sage-femme ou pharmacien.
+              Il ne remplace EN AUCUN CAS l'avis de ton médecin, gynécologue, sage-femme ou pharmacien.
             </ThemedText>
 
             <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
@@ -100,7 +100,7 @@ export function DisclaimerModal() {
             </ThemedText>
 
             <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraphLast}>
-              Pour toute question médicale, consultez systématiquement un professionnel de santé.
+              Pour toute question médicale, consulte systématiquement un professionnel de santé.
             </ThemedText>
 
             <Button fullWidth onPress={handleAccept}>

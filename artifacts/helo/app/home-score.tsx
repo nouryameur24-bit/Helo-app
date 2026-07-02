@@ -79,9 +79,9 @@ function scoreColor(score: number): string {
   return Colors.danger;
 }
 function homeSummary(score: number): string {
-  if (score > 80) return `Votre maison est safe à ${score}% 🏡`;
-  if (score >= 40) return `Votre maison est safe à ${score}% — encore un effort !`;
-  return `Votre maison nécessite attention — ${score}% safe`;
+  if (score > 80) return `Ta maison est safe à ${score}% 🏡`;
+  if (score >= 40) return `Ta maison est safe à ${score}% — encore un effort !`;
+  return `Ta maison nécessite attention — ${score}% safe`;
 }
 
 // ─── Confetti particle ────────────────────────────────────────────────────────
@@ -336,7 +336,7 @@ export default function HomeScoreScreen() {
             Mon Environnement
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: 4 }}>
-            Analysez la sécurité de chaque pièce de votre maison
+            Analyse la sécurité de chaque pièce de ta maison
           </ThemedText>
         </Animated.View>
 
@@ -399,7 +399,7 @@ export default function HomeScoreScreen() {
                   Maison 100% Safe ✨
                 </ThemedText>
                 <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                  Toutes vos pièces sont au vert. Félicitations !
+                  Toutes tes pièces sont au vert. Félicitations !
                 </ThemedText>
               </View>
             </View>
@@ -411,7 +411,7 @@ export default function HomeScoreScreen() {
           <View style={styles.objectifCard}>
             <Feather name="target" size={16} color={Colors.accent} />
             <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1 }}>
-              Objectif : passez toutes vos pièces au vert en remplaçant les produits à risque !
+              Objectif : passe toutes tes pièces au vert en remplaçant les produits à risque !
             </ThemedText>
           </View>
         </Animated.View>
@@ -439,10 +439,10 @@ export default function HomeScoreScreen() {
             <View style={styles.emptyCard}>
               <Feather name="home" size={40} color={Colors.textTertiary} />
               <ThemedText variant="bodyLarge" color="textTertiary" style={{ marginTop: Spacing.lg, textAlign: 'center' }}>
-                Votre placard est vide
+                Ton placard est vide
               </ThemedText>
               <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
-                Scannez des produits et ajoutez-les à votre placard pour voir votre score par pièce.
+                Scanne des produits et ajoute-les à ton placard pour voir ton score par pièce.
               </ThemedText>
               <Pressable
                 onPress={() => router.push(ROUTES.scan)}
@@ -460,7 +460,7 @@ export default function HomeScoreScreen() {
           <View style={styles.tipCard}>
             <Feather name="info" size={14} color={Colors.textTertiary} />
             <ThemedText variant="bodySmall" color="textTertiary" style={{ flex: 1, lineHeight: 18 }}>
-              Les scores sont calculés depuis votre placard. Attribuez une catégorie à chaque produit pour affiner l'analyse par pièce.
+              Les scores sont calculés depuis ton placard. Attribuez une catégorie à chaque produit pour affiner l'analyse par pièce.
             </ThemedText>
           </View>
         </Animated.View>

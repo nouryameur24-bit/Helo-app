@@ -69,12 +69,12 @@ export default function ScanPartyScreen() {
       if (canShare) {
         await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Partager mon Scan Party' });
       } else {
-        Alert.alert('Partage non disponible', "Votre appareil ne supporte pas le partage d'images.");
+        Alert.alert('Partage non disponible', "Ton appareil ne supporte pas le partage d'images.");
       }
     } catch (err) {
       logError('scanParty.share', err);
       setPhase('summary');
-      Alert.alert('Erreur', "Impossible de générer l'image. Réessayez.");
+      Alert.alert('Erreur', "Impossible de générer l'image. Réessaie.");
     }
   }, []);
 

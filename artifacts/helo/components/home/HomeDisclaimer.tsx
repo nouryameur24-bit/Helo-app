@@ -19,7 +19,7 @@ export const HomeDisclaimer = React.memo(function HomeDisclaimer() {
           </ThemedText>
         </View>
         <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 6, lineHeight: 18 }}>
-          Hēlo est un outil d&apos;information. Consultez votre médecin avant de modifier vos habitudes pendant la grossesse.
+          Hēlo est un outil d&apos;information. Consulte ton médecin avant de modifier tes habitudes pendant la grossesse.
         </ThemedText>
       </Card>
     </Animated.View>

@@ -29,7 +29,7 @@ export default function ProfileEditScreen() {
         </ThemedText>
 
         <ThemedText variant="bodyMedium" color="textTertiary" style={styles.subBody}>
-          Vous pourrez bientôt modifier vos informations, votre date prévue d&apos;accouchement et vos préférences directement ici.
+          Tu pourras bientôt modifier tes informations, ta date prévue d&apos;accouchement et tes préférences directement ici.
         </ThemedText>
       </View>
 

@@ -186,7 +186,7 @@ export default function ARMirrorScreen() {
           </View>
           <ThemedText style={styles.gateTitle}>Mode Miroir AR</ThemedText>
           <ThemedText style={styles.gateSubtitle}>
-            Entourez vos produits d'un halo coloré en temps réel.{'\n'}Scannez toute votre étagère en une seconde.
+            Entoure tes produits d'un halo coloré en temps réel.{'\n'}Scanne toute ton étagère en une seconde.
           </ThemedText>
           <View style={styles.gateFeatures}>
             {['🟢  Halo vert — produit sûr', '🟡  Halo ambre — vigilance', '🔴  Halo rouge — à éviter', '📸  Capture AR pour TikTok / Insta'].map((f) => (
@@ -250,7 +250,7 @@ export default function ARMirrorScreen() {
           <View style={styles.counterDot} />
           <ThemedText style={styles.counterText}>
             {renderItems.length === 0
-              ? quickMode ? 'Mode rapide — pointez un produit' : 'Pointez votre étagère'
+              ? quickMode ? 'Mode rapide — pointe un produit' : 'Pointe ton étagère'
               : `${renderItems.length} produit${renderItems.length > 1 ? 's' : ''} détecté${renderItems.length > 1 ? 's' : ''}`}
           </ThemedText>
         </View>

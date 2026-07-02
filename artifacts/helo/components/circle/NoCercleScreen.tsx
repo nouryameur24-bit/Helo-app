@@ -25,7 +25,7 @@ function NoCercleScreen({ onCreateCircle, onJoinCircle, isPremium }: NoCercleScr
           Mon Cercle
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textSecondary" style={[styles.centeredText, { marginTop: 4 }]}>
-          Invitez jusqu'à 8 proches pour partager vos scans, vos réactions et vous motiver ensemble.
+          Invite jusqu'à 8 proches pour partager tes scans, tes réactions et te motiver ensemble.
         </ThemedText>
 
         <View style={styles.noCercleActions}>

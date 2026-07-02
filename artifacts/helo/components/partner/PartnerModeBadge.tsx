@@ -42,7 +42,7 @@ export function PartnerModeBadge({
   variant = 'compact',
   onPress,
 }: PartnerModeBadgeProps) {
-  const name = linkedFirstName?.trim() || 'votre proche';
+  const name = linkedFirstName?.trim() || 'ton proche';
 
   const handlePress = () => {
     if (onPress) {

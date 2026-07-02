@@ -27,7 +27,7 @@ function EmptyResults({ query }: { query: string }) {
       <ThemedText variant="headlineMedium" color="textPrimary" style={empty.title}>Aucun résultat</ThemedText>
       <ThemedText variant="bodyMedium" color="textSecondary" style={empty.body}>
         Aucun produit trouvé pour « {query} »{'\n'}
-        Essayez un autre terme ou scannez le code-barres.
+        Essaie un autre terme ou scanne le code-barres.
       </ThemedText>
     </View>
   );

@@ -68,8 +68,8 @@ export function CircleShareRow({
           <ThemedText variant="bodyLarge" color="textPrimary">Partager dans mon cercle</ThemedText>
           <ThemedText variant="bodySmall" color="textTertiary">
             {sharedToCircle
-              ? 'Partagé ! Vos proches ont été notifiées.'
-              : 'Notifie vos proches de ce scan'}
+              ? 'Partagé ! Tes proches ont été notifiées.'
+              : 'Notifie tes proches de ce scan'}
           </ThemedText>
         </View>
         <Switch

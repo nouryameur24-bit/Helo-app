@@ -67,7 +67,7 @@ export function CircleSection() {
                 <SettingRow
                   icon="users"
                   title="Créer mon cercle"
-                  subtitle={isPremium ? "Invitez jusqu'à 8 proches" : 'Fonctionnalité Premium ✦'}
+                  subtitle={isPremium ? "Invite jusqu'à 8 proches" : 'Fonctionnalité Premium ✦'}
                   onPress={async () => {
                     if (!isPremium) { requirePremium('circle'); return; }
                     setIsCreatingCircle(true);
@@ -88,7 +88,7 @@ export function CircleSection() {
                 <SettingRow
                   icon="link"
                   title="Rejoindre un cercle"
-                  subtitle="Entrez un code d'invitation"
+                  subtitle="Entre un code d'invitation"
                   onPress={() => setShowJoinModal(true)}
                 />
               </>
@@ -116,7 +116,7 @@ export function CircleSection() {
               Rejoindre un cercle
             </ThemedText>
             <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginBottom: Spacing.xl }}>
-              Entrez le code à 8 caractères partagé par la créatrice du cercle.
+              Entre le code à 8 caractères partagé par la créatrice du cercle.
             </ThemedText>
             <TextInput
               style={styles.circleCodeInput}

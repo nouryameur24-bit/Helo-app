@@ -78,32 +78,32 @@ export default function PrivacyScreen() {
 
         <Section title="2. Finalité du traitement">
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Vos données sont traitées pour les finalités suivantes :
+            Tes données sont traitées pour les finalités suivantes :
           </ThemedText>
           <BulletPoint text="Fournir le service d'analyse de produits personnalisé" />
-          <BulletPoint text="Adapter les évaluations en fonction de votre trimestre de grossesse" />
-          <BulletPoint text="Conserver votre historique de scans pour consultation ultérieure" />
+          <BulletPoint text="Adapter les évaluations en fonction de ton trimestre de grossesse" />
+          <BulletPoint text="Conserver ton historique de scans pour consultation ultérieure" />
           <BulletPoint text="Améliorer la qualité et la pertinence du service" />
-          <BulletPoint text="Communiquer avec vous concernant votre compte (si nécessaire)" />
+          <BulletPoint text="Communiquer avec toi concernant ton compte (si nécessaire)" />
         </Section>
 
         <Section title="3. Durée de conservation">
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Vos données personnelles sont conservées pendant une durée de 3 ans à compter de votre dernier accès à l'application. Au-delà de cette période, vos données sont automatiquement supprimées de nos systèmes.
+            Tes données personnelles sont conservées pendant une durée de 3 ans à compter de ton dernier accès à l'application. Au-delà de cette période, tes données sont automatiquement supprimées de nos systèmes.
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Vous pouvez demander la suppression anticipée de vos données à tout moment (voir section « Vos droits »).
+            Tu peux demander la suppression anticipée de tes données à tout moment (voir section « Tes droits »).
           </ThemedText>
         </Section>
 
-        <Section title="4. Vos droits">
+        <Section title="4. Tes droits">
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Conformément au RGPD, vous disposez des droits suivants sur vos données personnelles :
+            Conformément au RGPD, tu disposes des droits suivants sur tes données personnelles :
           </ThemedText>
-          <BulletPoint text="Droit d'accès : obtenir une copie de vos données personnelles" />
+          <BulletPoint text="Droit d'accès : obtenir une copie de tes données personnelles" />
           <BulletPoint text="Droit de rectification : corriger des données inexactes ou incomplètes" />
-          <BulletPoint text="Droit de suppression : demander l'effacement de vos données" />
-          <BulletPoint text="Droit à la portabilité : recevoir vos données dans un format structuré et lisible" />
+          <BulletPoint text="Droit de suppression : demander l'effacement de tes données" />
+          <BulletPoint text="Droit à la portabilité : recevoir tes données dans un format structuré et lisible" />
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
             Pour exercer ces droits, contactez-nous à l'adresse : privacy@helo-app.fr
           </ThemedText>
@@ -113,25 +113,25 @@ export default function PrivacyScreen() {
           <View style={styles.highlightBox}>
             <Feather name="shield" size={18} color={Colors.safe} />
             <ThemedText variant="bodyMedium" color="textPrimary" style={styles.highlightText}>
-              Nous ne vendons jamais vos données personnelles à des tiers.
+              Nous ne vendons jamais tes données personnelles à des tiers.
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Vos données ne sont partagées avec aucun annonceur, courtier en données ou autre tiers à des fins commerciales. Elles sont uniquement utilisées pour le fonctionnement du service Hēlo.
+            Tes données ne sont partagées avec aucun annonceur, courtier en données ou autre tiers à des fins commerciales. Elles sont uniquement utilisées pour le fonctionnement du service Hēlo.
           </ThemedText>
         </Section>
 
         <Section title="6. Hébergement et sécurité">
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Vos données sont hébergées sur l'infrastructure Supabase, localisée dans l'Union européenne, garantissant le respect des normes RGPD en matière de transfert de données.
+            Tes données sont hébergées sur l'infrastructure Supabase, localisée dans l'Union européenne, garantissant le respect des normes RGPD en matière de transfert de données.
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger vos données contre tout accès non autorisé, modification, divulgation ou destruction.
+            Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles appropriées pour protéger tes données contre tout accès non autorisé, modification, divulgation ou destruction.
           </ThemedText>
         </Section>
 
         <ThemedText variant="bodySmall" color="textTertiary" style={styles.footer}>
-          Pour toute question relative à la protection de vos données, vous pouvez nous contacter à l'adresse : privacy@helo-app.fr
+          Pour toute question relative à la protection de tes données, tu peux nous contacter à l'adresse : privacy@helo-app.fr
         </ThemedText>
       </ScrollView>
     </View>

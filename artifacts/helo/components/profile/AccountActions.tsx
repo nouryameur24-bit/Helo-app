@@ -93,11 +93,11 @@ export function AccountActions() {
           <Divider />
           <SettingRow icon="shield" title="Confidentialité" onPress={() => router.push(ROUTES.privacyLegal)} />
           <Divider />
-          <SettingRow icon="calendar" title="Ma Timeline de Grossesse" subtitle="Fresque visuelle de vos 40 semaines" onPress={() => router.push(ROUTES.timeline)} />
+          <SettingRow icon="calendar" title="Ma Timeline de Grossesse" subtitle="Fresque visuelle de tes 40 semaines" onPress={() => router.push(ROUTES.timeline)} />
           <Divider />
           <SettingRow icon="smartphone" title="Widget & Apple Watch" subtitle="Glow Score sur l'écran d'accueil" onPress={() => router.push(ROUTES.widgetPreview)} />
           <Divider />
-          <SettingRow icon="book" title="Exporter mon journal" subtitle="Générer un PDF de votre journal de grossesse" onPress={() => exportJournalToPdf(firstName)} />
+          <SettingRow icon="book" title="Exporter mon journal" subtitle="Générer un PDF de ton journal de grossesse" onPress={() => exportJournalToPdf(firstName)} />
           <Divider />
           <SettingRow icon="download" title="Exporter mes données" onPress={handleExportData} />
           <Divider />
@@ -123,7 +123,7 @@ export function AccountActions() {
           </ThemedText>
         </View>
         <ThemedText variant="bodySmall" color="textTertiary" style={[styles.version, { textAlign: 'center', paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm }]}>
-          Vous participez à la phase bêta. Vos retours nous aident à améliorer Hēlo.
+          Tu participes à la phase bêta. Tes retours nous aident à améliorer Hēlo.
         </ThemedText>
         <ThemedText variant="bodySmall" color="textTertiary" style={styles.version}>
           {`Version 1.0.0${isPremium ? ' · Premium ✓' : ''}`}

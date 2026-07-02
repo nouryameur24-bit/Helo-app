@@ -23,7 +23,7 @@ type Feature = {
 const ALL_FEATURES: Feature[] = [
   { label: 'Nutrition',   subtitle: 'Besoins du trimestre',    icon: 'heart',    iconBg: Colors.cautionLight, iconColor: Colors.caution, route: '/nutrition' },
   { label: 'Maison',      subtitle: 'Score environnement',     icon: 'home',     iconBg: Colors.safeBg,       iconColor: Colors.safe,    route: '/home-score' },
-  { label: 'Restau',      subtitle: 'Analysez le menu',        icon: 'coffee',   iconBg: '#FFF0E8',           iconColor: '#C97B40',      route: '/(tabs)/scan' },
+  { label: 'Restau',      subtitle: 'Analyse le menu',        icon: 'coffee',   iconBg: '#FFF0E8',           iconColor: '#C97B40',      route: '/(tabs)/scan' },
   { label: 'Voyage',      subtitle: 'Briefing santé',          icon: 'map',      iconBg: '#E8F0FF',           iconColor: '#6B8FDB',      route: '/travel', premium: true },
   { label: 'Timeline',    subtitle: 'Semaine par semaine',     icon: 'calendar', iconBg: '#E8F5EE',           iconColor: Colors.safe,    route: '/timeline' },
   { label: 'Widget Glow', subtitle: "Widget écran d'accueil",  icon: 'watch',    iconBg: '#F5F0FF',           iconColor: '#8B6BDB',      route: '/widget-preview' },

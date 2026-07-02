@@ -71,7 +71,7 @@ export default function GuideScreen() {
   const handleResetTutorials = () => {
     Alert.alert(
       'Revoir tous les tutoriels ?',
-      'Les fiches d\u2019explication réapparaîtront la prochaine fois que vous ouvrirez chaque fonctionnalité.',
+      'Les fiches d\u2019explication réapparaîtront la prochaine fois que tu ouvriras chaque fonctionnalité.',
       [
         { text: 'Annuler', style: 'cancel' },
         {

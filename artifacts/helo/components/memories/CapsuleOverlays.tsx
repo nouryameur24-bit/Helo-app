@@ -77,7 +77,7 @@ export function SealingOverlay({ onDone, capsuleLabel }: SealingOverlayProps) {
           {capsuleLabel}
         </ThemedText>
         <ThemedText variant="bodySmall" style={styles.sealingHint}>
-          Votre capsule vous attend dans le profil 💛
+          Ta capsule t'attend dans le profil 💛
         </ThemedText>
       </Animated.View>
     </Animated.View>
@@ -145,7 +145,7 @@ export function OpeningOverlay({ onDone }: OpeningOverlayProps) {
           Capsule ouverte ✨
         </ThemedText>
         <ThemedText variant="bodyMedium" style={styles.sealingSub}>
-          Vos souvenirs vous attendent…
+          Tes souvenirs t'attendent…
         </ThemedText>
       </Animated.View>
     </Animated.View>

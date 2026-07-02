@@ -225,14 +225,14 @@ export function TrimesterTransition({
           {/* Text content */}
           <Animated.View style={[styles.textBlock, contentStyle]}>
             <ThemedText variant="headlineLarge" style={[styles.welcomeTitle, { color: Colors.textPrimary }]}>
-              Bienvenue dans votre{'\n'}{trimesterOrdinalLabel(trimester)} trimestre
+              Bienvenue dans ton{'\n'}{trimesterOrdinalLabel(trimester)} trimestre
             </ThemedText>
 
             <ThemedText
               variant="bodyMedium"
               style={[styles.subtitle, { color: Colors.textSecondary }]}
             >
-              Nous avons mis à jour vos évaluations pour refléter les recommandations de votre nouveau trimestre.
+              Nous avons mis à jour tes évaluations pour refléter les recommandations de ton nouveau trimestre.
             </ThemedText>
 
             {changedProductsCount > 0 && (

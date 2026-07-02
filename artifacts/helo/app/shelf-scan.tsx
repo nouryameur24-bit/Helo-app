@@ -143,7 +143,7 @@ export default function ShelfScanScreen() {
           Analyse en cours…
         </ThemedText>
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.loaderSub}>
-          Claude identifie tous les produits de votre étagère
+          Claude identifie tous les produits de ton étagère
         </ThemedText>
       </View>
     );
@@ -234,7 +234,7 @@ export default function ShelfScanScreen() {
       >
         <Feather name="layers" size={16} color="rgba(255,255,255,0.8)" />
         <ThemedText style={styles.guideText}>
-          Photographiez votre étagère
+          Photographie ton étagère
         </ThemedText>
       </Animated.View>
 

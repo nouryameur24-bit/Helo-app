@@ -78,15 +78,15 @@ export default function PartnerWelcomeScreen() {
         </ThemedText>
         {partnerName ? (
           <ThemedText variant="headlineLarge" color="accent" style={styles.subtitle}>
-            Vous accompagnez{'\n'}{partnerName}
+            Tu accompagnes{'\n'}{partnerName}
           </ThemedText>
         ) : (
           <ThemedText variant="headlineLarge" color="accent" style={styles.subtitle}>
-            Vous êtes maintenant co-parent
+            Tu es maintenant co-parent
           </ThemedText>
         )}
         <ThemedText variant="bodyLarge" color="textSecondary" style={styles.body}>
-          Hēlo vous guide semaine après semaine pour soutenir votre partenaire au mieux tout au long de la grossesse.
+          Hēlo te guide semaine après semaine pour soutenir ton partenaire au mieux tout au long de la grossesse.
         </ThemedText>
       </Animated.View>
 
@@ -94,7 +94,7 @@ export default function PartnerWelcomeScreen() {
         <FeatureItem
           emoji="📋"
           title="Checklist co-parent"
-          description="Préparez la maison, les achats et les rendez-vous médicaux."
+          description="Prépare la maison, les achats et les rendez-vous médicaux."
         />
         <FeatureItem
           emoji="💡"
@@ -103,8 +103,8 @@ export default function PartnerWelcomeScreen() {
         />
         <FeatureItem
           emoji="📊"
-          title="Glow Score de votre partenaire"
-          description="Suivez la sécurité de son placard en temps réel."
+          title="Glow Score de ton partenaire"
+          description="Suis la sécurité de son placard en temps réel."
         />
       </Animated.View>
 

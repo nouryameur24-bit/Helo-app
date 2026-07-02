@@ -89,7 +89,7 @@ export function CameraModal({ visible, onClose, onScan }: CameraModalProps) {
             <Feather name="camera-off" size={40} color={Colors.textTertiary} />
             <ThemedText variant="bodyMedium" color="textTertiary" style={{ marginTop: Spacing.md, paddingHorizontal: Spacing.xl, textAlign: 'center' }}>
               {permanentlyDenied
-                ? "L'accès caméra est désactivé. Activez-le dans les réglages."
+                ? "L'accès caméra est désactivé. Active-le dans les réglages."
                 : 'Autorisation caméra requise'}
             </ThemedText>
             <TouchableOpacity onPress={handlePermissionCta} style={{ marginTop: Spacing.lg }}>
@@ -110,7 +110,7 @@ export function CameraModal({ visible, onClose, onScan }: CameraModalProps) {
             </View>
             <View style={cam.hint}>
               <ThemedText variant="bodySmall" style={cam.hintText}>
-                Placez le code-barres dans le cadre
+                Place le code-barres dans le cadre
               </ThemedText>
             </View>
           </View>

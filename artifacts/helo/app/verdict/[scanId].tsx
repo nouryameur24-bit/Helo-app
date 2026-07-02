@@ -121,7 +121,7 @@ export default function VerdictScreen() {
   const { role, userId, trimester: profileTrimester, linkedUserId, firstName } = useProfile();
   const isPartner = role === 'partner';
   const effectiveUserId = isPartner && linkedUserId ? linkedUserId : userId;
-  const senderFirstName = firstName || 'Votre partenaire';
+  const senderFirstName = firstName || 'Ton partenaire';
   const recipientUserId = linkedUserId ?? null;
 
   const [labelVisible, setLabelVisible] = useState(false);
@@ -129,7 +129,7 @@ export default function VerdictScreen() {
   const [recallMatch, setRecallMatch] = useState<RappelConsoRecord | null>(null);
   const [shareVisible, setShareVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('Ajouté à votre placard ✓');
+  const [toastMessage, setToastMessage] = useState('Ajouté à ton placard ✓');
   const [rewardToastVisible, setRewardToastVisible] = useState(false);
   const ghostThanksShownRef = useRef(false);
   // Lot 15A1 — célébration "🎉 Setup terminé" affichée UNE SEULE FOIS après
@@ -857,7 +857,7 @@ export default function VerdictScreen() {
             ) : phase === 'breastfeeding' ? (
               <Badge variant="accent">Mode allaitement 🤱</Badge>
             ) : (
-              <Badge variant="accent">Évalué pour votre {phaseLabel(phase)}</Badge>
+              <Badge variant="accent">Évalué pour ton {phaseLabel(phase)}</Badge>
             )}
           </View>
         </LinearGradient>
@@ -955,7 +955,7 @@ export default function VerdictScreen() {
               <Feather name="info" size={18} color={Colors.accent} />
             </View>
             <ThemedText variant="bodySmall" style={styles.photoBannerText}>
-              Ce produit a été identifié visuellement. Pour un résultat plus précis, scannez le code-barres ou la liste d'ingrédients.
+              Ce produit a été identifié visuellement. Pour un résultat plus précis, scanne le code-barres ou la liste d'ingrédients.
             </ThemedText>
           </View>
         )}

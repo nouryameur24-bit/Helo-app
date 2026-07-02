@@ -35,7 +35,7 @@ const RESTAURANT_USED_KEY = STORAGE_KEYS.restaurantUsed;
 const MENU_RESULT_KEY = STORAGE_KEYS.menuResult;
 
 const RESTAURANT_DISCLAIMER =
-  'Cette analyse est indicative et basée sur la reconnaissance de texte. Les compositions exactes des plats peuvent varier. Consultez toujours votre médecin ou sage-femme pour des conseils personnalisés. N\'hésitez pas à interroger le personnel du restaurant.';
+  'Cette analyse est indicative et basée sur la reconnaissance de texte. Les compositions exactes des plats peuvent varier. Consulte toujours ton médecin ou sage-femme pour des conseils personnalisés. N\'hésitez pas à interroger le personnel du restaurant.';
 
 const COURSE_LABELS: Record<DishCourse, string> = {
   entrée: 'Entrées',
@@ -279,7 +279,7 @@ export default function RestaurantResultsScreen() {
             Mode Restaurant
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.premiumBody}>
-            Vous avez utilisé votre analyse gratuite. Passez à Premium pour analyser autant de menus que vous souhaitez.
+            Tu as utilisé ton analyse gratuite. Passe à Premium pour analyser autant de menus que tu souhaites.
           </ThemedText>
           <TouchableOpacity
             style={styles.premiumBtn}
@@ -345,7 +345,7 @@ export default function RestaurantResultsScreen() {
             Aucun plat détecté
           </ThemedText>
           <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.xl }}>
-            Essayez de photographier le menu en vous rapprochant pour améliorer la lisibilité du texte.
+            Essaie de photographier le menu en te rapprochant pour améliorer la lisibilité du texte.
           </ThemedText>
           <TouchableOpacity onPress={() => router.back()} style={{ marginTop: Spacing.xl }}>
             <ThemedText style={styles.retryText}>Reprendre des photos</ThemedText>
@@ -511,7 +511,7 @@ export default function RestaurantResultsScreen() {
               </ThemedText>
             </View>
             <ThemedText variant="bodySmall" color="textTertiary" style={styles.questionsHint}>
-              Appuyez pour copier et montrer au serveur
+              Appuie pour copier et montrer au serveur
             </ThemedText>
             <View style={styles.questionsList}>
               {allQuestions.map((q, i) => {

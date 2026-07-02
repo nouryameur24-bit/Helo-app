@@ -61,10 +61,10 @@ export default function PartnerInterestsScreen() {
 
       <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.header}>
         <ThemedText variant="displayMedium" color="textPrimary" style={styles.title}>
-          Vos centres d'intérêt
+          Tes centres d'intérêt
         </ThemedText>
         <ThemedText variant="bodyLarge" color="textSecondary" style={styles.subtitle}>
-          Quels sujets vous intéressent le plus ? Sélectionnez-en plusieurs, nous adapterons vos conseils.
+          Quels sujets t'intéressent le plus ? Sélectionnes-en plusieurs, nous adapterons tes conseils.
         </ThemedText>
       </Animated.View>
 

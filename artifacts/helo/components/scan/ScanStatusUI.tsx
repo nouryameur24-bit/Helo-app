@@ -102,8 +102,8 @@ export function PermissionScreen({ onRequest, canAskAgain = true }: PermissionSc
       </Text>
       <Text style={ui.permissionBody}>
         {permanentlyDenied
-          ? "L'accès caméra a été refusé. Activez-le depuis les réglages du téléphone pour scanner vos produits."
-          : "Hēlo a besoin d'accéder à votre caméra pour scanner vos produits"}
+          ? "L'accès caméra a été refusé. Active-le depuis les réglages du téléphone pour scanner tes produits."
+          : "Hēlo a besoin d'accéder à ta caméra pour scanner tes produits"}
       </Text>
       <View style={{ width: '100%', paddingHorizontal: Spacing.xxl }}>
         <Button variant="primary" fullWidth onPress={handlePress}>
@@ -136,7 +136,7 @@ export function WebPlaceholder() {
         La caméra est disponible uniquement sur l'application mobile.
       </Text>
       <Text style={ui.permissionBody}>
-        Ouvrez Hēlo avec Expo Go sur votre iPhone ou Android pour scanner vos produits.
+        Ouvre Hēlo avec Expo Go sur ton iPhone ou Android pour scanner tes produits.
       </Text>
     </View>
   );

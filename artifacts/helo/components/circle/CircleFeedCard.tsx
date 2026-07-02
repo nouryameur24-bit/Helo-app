@@ -107,7 +107,7 @@ export function EmptyFeed() {
         Le fil est vide
       </ThemedText>
       <ThemedText variant="bodyMedium" color="textSecondary" style={{ textAlign: 'center', marginTop: Spacing.sm }}>
-        Partagez un scan depuis la page verdict ou envoyez un message pour démarrer !
+        Partage un scan depuis la page verdict ou envoyez un message pour démarrer !
       </ThemedText>
     </View>
   );

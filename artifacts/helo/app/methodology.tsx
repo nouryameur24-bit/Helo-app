@@ -27,7 +27,7 @@ const SOURCES = [
 
 const VERDICT_LEVELS = [
   { label: 'Compatible', color: Colors.safe, bg: Colors.safeLight, description: 'Aucune contre-indication connue pour la grossesse selon les sources consultées.' },
-  { label: 'Précaution', color: Colors.caution, bg: Colors.cautionLight, description: 'Certains ingrédients nécessitent une vigilance. Consultez votre professionnel de santé.' },
+  { label: 'Précaution', color: Colors.caution, bg: Colors.cautionLight, description: 'Certains ingrédients nécessitent une vigilance. Consulte ton professionnel de santé.' },
   { label: 'À éviter', color: Colors.danger, bg: Colors.dangerLight, description: 'Contient des ingrédients déconseillés ou contre-indiqués pendant la grossesse.' },
 ];
 
@@ -62,7 +62,7 @@ export default function MethodologyScreen() {
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Hēlo analyse les produits que vous scannez en suivant un processus en plusieurs étapes :
+            Hēlo analyse les produits que tu scannes en suivant un processus en plusieurs étapes :
           </ThemedText>
           {[
             'Scan du produit — identification par code-barres ou photo',
@@ -147,7 +147,7 @@ export default function MethodologyScreen() {
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Certains ingrédients peuvent avoir des recommandations différentes selon le trimestre de grossesse. Hēlo prend en compte votre avancement pour affiner ses évaluations lorsque les données scientifiques le permettent.
+            Certains ingrédients peuvent avoir des recommandations différentes selon le trimestre de grossesse. Hēlo prend en compte ton avancement pour affiner ses évaluations lorsque les données scientifiques le permettent.
           </ThemedText>
         </Card>
 
@@ -161,7 +161,7 @@ export default function MethodologyScreen() {
             </ThemedText>
           </View>
           <ThemedText variant="bodyMedium" color="textSecondary" style={styles.paragraph}>
-            Hēlo n'est pas un dispositif médical et ne fournit pas de diagnostic. L'application ne remplace en aucun cas l'avis de votre médecin, sage-femme ou pharmacien. Les analyses sont basées sur les données disponibles (CRAT, ANSM, EFSA, SCCS) et peuvent ne pas couvrir toutes les situations individuelles.
+            Hēlo n'est pas un dispositif médical et ne fournit pas de diagnostic. L'application ne remplace en aucun cas l'avis de ton médecin, sage-femme ou pharmacien. Les analyses sont basées sur les données disponibles (CRAT, ANSM, EFSA, SCCS) et peuvent ne pas couvrir toutes les situations individuelles.
           </ThemedText>
         </Card>
 

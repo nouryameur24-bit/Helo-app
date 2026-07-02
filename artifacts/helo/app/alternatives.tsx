@@ -197,7 +197,7 @@ function AlternativeCard({
                   color="textSecondary"
                   style={{ marginTop: 4, lineHeight: 16 }}
                 >
-                  Validé selon le CRAT — aucun ingrédient à risque détecté pour votre trimestre.
+                  Validé selon le CRAT — aucun ingrédient à risque détecté pour ton trimestre.
                 </ThemedText>
               )}
             </View>
@@ -455,7 +455,7 @@ function SuggestionForm({ category: defaultCategory }: { category: string }) {
         <View style={styles.suggestionSuccess}>
           <Feather name="check-circle" size={32} color={Colors.safe} />
           <ThemedText variant="bodyLarge" style={{ textAlign: 'center', marginTop: Spacing.md }}>
-            Merci pour votre suggestion !
+            Merci pour ta suggestion !
           </ThemedText>
           <ThemedText variant="bodySmall" color="textSecondary" style={{ textAlign: 'center', marginTop: Spacing.xs }}>
             Notre équipe la vérifiera prochainement.
@@ -709,7 +709,7 @@ export default function AlternativesScreen() {
         <OriginalProductHeader productName={productName} productBrand={productBrand} />
 
         <ThemedText variant="bodyMedium" color="textSecondary" style={styles.subtitle}>
-          Alternatives compatibles avec votre grossesse (T{trimester})
+          Alternatives compatibles avec ta grossesse (T{trimester})
         </ThemedText>
 
         {/* v4 — Banner d'erreur réseau : informe l'utilisatrice premium quand
@@ -723,7 +723,7 @@ export default function AlternativesScreen() {
               variant="bodySmall"
               style={{ flex: 1, marginLeft: 8, color: Colors.textSecondary }}
             >
-              Mode dégradé — résultats partiels. Touchez pour réessayer.
+              Mode dégradé — résultats partiels. Touche pour réessayer.
             </ThemedText>
             <Feather name="rotate-cw" size={14} color={Colors.accent} />
           </TouchableOpacity>

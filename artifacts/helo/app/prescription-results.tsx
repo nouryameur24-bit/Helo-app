@@ -79,7 +79,7 @@ function verdictSubtitle(r: MedicationRisk): string {
   switch (r) {
     case 'safe':    return 'Aucun médicament risqué identifié dans notre base.';
     case 'caution': return 'Certains médicaments nécessitent une attention particulière.';
-    case 'danger':  return 'Consultez immédiatement votre médecin ou pharmacien.';
+    case 'danger':  return 'Consulte immédiatement ton médecin ou pharmacien.';
     default:        return 'Nous n\'avons pas trouvé ces médicaments dans notre base.';
   }
 }
@@ -110,7 +110,7 @@ function MedicationCard({ result, index }: { result: MedicationResult; index: nu
           <View style={styles.unknownRow}>
             <Feather name="info" size={13} color={Colors.textTertiary} />
             <ThemedText variant="bodySmall" color="textTertiary" style={{ flex: 1 }}>
-              Non trouvé dans notre base — consultez votre pharmacien.
+              Non trouvé dans notre base — consulte ton pharmacien.
             </ThemedText>
           </View>
         )}
@@ -166,7 +166,7 @@ export default function PrescriptionResultsScreen() {
             <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
           </Pressable>
           <ThemedText variant="headlineLarge" color="textPrimary">
-            Analyse de votre ordonnance
+            Analyse de ton ordonnance
           </ThemedText>
         </Animated.View>
 
@@ -200,7 +200,7 @@ export default function PrescriptionResultsScreen() {
                 Aucun médicament détecté
               </ThemedText>
               <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: Spacing.sm, textAlign: 'center' }}>
-                L'OCR n'a pas reconnu de noms de médicaments. Assurez-vous que l'ordonnance est bien visible et réessayez.
+                L'OCR n'a pas reconnu de noms de médicaments. Assure-toi que l'ordonnance est bien visible et réessaie.
               </ThemedText>
             </Card>
           </Animated.View>
@@ -225,7 +225,7 @@ export default function PrescriptionResultsScreen() {
               <Feather name="user" size={16} color={Colors.accent} />
             </View>
             <ThemedText variant="bodySmall" color="textSecondary" style={{ flex: 1, lineHeight: 20 }}>
-              Montrez toujours votre ordonnance à votre pharmacien en précisant que vous êtes enceinte.
+              Montre toujours ton ordonnance à ton pharmacien en précisant que tu es enceinte.
             </ThemedText>
           </View>
         </Animated.View>
@@ -235,7 +235,7 @@ export default function PrescriptionResultsScreen() {
           <View style={styles.disclaimer}>
             <Feather name="shield" size={14} color={Colors.textTertiary} />
             <ThemedText variant="bodySmall" color="textTertiary" style={{ flex: 1, lineHeight: 18 }}>
-              Cette analyse ne se substitue en aucun cas à l'avis de votre médecin prescripteur ni de votre pharmacien. Ne modifiez jamais un traitement sans avis médical.
+              Cette analyse ne se substitue en aucun cas à l'avis de ton médecin prescripteur ni de ton pharmacien. Ne modifie jamais un traitement sans avis médical.
             </ThemedText>
           </View>
         </Animated.View>

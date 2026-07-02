@@ -58,8 +58,8 @@ export default function PartnerShareScreen() {
           </ThemedText>
           <ThemedText variant="bodyLarge" color="textSecondary" style={styles.subtitle}>
             {firstName
-              ? `${firstName}, montrez ce QR code à votre partenaire — un scan et vous êtes liés.`
-              : 'Montrez ce QR code à votre partenaire — un scan et vous êtes liés.'}
+              ? `${firstName}, montre ce QR code à ton partenaire — un scan et vous êtes liés.`
+              : 'Montre ce QR code à ton partenaire — un scan et vous êtes liés.'}
           </ThemedText>
         </Animated.View>
 
@@ -67,7 +67,7 @@ export default function PartnerShareScreen() {
           {partnerCode ? (
             <PartnerQRCard
               partnerCode={partnerCode}
-              caption="Ouvrez Hēlo sur le téléphone de votre partenaire et scannez ce QR"
+              caption="Ouvre Hēlo sur le téléphone de ton partenaire et scanne ce QR"
             />
           ) : (
             <View style={styles.emptyCard}>
@@ -82,8 +82,8 @@ export default function PartnerShareScreen() {
                 style={styles.emptyText}
               >
                 {isLoading
-                  ? 'Chargement de votre code…'
-                  : "Votre code partenaire n'est pas encore disponible. Terminez d'abord votre profil."}
+                  ? 'Chargement de ton code…'
+                  : "Ton code partenaire n'est pas encore disponible. Termine d'abord ton profil."}
               </ThemedText>
             </View>
           )}
@@ -99,7 +99,7 @@ export default function PartnerShareScreen() {
           <View style={styles.hintSteps}>
             <HintStep
               n={1}
-              text="Votre partenaire installe Hēlo et choisit « J'accompagne »"
+              text="Ton partenaire installe Hēlo et choisit « J'accompagne »"
             />
             <HintStep n={2} text="Il appuie sur « Scanner le QR » sur son écran" />
             <HintStep n={3} text="Vous êtes liés instantanément" />

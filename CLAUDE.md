@@ -716,6 +716,13 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
    **Validation** : migration idempotente (DROP IF EXISTS + CREATE), appliquée + vérifiée live. tsc + tests inchangés (fix DB pur, aucun code mobile/backend touché).
 
+35. **Audit #4 (design→sécurité) + interruption chat + tutoiement complet (02/07/2026 soir)** : passe inline ciblée sur ce qui n'avait pas été lu (design system, chat, écrans secondaires, transverse). Verdict : app solide (discipline safety réelle, design system propre et tokenisé, backend mature). Corrections :
+   - **🟠 Chat : le garde-fou de chargement bloquait l'interruption** (demande explicite user). Pendant `isTyping`, l'input était gelé (`editable={!isTyping}`) + bouton envoi désactivé, ET `sendMessage` n'avait NI timeout NI abort → réseau lent = spinner infini, aucune échappatoire. Fix : (a) `lib/anthropic.ts` timeout dur 30s (`Promise.race`) → message clair au lieu de pendre ; (b) `chat.tsx` bouton **STOP** pendant la génération, input jamais gelé, jeton `sendTokenRef` qui invalide la requête interrompue (réponse tardive ignorée). Le scan n'a pas ce piège (verdict timeout 10s + Vision 20s intégrés).
+   - **Tutoiement complet** : la décision UX « tu partout » n'était pas tenue (~250 « vous/votre/vos » dont ~56 dans le flux principal). Migration grammaticale (script `scratchpad/tu_migration.py` : `votre`→`ton/ta` selon genre+voyelle via `FEM_CONSONNE`, `vos`→`tes`, impératifs `-ez`→`-e/-s`) sur **92 fichiers**. **Exclusions volontaires** : `lib/anthropic.ts` (voix IA médicale = vouvoiement par design), « vous » de couple (`Vous êtes une équipe`, `un scan et vous êtes liés`, `Vous voyez vos choix` dans `onboarding/index.tsx` — pluriel réel maman+partenaire), « Rendez-vous » (locution). Piège rencontré : un remplacement `Je t'écoute` a cassé une string single-quote → repassée en double-quotes. Résultat : **0 « vous » résiduel** (hors exclusions), tsc clean, 250/250.
+   - **Améliorations restantes recommandées (non faites)** : accessibilité VoiceOver (~40% des `onPress` ont un `accessibilityLabel`) ; dark mode « Lune de minuit » défini mais aucun écran ne consomme `useColors()` (finir ou retirer le toggle) ; 7 features gelées à 0 row (discipline OK, à ne pas oublier).
+
+   **Validation** : tsc mobile ✓, mobile 250/250, commits `0f9081e` (interruption) + `848fef3` (tutoiement).
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)
@@ -785,6 +792,8 @@ Si l'user dit "on continue où on s'est arrêté" : check les tâches `in_progre
 - App Store Connect ASC App ID : `FILL_AFTER_CREATING_APP` (eas.json)
 
 ---
+
+*Last updated 02/07/2026 (nuit) : Audit #4 (gotcha #35) — chat interruptible (bouton STOP + timeout 30s, le garde-fou de chargement ne bloque plus l'interruption) + tutoiement complet « vous→tu » sur 92 fichiers (grammaire correcte, IA médicale + couple + Rendez-vous préservés). Mobile 250/250, tsc clean. Commits 0f9081e + 848fef3.
 
 *Last updated 02/07/2026 (soir) : 🔴 FAILLE RLS critique colmatée en prod (gotcha #34) — policies fourre-tout `qual=true` neutralisaient les owner (profiles/scan_history lisibles en anon = fuite données santé RGPD + écriture ingredients publique = empoisonnement verdict). Migration RLS appliquée + prouvée (anon → 0). Token Supabase rotationné. ⚠️ MCP supabase remarche à la prochaine session. ⚠️ Republier Replit Autoscale (audit #3).
 

@@ -233,7 +233,7 @@ export default function BasketResultsScreen() {
             </ThemedText>
           )}
         </View>
-        <TouchableOpacity onPress={handleShare} hitSlop={12} style={styles.shareBtn}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Partager" onPress={handleShare} hitSlop={12} style={styles.shareBtn}>
           <Feather name="share-2" size={20} color={Colors.accent} />
         </TouchableOpacity>
       </Animated.View>

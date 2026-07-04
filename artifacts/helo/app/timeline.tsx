@@ -191,7 +191,7 @@ function WeekDetailSheet({ visible, data, onClose }: WeekDetailSheetProps) {
             <ThemedText variant="headlineMedium" color="textPrimary">
               Semaine {data.week}
             </ThemedText>
-            <Pressable onPress={onClose} style={styles.sheetClose}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Fermer" onPress={onClose} style={styles.sheetClose}>
               <Feather name="x" size={20} color={Colors.textSecondary} />
             </Pressable>
           </View>
@@ -419,7 +419,7 @@ export default function TimelineScreen() {
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
       <View style={[styles.header, { paddingTop: (Platform.OS === 'web' ? 67 : insets.top) + Spacing.md }]}>
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Retour"
           onPress={() => router.back()}
           style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
         >

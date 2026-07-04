@@ -461,7 +461,7 @@ export default function WeeklyBriefScreen() {
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
       {/* Header bar */}
       <View style={[styles.header, { paddingTop: topPadding }]}>
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Fermer"
           onPress={() => router.back()}
           style={({ pressed }) => [styles.closeBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
@@ -499,7 +499,7 @@ export default function WeeklyBriefScreen() {
 
       {/* Next arrow (hidden on last slide) */}
       {currentPage < SLIDE_COUNT - 1 && (
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Suivant"
           style={[styles.nextBtn, { bottom: insets.bottom + 32 }]}
           onPress={() => {
             scrollRef.current?.scrollTo({ x: (currentPage + 1) * W, animated: true });

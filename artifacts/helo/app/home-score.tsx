@@ -325,7 +325,7 @@ export default function HomeScoreScreen() {
       >
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
-          <Pressable
+          <Pressable accessibilityRole="button" accessibilityLabel="Retour"
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.6 : 1 }]}
           >

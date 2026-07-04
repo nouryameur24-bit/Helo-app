@@ -256,7 +256,7 @@ export default function RestaurantResultsScreen() {
   if (premiumBlocked) {
     return (
       <View style={[styles.root, { paddingTop: insets.top, backgroundColor: Colors.background }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Fermer"
           style={[styles.backBtn, { top: insets.top + Spacing.sm }]}
           onPress={() => router.back()}
         >
@@ -300,7 +300,7 @@ export default function RestaurantResultsScreen() {
   if (analysis.error === 'NO_API_KEY') {
     return (
       <View style={[styles.root, { paddingTop: insets.top, backgroundColor: Colors.background }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Fermer"
           style={[styles.backBtn, { top: insets.top + Spacing.sm }]}
           onPress={() => router.back()}
         >
@@ -322,7 +322,7 @@ export default function RestaurantResultsScreen() {
   if (analysis.error === 'NO_TEXT' || analysis.dishes.length === 0) {
     return (
       <View style={[styles.root, { paddingTop: insets.top, backgroundColor: Colors.background }]}>
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Fermer"
           style={[styles.backBtn, { top: insets.top + Spacing.sm }]}
           onPress={() => router.back()}
         >
@@ -362,13 +362,13 @@ export default function RestaurantResultsScreen() {
         entering={FadeInUp.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
           <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <ThemedText variant="headlineMedium" style={styles.headerTitle}>
           Menu analysé
         </ThemedText>
-        <TouchableOpacity onPress={handleShare} style={styles.shareBtn} hitSlop={12}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Partager" onPress={handleShare} style={styles.shareBtn} hitSlop={12}>
           <Feather name="share-2" size={20} color={Colors.accent} />
         </TouchableOpacity>
       </Animated.View>

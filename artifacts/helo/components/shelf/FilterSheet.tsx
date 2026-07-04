@@ -137,7 +137,7 @@ export function FilterSheet({ visible, onClose, filters, onApply }: FilterSheetP
             <ThemedText variant="headlineMedium" color="textPrimary">
               Filtrer
             </ThemedText>
-            <Pressable onPress={onClose} hitSlop={12}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Fermer" onPress={onClose} hitSlop={12}>
               <Feather name="x" size={22} color={Colors.textSecondary} />
             </Pressable>
           </View>

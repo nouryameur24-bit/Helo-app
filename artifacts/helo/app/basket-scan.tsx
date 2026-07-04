@@ -206,7 +206,7 @@ export default function BasketScanScreen() {
         entering={FadeInUp.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <TouchableOpacity
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Fermer"
           style={styles.closeBtn}
           onPress={() => router.back()}
           hitSlop={12}

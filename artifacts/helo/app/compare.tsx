@@ -141,12 +141,12 @@ export default function CompareScreen() {
 
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: (Platform.OS === 'web' ? 20 : insets.top) + Spacing.sm }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Retour" style={styles.backBtn} onPress={() => router.back()}>
           <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
         </TouchableOpacity>
         <ThemedText variant="headlineMedium">Comparateur</ThemedText>
         {bothFilled && (
-          <TouchableOpacity style={styles.shareIconBtn} onPress={() => setShareVisible(true)}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Partager" style={styles.shareIconBtn} onPress={() => setShareVisible(true)}>
             <Feather name="share-2" size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
         )}

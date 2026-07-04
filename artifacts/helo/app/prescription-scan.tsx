@@ -163,7 +163,7 @@ export default function PrescriptionScanScreen() {
 
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + Spacing.sm }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Fermer" onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="x" size={20} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.topTitle}>Ordonnance</Text>

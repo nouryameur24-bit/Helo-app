@@ -266,7 +266,7 @@ export default function ShelfResultsScreen() {
   if (error) {
     return (
       <View style={[styles.root, { backgroundColor: Colors.background, paddingTop: insets.top + Spacing.lg }]}>
-        <TouchableOpacity style={styles.backRow} onPress={() => router.back()} hitSlop={12}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Retour" style={styles.backRow} onPress={() => router.back()} hitSlop={12}>
           <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <View style={styles.errorCenter}>
@@ -316,11 +316,11 @@ export default function ShelfResultsScreen() {
         entering={FadeInUp.duration(300)}
         style={[styles.header, { paddingTop: insets.top + Spacing.sm }]}
       >
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.headerBtn}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.back()} hitSlop={12} style={styles.headerBtn}>
           <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <ThemedText variant="headlineMedium">Étagère analysée</ThemedText>
-        <TouchableOpacity onPress={() => setShareVisible(true)} hitSlop={12} style={styles.headerBtn}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Partager" onPress={() => setShareVisible(true)} hitSlop={12} style={styles.headerBtn}>
           <Feather name="share-2" size={20} color={Colors.accent} />
         </TouchableOpacity>
       </Animated.View>

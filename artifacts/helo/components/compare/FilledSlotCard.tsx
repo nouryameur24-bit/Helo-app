@@ -30,7 +30,7 @@ export function FilledSlotCard({ data, label, onRescan }: FilledSlotCardProps) {
             {label}
           </ThemedText>
         </View>
-        <TouchableOpacity onPress={onRescan} style={filled.rescanBtn}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Recommencer" onPress={onRescan} style={filled.rescanBtn}>
           <Feather name="refresh-cw" size={14} color={Colors.textTertiary} />
         </TouchableOpacity>
       </View>

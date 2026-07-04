@@ -303,7 +303,7 @@ export default function ChatScreen() {
           </View>
         </View>
         {hasMessages && (
-          <TouchableOpacity onPress={handleClear} hitSlop={12} style={styles.clearBtn}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Supprimer" onPress={handleClear} hitSlop={12} style={styles.clearBtn}>
             <Feather name="trash-2" size={18} color={Colors.textTertiary} />
           </TouchableOpacity>
         )}

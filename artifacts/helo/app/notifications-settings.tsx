@@ -85,7 +85,7 @@ export default function NotificationsSettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.delay(0).duration(400)} style={styles.header}>
-          <Pressable
+          <Pressable accessibilityRole="button" accessibilityLabel="Retour"
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.6 : 1 }]}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -146,7 +146,7 @@ export default function NotificationsSettingsScreen() {
                 </ThemedText>
               </View>
               <View style={styles.stepper}>
-                <Pressable
+                <Pressable accessibilityRole="button" accessibilityLabel="Retirer"
                   onPress={() => handleMaxChange(-1)}
                   style={({ pressed }) => [
                     styles.stepperBtn,
@@ -162,7 +162,7 @@ export default function NotificationsSettingsScreen() {
                 <ThemedText variant="bodyLarge" color="textPrimary" style={styles.stepperValue}>
                   {settings.maxPerWeek}
                 </ThemedText>
-                <Pressable
+                <Pressable accessibilityRole="button" accessibilityLabel="Ajouter"
                   onPress={() => handleMaxChange(1)}
                   style={({ pressed }) => [
                     styles.stepperBtn,

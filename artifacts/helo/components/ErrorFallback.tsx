@@ -112,7 +112,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                 <ThemedText variant="headlineMedium" color="textPrimary">
                   Détails de l'erreur
                 </ThemedText>
-                <Pressable
+                <Pressable accessibilityRole="button" accessibilityLabel="Fermer"
                   onPress={() => setIsModalVisible(false)}
                   style={({ pressed }) => [styles.closeButton, { opacity: pressed ? 0.6 : 1 }]}
                 >

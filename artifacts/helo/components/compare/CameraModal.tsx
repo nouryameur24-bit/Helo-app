@@ -70,7 +70,7 @@ export function CameraModal({ visible, onClose, onScan }: CameraModalProps) {
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
       <View style={cam.root}>
         <View style={cam.header}>
-          <TouchableOpacity style={cam.closeBtn} onPress={onClose}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Fermer" style={cam.closeBtn} onPress={onClose}>
             <Feather name="x" size={22} color="#fff" />
           </TouchableOpacity>
           <ThemedText variant="headlineMedium" style={cam.headerTitle}>

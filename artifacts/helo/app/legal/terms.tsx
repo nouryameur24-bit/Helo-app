@@ -38,7 +38,7 @@ export default function TermsScreen() {
   return (
     <View style={[styles.root, { backgroundColor: Colors.background }]}>
       <View style={[styles.header, { paddingTop: topPadding + Spacing.md }]}>
-        <Pressable onPress={() => router.back()} style={styles.backButton}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.back()} style={styles.backButton}>
           <Feather name="arrow-left" size={22} color={Colors.textPrimary} />
         </Pressable>
         <ThemedText variant="headlineMedium" color="textPrimary">

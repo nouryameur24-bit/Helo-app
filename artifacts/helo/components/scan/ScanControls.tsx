@@ -50,7 +50,7 @@ export function ShutterButton({ onPress }: ShutterButtonProps) {
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+    <TouchableOpacity accessibilityRole="button" accessibilityLabel="Prendre une photo" onPress={handlePress} activeOpacity={0.9}>
       <Animated.View style={[ctrl.shutter, style]}>
         <View style={ctrl.shutterInner}>
           <Feather name="camera" size={26} color="#fff" />

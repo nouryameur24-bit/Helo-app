@@ -126,7 +126,7 @@ export default function NutritionScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: Colors.background }}>
         <ScrollView contentContainerStyle={[s.content, { paddingTop: topPadding + Spacing.lg, paddingBottom: 60 }]} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => router.back()} style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.6 : 1 }]}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.back()} style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.6 : 1 }]}>
             <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
           </Pressable>
           <Animated.View entering={FadeInDown.delay(0).duration(400)} style={{ alignItems: 'center', paddingVertical: 60 }}>
@@ -148,7 +148,7 @@ export default function NutritionScreen() {
         contentContainerStyle={[s.content, { paddingTop: topPadding + Spacing.lg, paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable onPress={() => router.back()} style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.6 : 1 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Retour" onPress={() => router.back()} style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.6 : 1 }]}>
           <Feather name="arrow-left" size={20} color={Colors.textPrimary} />
         </Pressable>
 

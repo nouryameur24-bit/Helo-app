@@ -121,7 +121,7 @@ export default function JournalEntryScreen() {
           { paddingTop: insets.top + Spacing.md },
         ]}
       >
-        <Pressable
+        <Pressable accessibilityRole="button" accessibilityLabel="Fermer"
           onPress={() => router.back()}
           style={({ pressed }) => [styles.closeBtn, { opacity: pressed ? 0.6 : 1 }]}
         >

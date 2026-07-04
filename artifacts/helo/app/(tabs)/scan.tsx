@@ -225,6 +225,14 @@ export default function ScanScreen() {
     try {
       const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.8 });
       if (photo?.uri) {
+        // Handoff vers ocr-review centralisé (audit module 3 : évite la
+        // duplication de la construction d'URL entre le chemin "flou" et le
+        // chemin normal ci-dessous).
+        const goToOcrReview = () => {
+          const ghostParam = ghostBarcode ? `&ghostBarcode=${encodeURIComponent(ghostBarcode)}` : '';
+          router.push(`/ocr-review?imageUri=${encodeURIComponent(photo.uri)}&base64=${encodeURIComponent(photo.base64 ?? '')}${ghostParam}`);
+        };
+
         // ── Lot 18-04 : Blur detection heuristique ──────────────────────
         // À qualité 0.8, une photo nette d'une étiquette d'ingrédients
         // produit une base64 de ~150-600 KB. Une photo très floue ou très
@@ -240,21 +248,13 @@ export default function ScanScreen() {
             "Recadre l'étiquette avec plus de lumière et l'appareil bien stable. Tu peux quand même continuer si tu veux.",
             [
               { text: 'Reprendre', style: 'cancel' },
-              {
-                text: 'Continuer quand même',
-                style: 'default',
-                onPress: () => {
-                  const ghostParam = ghostBarcode ? `&ghostBarcode=${encodeURIComponent(ghostBarcode)}` : '';
-                  router.push(`/ocr-review?imageUri=${encodeURIComponent(photo.uri)}&base64=${encodeURIComponent(photo.base64 ?? '')}${ghostParam}`);
-                },
-              },
+              { text: 'Continuer quand même', style: 'default', onPress: goToOcrReview },
             ],
           );
           return;
         }
 
-        const ghostParam = ghostBarcode ? `&ghostBarcode=${encodeURIComponent(ghostBarcode)}` : '';
-        router.push(`/ocr-review?imageUri=${encodeURIComponent(photo.uri)}&base64=${encodeURIComponent(photo.base64 ?? '')}${ghostParam}`);
+        goToOcrReview();
       }
     } catch (err) { swallow(err, 'scan.ocrPhotoCapture'); } finally {
       setTakingPhoto(false);

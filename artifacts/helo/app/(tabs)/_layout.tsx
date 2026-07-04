@@ -6,7 +6,6 @@ import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "@/constants/theme";
 import { useChatUnread } from "@/hooks/useChatUnread";
@@ -39,7 +38,6 @@ function NativeTabLayout() {
 }
 
 function ClassicTabLayout() {
-  const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
   // Lot 16-10 — Badge unread sur l'icône Chat. Le hook expose le nombre

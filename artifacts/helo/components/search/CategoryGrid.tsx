@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors } from '@/constants/theme';
 import { cat, CATEGORIES } from './searchStyles';
 
 interface CategoryGridProps {

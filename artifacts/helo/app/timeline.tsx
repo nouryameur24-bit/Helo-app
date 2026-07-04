@@ -29,7 +29,6 @@ import ViewShot from 'react-native-view-shot';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
 import { getTipForWeek } from '@/constants/weeklyTips';
-import type { PregnancyEvent } from '@/constants/pregnancyEvents';
 import { useTimelineData, type WeekData } from '@/hooks/useTimelineData';
 
 import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Shadows } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import styles from './nutritionStyles';
 
 interface TipPillProps {

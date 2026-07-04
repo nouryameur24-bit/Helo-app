@@ -16,7 +16,7 @@ import { Feather } from '@expo/vector-icons';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import type { MedicationResult, MedicationRisk } from '@/lib/prescription';
 import { prescriptionVerdict } from '@/lib/prescription';
 

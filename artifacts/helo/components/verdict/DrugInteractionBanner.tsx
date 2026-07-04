@@ -17,7 +17,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { logError } from '@/lib/logger';
 import { swallow } from '@/lib/swallow';

@@ -6,7 +6,7 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import { Colors, Radius, Shadows } from '@/constants/theme';
+import { Colors, Shadows } from '@/constants/theme';
 
 interface IconButtonProps {
   onPress?: () => void;

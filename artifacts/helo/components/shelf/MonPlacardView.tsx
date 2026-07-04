@@ -255,7 +255,7 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   }, [handlePress, handleRemove, handleChangeCategory, highlightBarcode, isPartner, noopRemove]);
 
 
-  const renderShimmer = useCallback(({ item }: { item: number }) => (
+  const renderShimmer = useCallback(() => (
     <View style={styles.cardWrapper}>
       <ShimmerCard />
     </View>

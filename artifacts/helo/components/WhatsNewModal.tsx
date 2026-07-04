@@ -21,7 +21,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  View,
 } from 'react-native';
 import Animated, {
   FadeIn,

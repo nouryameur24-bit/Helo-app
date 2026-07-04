@@ -31,7 +31,7 @@ import { useRecallAlerts } from "@/hooks/useRecallAlerts";
 import { useTrimester } from "@/hooks/useTrimester";
 import { initAndroidNotificationChannels, registerPushToken } from "@/lib/notifications";
 import { downloadIngredientsDB } from "@/lib/offline";
-import { configurePurchases, PREMIUM_KEY } from "@/lib/purchases";
+import { configurePurchases } from "@/lib/purchases";
 import { initSentry, Sentry } from "@/lib/sentry";
 import { track, identify } from "@/lib/analytics";
 import { posthog } from "@/lib/posthog";

@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 import { isFeatureEnabled } from '@/constants/featureFlags';
 import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import ViewShot from 'react-native-view-shot';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

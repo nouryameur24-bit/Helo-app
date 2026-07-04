@@ -1,6 +1,5 @@
 import React from 'react';
 import { Modal, Pressable, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { ThemedText } from '@/components/ui/ThemedText';

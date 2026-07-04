@@ -222,7 +222,7 @@ export async function onProductScanned(firstName: string): Promise<PactBadgeId[]
 
 // ─── Schedule daily reminder at 20:00 ─────────────────────────────────────────
 
-export async function schedulePactReminder(pact: PactState): Promise<void> {
+export async function schedulePactReminder(_pact: PactState): Promise<void> {
   const fireAt = new Date();
   fireAt.setHours(20, 0, 0, 0);
   if (fireAt.getTime() <= Date.now()) {

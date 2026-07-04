@@ -20,7 +20,6 @@ import { Feather } from "@expo/vector-icons";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { Divider } from "@/components/ui/Divider";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { GENERAL_DISCLAIMER } from "@/constants/disclaimers";

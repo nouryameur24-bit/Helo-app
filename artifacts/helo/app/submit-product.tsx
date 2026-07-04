@@ -4,7 +4,6 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -27,7 +26,6 @@ import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';

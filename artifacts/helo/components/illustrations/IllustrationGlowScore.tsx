@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Circle, Path, Text as SvgText, Defs, LinearGradient, Stop, G } from "react-native-svg";
+import Svg, { Circle, Path, Text as SvgText, Defs, LinearGradient, Stop } from "react-native-svg";
 import { Colors } from "@/constants/theme";
 
 interface Props {

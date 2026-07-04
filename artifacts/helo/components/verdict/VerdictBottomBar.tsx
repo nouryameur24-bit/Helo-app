@@ -10,7 +10,6 @@ import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme'
 import { usePremium } from '@/hooks/usePremium';
 import { useTrimester } from '@/hooks/useTrimester';
 import type { ProductData, Trimester, VerdictResult } from '@/types';
-import { BOTTOM_BAR_HEIGHT } from './verdictHelpers';
 import styles from './verdictStyles';
 
 interface VerdictBottomBarProps {

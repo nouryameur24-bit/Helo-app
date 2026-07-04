@@ -28,7 +28,6 @@ import { logError } from '@/lib/logger';
 import { GlowScoreMini } from '@/components/GlowScoreMini';
 import { IllustrationGlowScore } from '@/components/illustrations/IllustrationGlowScore';
 import { IllustrationShelf } from '@/components/illustrations/IllustrationShelf';
-import { IllustrationTrimester } from '@/components/illustrations/IllustrationTrimester';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
@@ -37,11 +36,11 @@ import { getTipForWeek } from '@/constants/weeklyTips';
 import { useTrimester } from '@/hooks/useTrimester';
 import { useProfile } from '@/hooks/useProfile';
 import { useShelfData } from '@/hooks/useShelfData';
-import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import type { ShelfProduct } from '@/components/shelf/ShelfCard';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 
-const { width: W, height: H } = Dimensions.get('window');
+const { width: W } = Dimensions.get('window');
 const SLIDE_COUNT = 5;
 
 const BRIEF_READ_KEY = STORAGE_KEYS.lastBriefRead;

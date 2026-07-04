@@ -7,8 +7,6 @@ import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Platform,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
@@ -20,7 +18,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { logError } from '@/lib/logger';
 
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { Divider } from '@/components/ui/Divider';
 import { ThemedText } from '@/components/ui/ThemedText';
@@ -36,14 +33,6 @@ const MENU_RESULT_KEY = STORAGE_KEYS.menuResult;
 
 const RESTAURANT_DISCLAIMER =
   'Cette analyse est indicative et basée sur la reconnaissance de texte. Les compositions exactes des plats peuvent varier. Consulte toujours ton médecin ou sage-femme pour des conseils personnalisés. N\'hésitez pas à interroger le personnel du restaurant.';
-
-const COURSE_LABELS: Record<DishCourse, string> = {
-  entrée: 'Entrées',
-  plat: 'Plats',
-  dessert: 'Desserts',
-  boisson: 'Boissons',
-  autre: 'Autres',
-};
 
 const RISK_COLORS: Record<DishRisk, string> = {
   safe: Colors.safe,

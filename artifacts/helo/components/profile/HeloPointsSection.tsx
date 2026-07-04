@@ -17,7 +17,7 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { useProfile } from '@/hooks/useProfile';
-import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import {
   getUserPoints,
   getUserRewardFlags,

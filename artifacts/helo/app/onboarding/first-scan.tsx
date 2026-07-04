@@ -12,14 +12,13 @@ import Animated, {
   useSharedValue,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ui/ThemedText";
-import { Colors, Radius, Spacing } from "@/constants/theme";
+import { Colors, Spacing } from "@/constants/theme";
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 const WELCOME_FLAG = STORAGE_KEYS.showWelcomeOverlay;

@@ -12,7 +12,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -28,7 +27,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Button } from '@/components/ui/Button';
-import { Colors, Radius, Spacing, Typography } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { identifyProduct } from '@/lib/visionScan';
 import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import { STORAGE_KEYS } from '@/lib/storageKeys';

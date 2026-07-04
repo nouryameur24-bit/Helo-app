@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { Badge } from '@/components/ui/Badge';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Colors, Radius, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
@@ -31,30 +31,6 @@ interface ScanItem {
   date?: string;
   ingredientCount: number;
 }
-
-const HISTORY_DATA: { title: string; data: ScanItem[] }[] = [
-  {
-    title: "Aujourd'hui",
-    data: [
-      { id: '1', name: 'Crème hydratante Nuxe', brand: 'NUXE', status: 'safe', statusLabel: 'Sûr', time: '14h32', ingredientCount: 12 },
-      { id: '2', name: 'Shampooing doux', brand: 'KLORANE', status: 'caution', statusLabel: 'Vigilance', time: '10h15', ingredientCount: 8 },
-      { id: '3', name: 'Gel douche aloe vera', brand: 'GARNIER', status: 'safe', statusLabel: 'Sûr', time: '09h44', ingredientCount: 9 },
-    ],
-  },
-  {
-    title: 'Hier',
-    data: [
-      { id: '4', name: 'Sérum vitamine C', brand: 'VICHY', status: 'safe', statusLabel: 'Sûr', time: '20h12', ingredientCount: 15 },
-      { id: '5', name: 'Fond de teint Bourjois', brand: 'BOURJOIS', status: 'danger', statusLabel: 'Déconseillé', time: '16h07', ingredientCount: 22 },
-    ],
-  },
-  {
-    title: '10 mars',
-    data: [
-      { id: '6', name: 'Lait corporel Bioderma', brand: 'BIODERMA', status: 'safe', statusLabel: 'Sûr', time: '11h23', ingredientCount: 7 },
-    ],
-  },
-];
 
 const statusIconMap: Record<ScanStatus, { icon: 'check-circle' | 'alert-circle' | 'x-circle'; color: string; bg: string }> = {
   safe: { icon: 'check-circle', color: Colors.safe, bg: Colors.safeBg },

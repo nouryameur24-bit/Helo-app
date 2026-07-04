@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Circle, Ellipse, Path, Rect, G } from "react-native-svg";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 import { Colors } from "@/constants/theme";
 
 interface Props {

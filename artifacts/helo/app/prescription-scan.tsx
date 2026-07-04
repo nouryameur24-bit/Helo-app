@@ -6,7 +6,6 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -39,9 +38,8 @@ const CORNER_SIZE = 24;
 const CORNER_THICKNESS = 3;
 const CORNER_COLOR = '#C9A96E';
 
-function CornerMarks({ w, h }: { w: number; h: number }) {
+function CornerMarks(_props: { w: number; h: number }) {
   const c = { position: 'absolute' as const, width: CORNER_SIZE, height: CORNER_SIZE };
-  const border = { borderColor: CORNER_COLOR, borderWidth: CORNER_THICKNESS };
   return (
     <>
       <View style={[c, { top: 0, left: 0, borderTopWidth: CORNER_THICKNESS, borderLeftWidth: CORNER_THICKNESS, borderColor: CORNER_COLOR }]} />

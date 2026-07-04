@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { IngredientData, MatchResult, Phase, ProductData, RiskLevel, Trimester, VerdictResult } from '@/types';
+import type { IngredientData, MatchResult, Phase, ProductData, RiskLevel, VerdictResult } from '@/types';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { findMatchingRow, matchSafeOverride } from '@/lib/ingredientMatch';
 

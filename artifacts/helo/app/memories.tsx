@@ -34,7 +34,6 @@ import { CapsuleCard } from '@/components/memories/CapsuleCard';
 import { CapsuleContentView } from '@/components/memories/CapsuleContentView';
 import { OpeningOverlay, SealingOverlay } from '@/components/memories/CapsuleOverlays';
 import {
-  OPENING_PRESETS,
   StepOverview,
   StepPersonal,
   StepSeal,

@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 import { getGlowLabel } from '@/lib/glowscore';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);

@@ -1,7 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Spacing } from '@/constants/theme';
 import { NUTRIENT_DEFS, type FoodSource } from '@/constants/nutritionNeeds';
 import styles from './nutritionStyles';
 

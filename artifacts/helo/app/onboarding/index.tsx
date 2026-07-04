@@ -15,7 +15,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withDelay,

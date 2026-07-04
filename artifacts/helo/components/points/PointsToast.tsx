@@ -18,7 +18,6 @@ import * as Haptics from 'expo-haptics';
 import React, {
   forwardRef,
   useImperativeHandle,
-  useRef,
   useState,
   useCallback,
 } from 'react';
@@ -62,7 +61,7 @@ export const PointsToast = forwardRef<PointsToastHandle>((_props, ref) => {
   }, []);
 
   const playAnimation = useCallback(
-    (item: ToastItem) => {
+    (_item: ToastItem) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
       opacity.value = 0;

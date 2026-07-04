@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors } from '@/constants/theme';
-import { NUTRIENT_DEFS, type NutrientKey, type PhaseNeed } from '@/constants/nutritionNeeds';
+import { NUTRIENT_DEFS, type PhaseNeed } from '@/constants/nutritionNeeds';
 import styles from './nutritionStyles';
 
 function ImportanceDots({ level }: { level: 1 | 2 | 3 }) {

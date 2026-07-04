@@ -1,5 +1,4 @@
 // ─── Chat IA — Hēlo ──────────────────────────────────────────────────────────
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ROUTES } from '@/types/routes';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -22,7 +21,7 @@ import { Feather } from '@expo/vector-icons';
 
 import { RichChatContent } from '@/components/chat/RichChatContent';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Radius, Shadows, Spacing, Typography } from '@/constants/theme';
+import { Colors, Radius, Shadows, Spacing } from '@/constants/theme';
 import { usePremium } from '@/hooks/usePremium';
 
 import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';

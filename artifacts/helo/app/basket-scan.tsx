@@ -6,7 +6,6 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Platform,
   StyleSheet,
   TouchableOpacity,
   View,

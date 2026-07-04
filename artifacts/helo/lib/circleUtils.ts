@@ -348,7 +348,7 @@ function getISOWeek(date: Date): number {
 }
 
 export function computeCircleGlowScore(
-  members: CircleMember[],
+  _members: CircleMember[],
   feedEntries: CircleFeedEntry[],
 ): number {
   const scanEntries = feedEntries.filter((e) => e.type === 'scan' && e.verdict);

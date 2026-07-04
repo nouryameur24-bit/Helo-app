@@ -18,7 +18,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { logError } from '@/lib/logger';
 import { Card } from '@/components/ui/Card';
@@ -33,7 +32,7 @@ import { track } from '@/lib/analytics';
 import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import type { Phase } from '@/types';
 import { processOCRImage, cleanOCRText, parseINCI } from '@/lib/ocr';
-import type { ProductData, MatchResult, VerdictResult } from '@/types';
+import type { ProductData } from '@/types';
 import { STORAGE_KEYS, ocrResultKey } from '@/lib/storageKeys';
 
 const CATEGORIES = ['Cosmétique', 'Soin corps', 'Cheveux', 'Maquillage', 'Autre'] as const;

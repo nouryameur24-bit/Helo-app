@@ -1,6 +1,6 @@
 // ─── Prescription scanner — Hēlo ─────────────────────────────────────────────
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import type { Trimester, Phase } from '@/types';
+import type { Phase } from '@/types';
 
 // ─── Known medication name dictionary ────────────────────────────────────────
 // Used as anchors for OCR parsing when the word is not preceded by a dosage

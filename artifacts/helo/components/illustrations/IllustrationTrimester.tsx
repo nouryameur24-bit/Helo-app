@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Circle, Text as SvgText, Line, G } from "react-native-svg";
+import Svg, { Circle, Text as SvgText, Line } from "react-native-svg";
 import { Colors } from "@/constants/theme";
 
 interface Props {

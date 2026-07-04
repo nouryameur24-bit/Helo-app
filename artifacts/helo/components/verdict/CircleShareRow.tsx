@@ -28,7 +28,6 @@ export function CircleShareRow({
   verdict,
   product,
   firstName,
-  userId,
   sharedToCircle,
   setSharedToCircle,
 }: CircleShareRowProps) {

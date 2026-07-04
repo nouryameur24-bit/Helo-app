@@ -1,5 +1,4 @@
 // ─── Le Pacte Hēlo ──────────────────────────────────────────────────────────
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import { router } from 'expo-router';
@@ -7,7 +6,7 @@ import { isFeatureEnabled } from '@/constants/featureFlags';
 import { ComingSoonScreen } from '@/components/ComingSoonScreen';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';

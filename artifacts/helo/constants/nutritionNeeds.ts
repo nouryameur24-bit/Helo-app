@@ -1,5 +1,4 @@
 // ─── Nutrition Needs per Phase — Hēlo ────────────────────────────────────────
-import type { Phase } from '@/types';
 
 export type NutrientKey =
   | 'folate'

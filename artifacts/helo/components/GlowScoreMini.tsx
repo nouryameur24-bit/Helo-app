@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { GlowScoreCircle } from '@/components/GlowScoreCircle';
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Spacing, Radius, Shadows } from '@/constants/theme';
+import { Colors, Spacing, Radius } from '@/constants/theme';
 import { getGlowLabel } from '@/lib/glowscore';
 
 interface GlowScoreMiniProps {

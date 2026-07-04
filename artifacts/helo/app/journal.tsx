@@ -32,14 +32,6 @@ export interface JournalEntry {
   weekOfPregnancy: number | null;
 }
 
-const MOOD_EMOJI: Record<string, string> = {
-  '😍': 'Amoureuse',
-  '😊': 'Heureuse',
-  '😐': 'Neutre',
-  '😔': 'Fatiguée',
-  '😰': 'Anxieuse',
-};
-
 function computeWeekFromDueDate(dueDate: string | null): number | null {
   if (!dueDate) return null;
   try {

@@ -734,6 +734,8 @@ curl https://<replit-url>/api/healthz  # → "ok"
    - **Module 8 backend** : déjà couvert en profondeur par l'audit #3 (scan.ts, alternatives.ts, anthropic.ts, appSecret, recalls) — pas de re-passe.
    - **Améliorations proposées NON faites** (à valider) : (1) module 1 — extraire 3 blocs IIFE du verdict en composants mémoïsés ; (2) module 3 — handoff base64→AsyncStorage (moat) ; (3) module 7 — extraire parseIngredients en package partagé.
 
+37. **Push qualité S+ — accessibilité (02/07/2026 nuit)** : l'axe le plus faible (a11y ~54%) élevé en 3 vagues (commits `a73ea63`, `713212c`, `9ecfac2`). ⚠️ **`Button` + `IconButton` (`components/ui/`) portent désormais `accessibilityRole="button"` + `accessibilityState` PAR DÉFAUT** → tout usage est annoncé comme bouton par VoiceOver (55 usages couverts d'un coup). `IconButton` étant icon-only, **il FAUT lui passer `accessibilityLabel`** (sinon muet). Flux principaux (scan/alternatives/paywall) 100% labellisés + 34 boutons icon-only (fermer/retour/partager/envoyer/arrêter…) sur 28 écrans atteignables. Bilan : `accessibilityLabel` 170→219. Restent : écrans feature-flag-off (ar-mirror, circle, pact…) non traités (volontaire). Convention : tout nouveau bouton icon-only DOIT avoir un `accessibilityLabel`.
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)

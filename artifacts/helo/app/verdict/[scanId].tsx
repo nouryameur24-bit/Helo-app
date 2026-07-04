@@ -28,7 +28,6 @@ import { ThemedText } from '@/components/ui/ThemedText';
 import { LoadingScreen, ScoreCircle, VerdictLabel, Toast } from '@/components/verdict/VerdictAnimations';
 import { ContributionRewardToast } from '@/components/verdict/ContributionRewardToast';
 import { VellumTexture } from '@/components/verdict/VellumTexture';
-import { getContextualQuote } from '@/lib/contextualQuotes';
 import { IngredientsSection } from '@/components/verdict/IngredientsSection';
 import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
 import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
@@ -42,6 +41,7 @@ import { OnboardingCompleteModal } from '@/components/onboarding/OnboardingCompl
 import { AllergyWarningBanner } from '@/components/verdict/AllergyWarningBanner';
 import { PregnancyRisksBanner } from '@/components/verdict/PregnancyRisksBanner';
 import { UnknownCompositionBanner } from '@/components/verdict/UnknownCompositionBanner';
+import { AnalysisSourceCard, ContextualQuoteRow, CommunityContributionBadge } from '@/components/verdict/VerdictHeroCards';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import { BlurView } from 'expo-blur';
 import {
@@ -57,7 +57,7 @@ import {
 import styles from '@/components/verdict/verdictStyles';
 
 import { SCAN_DISCLAIMER } from '@/constants/disclaimers';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { useOffline } from '@/hooks/useOffline';
 import { useProfile } from '@/hooks/useProfile';
 import { usePremium } from '@/hooks/usePremium';
@@ -697,117 +697,21 @@ export default function VerdictScreen() {
               color={verdictColor}
               visible={labelVisible}
             />
-            {(() => {
-              // Carte "Provenance de l'analyse" — design premium différencié
-              // par source (IA = lavande subtile, déterministe = vert sauge).
-              // Affichée uniquement quand l'explication backend est présente
-              // (mode online). En offline pur, rien n'est rendu (zéro régression).
-              const explanation = displayVerdict?.aiExplanation?.trim();
-              if (!labelVisible || !explanation) return null;
-              const isAi = displayVerdict?.aiSource === 'ai';
-
-              // Palette dédiée — pas dans le thème (usage local et ciblé).
-              // Choisi pour : (a) contraste WCAG AA sur fond clair, (b) cohésion
-              // avec la palette nude/cream/gold sans la concurrencer.
-              const palette = isAi
-                ? {
-                    bg: '#F4F0FB',       // lavande très pâle
-                    border: '#D4C7EC',   // lavande douce
-                    accent: '#6B5B9C',   // violet profond (header + emoji wrap)
-                    emoji: '✨',
-                    label: 'Analysé par Hēlo IA',
-                  }
-                : {
-                    bg: '#EEF7F0',       // sauge très pâle
-                    border: '#BFD9C8',   // sauge douce
-                    accent: '#4F8068',   // vert médical profond
-                    emoji: '🛡️',
-                    label: 'Vérifié via nos sources médicales',
-                  };
-
-              return (
-                <View
-                  style={{
-                    marginTop: Spacing.md,
-                    marginHorizontal: Spacing.lg,
-                    paddingVertical: Spacing.md,
-                    paddingHorizontal: Spacing.lg,
-                    backgroundColor: palette.bg,
-                    borderRadius: Radius.lg,
-                    borderWidth: 1,
-                    borderColor: palette.border,
-                  }}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <ThemedText style={{ fontSize: 14 }}>{palette.emoji}</ThemedText>
-                    <ThemedText
-                      variant="labelSmall"
-                      style={{
-                        color: palette.accent,
-                        letterSpacing: 0.4,
-                        fontSize: 12,
-                        fontWeight: '700',
-                      }}
-                    >
-                      {palette.label}
-                    </ThemedText>
-                  </View>
-                  <ThemedText
-                    variant="bodyMedium"
-                    style={{
-                      lineHeight: 22,
-                      textAlign: 'left',
-                      color: Colors.textPrimary,
-                    }}
-                  >
-                    {explanation}
-                  </ThemedText>
-                </View>
-              );
-            })()}
-            {labelVisible && (() => {
-              const quote = getContextualQuote(
-                phase,
-                (displayVerdict?.verdict ?? verdict.verdict) as 'safe' | 'caution' | 'danger',
-              );
-              return (
-                <>
-                  <View style={{ marginTop: Spacing.md, paddingHorizontal: Spacing.lg }}>
-                    <ThemedText
-                      variant="bodyMedium"
-                      color="textSecondary"
-                      style={{ textAlign: 'center', fontStyle: 'italic', lineHeight: 20 }}
-                    >
-                      « {quote.text} »
-                    </ThemedText>
-                    <ThemedText
-                      variant="labelSmall"
-                      color="textTertiary"
-                      style={{ textAlign: 'center', marginTop: 4, letterSpacing: 0.5 }}
-                    >
-                      — Selon le {quote.source}
-                    </ThemedText>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: Spacing.sm, paddingHorizontal: Spacing.lg }}>
-                    <Feather name="info" size={11} color={Colors.textTertiary} />
-                    <ThemedText
-                      variant="bodySmall"
-                      color="textTertiary"
-                      style={{ fontStyle: 'italic', textAlign: 'center', fontSize: 11 }}
-                    >
-                      {getSourceAttribution(product.source)}
-                    </ThemedText>
-                  </View>
-                </>
-              );
-            })()}
+            {/* Push S+ découpe : IIFE inline (palette + carte) extraits en
+                composants mémoïsés → cf. components/verdict/VerdictHeroCards. */}
+            {labelVisible && displayVerdict?.aiExplanation?.trim() ? (
+              <AnalysisSourceCard
+                explanation={displayVerdict.aiExplanation.trim()}
+                isAi={displayVerdict?.aiSource === 'ai'}
+              />
+            ) : null}
+            {labelVisible && (
+              <ContextualQuoteRow
+                phase={phase}
+                verdict={(displayVerdict?.verdict ?? verdict.verdict) as 'safe' | 'caution' | 'danger'}
+                sourceAttribution={getSourceAttribution(product.source)}
+              />
+            )}
           </View>
 
           {/* v4 Lot 12 — Banner si l'utilisatrice a déjà accepté ce produit
@@ -915,24 +819,9 @@ export default function VerdictScreen() {
 
         {/* 5. SIGNAUX DE CONFIANCE SECONDAIRES (audit #2) — rendus APRÈS les
             alertes vitales pour ne pas noyer l'info critique. Contexte, pas alerte. */}
-        {product?.source === 'community' && product.communityContributionCount && product.communityContributionCount > 0 && (
-          <View style={communityBadgeStyles.wrap}>
-            <View style={communityBadgeStyles.iconWrap}>
-              <ThemedText style={{ fontSize: 14 }}>💛</ThemedText>
-            </View>
-            <View style={{ flex: 1 }}>
-              <ThemedText variant="labelLarge" color="textPrimary">
-                {product.communityContributionCount === 1
-                  ? '1 maman a contribué'
-                  : `${product.communityContributionCount} mamans ont contribué`}
-              </ThemedText>
-              <ThemedText variant="bodySmall" color="textTertiary" style={{ marginTop: 2 }}>
-                Verdict construit grâce à la communauté Hēlo
-                {product.communityContributionCount >= 5 ? ' · validé' : ' · en cours de validation'}
-              </ThemedText>
-            </View>
-          </View>
-        )}
+        {product?.source === 'community' && product.communityContributionCount && product.communityContributionCount > 0 ? (
+          <CommunityContributionBadge count={product.communityContributionCount} />
+        ) : null}
 
         {product?.isPhotoIdentified && (
           <View style={styles.photoBanner}>
@@ -1043,30 +932,6 @@ export default function VerdictScreen() {
   );
 }
 
-// Lot 18-06 — Badge "X mamas ont contribué" pour les produits community.
-const communityBadgeStyles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.accentLight,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.accent + '33',
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 // Lot 15B2 — Styles du header sticky du verdict screen.
 // Positionné absolute + zIndex haut pour rester au-dessus de tous les

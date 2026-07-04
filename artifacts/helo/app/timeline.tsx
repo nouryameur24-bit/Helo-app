@@ -1,3 +1,7 @@
+import { styles } from './timelineStyles';
+
+const COLUMN_WIDTH = 76;
+const COLUMN_GAP = 8;
 import { swallow } from '@/lib/swallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
@@ -11,7 +15,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   View,
 } from 'react-native';
 import Animated, {
@@ -27,7 +30,7 @@ import { Feather } from '@expo/vector-icons';
 import ViewShot from 'react-native-view-shot';
 
 import { ThemedText } from '@/components/ui/ThemedText';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { getTipForWeek } from '@/constants/weeklyTips';
 import { useTimelineData, type WeekData } from '@/hooks/useTimelineData';
 
@@ -35,8 +38,6 @@ import { FeatureDiscoverySheet } from '@/components/ui/FeatureDiscoverySheet';
 import { useFeatureDiscovery } from "@/hooks/useFeatureDiscovery";
   
 
-const COLUMN_WIDTH = 76;
-const COLUMN_GAP = 8;
 
 function PulsingCircle({ color }: { color: string }) {
   const scale = useSharedValue(1);
@@ -509,255 +510,3 @@ export default function TimelineScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.md,
-    gap: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    backgroundColor: Colors.background,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  exportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.accentLight,
-    borderWidth: 1,
-    borderColor: Colors.accent,
-  },
-  exportBtnText: {
-    fontSize: 13,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
-    color: Colors.accentDark,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    gap: Spacing.lg,
-    backgroundColor: Colors.background,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xl,
-    gap: COLUMN_GAP,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  column: {
-    width: COLUMN_WIDTH,
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xs,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    minHeight: 130,
-    gap: 4,
-  },
-  columnCurrent: {
-    backgroundColor: Colors.accentLight + '88',
-    borderColor: Colors.accent,
-  },
-  herebadge: {
-    position: 'absolute',
-    top: -10,
-    alignSelf: 'center',
-  },
-  hereBadge: {
-    backgroundColor: Colors.accent,
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: Radius.full,
-    marginBottom: 2,
-  },
-  hereBadgeText: {
-    fontSize: 8,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
-    color: '#fff',
-    letterSpacing: 0.3,
-  },
-  weekNumber: {
-    fontSize: 11,
-    color: Colors.textTertiary,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
-    letterSpacing: 0.3,
-  },
-  circleWrapper: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 4,
-  },
-  circle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-  },
-  microScore: {
-    fontSize: 12,
-    fontFamily: 'PlusJakartaSans_700Bold',
-    letterSpacing: 0,
-  },
-  microRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  microText: {
-    fontSize: 10,
-    color: Colors.textTertiary,
-    fontFamily: 'PlusJakartaSans_400Regular',
-  },
-  microEmoji: {
-    fontSize: 14,
-  },
-  eventIcons: {
-    flexDirection: 'row',
-    gap: 2,
-    marginTop: 2,
-  },
-  eventIcon: {
-    fontSize: 12,
-  },
-  exportFullBtn: {
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.md,
-    backgroundColor: Colors.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  exportFullPressable: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.accent,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.lg,
-  },
-  sheetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(45,41,38,0.5)',
-  },
-  sheet: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
-    maxHeight: '80%',
-    paddingBottom: Spacing.xxxl,
-  },
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.border,
-    alignSelf: 'center',
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  sheetContent: {
-    paddingHorizontal: Spacing.xl,
-    paddingBottom: Spacing.xxxl,
-    gap: Spacing.md,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.sm,
-  },
-  sheetClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  sheetCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  sheetCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  sheetCardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetSectionLabel: {
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  tipCard: {
-    backgroundColor: Colors.accentLight + '55',
-    borderColor: Colors.accentLight,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 4,
-  },
-  chip: {
-    backgroundColor: Colors.accentLight,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.accent,
-  },
-  chipText: {
-    fontSize: 11,
-    color: Colors.accentDark,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
-  },
-});

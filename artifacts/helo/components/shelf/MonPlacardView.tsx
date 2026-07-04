@@ -16,6 +16,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Spacing } from '@/constants/theme';
 import { useProfile } from '@/hooks/useProfile';
+import { useShelfData } from '@/hooks/useShelfData';
 import { getBabyMode } from '@/hooks/useBabyMode';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import type { ShelfCategory } from '@/components/shelf/ShelfCard';
@@ -54,17 +55,31 @@ type LocalShelfItem = {
 };
 
 export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
-  const { role, linkedUserId, linkedFirstName } = useProfile();
+  const { userId, role, linkedUserId, linkedFirstName } = useProfile();
   const isPartner = role === 'partner' && !!linkedUserId;
 
-  const [isLoading, setIsLoading] = useState(true);
+  // Audit module 5 fix : la maman (non-partenaire) réutilise le hook partagé
+  // useShelfData (Supabase scan_history + fallback AsyncStorage, déjà éprouvé
+  // sur le home). AVANT, la branche `else` de l'effet de chargement faisait
+  // `setProducts([])` sans JAMAIS lire son placard (et useProfile ne
+  // destructurait même pas `userId`) → « Mon Placard » TOUJOURS vide pour la
+  // persona principale. Le mode partenaire garde son chemin Supabase realtime.
+  const { shelf: ownShelf, loading: ownLoading, reload: reloadOwnShelf } =
+    useShelfData(isPartner ? undefined : userId);
+
   const [refreshing, setRefreshing] = useState(false);
-  const [products, setProducts] = useState<ShelfProduct[]>([]);
+  // Placard de la maman via Supabase realtime — mode partenaire uniquement.
+  const [partnerProducts, setPartnerProducts] = useState<ShelfProduct[]>([]);
+  const [partnerLoading, setPartnerLoading] = useState(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [filterVisible, setFilterVisible] = useState(false);
   const flatListRef = useRef<FlatList<ShelfProduct>>(null);
   const [isBabyMode, setIsBabyMode] = useState(false);
   const [babyProducts, setBabyProducts] = useState<LocalShelfItem[]>([]);
+
+  // Source affichée selon le rôle.
+  const products = isPartner ? partnerProducts : ownShelf;
+  const isLoading = isPartner ? partnerLoading : ownLoading;
 
   useEffect(() => {
     getBabyMode().then(setIsBabyMode).catch(swallow);
@@ -80,31 +95,30 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
   }, [isBabyMode]);
 
   useEffect(() => {
-    if (isPartner && isSupabaseConfigured && linkedUserId) {
-      loadMotherShelf(linkedUserId);
-      const channel = supabase
-        .channel(`shelf:${linkedUserId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'scan_history',
-            filter: `user_id=eq.${linkedUserId}`,
-          },
-          () => {
-            loadMotherShelf(linkedUserId);
-          },
-        )
-        .subscribe();
+    // Mode maman : les données viennent de useShelfData (ci-dessus), rien à
+    // faire ici. On ne gère que le placard partagé du partenaire + realtime.
+    if (!(isPartner && isSupabaseConfigured && linkedUserId)) return;
+    setPartnerLoading(true);
+    loadMotherShelf(linkedUserId);
+    const channel = supabase
+      .channel(`shelf:${linkedUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'scan_history',
+          filter: `user_id=eq.${linkedUserId}`,
+        },
+        () => {
+          loadMotherShelf(linkedUserId);
+        },
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } else {
-      setProducts([]);
-      setIsLoading(false);
-    }
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [isPartner, linkedUserId]);
 
   const loadMotherShelf = async (userId: string) => {
@@ -142,11 +156,11 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
           };
         });
 
-      setProducts(shelfProducts);
+      setPartnerProducts(shelfProducts);
     } catch (err) {
       if (__DEV__) console.warn('[MonPlacardView] loadMotherShelf error:', err);
     } finally {
-      setIsLoading(false);
+      setPartnerLoading(false);
     }
   };
 
@@ -183,14 +197,15 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
     try {
       if (isPartner && linkedUserId) {
         await loadMotherShelf(linkedUserId);
+      } else {
+        // Audit module 5 : vraie recharge via le hook (avant : un simple
+        // setTimeout 600ms décoratif qui ne rechargeait rien).
+        await reloadOwnShelf();
       }
-      // Mom mode : le shelf vient du hook parent. Petit délai pour montrer
-      // visuellement que l'action a été reçue.
-      await new Promise((r) => setTimeout(r, 600));
     } finally {
       setRefreshing(false);
     }
-  }, [isPartner, linkedUserId]);
+  }, [isPartner, linkedUserId, reloadOwnShelf]);
 
   const compatibleCount = products.filter((p) => p.verdict === 'safe').length;
   const compatiblePercent = products.length > 0 ? Math.round((compatibleCount / products.length) * 100) : 0;
@@ -201,8 +216,21 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
 
   const handleRemove = useCallback((product: ShelfProduct) => {
     if (isPartner) return;
-    setProducts((prev) => prev.filter((p) => p.id !== product.id));
-  }, [isPartner]);
+    // Audit module 5 : la suppression est maintenant PERSISTÉE dans
+    // AsyncStorage (avant : simple mutation du state local perdue au remount,
+    // le produit "supprimé" réapparaissait). ShelfProduct.id === barcode.
+    (async () => {
+      try {
+        const raw = (await AsyncStorage.getItem(STORAGE_KEYS.shelf)) ?? '[]';
+        const all: LocalShelfItem[] = JSON.parse(raw);
+        const next = all.filter((i) => i.barcode !== product.id);
+        await AsyncStorage.setItem(STORAGE_KEYS.shelf, JSON.stringify(next));
+      } catch (err) {
+        swallow(err);
+      }
+      await reloadOwnShelf();
+    })();
+  }, [isPartner, reloadOwnShelf]);
 
   const handleChangeCategory = useCallback((_product: ShelfProduct) => {
   }, []);

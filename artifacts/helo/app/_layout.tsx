@@ -25,6 +25,7 @@ import { WhatsNewModal } from "@/components/WhatsNewModal";
 import { CURRENT_VERSION, getChangelog, type WhatsNewEntry } from "@/constants/whatsNew";
 import { STORAGE_KEYS } from "@/lib/storageKeys";
 import { Colors } from "@/constants/theme";
+import { ThemeProvider } from "@/hooks/ThemeProvider";
 import { useNotificationTapRouting } from "@/hooks/useNotifications";
 import { usePremium } from "@/hooks/usePremium";
 import { useRecallAlerts } from "@/hooks/useRecallAlerts";
@@ -377,13 +378,15 @@ function RootLayout() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <PostHogProvider client={posthog} autocapture={{ captureScreens: false, captureTouches: true }}>
-            <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
-              <RootLayoutNav />
-            </GestureHandlerRootView>
-          </PostHogProvider>
-        </QueryClientProvider>
+        <ThemeProvider>
+          <QueryClientProvider client={queryClient}>
+            <PostHogProvider client={posthog} autocapture={{ captureScreens: false, captureTouches: true }}>
+              <GestureHandlerRootView style={{ flex: 1, backgroundColor: Colors.background }}>
+                <RootLayoutNav />
+              </GestureHandlerRootView>
+            </PostHogProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

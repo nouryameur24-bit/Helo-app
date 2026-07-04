@@ -338,7 +338,7 @@ export function MonPlacardView({ highlightBarcode }: MonPlacardViewProps) {
                   {products.length} produits · {compatiblePercent}% compatibles
                 </ThemedText>
               </View>
-              <IconButton onPress={() => setFilterVisible(true)}>
+              <IconButton onPress={() => setFilterVisible(true)} accessibilityLabel="Filtrer le placard">
                 <Feather name="sliders" size={20} color={Colors.textSecondary} />
               </IconButton>
             </View>

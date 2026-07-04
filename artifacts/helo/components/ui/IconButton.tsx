@@ -64,6 +64,10 @@ export function IconButton({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
+      // Push S+ a11y : rôle "button" par défaut (icon-only → le label doit être
+      // fourni par l'appelant, sinon VoiceOver n'a que l'icône).
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
       accessibilityLabel={accessibilityLabel}
     >
       {children}

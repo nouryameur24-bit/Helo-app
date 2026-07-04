@@ -403,6 +403,7 @@ export default function ScanScreen() {
               onPress={() => router.push(ROUTES.basketScan)}
               backgroundColor="rgba(255,255,255,0.18)"
               size={40}
+              accessibilityLabel="Scanner un panier de courses"
             >
               <Feather name="shopping-cart" size={18} color="#fff" />
             </IconButton>
@@ -411,6 +412,7 @@ export default function ScanScreen() {
             onPress={() => setTorchOn((v) => !v)}
             backgroundColor={torchOn ? Colors.accent : 'rgba(255,255,255,0.18)'}
             size={40}
+            accessibilityLabel={torchOn ? 'Éteindre la lampe torche' : 'Allumer la lampe torche'}
           >
             <Feather name={torchOn ? 'zap' : 'zap-off'} size={18} color="#fff" />
           </IconButton>

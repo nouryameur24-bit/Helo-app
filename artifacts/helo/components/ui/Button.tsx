@@ -80,6 +80,11 @@ export function Button({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled || loading}
+      // Push S+ a11y : rôle "button" par défaut sur les 43 usages (VoiceOver
+      // les annonce comme boutons) + état disabled/busy. Le label vient du prop
+      // s'il est fourni, sinon RN le dérive du texte enfant.
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       accessibilityLabel={accessibilityLabel}
     >
       {loading ? (

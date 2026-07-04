@@ -29,7 +29,6 @@ import { LoadingScreen, ScoreCircle, VerdictLabel, Toast } from '@/components/ve
 import { ContributionRewardToast } from '@/components/verdict/ContributionRewardToast';
 import { VellumTexture } from '@/components/verdict/VellumTexture';
 import { getContextualQuote } from '@/lib/contextualQuotes';
-import { CircleShareRow } from '@/components/verdict/CircleShareRow';
 import { IngredientsSection } from '@/components/verdict/IngredientsSection';
 import { RecallAlertBanner } from '@/components/verdict/RecallAlertBanner';
 import { ShelfBottomSheet } from '@/components/verdict/ShelfBottomSheet';
@@ -67,7 +66,6 @@ import { getBreastfeedingMode } from '@/hooks/useBreastfeeding';
 import { getBabyMode } from '@/hooks/useBabyMode';
 import { sendShelfAddNotification } from '@/lib/notifications';
 import { fetchRecallForBarcode } from '@/hooks/useRecallAlerts';
-import { getCircle } from '@/lib/circleUtils';
 import { matchIngredients, getVerdict } from '@/lib/productLookup';
 import type { RappelConsoRecord } from '@/lib/rappelConso';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -182,18 +180,7 @@ export default function VerdictScreen() {
   const activeScanRef = useRef<string | null>(null);
   const phaseRef = useRef<Phase>(2);
 
-  const [circleId, setCircleId] = useState<string | null>(null);
-  const [sharedToCircle, setSharedToCircle] = useState(false);
   const [reportVisible, setReportVisible] = useState(false);
-  const [ghostVisible, setGhostVisible] = useState(false);
-  const lastFailedBarcode = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!userId) return;
-    getCircle().then((data) => {
-      setCircleId(data?.circle?.id ?? null);
-    }).catch(swallow);
-  }, [userId]);
 
   useEffect(() => {
     getBreastfeedingMode().then((isBF) => {
@@ -529,7 +516,6 @@ export default function VerdictScreen() {
               source: partialMetadata.source,
               has_name: Boolean(partialMetadata.name),
             }).catch(() => {});
-            lastFailedBarcode.current = partialMetadata.barcode;
             router.replace({
               pathname: '/(tabs)/scan',
               params: {
@@ -558,7 +544,6 @@ export default function VerdictScreen() {
             visible
             barcode={barcode}
             onPhotograph={() => {
-              lastFailedBarcode.current = barcode;
               router.replace({
                 pathname: '/(tabs)/scan',
                 params: { ghostBarcode: barcode, ghostMode: '1' },
@@ -970,21 +955,8 @@ export default function VerdictScreen() {
           totalIngredientsCount={product?.ingredientsList?.length ?? 0}
         />
 
-        {/* ── PARTAGER DANS MON CERCLE — V1: masqué, réactiver pour V2 ── */}
-        {/* Réactiver pour V2 :
-        {circleId && verdict && product && (
-          <CircleShareRow
-            circleId={circleId}
-            isPartner={isPartner}
-            verdict={verdict}
-            product={product}
-            firstName={firstName ?? ''}
-            userId={userId}
-            sharedToCircle={sharedToCircle}
-            setSharedToCircle={setSharedToCircle}
-          />
-        )}
-        */}
+        {/* Partage "Mon Cercle" (CircleShareRow) retiré en V1 — feature circle
+            flag-off. Réactiver depuis l'historique git si besoin en V2. */}
 
         {/* ── GHOST CAPTURE CONTRIBUTION CARD ── */}
         {/* Only shown for ghost-capture flows (user came from OCR review with    */}

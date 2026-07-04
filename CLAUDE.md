@@ -723,6 +723,11 @@ curl https://<replit-url>/api/healthz  # → "ok"
 
    **Validation** : tsc mobile ✓, mobile 250/250, commits `0f9081e` (interruption) + `848fef3` (tutoiement).
 
+36. **Audit-refacto itératif module par module (02/07/2026 nuit)** : passe qualité (pilier « ligne par ligne / DRY / perf », le moins couvert par les audits 1-4). Un module = un commit, tsc+250 tests verts à chaque.
+   - **Module 1 `verdict/[scanId].tsx`** (commit `3f40f90`) : retrait de l'appel DB `getCircle()` exécuté **à chaque ouverture de verdict** (écran le + vu) pour un `circleId` consommé seulement par un `<CircleShareRow>` **commenté** (feature circle flag-off) → 1 requête DB + 1 render évités/vue. + états morts (`circleId`, `sharedToCircle`, `ghostVisible`) et ref write-only `lastFailedBarcode` supprimés. 1121→1114 L.
+   - **Module 2 `alternatives.tsx`** (commits `50bf450` + `f36f705`) : (a) la carte affichait toujours le placeholder au lieu de `alt.image_url` (photos OFF/OBF fournies par le backend) → **photo produit affichée** (expo-image) ; (b) **DEUX features mortes réparées** : `MaListeView` était un `useState([])` sans persistance ni writer (liste toujours vide) ET le bouton « Ajouter à ma liste » un stub `Alert("Bientôt disponible")`. Fix : nouvelle `lib/shoppingList.ts` (AsyncStorage, dédup nom+marque, zéro backend) → bouton persiste + `MaListeView` charge au focus + persiste toggle/remove. Nouvelle key `STORAGE_KEYS.shoppingList`, event `alternative_added_to_list`. Titre « The Swap » → « Alternatives » (cohérence FR).
+   - **Reste à passer** (ordre) : scan/ocr-review, home+components, shelf, écrans secondaires, lib/hooks, backend (refacto only). Amélioration proposée non faite sur module 1 : extraire 3 blocs IIFE du verdict (`AnalysisSourceCard`, `ContextualQuoteRow`, `CommunityBadge`) en composants mémoïsés.
+
 ---
 
 ## 🎯 Décisions UX clés (le WHY)

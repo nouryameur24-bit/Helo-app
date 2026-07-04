@@ -37,6 +37,7 @@ import {
   submitAlternativeSuggestion,
 } from '@/lib/alternatives';
 import { fetchAlternativesRemote } from '@/lib/api';
+import { addToShoppingList } from '@/lib/shoppingList';
 import { track } from '@/lib/analytics';
 import type { Trimester } from '@/types';
 
@@ -690,10 +691,19 @@ export default function AlternativesScreen() {
     }
   }, [barcode, productName]);
 
-  const handleAddToList = useCallback(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Bientôt disponible', 'Cette fonctionnalité arrive prochainement !');
-  }, []);
+  // Audit module 2 : n'est plus un stub. Persiste l'alternative dans la liste
+  // de courses (lib/shoppingList) → visible dans l'onglet Placard › Ma Liste.
+  const handleAddToList = useCallback(async (alt: AlternativeProduct) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    const added = await addToShoppingList({ productName: alt.name, brand: alt.brand });
+    track('alternative_added_to_list', { alternative_barcode: alt.barcode, original_barcode: barcode }).catch(() => {});
+    Alert.alert(
+      added ? 'Ajouté à ta liste ✓' : 'Déjà dans ta liste',
+      added
+        ? `${alt.name} est dans ta liste de courses (Placard › Ma Liste).`
+        : `${alt.name} y est déjà.`,
+    );
+  }, [barcode]);
 
   const topPad = Platform.OS === 'web' ? 60 : insets.top;
 
@@ -708,7 +718,7 @@ export default function AlternativesScreen() {
           <Feather name="x" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <ThemedText variant="headlineMedium" style={styles.headerTitle}>
-          The Swap
+          Alternatives
         </ThemedText>
         <View style={{ width: 36 }} />
       </View>
@@ -781,7 +791,7 @@ export default function AlternativesScreen() {
                   userId={userId}
                   sourceBarcode={barcode}
                   onViewDetail={() => handleViewDetail(alt.barcode)}
-                  onAddToList={handleAddToList}
+                  onAddToList={() => handleAddToList(alt)}
                 />
               ))}
             </ScrollView>

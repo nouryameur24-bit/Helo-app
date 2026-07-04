@@ -51,6 +51,9 @@ export const STORAGE_KEYS = {
   // ── Shelf, scans, baskets ───────────────────────────────────────────
   shelf: '@helo_shelf',
   basket: '@helo_basket',
+  /** Liste de courses "À acheter" (MaListeView). Alimentée depuis l'écran
+   *  Alternatives ("Ajouter à ma liste") + persistée localement. */
+  shoppingList: '@helo_shopping_list',
   lastScanDate: '@helo_last_scan_date',
   photoScanResult: '@helo_photo_scan_result',
 

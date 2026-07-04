@@ -15,17 +15,15 @@ import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ThemedText } from '@/components/ui/ThemedText';
 import { Colors, Radius, Spacing } from '@/constants/theme';
-
-interface ShoppingItem {
-  id: string;
-  productName: string;
-  brand: string;
-  checked: boolean;
-}
+import {
+  getShoppingList,
+  saveShoppingList,
+  type ShoppingItem,
+} from '@/lib/shoppingList';
 
 function ShoppingRow({
   item,
@@ -93,16 +91,37 @@ function ShoppingRow({
 export function MaListeView() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
 
+  // Audit module 2 : la liste est maintenant PERSISTÉE (lib/shoppingList).
+  // Rechargée à chaque focus du tab (l'ajout se fait depuis l'écran
+  // Alternatives, on veut voir le nouvel item en revenant).
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      getShoppingList().then((list) => {
+        if (active) setItems(list);
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
   const handleToggle = useCallback((id: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
+    setItems((prev) => {
+      const next = prev.map((item) =>
         item.id === id ? { ...item, checked: !item.checked } : item,
-      ),
-    );
+      );
+      void saveShoppingList(next);
+      return next;
+    });
   }, []);
 
   const handleRemove = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setItems((prev) => {
+      const next = prev.filter((item) => item.id !== id);
+      void saveShoppingList(next);
+      return next;
+    });
   }, []);
 
   const renderItem = useCallback(

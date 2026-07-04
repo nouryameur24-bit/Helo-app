@@ -17,6 +17,7 @@ export type AnalyticsEvent =
   | 'ghost_capture_completed'
   | 'alternative_viewed'
   | 'alternative_swap_tapped'
+  | 'alternative_added_to_list'
   | 'paywall_viewed'
   | 'paywall_purchased'
   | 'paywall_dismissed'

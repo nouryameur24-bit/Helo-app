@@ -32,7 +32,7 @@ interface GlowScoreDeltaToastProps {
   score: number;
 }
 
-export function GlowScoreDeltaToast({ score }: GlowScoreDeltaToastProps) {
+function GlowScoreDeltaToastImpl({ score }: GlowScoreDeltaToastProps) {
   const previousScoreRef = useRef<number | null>(null);
   const [delta, setDelta] = useState<number | null>(null);
 
@@ -103,6 +103,11 @@ export function GlowScoreDeltaToast({ score }: GlowScoreDeltaToastProps) {
     </Animated.View>
   );
 }
+
+// Audit module 4 : mémoïsé comme tous ses frères du home. Ne dépend que de
+// `score` (primitif) → ne re-render plus sur les updates parent non liés
+// (welcome overlay, share sheet, more-tools) qui n'ont rien à voir avec lui.
+export const GlowScoreDeltaToast = React.memo(GlowScoreDeltaToastImpl);
 
 const styles = StyleSheet.create({
   wrap: {

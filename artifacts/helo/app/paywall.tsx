@@ -59,6 +59,9 @@ function PlanCard({
   return (
     <Pressable
       onPress={onSelect}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={`Forfait ${plan.label}, ${plan.price}`}
       style={({ pressed }) => [
         pc.wrap,
         plan.highlight && pc.wrapHighlight,
@@ -233,6 +236,8 @@ export default function PaywallScreen() {
             safeBack();
           }}
           style={s.closeBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Fermer"
         >
           <Feather name="x" size={20} color={Colors.textSecondary} />
         </Pressable>
@@ -304,6 +309,12 @@ export default function PaywallScreen() {
             style={({ pressed }) => [s.ctaBtn, { opacity: purchasing || pressed ? 0.85 : 1 }]}
             onPress={handlePurchase}
             disabled={purchasing}
+            accessibilityRole="button"
+            accessibilityLabel={
+              selectedPlanData.trial
+                ? `Commencer mon essai gratuit de ${selectedPlanData.trial}`
+                : `Obtenir Premium pour ${selectedPlanData.price}`
+            }
           >
             <LinearGradient
               colors={[Colors.accent, Colors.accentDark]}
@@ -333,6 +344,8 @@ export default function PaywallScreen() {
             onPress={handleRestore}
             disabled={restoring}
             style={({ pressed }) => [s.restoreBtn, { opacity: restoring || pressed ? 0.6 : 1 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Restaurer mes achats"
           >
             {restoring ? (
               <ActivityIndicator color={Colors.textTertiary} size="small" />

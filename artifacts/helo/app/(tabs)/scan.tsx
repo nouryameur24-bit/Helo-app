@@ -460,6 +460,8 @@ export default function ScanScreen() {
                     style={styles.menuThumbDelete}
                     onPress={() => setMenuPhotos((prev) => prev.filter((_, idx) => idx !== i))}
                     hitSlop={6}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Retirer la photo ${i + 1}`}
                   >
                     <Feather name="x" size={10} color="#fff" />
                   </TouchableOpacity>
@@ -471,6 +473,8 @@ export default function ScanScreen() {
                   onPress={handleMenuCapture}
                   disabled={takingPhoto}
                   activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ajouter une page de menu"
                 >
                   <Feather name="plus" size={20} color={Colors.accent} />
                 </TouchableOpacity>
@@ -486,6 +490,8 @@ export default function ScanScreen() {
                 onPress={handleMenuAnalyze}
                 disabled={isAnalyzing}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={isAnalyzing ? 'Analyse du menu en cours' : 'Analyser le menu'}
               >
                 {isAnalyzing ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -571,7 +577,7 @@ export default function ScanScreen() {
           />
         </ScrollView>
         {isMenuMode && menuPhotos.length > 0 && (
-          <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75}>
+          <TouchableOpacity onPress={() => setMenuPhotos([])} activeOpacity={0.75} accessibilityRole="button" accessibilityLabel="Réinitialiser les photos du menu">
             <Text style={styles.comingSoon}>Réinitialiser les photos</Text>
           </TouchableOpacity>
         )}

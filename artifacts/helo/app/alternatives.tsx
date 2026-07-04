@@ -247,6 +247,8 @@ function AlternativeCard({
                   style={styles.purchaseLinkBtn}
                   onPress={() => Linking.openURL(alt.purchase_links!.brand!).catch(() => undefined)}
                   activeOpacity={0.75}
+                  accessibilityRole="link"
+                  accessibilityLabel={`Ouvrir le site de ${alt.brand || 'la marque'}`}
                 >
                   <Feather name="external-link" size={12} color={Colors.accent} />
                   <ThemedText variant="bodySmall" style={{ marginLeft: 4, color: Colors.accent }}>Marque</ThemedText>
@@ -504,6 +506,9 @@ function SuggestionForm({ category: defaultCategory }: { category: string }) {
             key={opt.value}
             style={[styles.categoryChip, selectedCategory === opt.value && styles.categoryChipActive]}
             onPress={() => setSelectedCategory(opt.value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedCategory === opt.value }}
+            accessibilityLabel={`Catégorie ${opt.label}`}
           >
             <ThemedText
               variant="bodySmall"
@@ -714,7 +719,7 @@ export default function AlternativesScreen() {
       keyboardVerticalOffset={0}
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.closeBtn} onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Fermer">
           <Feather name="x" size={22} color={Colors.textPrimary} />
         </TouchableOpacity>
         <ThemedText variant="headlineMedium" style={styles.headerTitle}>
@@ -740,7 +745,7 @@ export default function AlternativesScreen() {
             ça elle interprétait "aucune alternative" comme un fait métier au
             lieu d'un crash. Tap → retry. */}
         {remoteError && !loading ? (
-          <TouchableOpacity onPress={handleRetry} style={styles.errorBanner} activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleRetry} style={styles.errorBanner} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Réessayer la recherche d'alternatives">
             <Feather name="wifi-off" size={14} color={Colors.caution} />
             <ThemedText
               variant="bodySmall"

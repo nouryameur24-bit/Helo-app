@@ -1,3 +1,4 @@
+import { styles, previewStyles } from './profileStyles';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -9,7 +10,6 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { Divider } from "@/components/ui/Divider";
 import { ThemedText } from "@/components/ui/ThemedText";
 import { GENERAL_DISCLAIMER } from "@/constants/disclaimers";
-import { Colors, Radius, Spacing, Typography } from "@/constants/theme";
+import { Colors, Spacing } from "@/constants/theme";
 import { getOrCreateUserId } from "@/hooks/useProfile";
 import { upsertProfile, generatePartnerCode } from "@/lib/partnerUtils";
 import { STORAGE_KEYS } from '@/lib/storageKeys';
@@ -402,134 +402,3 @@ export default function ProfileSetupScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xxl,
-  },
-  stepRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: Spacing.sm,
-  },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.borderLight,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-  },
-  stepDotDone: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  stepDotActive: {
-    backgroundColor: Colors.accentDark,
-    borderColor: Colors.accentDark,
-  },
-  stepLine: {
-    flex: 1,
-    height: 2,
-    marginHorizontal: 4,
-  },
-  stepLineEmpty: {
-    flex: 1,
-    height: 2,
-    backgroundColor: Colors.borderLight,
-    marginHorizontal: 4,
-  },
-  header: {
-    gap: Spacing.xs,
-  },
-  fieldLabel: {
-    marginBottom: Spacing.sm,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 16,
-    backgroundColor: Colors.surface,
-  },
-  inputFocused: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.surfaceElevated,
-  },
-  input: {
-    ...Typography.bodyLarge,
-    color: Colors.textPrimary,
-    padding: 0,
-    flex: 1,
-  },
-  trimesterRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  chipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-  },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: Radius.full,
-    borderWidth: 1.5,
-  },
-  chipActive: {
-    backgroundColor: Colors.accentLight,
-    borderColor: Colors.accent,
-  },
-  chipInactive: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-  },
-  chipLabel: {
-    ...Typography.labelLarge,
-    fontSize: 13,
-  },
-  ctaBlock: {
-    gap: 0,
-  },
-  disclaimer: {
-    lineHeight: 18,
-    textAlign: "center",
-  },
-});
-
-const previewStyles = StyleSheet.create({
-  card: {
-    marginTop: Spacing.lg,
-    padding: Spacing.lg,
-    borderRadius: Radius.lg,
-    backgroundColor: Colors.accentLight,
-    borderWidth: 1,
-    borderColor: Colors.accent + '33',
-  },
-  headline: {
-    fontWeight: '600',
-    lineHeight: 24,
-  },
-  avoidRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  avoidDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.danger,
-  },
-});

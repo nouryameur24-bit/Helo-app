@@ -212,15 +212,42 @@ export async function syncOfflineScans(): Promise<SyncResult> {
     const queue: OfflineQueueEntry[] = JSON.parse(raw);
     if (queue.length === 0) return { success: true, pushedCount: 0 };
 
+    // Audit module 7 fix : avant, l'insert visait une table `scans` INEXISTANTE
+    // (seul `scan_history` existe en base) → sync KO à 100%, file jamais vidée,
+    // croissance sans fin dans AsyncStorage. On écrit désormais dans
+    // `scan_history` (RLS owner : user_id = auth.uid()). Les scans hors-ligne
+    // réapparaissent alors dans l'Historique + les stats profil (qui lisent
+    // scan_history SANS filtre in_shelf).
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    if (!userId) {
+      // Pas de session authentifiée → insert RLS impossible. On PRÉSERVE la
+      // file (aucune perte) pour un prochain essai.
+      return { success: false, pushedCount: 0 };
+    }
+
+    // Résout product_id par barcode en UNE requête (scan_history référence
+    // products via FK ; product_id null accepté si le produit n'est pas en base).
+    const barcodes = Array.from(new Set(queue.map((e) => e.barcode)));
+    const { data: prodRows } = await supabase
+      .from('products')
+      .select('id, barcode')
+      .in('barcode', barcodes);
+    const idByBarcode = new Map<string, string>(
+      ((prodRows ?? []) as { id: string; barcode: string }[]).map((r) => [r.barcode, r.id]),
+    );
+
     const inserts = queue.map((entry) => ({
-      barcode: entry.barcode,
-      product_name: entry.product.name,
-      verdict: entry.verdict.verdict,
-      trimester: entry.trimester,
+      user_id: userId,
+      product_id: idByBarcode.get(entry.barcode) ?? null,
+      verdict_at_shelf_add: entry.verdict.verdict,
+      // scan_history.trimester est un int ; 'breastfeeding'/'baby' → null.
+      trimester: typeof entry.trimester === 'number' ? entry.trimester : null,
+      in_shelf: false, // un scan hors-ligne n'est PAS un ajout au placard
       scanned_at: new Date(entry.scannedAt).toISOString(),
     }));
 
-    const { error } = await supabase.from('scans').insert(inserts);
+    const { error } = await supabase.from('scan_history').insert(inserts);
     if (error) {
       if (__DEV__) console.warn('[Hēlo offline] syncOfflineScans error:', error.message);
       return { success: false, pushedCount: 0 };

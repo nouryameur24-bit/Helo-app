@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -130,9 +131,21 @@ function AlternativeCard({
     <View style={{ width: CARD_WIDTH }}>
       <Card style={styles.altCard} variant="elevated" padding={0}>
         <View style={styles.altImageContainer}>
-          <View style={styles.altImagePlaceholder}>
-            <Feather name="package" size={40} color={Colors.textTertiary} />
-          </View>
+          {/* Audit module 2 : la photo produit (image_url fournie par le backend
+              OFF/OBF) n'était jamais affichée — toujours l'icône placeholder.
+              Or reconnaître l'alternative en rayon EST la valeur de l'écran. */}
+          {alt.image_url ? (
+            <Image
+              source={{ uri: alt.image_url }}
+              style={styles.altImage}
+              contentFit="contain"
+              transition={150}
+            />
+          ) : (
+            <View style={styles.altImagePlaceholder}>
+              <Feather name="package" size={40} color={Colors.textTertiary} />
+            </View>
+          )}
         </View>
 
         <View style={styles.altContent}>
@@ -874,6 +887,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundSecondary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  altImage: {
+    width: '100%',
+    height: '100%',
   },
   altImagePlaceholder: {
     width: 80,
